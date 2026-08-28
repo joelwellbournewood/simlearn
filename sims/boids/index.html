@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Boids</title>
+<style>
+  html, body { margin:0; height:100%; background:#05070c; color:#e8ecf4; font-family: -apple-system, Segoe UI, Roboto, sans-serif; overflow:hidden; }
+  #wrap { display:flex; height:100%; }
+  #canvas-holder { flex:1; position:relative; }
+  canvas { display:block; width:100%; height:100%; background: radial-gradient(circle at 50% 30%, #0d1220, #05070c); }
+  #panel { width: 240px; padding: 14px 16px; background: #0b0e16; border-left: 1px solid #1f2636; overflow-y: auto; font-size: 13px; }
+  #panel h2 { font-size: 15px; margin: 0 0 8px; }
+  #panel p { color: #9aa5b8; line-height: 1.45; margin: 0 0 12px; }
+  .row { margin-bottom: 12px; }
+  .row label { display:flex; justify-content:space-between; margin-bottom:4px; color:#cfd6e4; }
+  .row input[type=range] { width: 100%; accent-color:#4fd1c5; }
+  button { width: 100%; background: #4fd1c5; border: none; color: #05070c; font-weight: 600; padding: 8px 0; border-radius: 8px; cursor: pointer; margin-top: 4px; }
+  button.secondary { background: #1f2636; color:#e8ecf4; margin-top:8px; }
+  a.credit { color:#7c8cff; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="canvas-holder"><canvas id="c"></canvas></div>
+  <div id="panel">
+    <h2>Boids</h2>
+    <p>Each dot follows three simple local rules — <b>separation</b> (avoid
+    crowding neighbors), <b>alignment</b> (steer toward average heading of
+    neighbors), and <b>cohesion</b> (steer toward average position of
+    neighbors). No dot knows about the flock as a whole, yet the flock
+    emerges. Model: Craig Reynolds, 1987.</p>
+    <div class="row">
+      <label><span>Separation</span><span id="v-sep">1.5</span></label>
+      <input type="range" id="sep" min="0" max="4" step="0.1" value="1.5">
+    </div>
+    <div class="row">
+      <label><span>Alignment</span><span id="v-ali">1.0</span></label>
+      <input type="range" id="ali" min="0" max="4" step="0.1" value="1.0">
+    </div>
+    <div class="row">
+      <label><span>Cohesion</span><span id="v-coh">1.0</span></label>
+      <input type="range" id="coh" min="0" max="4" step="0.1" value="1.0">
+    </div>
+    <div class="row">
+      <label><span>Boid count</span><span id="v-count">120</span></label>
+      <input type="range" id="count" min="10" max="400" step="10" value="120">
+    </div>
+    <button id="reset">Restart</button>
+    <button class="secondary" id="pause">Pause</button>
+    <p style="margin-top:16px">Try: separation=0 to watch them merge into a
+    blob; alignment=0 for chaotic swirling with no shared direction.</p>
+  </div>
+</div>
+<script src="boids.js"></script>
+</body>
+</html>

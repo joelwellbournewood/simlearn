@@ -1,0 +1,101 @@
+[
+  {
+    "id": "boids",
+    "title": "Boids: Flocking Simulation",
+    "category": "Emergent Systems",
+    "tags": ["agent-based", "emergence", "biology"],
+    "difficulty": "Beginner",
+    "description": "Simple local rules — separation, alignment, cohesion — produce realistic flocking behavior. Based on Craig Reynolds' 1987 model.",
+    "status": "live"
+  },
+  {
+    "id": "predator-prey",
+    "title": "Predator & Prey",
+    "category": "Population Dynamics",
+    "tags": ["ecology", "differential equations", "Lotka-Volterra"],
+    "difficulty": "Intermediate",
+    "description": "Watch predator and prey populations cycle over time, and see how the classic Lotka-Volterra equations emerge from agent-based interactions.",
+    "status": "live"
+  },
+  {
+    "id": "game-of-life",
+    "title": "Conway's Game of Life",
+    "category": "Emergent Systems",
+    "tags": ["cellular automaton", "emergence"],
+    "difficulty": "Beginner",
+    "description": "One simple rule about live and dead neighbors gives rise to gliders, oscillators, and endlessly complex patterns.",
+    "status": "live"
+  },
+  {
+    "id": "traffic",
+    "title": "Traffic Jams",
+    "category": "Complex Systems",
+    "tags": ["cellular automaton", "transportation"],
+    "difficulty": "Beginner",
+    "description": "See how traffic jams form out of nowhere on a road with no obstacles, purely from car-following dynamics.",
+    "status": "live"
+  },
+  {
+    "id": "segregation",
+    "title": "Schelling's Segregation Model",
+    "category": "Social Dynamics",
+    "tags": ["agent-based", "sociology", "emergence"],
+    "difficulty": "Intermediate",
+    "description": "Mild individual preferences for similar neighbors add up to strong citywide segregation — a classic result in social science.",
+    "status": "live"
+  },
+  {
+    "id": "double-pendulum",
+    "title": "Double Pendulum: Chaos",
+    "category": "Physics",
+    "tags": ["chaos", "classical mechanics", "dynamical systems"],
+    "difficulty": "Intermediate",
+    "description": "A perfectly deterministic system whose motion becomes unpredictable — the clearest visual introduction to chaos theory.",
+    "status": "live"
+  },
+  {
+    "id": "epidemic",
+    "title": "Epidemic Spread (SIR)",
+    "category": "Social Dynamics",
+    "tags": ["epidemiology", "agent-based", "public health"],
+    "difficulty": "Beginner",
+    "description": "Susceptible, infected, and recovered agents wander and mix — tune infection rate and recovery time to see outbreaks burn out or explode.",
+    "status": "live"
+  },
+  {
+    "id": "lorenz",
+    "title": "Lorenz Attractor",
+    "category": "Physics",
+    "tags": ["chaos", "dynamical systems"],
+    "difficulty": "Intermediate",
+    "description": "The original chaotic system — a butterfly-shaped trajectory that never repeats, from a simplified model of atmospheric convection.",
+    "status": "live"
+  },
+  {
+    "id": "gravity",
+    "title": "N-Body Gravity",
+    "category": "Physics",
+    "tags": ["mechanics", "astronomy", "chaos"],
+    "difficulty": "Beginner",
+    "description": "Bodies pulling on each other with Newtonian gravity — click to drop in new masses and watch orbits, captures, and ejections unfold.",
+    "status": "live"
+  },
+  {
+    "id": "reaction-diffusion",
+    "title": "Reaction-Diffusion",
+    "category": "Emergent Systems",
+    "tags": ["chemistry", "pattern formation", "cellular automaton"],
+    "difficulty": "Intermediate",
+    "description": "Two chemicals diffusing and reacting (Gray-Scott model) spontaneously form spots, stripes, and coral-like patterns — click presets or paint your own seeds.",
+    "status": "live"
+  },
+  {
+    "id": "pharmacokinetics",
+    "title": "Pharmacokinetics",
+    "category": "Physiology",
+    "tags": ["medicine", "compartment models", "dosing"],
+    "difficulty": "Intermediate",
+    "description": "Explore how drug concentration in the body changes over time under different dosing regimens.",
+    "status": "coming-soon"
+  }
+]

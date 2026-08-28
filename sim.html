@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimLearn</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <a href="index.html" class="logo">Sim<span>Learn</span></a>
+  <nav>
+    <a href="index.html">Simulations</a>
+    <a href="about.html">About</a>
+  </nav>
+</header>
+
+<div class="sim-header">
+  <a class="back" href="index.html">&larr; All simulations</a>
+  <h1 id="sim-title">Loading…</h1>
+  <p id="sim-desc"></p>
+</div>
+
+<div class="sim-frame-wrap">
+  <iframe id="sim-frame" class="sim-frame" title="Simulation" sandbox="allow-scripts allow-same-origin"></iframe>
+</div>
+
+<footer>
+  SimLearn &middot; <a href="about.html" style="color:inherit">About this project</a>
+</footer>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const frame = document.getElementById('sim-frame');
+
+  fetch('sims/manifest.json')
+    .then(r => r.json())
+    .then(sims => {
+      const sim = sims.find(s => s.id === id);
+      if (!sim) {
+        document.getElementById('sim-title').textContent = 'Simulation not found';
+        return;
+      }
+      document.getElementById('sim-title').textContent = sim.title;
+      document.getElementById('sim-desc').textContent = sim.description;
+      document.title = sim.title + ' — SimLearn';
+      frame.src = `sims/${sim.id}/index.html`;
+    });
+</script>
+</body>
+</html>

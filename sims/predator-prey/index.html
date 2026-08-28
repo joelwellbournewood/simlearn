@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Predator & Prey</title>
+<style>
+  html, body { margin:0; height:100%; background:#05070c; color:#e8ecf4; font-family: -apple-system, Segoe UI, Roboto, sans-serif; overflow:hidden; }
+  #wrap { display:flex; height:100%; flex-wrap:wrap; }
+  #canvas-holder { flex:1; min-width:300px; position:relative; }
+  canvas { display:block; width:100%; height:60%; background:#05070c; }
+  #chart { display:block; width:100%; height:40%; background:#0b0e16; border-top:1px solid #1f2636; }
+  #panel { width: 240px; padding: 14px 16px; background: #0b0e16; border-left: 1px solid #1f2636; overflow-y: auto; font-size: 13px; }
+  #panel h2 { font-size: 15px; margin: 0 0 8px; }
+  #panel p { color: #9aa5b8; line-height: 1.45; margin: 0 0 12px; }
+  .row { margin-bottom: 12px; }
+  .row label { display:flex; justify-content:space-between; margin-bottom:4px; color:#cfd6e4; }
+  .row input[type=range] { width: 100%; accent-color:#4fd1c5; }
+  button { width: 100%; background: #4fd1c5; border: none; color: #05070c; font-weight: 600; padding: 8px 0; border-radius: 8px; cursor: pointer; margin-top: 4px; }
+  .legend { display:flex; gap:14px; margin-top:6px; font-size:12px; }
+  .legend span { display:flex; align-items:center; gap:5px; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="canvas-holder">
+    <canvas id="c"></canvas>
+    <canvas id="chart"></canvas>
+  </div>
+  <div id="panel">
+    <h2>Predator &amp; Prey</h2>
+    <p>Agent-based version of the <b>Lotka–Volterra</b> predation model. Prey
+    (green) breed and roam; predators (red) chase, eat prey to gain energy,
+    and starve without food. Watch the population chart below settle into
+    the classic offset boom-bust cycle: prey rise &rarr; predators rise &rarr;
+    prey crash &rarr; predators crash &rarr; repeat.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:#5fe08a"></i>Prey</span>
+      <span><i class="dot" style="background:#ff6b6b"></i>Predators</span>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <label><span>Prey birth rate</span><span id="v-pb">0.02</span></label>
+      <input type="range" id="pb" min="0.005" max="0.05" step="0.005" value="0.02">
+    </div>
+    <div class="row">
+      <label><span>Predator death rate</span><span id="v-pd">0.01</span></label>
+      <input type="range" id="pd" min="0.002" max="0.03" step="0.002" value="0.01">
+    </div>
+    <div class="row">
+      <label><span>Predator efficiency</span><span id="v-pe">0.6</span></label>
+      <input type="range" id="pe" min="0.1" max="1" step="0.05" value="0.6">
+    </div>
+    <button id="reset">Restart</button>
+    <p style="margin-top:16px">Try pushing predator efficiency high: predators
+    overhunt, crash, and prey rebound explosively before the cycle repeats.</p>
+  </div>
+</div>
+<script src="predprey.js"></script>
+</body>
+</html>
