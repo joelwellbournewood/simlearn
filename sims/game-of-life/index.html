@@ -1,0 +1,94 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Game of Life</title>
+<style>
+html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
+#wrap{display:flex;height:100%}
+#canvas-holder{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:pointer}
+#panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+#panel h2{font-size:15px;margin:0 0 8px}
+#panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
+.row{margin-bottom:12px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
+.row input[type=range]{width:100%;accent-color:#4fd1c5}
+button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
+</style></head><body>
+<div id="wrap">
+<div id="canvas-holder"><canvas id="c"></canvas></div>
+<div id="panel">
+<h2>Conway's Game of Life</h2>
+<p>A cell is born if it has exactly 3 live neighbors, survives with 2 or 3, and dies otherwise. No randomness, no central plan — just complex patterns emerging from one rule. Click cells to draw. Model: John Conway, 1970.</p>
+<div class="row"><label><span>Speed</span><span id="v-speed">10</span></label><input type="range" id="speed" min="1" max="60" step="1" value="10"></div>
+<button id="playpause">Pause</button>
+<button class="secondary" id="randomize">Randomize</button>
+<button class="secondary" id="clear">Clear</button>
+<button class="secondary" id="glider">Add Glider Gun</button>
+<p style="margin-top:16px">Try clearing the board and adding a glider gun to watch it fire gliders forever.</p>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const cell=10;
+let cols,rows,grid,running=true,speed=10,acc=0,last=performance.now();
+
+function resize(){
+  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
+  cols=Math.floor(canvas.width/cell); rows=Math.floor(canvas.height/cell);
+  grid=makeGrid(); randomize();
+}
+function makeGrid(){ return new Uint8Array(cols*rows); }
+function idx(x,y){ return ((y+rows)%rows)*cols + ((x+cols)%cols); }
+function randomize(){ for(let i=0;i<grid.length;i++) grid[i]=Math.random()<0.18?1:0; draw(); }
+function clearGrid(){ grid=makeGrid(); draw(); }
+
+function step(){
+  const next=makeGrid();
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      let n=0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        if(dx===0&&dy===0) continue;
+        n+=grid[idx(x+dx,y+dy)];
+      }
+      const alive=grid[idx(x,y)];
+      next[idx(x,y)] = (alive && (n===2||n===3)) || (!alive && n===3) ? 1 : 0;
+    }
+  }
+  grid=next;
+}
+function draw(){
+  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#4fd1c5';
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++)
+    if(grid[idx(x,y)]) ctx.fillRect(x*cell,y*cell,cell-1,cell-1);
+}
+function loop(t){
+  const dt=t-last; last=t;
+  if(running){
+    acc+=dt;
+    const interval=1000/speed;
+    if(acc>interval){ acc=0; step(); draw(); }
+  }
+  requestAnimationFrame(loop);
+}
+canvas.addEventListener('click', e=>{
+  const r=canvas.getBoundingClientRect();
+  const x=Math.floor((e.clientX-r.left)/cell), y=Math.floor((e.clientY-r.top)/cell);
+  grid[idx(x,y)]=grid[idx(x,y)]?0:1; draw();
+});
+document.getElementById('speed').addEventListener('input', e=>{ speed=+e.target.value; document.getElementById('v-speed').textContent=speed; });
+document.getElementById('playpause').addEventListener('click', e=>{ running=!running; e.target.textContent = running?'Pause':'Play'; });
+document.getElementById('randomize').addEventListener('click', randomize);
+document.getElementById('clear').addEventListener('click', clearGrid);
+document.getElementById('glider').addEventListener('click', ()=>{
+  clearGrid();
+  const gun=[[1,5],[1,6],[2,5],[2,6],[11,5],[11,6],[11,7],[12,4],[12,8],[13,3],[13,9],[14,3],[14,9],[15,6],[16,4],[16,8],[16,5],[16,6],[16,7],[17,6],[18,3],[18,4],[18,5],[19,3],[19,4],[19,5],[20,2],[20,6],[21,1],[21,7],[22,1],[22,7],[23,4],[24,2],[24,3],[24,4],[24,5],[24,6],[25,4],[35,2],[35,3],[36,2],[36,3]];
+  gun.forEach(([x,y])=>{ if(x<cols&&y<rows) grid[idx(x+2,y+2)]=1; });
+  draw();
+});
+window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(loop);
+</script>
+</body></html>
