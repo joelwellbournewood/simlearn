@@ -1,0 +1,97 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Schelling Segregation</title>
+<style>
+html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
+#wrap{display:flex;height:100%}
+#canvas-holder{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%;background:#0d1220}
+#panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+#panel h2{font-size:15px;margin:0 0 8px}
+#panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
+.row{margin-bottom:12px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
+.row input[type=range]{width:100%;accent-color:#4fd1c5}
+button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+#stats{color:#cfd6e4;margin-top:10px}
+</style></head><body>
+<div id="wrap">
+<div id="canvas-holder"><canvas id="c"></canvas></div>
+<div id="panel">
+<h2>Schelling's Segregation Model</h2>
+<p>Two groups of agents on a grid. Each just wants a fraction of neighbors like itself — a mild preference, not hostility. Yet the whole grid ends up sharply segregated. No agent aims for that outcome. Thomas Schelling, 1971.</p>
+<div class="row"><label><span>Tolerance (want ≥ this fraction similar)</span><span id="v-tol">0.3</span></label><input type="range" id="tol" min="0" max="1" step="0.05" value="0.3"></div>
+<div class="row"><label><span>Empty cells</span><span id="v-empty">0.15</span></label><input type="range" id="empty" min="0.05" max="0.4" step="0.05" value="0.15"></div>
+<button id="reset">Restart</button>
+<div id="stats">Unhappy: <span id="unhappy">0</span>%</div>
+<p style="margin-top:16px">Set tolerance near 0 and almost no one moves. Set it to ~0.4-0.5 and total segregation appears within seconds.</p>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const cell=10; let cols,rows,grid,tol=0.3,emptyFrac=0.15;
+
+function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; cols=Math.floor(canvas.width/cell); rows=Math.floor(canvas.height/cell); }
+function idx(x,y){ return y*cols+x; }
+function init(){
+  tol=+document.getElementById('tol').value;
+  emptyFrac=+document.getElementById('empty').value;
+  grid=new Uint8Array(cols*rows);
+  for(let i=0;i<grid.length;i++){
+    const r=Math.random();
+    grid[i] = r<emptyFrac ? 0 : (r<emptyFrac+(1-emptyFrac)/2 ? 1 : 2);
+  }
+  draw();
+}
+function neighbors(x,y){
+  let same=0, other=0;
+  for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+    if(dx===0&&dy===0) continue;
+    const nx=x+dx, ny=y+dy;
+    if(nx<0||ny<0||nx>=cols||ny>=rows) continue;
+    const v=grid[idx(nx,ny)];
+    if(v===0) continue;
+    if(v===grid[idx(x,y)]) same++; else other++;
+  }
+  return {same, other};
+}
+function step(){
+  const emptyCells=[]; for(let i=0;i<grid.length;i++) if(grid[i]===0) emptyCells.push(i);
+  let unhappyCount=0, occupied=0;
+  const moves=[];
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++){
+    const me=grid[idx(x,y)]; if(me===0) continue;
+    occupied++;
+    const {same,other}=neighbors(x,y);
+    const total=same+other;
+    if(total>0 && same/total < tol){
+      unhappyCount++;
+      if(Math.random()<0.6 && emptyCells.length){
+        const ei=Math.floor(Math.random()*emptyCells.length);
+        moves.push([idx(x,y), emptyCells[ei]]);
+        emptyCells.splice(ei,1);
+      }
+    }
+  }
+  moves.forEach(([from,to])=>{ grid[to]=grid[from]; grid[from]=0; emptyCells.push(from); });
+  document.getElementById('unhappy').textContent = occupied? Math.round(100*unhappyCount/occupied) : 0;
+}
+function draw(){
+  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++){
+    const v=grid[idx(x,y)]; if(v===0) continue;
+    ctx.fillStyle = v===1 ? '#4fd1c5' : '#e6c34f';
+    ctx.fillRect(x*cell,y*cell,cell-1,cell-1);
+  }
+}
+document.getElementById('reset').addEventListener('click', init);
+document.getElementById('tol').addEventListener('input', e=>{ document.getElementById('v-tol').textContent=e.target.value; });
+document.getElementById('empty').addEventListener('input', e=>{ document.getElementById('v-empty').textContent=e.target.value; });
+window.addEventListener('resize', ()=>{ resize(); init(); });
+resize(); init();
+let lastT=performance.now();
+function throttledLoop(t){
+  if(t-lastT>60){ lastT=t; step(); draw(); }
+  requestAnimationFrame(throttledLoop);
+}
+requestAnimationFrame(throttledLoop);
+</script>
+</body></html>
