@@ -1,0 +1,95 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Epidemic Spread</title>
+<style>
+html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
+#wrap{display:flex;height:100%}
+#canvas-holder{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%;background:#0d1220}
+#panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+#panel h2{font-size:15px;margin:0 0 8px}
+#panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
+.row{margin-bottom:12px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
+.row input[type=range]{width:100%;accent-color:#4fd1c5}
+button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+#stats span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+#stats div{margin:4px 0}
+</style></head><body>
+<div id="wrap">
+<div id="canvas-holder"><canvas id="c"></canvas></div>
+<div id="panel">
+<h2>Epidemic Spread (SIR)</h2>
+<p>Dots wander randomly. Infected dots (red) pass the disease to susceptible ones (blue) on contact, then recover (green) after a while and become immune. Watch how infectiousness and a recovery-time slider change whether the outbreak burns out or explodes.</p>
+<div class="row"><label><span>Infection radius</span><span id="v-rad">12</span></label><input type="range" id="rad" min="4" max="30" step="1" value="12"></div>
+<div class="row"><label><span>Infection chance</span><span id="v-pinf">0.4</span></label><input type="range" id="pinf" min="0.05" max="1" step="0.05" value="0.4"></div>
+<div class="row"><label><span>Recovery time (steps)</span><span id="v-rec">300</span></label><input type="range" id="rec" min="60" max="600" step="20" value="300"></div>
+<button id="reset">Restart Outbreak</button>
+<div id="stats">
+<div><span style="background:#4f8ce6"></span>Susceptible: <b id="s-count">0</b></div>
+<div><span style="background:#e65f5f"></span>Infected: <b id="i-count">0</b></div>
+<div><span style="background:#4fd196"></span>Recovered: <b id="r-count">0</b></div>
+</div>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let N=150, rad=12, pinf=0.4, recTime=300;
+let px,py,vx,vy,state,timer;
+
+function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
+function init(){
+  rad=+document.getElementById('rad').value;
+  pinf=+document.getElementById('pinf').value;
+  recTime=+document.getElementById('rec').value;
+  px=[];py=[];vx=[];vy=[];state=[];timer=[];
+  for(let i=0;i<N;i++){
+    px.push(Math.random()*canvas.width); py.push(Math.random()*canvas.height);
+    const ang=Math.random()*Math.PI*2;
+    vx.push(Math.cos(ang)*1.2); vy.push(Math.sin(ang)*1.2);
+    state.push(i<3?1:0); timer.push(0);
+  }
+}
+function step(){
+  for(let i=0;i<N;i++){
+    px[i]+=vx[i]; py[i]+=vy[i];
+    if(px[i]<0||px[i]>canvas.width) vx[i]*=-1;
+    if(py[i]<0||py[i]>canvas.height) vy[i]*=-1;
+    px[i]=Math.max(0,Math.min(canvas.width,px[i]));
+    py[i]=Math.max(0,Math.min(canvas.height,py[i]));
+    if(state[i]===1){
+      timer[i]++;
+      if(timer[i]>recTime) state[i]=2;
+    }
+  }
+  for(let i=0;i<N;i++){
+    if(state[i]!==1) continue;
+    for(let j=0;j<N;j++){
+      if(state[j]!==0) continue;
+      const dx=px[i]-px[j], dy=py[i]-py[j];
+      if(dx*dx+dy*dy < rad*rad && Math.random()<pinf) state[j]=1;
+    }
+  }
+}
+function draw(){
+  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  let s=0,inf=0,r=0;
+  for(let i=0;i<N;i++){
+    ctx.fillStyle = state[i]===0?'#4f8ce6':(state[i]===1?'#e65f5f':'#4fd196');
+    ctx.beginPath(); ctx.arc(px[i],py[i],4,0,Math.PI*2); ctx.fill();
+    if(state[i]===0) s++; else if(state[i]===1) inf++; else r++;
+  }
+  document.getElementById('s-count').textContent=s;
+  document.getElementById('i-count').textContent=inf;
+  document.getElementById('r-count').textContent=r;
+}
+function loop(){ step(); draw(); requestAnimationFrame(loop); }
+document.getElementById('reset').addEventListener('click', init);
+['rad','pinf','rec'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    document.getElementById('v-'+({rad:'rad',pinf:'pinf',rec:'rec'})[id]).textContent=e.target.value;
+  });
+});
+window.addEventListener('resize', ()=>{ resize(); init(); });
+resize(); init();
+requestAnimationFrame(loop);
+</script>
+</body></html>
