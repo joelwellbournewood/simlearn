@@ -3,8 +3,8 @@
 html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
 #wrap{display:flex;height:100%}
 #canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#0d1220}
-#panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
+#panel{width:250px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
 #panel h2{font-size:15px;margin:0 0 8px}
 #panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
 .row{margin-bottom:12px}
@@ -12,64 +12,98 @@ canvas{display:block;width:100%;height:100%;background:#0d1220}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
 button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
+button.twin{background:#e6c34f}
+#hint{position:absolute;bottom:10px;left:12px;color:#5c6780;font-size:12px;pointer-events:none}
 </style></head><body>
 <div id="wrap">
-<div id="canvas-holder"><canvas id="c"></canvas></div>
+<div id="canvas-holder"><canvas id="c"></canvas><div id="hint">Click anywhere to swing the pendulum from that angle</div></div>
 <div id="panel">
 <h2>Double Pendulum: Chaos</h2>
 <p>A rod with a rod hanging off it. Fully deterministic physics — no randomness anywhere — yet two runs started a hair's breadth apart diverge completely within seconds. This is the signature of chaos: sensitive dependence on initial conditions.</p>
 <div class="row"><label><span>Gravity</span><span id="v-g">1.0</span></label><input type="range" id="g" min="0.2" max="2" step="0.1" value="1.0"></div>
+<div class="row"><label><span>Upper rod length</span><span id="v-l1">120</span></label><input type="range" id="l1" min="60" max="180" step="5" value="120"></div>
+<div class="row"><label><span>Lower rod length</span><span id="v-l2">120</span></label><input type="range" id="l2" min="60" max="180" step="5" value="120"></div>
 <button id="reset">Restart (random tiny nudge)</button>
+<button class="twin" id="twinbtn">Release a Twin</button>
 <button class="secondary" id="trail">Toggle Trail</button>
-<p style="margin-top:16px">Click Restart repeatedly: each run starts almost identically but the paths splay out wildly within a few seconds.</p>
+<p style="margin-top:12px" id="twin-p">"Release a Twin" starts a second pendulum 0.5° away from the first. Watch the two golden/teal paths ride together, then rip apart — that's the butterfly effect, not a bug.</p>
 </div>
 </div>
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let g=1.0, showTrail=true, trail=[];
-const L1=120, L2=120, m1=10, m2=10;
-let a1,a2,a1v,a2v;
+let g=1.0, showTrail=true;
+let L1=120, L2=120; const m1=10, m2=10;
+
+function makeBob(a1,a2){ return {a1,a2,a1v:0,a2v:0,trail:[]}; }
+let bob, twin=null;
 
 function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
-function init(){
+function init(a1seed, a2seed){
   g=+document.getElementById('g').value;
-  a1 = Math.PI/2 + (Math.random()-0.5)*0.02;
-  a2 = Math.PI/2 + (Math.random()-0.5)*0.02;
-  a1v=0; a2v=0; trail=[];
+  L1=+document.getElementById('l1').value;
+  L2=+document.getElementById('l2').value;
+  const a1 = a1seed!==undefined ? a1seed : Math.PI/2 + (Math.random()-0.5)*0.02;
+  const a2 = a2seed!==undefined ? a2seed : Math.PI/2 + (Math.random()-0.5)*0.02;
+  bob = makeBob(a1,a2);
+  twin = null;
+  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
 }
-function step(dt){
+function step(b,dt){
+  const {a1,a2,a1v,a2v} = b;
   const num1 = -g*(2*m1+m2)*Math.sin(a1) - m2*g*Math.sin(a1-2*a2) - 2*Math.sin(a1-a2)*m2*(a2v*a2v*L2+a1v*a1v*L1*Math.cos(a1-a2));
   const den1 = L1*(2*m1+m2-m2*Math.cos(2*a1-2*a2));
   const a1a = num1/den1;
   const num2 = 2*Math.sin(a1-a2)*(a1v*a1v*L1*(m1+m2)+g*(m1+m2)*Math.cos(a1)+a2v*a2v*L2*m2*Math.cos(a1-a2));
   const den2 = L2*(2*m1+m2-m2*Math.cos(2*a1-2*a2));
   const a2a = num2/den2;
-  a1v+=a1a*dt; a2v+=a2a*dt;
-  a1+=a1v*dt; a2+=a2v*dt;
+  b.a1v+=a1a*dt; b.a2v+=a2a*dt;
+  b.a1+=b.a1v*dt; b.a2+=b.a2v*dt;
+}
+function pos(b, ox, oy){
+  const x1=ox+L1*Math.sin(b.a1), y1=oy+L1*Math.cos(b.a1);
+  const x2=x1+L2*Math.sin(b.a2), y2=y1+L2*Math.cos(b.a2);
+  return {x1,y1,x2,y2};
+}
+function drawOne(b, ox, oy, boldColor, jointColor, tipColor){
+  const {x1,y1,x2,y2} = pos(b,ox,oy);
+  if(showTrail){
+    b.trail.push([x2,y2]); if(b.trail.length>600) b.trail.shift();
+    ctx.strokeStyle=tipColor.trail; ctx.lineWidth=1.5; ctx.beginPath();
+    b.trail.forEach(([tx,ty],i)=>{ i===0?ctx.moveTo(tx,ty):ctx.lineTo(tx,ty); }); ctx.stroke();
+  }
+  ctx.strokeStyle=boldColor; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.fillStyle=jointColor; ctx.beginPath(); ctx.arc(x1,y1,7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=tipColor.fill; ctx.beginPath(); ctx.arc(x2,y2,7,0,Math.PI*2); ctx.fill();
 }
 function draw(){
   ctx.fillStyle='rgba(13,18,32,0.25)'; ctx.fillRect(0,0,canvas.width,canvas.height);
   const ox=canvas.width/2, oy=canvas.height/3;
-  const x1=ox+L1*Math.sin(a1), y1=oy+L1*Math.cos(a1);
-  const x2=x1+L2*Math.sin(a2), y2=y1+L2*Math.cos(a2);
-  if(showTrail){
-    trail.push([x2,y2]); if(trail.length>600) trail.shift();
-    ctx.strokeStyle='rgba(79,209,197,0.5)'; ctx.lineWidth=1.5; ctx.beginPath();
-    trail.forEach(([tx,ty],i)=>{ i===0?ctx.moveTo(tx,ty):ctx.lineTo(tx,ty); }); ctx.stroke();
-  }
-  ctx.strokeStyle='#cfd6e4'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  ctx.fillStyle='#e6c34f'; ctx.beginPath(); ctx.arc(x1,y1,7,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#4fd1c5'; ctx.beginPath(); ctx.arc(x2,y2,7,0,Math.PI*2); ctx.fill();
+  drawOne(bob, ox, oy, '#cfd6e4', '#e6c34f', {fill:'#4fd1c5', trail:'rgba(79,209,197,0.5)'});
+  if(twin) drawOne(twin, ox, oy, '#8892a8', '#e6c34f', {fill:'#ff8a5c', trail:'rgba(255,138,92,0.5)'});
 }
 function loop(){
-  for(let i=0;i<3;i++) step(0.03);
+  for(let i=0;i<3;i++){ step(bob,0.03); if(twin) step(twin,0.03); }
   draw();
   requestAnimationFrame(loop);
 }
-document.getElementById('reset').addEventListener('click', ()=>{ trail=[]; ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height); init(); });
+document.getElementById('reset').addEventListener('click', ()=>{ init(); });
+document.getElementById('twinbtn').addEventListener('click', ()=>{
+  twin = makeBob(bob.a1 + 0.5*Math.PI/180, bob.a2);
+  twin.a1v = bob.a1v; twin.a2v = bob.a2v;
+});
 document.getElementById('trail').addEventListener('click', ()=>{ showTrail=!showTrail; });
 document.getElementById('g').addEventListener('input', e=>{ document.getElementById('v-g').textContent=e.target.value; g=+e.target.value; });
+document.getElementById('l1').addEventListener('input', e=>{ document.getElementById('v-l1').textContent=e.target.value; L1=+e.target.value; });
+document.getElementById('l2').addEventListener('input', e=>{ document.getElementById('v-l2').textContent=e.target.value; L2=+e.target.value; });
+canvas.addEventListener('click', (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  const ox=canvas.width/2, oy=canvas.height/3;
+  const cx = (e.clientX-rect.left) * (canvas.width/rect.width);
+  const cy = (e.clientY-rect.top) * (canvas.height/rect.height);
+  const a1 = Math.atan2(cx-ox, cy-oy);
+  init(a1, a1 + 0.05);
+});
 window.addEventListener('resize', resize);
 resize(); init();
 requestAnimationFrame(loop);
