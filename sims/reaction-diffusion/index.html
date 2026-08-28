@@ -1,0 +1,132 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reaction-Diffusion</title>
+<style>
+html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
+#wrap{display:flex;height:100%}
+#canvas-holder{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%;background:#0d1220;image-rendering:pixelated}
+#panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+#panel h2{font-size:15px;margin:0 0 8px}
+#panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
+.row{margin-bottom:12px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
+.row input[type=range]{width:100%;accent-color:#4fd1c5}
+select{width:100%;background:#111726;color:#e8ecf4;border:1px solid #263047;border-radius:6px;padding:6px;margin-bottom:4px}
+button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:8px}
+button.secondary{background:#1f2636;color:#e8ecf4;margin-top:6px}
+</style></head><body>
+<div id="wrap">
+<div id="canvas-holder"><canvas id="c"></canvas></div>
+<div id="panel">
+<h2>Reaction-Diffusion</h2>
+<p>Two virtual chemicals, A and B, diffuse and react (Gray-Scott model). B feeds on A and decays; tiny random seeds grow into spots, stripes, coral, or spirals depending on the two rates below. Click/drag on the canvas to seed more.</p>
+<div class="row"><label><span>Preset</span></label>
+<select id="preset">
+<option value="coral">Coral</option>
+<option value="spots">Spots</option>
+<option value="stripes">Stripes</option>
+<option value="mitosis">Mitosis</option>
+<option value="waves">Waves</option>
+</select></div>
+<div class="row"><label><span>Feed rate (F)</span><span id="v-f">0.037</span></label><input type="range" id="f" min="0.01" max="0.08" step="0.001" value="0.037"></div>
+<div class="row"><label><span>Kill rate (k)</span><span id="v-k">0.06</span></label><input type="range" id="k" min="0.03" max="0.08" step="0.001" value="0.06"></div>
+<button id="reseed">Reseed</button>
+<button id="clear" class="secondary">Clear</button>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const N=150;
+let A=new Float32Array(N*N), B=new Float32Array(N*N);
+let A2=new Float32Array(N*N), B2=new Float32Array(N*N);
+const dA=1.0, dB=0.5;
+let F=0.037, K=0.06;
+let imgData;
+
+const presets={
+  coral:{f:0.037,k:0.06},
+  spots:{f:0.03,k:0.062},
+  stripes:{f:0.026,k:0.052},
+  mitosis:{f:0.028,k:0.062},
+  waves:{f:0.014,k:0.054}
+};
+
+function idx(x,y){ x=(x+N)%N; y=(y+N)%N; return y*N+x; }
+
+function seedBlob(cx,cy,r){
+  for(let y=-r;y<=r;y++) for(let x=-r;x<=r;x++){
+    if(x*x+y*y<=r*r){ B[idx(cx+x,cy+y)]=1; }
+  }
+}
+
+function init(){
+  A.fill(1); B.fill(0);
+  for(let i=0;i<8;i++){
+    seedBlob((Math.random()*N)|0,(Math.random()*N)|0, 4+((Math.random()*4)|0));
+  }
+}
+
+function step(){
+  for(let y=0;y<N;y++){
+    for(let x=0;x<N;x++){
+      const i=idx(x,y);
+      const a=A[i], b=B[i];
+      const lapA = A[idx(x-1,y)]+A[idx(x+1,y)]+A[idx(x,y-1)]+A[idx(x,y+1)] - 4*a;
+      const lapB = B[idx(x-1,y)]+B[idx(x+1,y)]+B[idx(x,y-1)]+B[idx(x,y+1)] - 4*b;
+      const reaction = a*b*b;
+      A2[i] = a + (dA*lapA - reaction + F*(1-a));
+      B2[i] = b + (dB*lapB + reaction - (K+F)*b);
+    }
+  }
+  [A,A2]=[A2,A]; [B,B2]=[B2,B];
+}
+
+let off, offCtx;
+function resize(){
+  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
+  off = document.createElement('canvas'); off.width=N; off.height=N;
+  offCtx = off.getContext('2d');
+}
+
+function frame(){
+  for(let i=0;i<10;i++) step();
+  const d = offCtx.createImageData(N,N).data;
+  for(let i=0;i<N*N;i++){
+    const b=B[i];
+    const v = Math.max(0,Math.min(1, b*3.2));
+    d[i*4] = 10 + v*30;
+    d[i*4+1] = 12 + v*190;
+    d[i*4+2] = 20 + v*160;
+    d[i*4+3] = 255;
+  }
+  const id2 = new ImageData(d, N, N);
+  offCtx.putImageData(id2,0,0);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(off,0,0,canvas.width,canvas.height);
+  requestAnimationFrame(frame);
+}
+
+canvas.addEventListener('pointerdown', e=>seedFromEvent(e));
+canvas.addEventListener('pointermove', e=>{ if(e.buttons>0) seedFromEvent(e); });
+function seedFromEvent(e){
+  const rect=canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX-rect.left)/rect.width*N);
+  const y = Math.floor((e.clientY-rect.top)/rect.height*N);
+  seedBlob(x,y,3);
+}
+
+document.getElementById('preset').addEventListener('change', e=>{
+  const p=presets[e.target.value]; F=p.f; K=p.k;
+  document.getElementById('f').value=F; document.getElementById('k').value=K;
+  document.getElementById('v-f').textContent=F.toFixed(3);
+  document.getElementById('v-k').textContent=K.toFixed(3);
+});
+document.getElementById('f').addEventListener('input', e=>{ F=+e.target.value; document.getElementById('v-f').textContent=F.toFixed(3); });
+document.getElementById('k').addEventListener('input', e=>{ K=+e.target.value; document.getElementById('v-k').textContent=K.toFixed(3); });
+document.getElementById('reseed').addEventListener('click', init);
+document.getElementById('clear').addEventListener('click', ()=>{ A.fill(1); B.fill(0); });
+
+window.addEventListener('resize', resize);
+resize(); init();
+requestAnimationFrame(frame);
+</script>
+</body></html>
