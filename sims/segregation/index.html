@@ -3,15 +3,17 @@
 html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
 #wrap{display:flex;height:100%}
 #canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#0d1220}
-#panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
+#panel{width:250px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
 #panel h2{font-size:15px;margin:0 0 8px}
 #panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
 .row{margin-bottom:12px}
 .row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
-#stats{color:#cfd6e4;margin-top:10px}
+#stats{color:#cfd6e4;margin-top:10px;line-height:1.6}
+#stats b{font-size:16px}
+.hint{color:#6f7a91;font-size:12px;margin-top:8px}
 </style></head><body>
 <div id="wrap">
 <div id="canvas-holder"><canvas id="c"></canvas></div>
@@ -20,14 +22,19 @@ button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;p
 <p>Two groups of agents on a grid. Each just wants a fraction of neighbors like itself — a mild preference, not hostility. Yet the whole grid ends up sharply segregated. No agent aims for that outcome. Thomas Schelling, 1971.</p>
 <div class="row"><label><span>Tolerance (want ≥ this fraction similar)</span><span id="v-tol">0.3</span></label><input type="range" id="tol" min="0" max="1" step="0.05" value="0.3"></div>
 <div class="row"><label><span>Empty cells</span><span id="v-empty">0.15</span></label><input type="range" id="empty" min="0.05" max="0.4" step="0.05" value="0.15"></div>
-<button id="reset">Restart</button>
-<div id="stats">Unhappy: <span id="unhappy">0</span>%</div>
-<p style="margin-top:16px">Set tolerance near 0 and almost no one moves. Set it to ~0.4-0.5 and total segregation appears within seconds.</p>
+<button id="reset">Restart (new random grid)</button>
+<div id="stats">
+Unhappy agents: <b id="unhappy">0</b>%<br>
+Segregation index: <b id="segidx">0</b>%
+</div>
+<p class="hint">Click an occupied cell to uproot that agent to a random empty spot. Click an empty cell to drop a new agent (random group) there. Watch the segregation index react.</p>
+<p class="hint">Segregation index = average share of same-group neighbors across all agents. ~50% ≈ well-mixed by chance; &gt;70% = sharply segregated.</p>
 </div>
 </div>
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
 const cell=10; let cols,rows,grid,tol=0.3,emptyFrac=0.15;
+// grid values: 0 = empty, 1 = groupA, 2 = groupB
 
 function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; cols=Math.floor(canvas.width/cell); rows=Math.floor(canvas.height/cell); }
 function idx(x,y){ return y*cols+x; }
@@ -56,12 +63,14 @@ function neighbors(x,y){
 function step(){
   const emptyCells=[]; for(let i=0;i<grid.length;i++) if(grid[i]===0) emptyCells.push(i);
   let unhappyCount=0, occupied=0;
+  let segSum=0, segN=0;
   const moves=[];
   for(let y=0;y<rows;y++) for(let x=0;x<cols;x++){
     const me=grid[idx(x,y)]; if(me===0) continue;
     occupied++;
     const {same,other}=neighbors(x,y);
     const total=same+other;
+    if(total>0){ segSum += same/total; segN++; }
     if(total>0 && same/total < tol){
       unhappyCount++;
       if(Math.random()<0.6 && emptyCells.length){
@@ -73,6 +82,10 @@ function step(){
   }
   moves.forEach(([from,to])=>{ grid[to]=grid[from]; grid[from]=0; emptyCells.push(from); });
   document.getElementById('unhappy').textContent = occupied? Math.round(100*unhappyCount/occupied) : 0;
+  const segPct = segN ? Math.round(100*segSum/segN) : 0;
+  const segEl = document.getElementById('segidx');
+  segEl.textContent = segPct;
+  segEl.style.color = segPct>70 ? '#ff6b6b' : (segPct>40 ? '#e6c34f' : '#4fd1c5');
 }
 function draw(){
   ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -82,6 +95,29 @@ function draw(){
     ctx.fillRect(x*cell,y*cell,cell-1,cell-1);
   }
 }
+function cellAt(clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((clientX-rect.left) / cell);
+  const y = Math.floor((clientY-rect.top) / cell);
+  if(x<0||y<0||x>=cols||y>=rows) return null;
+  return {x,y};
+}
+canvas.addEventListener('click', e=>{
+  const c2 = cellAt(e.clientX, e.clientY);
+  if(!c2) return;
+  const i = idx(c2.x, c2.y);
+  if(grid[i]===0){
+    grid[i] = Math.random()<0.5 ? 1 : 2;
+  } else {
+    const emptyCells=[]; for(let k=0;k<grid.length;k++) if(grid[k]===0) emptyCells.push(k);
+    if(emptyCells.length){
+      const dest = emptyCells[Math.floor(Math.random()*emptyCells.length)];
+      grid[dest] = grid[i];
+    }
+    grid[i] = 0;
+  }
+  draw();
+});
 document.getElementById('reset').addEventListener('click', init);
 document.getElementById('tol').addEventListener('input', e=>{ document.getElementById('v-tol').textContent=e.target.value; });
 document.getElementById('empty').addEventListener('input', e=>{ document.getElementById('v-empty').textContent=e.target.value; });
