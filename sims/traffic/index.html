@@ -3,7 +3,7 @@
 html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
 #wrap{display:flex;height:100%}
 #canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#0d1220}
+canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
 #panel{width:240px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
 #panel h2{font-size:15px;margin:0 0 8px}
 #panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
@@ -11,22 +11,32 @@ canvas{display:block;width:100%;height:100%;background:#0d1220}
 .row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+#stats{background:#11172a;border:1px solid #1f2636;border-radius:8px;padding:10px 12px;margin-bottom:14px}
+#stats div{display:flex;justify-content:space-between;margin:3px 0}
+#stats span.v{color:#4fd1c5;font-weight:600}
+#hint{color:#e6c34f;font-size:12px;margin-top:6px}
 </style></head><body>
 <div id="wrap">
 <div id="canvas-holder"><canvas id="c"></canvas></div>
 <div id="panel">
 <h2>Traffic Jams from Nowhere</h2>
 <p>Cars on a circular road each try to speed up, but slow down if the gap to the car ahead shrinks. With enough density, jams form and travel <i>backward</i> through the traffic — with no accident, no obstacle, no reason. Nagel–Schreckenberg model, 1992.</p>
+<div id="stats">
+  <div>Avg speed <span class="v" id="s-speed">0.0</span></div>
+  <div>Flow (cars/tick) <span class="v" id="s-flow">0.0</span></div>
+  <div>Jammed cars <span class="v" id="s-jam">0</span></div>
+</div>
 <div class="row"><label><span>Car count</span><span id="v-n">40</span></label><input type="range" id="n" min="5" max="90" step="1" value="40"></div>
 <div class="row"><label><span>Max speed</span><span id="v-vmax">5</span></label><input type="range" id="vmax" min="2" max="8" step="1" value="5"></div>
 <div class="row"><label><span>Randomness (braking)</span><span id="v-p">0.3</span></label><input type="range" id="p" min="0" max="1" step="0.05" value="0.3"></div>
 <button id="reset">Restart</button>
-<p style="margin-top:16px">Push car count above ~55 and watch a permanent jam appear even though every driver is trying to go fast.</p>
+<p id="hint">Click any car on the ring to slam its brakes — watch a real jam propagate backward from that single tap.</p>
 </div>
 </div>
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
 let N=40, vmax=5, p=0.3, roadLen=200, pos=[], vel=[];
+let flowCount=0, flowWindow=[];
 
 function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
 function init(){
@@ -36,6 +46,7 @@ function init(){
   pos=[]; vel=[];
   const gap=roadLen/N;
   for(let i=0;i<N;i++){ pos.push(i*gap); vel.push(0); }
+  flowWindow=[];
 }
 function gapAhead(i){
   const next=(i+1)%N;
@@ -45,13 +56,28 @@ function gapAhead(i){
 }
 function step(){
   const order=[...Array(N).keys()].sort((a,b)=>pos[a]-pos[b]);
+  let crossings=0;
   for(const i of order){
     const g=gapAhead(i)-1;
     if(vel[i]<vmax) vel[i]++;
     if(vel[i]>g) vel[i]=Math.max(g,0);
     if(vel[i]>0 && Math.random()<p) vel[i]--;
   }
-  for(let i=0;i<N;i++){ pos[i]=(pos[i]+vel[i])%roadLen; if(pos[i]<0) pos[i]+=roadLen; }
+  for(let i=0;i<N;i++){
+    const before=pos[i];
+    pos[i]=(pos[i]+vel[i])%roadLen; if(pos[i]<0) pos[i]+=roadLen;
+    if(pos[i]<before) crossings++; // wrapped the start line = one "flow" unit
+  }
+  flowWindow.push(crossings);
+  if(flowWindow.length>60) flowWindow.shift();
+}
+function updateStats(){
+  const avgSpeed = vel.reduce((a,b)=>a+b,0)/N;
+  const flow = flowWindow.reduce((a,b)=>a+b,0)/Math.max(flowWindow.length,1);
+  const jammed = vel.filter(v=>v<vmax*0.3).length;
+  document.getElementById('s-speed').textContent=avgSpeed.toFixed(2);
+  document.getElementById('s-flow').textContent=flow.toFixed(2);
+  document.getElementById('s-jam').textContent=jammed;
 }
 function draw(){
   ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -65,7 +91,7 @@ function draw(){
     ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
   }
 }
-function loop(){ step(); draw(); requestAnimationFrame(loop); }
+function loop(){ step(); draw(); updateStats(); requestAnimationFrame(loop); }
 document.getElementById('reset').addEventListener('click', init);
 ['n','vmax','p'].forEach(id=>{
   document.getElementById(id).addEventListener('input', e=>{
@@ -74,6 +100,23 @@ document.getElementById('reset').addEventListener('click', init);
 });
 document.getElementById('n').addEventListener('change', init);
 document.getElementById('vmax').addEventListener('change', init);
+canvas.addEventListener('click', e=>{
+  const rect=canvas.getBoundingClientRect();
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const mx=(e.clientX-rect.left)*(canvas.width/rect.width)-cx;
+  const my=(e.clientY-rect.top)*(canvas.height/rect.height)-cy;
+  let clickAng=Math.atan2(my,mx)+Math.PI/2;
+  if(clickAng<0) clickAng+=Math.PI*2;
+  const clickFrac=clickAng/(Math.PI*2);
+  let best=0, bestD=Infinity;
+  for(let i=0;i<N;i++){
+    const frac=pos[i]/roadLen;
+    let d=Math.abs(frac-clickFrac);
+    d=Math.min(d,1-d);
+    if(d<bestD){ bestD=d; best=i; }
+  }
+  vel[best]=0;
+});
 window.addEventListener('resize', resize);
 resize(); init();
 requestAnimationFrame(loop);
