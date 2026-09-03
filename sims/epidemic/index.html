@@ -12,6 +12,7 @@ canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
 .row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
 #stats span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
 #stats div{margin:4px 0}
 #r0box{margin-top:10px;padding:10px;background:#131a2a;border-radius:8px;border:1px solid #23304a}
@@ -28,6 +29,7 @@ button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;p
 <div class="row"><label><span>Infection chance</span><span id="v-pinf">0.4</span></label><input type="range" id="pinf" min="0.05" max="1" step="0.05" value="0.4"></div>
 <div class="row"><label><span>Recovery time (steps)</span><span id="v-rec">300</span></label><input type="range" id="rec" min="60" max="600" step="20" value="300"></div>
 <button id="reset">Restart (no infections)</button>
+<button class="secondary" id="pause">Pause</button>
 <div id="stats">
 <div><span style="background:#4f8ce6"></span>Susceptible: <b id="s-count">0</b></div>
 <div><span style="background:#e65f5f"></span>Infected: <b id="i-count">0</b></div>
@@ -111,7 +113,9 @@ function draw(){
     r0el.style.color='#4fd1c5';
   }
 }
-function loop(){ step(); draw(); requestAnimationFrame(loop); }
+let paused=false;
+function loop(){ if(!paused){ step(); draw(); } requestAnimationFrame(loop); }
+document.getElementById('pause').addEventListener('click', ()=>{ paused=!paused; document.getElementById('pause').textContent = paused?'Resume':'Pause'; });
 document.getElementById('reset').addEventListener('click', init);
 ['pop','rad','pinf','rec'].forEach(id=>{
   document.getElementById(id).addEventListener('input', e=>{

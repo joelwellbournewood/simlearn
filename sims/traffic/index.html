@@ -11,6 +11,7 @@ canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
 .row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
 #stats{background:#11172a;border:1px solid #1f2636;border-radius:8px;padding:10px 12px;margin-bottom:14px}
 #stats div{display:flex;justify-content:space-between;margin:3px 0}
 #stats span.v{color:#4fd1c5;font-weight:600}
@@ -30,6 +31,7 @@ button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;p
 <div class="row"><label><span>Max speed</span><span id="v-vmax">5</span></label><input type="range" id="vmax" min="2" max="8" step="1" value="5"></div>
 <div class="row"><label><span>Randomness (braking)</span><span id="v-p">0.3</span></label><input type="range" id="p" min="0" max="1" step="0.05" value="0.3"></div>
 <button id="reset">Restart</button>
+<button class="secondary" id="pause">Pause</button>
 <p id="hint">Click any car on the ring to slam its brakes — watch a real jam propagate backward from that single tap.</p>
 </div>
 </div>
@@ -91,7 +93,9 @@ function draw(){
     ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
   }
 }
-function loop(){ step(); draw(); updateStats(); requestAnimationFrame(loop); }
+let paused=false;
+function loop(){ if(!paused){ step(); } draw(); updateStats(); requestAnimationFrame(loop); }
+document.getElementById('pause').addEventListener('click', ()=>{ paused=!paused; document.getElementById('pause').textContent = paused?'Resume':'Pause'; });
 document.getElementById('reset').addEventListener('click', init);
 ['n','vmax','p'].forEach(id=>{
   document.getElementById(id).addEventListener('input', e=>{

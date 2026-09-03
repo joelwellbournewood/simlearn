@@ -24,6 +24,7 @@ button.twin{background:#e6c34f}
 <div class="row"><label><span>Upper rod length</span><span id="v-l1">120</span></label><input type="range" id="l1" min="60" max="180" step="5" value="120"></div>
 <div class="row"><label><span>Lower rod length</span><span id="v-l2">120</span></label><input type="range" id="l2" min="60" max="180" step="5" value="120"></div>
 <button id="reset">Restart (random tiny nudge)</button>
+<button class="secondary" id="pause">Pause</button>
 <button class="twin" id="twinbtn">Release a Twin</button>
 <button class="secondary" id="trail">Toggle Trail</button>
 <p style="margin-top:12px" id="twin-p">"Release a Twin" starts a second pendulum 0.5° away from the first. Watch the two golden/teal paths ride together, then rip apart — that's the butterfly effect, not a bug.</p>
@@ -82,11 +83,12 @@ function draw(){
   drawOne(bob, ox, oy, '#cfd6e4', '#e6c34f', {fill:'#4fd1c5', trail:'rgba(79,209,197,0.5)'});
   if(twin) drawOne(twin, ox, oy, '#8892a8', '#e6c34f', {fill:'#ff8a5c', trail:'rgba(255,138,92,0.5)'});
 }
+let paused=false;
 function loop(){
-  for(let i=0;i<3;i++){ step(bob,0.03); if(twin) step(twin,0.03); }
-  draw();
+  if(!paused){ for(let i=0;i<3;i++){ step(bob,0.03); if(twin) step(twin,0.03); } draw(); }
   requestAnimationFrame(loop);
 }
+document.getElementById('pause').addEventListener('click', ()=>{ paused=!paused; document.getElementById('pause').textContent = paused?'Resume':'Pause'; });
 document.getElementById('reset').addEventListener('click', ()=>{ init(); });
 document.getElementById('twinbtn').addEventListener('click', ()=>{
   twin = makeBob(bob.a1 + 0.5*Math.PI/180, bob.a2);

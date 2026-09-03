@@ -124,12 +124,13 @@ function draw() {
   }
 }
 
+let paused = false;
 function loop() {
-  step();
-  draw();
-  if (prey.length === 0 && predators.length === 0) { init(); }
+  if (!paused) { step(); draw(); if (prey.length === 0 && predators.length === 0) { init(); } }
   requestAnimationFrame(loop);
 }
+const pauseBtn = document.getElementById('pause');
+if (pauseBtn) pauseBtn.addEventListener('click', () => { paused = !paused; pauseBtn.textContent = paused ? 'Resume' : 'Pause'; });
 
 init();
 requestAnimationFrame(loop);

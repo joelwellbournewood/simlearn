@@ -11,6 +11,7 @@ canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
 .row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
 #stats{color:#cfd6e4;margin-top:10px;line-height:1.6}
 #stats b{font-size:16px}
 .hint{color:#6f7a91;font-size:12px;margin-top:8px}
@@ -23,6 +24,7 @@ button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;p
 <div class="row"><label><span>Tolerance (want ≥ this fraction similar)</span><span id="v-tol">0.3</span></label><input type="range" id="tol" min="0" max="1" step="0.05" value="0.3"></div>
 <div class="row"><label><span>Empty cells</span><span id="v-empty">0.15</span></label><input type="range" id="empty" min="0.05" max="0.4" step="0.05" value="0.15"></div>
 <button id="reset">Restart (new random grid)</button>
+<button class="secondary" id="pause">Pause</button>
 <div id="stats">
 Unhappy agents: <b id="unhappy">0</b>%<br>
 Segregation index: <b id="segidx">0</b>%
@@ -124,10 +126,12 @@ document.getElementById('empty').addEventListener('input', e=>{ document.getElem
 window.addEventListener('resize', ()=>{ resize(); init(); });
 resize(); init();
 let lastT=performance.now();
+let paused=false;
 function throttledLoop(t){
-  if(t-lastT>60){ lastT=t; step(); draw(); }
+  if(t-lastT>60){ lastT=t; if(!paused){ step(); draw(); } }
   requestAnimationFrame(throttledLoop);
 }
+document.getElementById('pause').addEventListener('click', ()=>{ paused=!paused; document.getElementById('pause').textContent = paused?'Resume':'Pause'; });
 requestAnimationFrame(throttledLoop);
 </script>
 </body></html>
