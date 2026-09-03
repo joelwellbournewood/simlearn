@@ -5,131 +5,50 @@ html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans
 #canvas-holder{flex:1;position:relative}
 canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
 #hint{position:absolute;top:10px;left:10px;background:#0b0e16cc;border:1px solid #1f2636;border-radius:8px;padding:6px 10px;font-size:12px;color:#9aa5b8;pointer-events:none}
-#panel{width:250px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+#panel{width:260px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
 #panel h2{font-size:15px;margin:0 0 8px}
 #panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
-.row{margin-bottom:12px}
-.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
+.row{margin-bottom:10px}
+.row label{display:flex;justify-content:space-between;margin-bottom:3px;color:#cfd6e4}
 .row input[type=range]{width:100%;accent-color:#4fd1c5}
 button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
 button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
 #stats span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
-#stats div{margin:4px 0}
+#stats div{margin:3px 0}
 #r0box{margin-top:10px;padding:10px;background:#131a2a;border-radius:8px;border:1px solid #23304a}
 #r0box b{font-size:20px;color:#4fd1c5}
 #r0box div{color:#9aa5b8;font-size:11px;margin-top:2px}
+h3.sec{font-size:12px;color:#7f8ba3;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;border-top:1px solid #1f2636;padding-top:10px}
 </style></head><body>
 <div id="wrap">
-<div id="canvas-holder"><canvas id="c"></canvas><div id="hint">Click anywhere to infect that person (patient zero)</div></div>
+<div id="canvas-holder"><canvas id="c"></canvas><div id="hint">Click anywhere to infect the nearest person</div></div>
 <div id="panel">
 <h2>Epidemic Spread (SIR)</h2>
-<p>Dots wander randomly. Infected dots (red) pass the disease to susceptible ones (blue) on contact, then recover (green) after a while and become immune. Click the canvas to seed new patient-zeros yourself.</p>
-<div class="row"><label><span>Population</span><span id="v-pop">150</span></label><input type="range" id="pop" min="30" max="400" step="10" value="150"></div>
+<p>A classic SIR model made visible: <b style="color:#4f8ce6">susceptible</b> people wander until an <b style="color:#e65f5f">infected</b> one passes the disease on contact. The infected then <b style="color:#4fd196">recover</b> immune &mdash; or die. The chart along the bottom is the famous epidemic curve: try to flatten it with the intervention controls.</p>
+<h3 class="sec">Disease</h3>
+<div class="row"><label><span>Population</span><span id="v-pop">200</span></label><input type="range" id="pop" min="30" max="500" step="10" value="200"></div>
 <div class="row"><label><span>Infection radius</span><span id="v-rad">12</span></label><input type="range" id="rad" min="4" max="30" step="1" value="12"></div>
-<div class="row"><label><span>Infection chance</span><span id="v-pinf">0.4</span></label><input type="range" id="pinf" min="0.05" max="1" step="0.05" value="0.4"></div>
+<div class="row"><label><span>Infection chance</span><span id="v-pinf">0.30</span></label><input type="range" id="pinf" min="0.05" max="1" step="0.05" value="0.3"></div>
 <div class="row"><label><span>Recovery time (steps)</span><span id="v-rec">300</span></label><input type="range" id="rec" min="60" max="600" step="20" value="300"></div>
-<button id="reset">Restart (no infections)</button>
+<div class="row"><label><span>Mortality</span><span id="v-mort">5%</span></label><input type="range" id="mort" min="0" max="50" step="1" value="5"></div>
+<h3 class="sec">Interventions</h3>
+<div class="row"><label><span>Social distancing</span><span id="v-dist">0%</span></label><input type="range" id="dist" min="0" max="90" step="5" value="0"></div>
+<div class="row"><label><span>Vaccinated at start</span><span id="v-vax">0%</span></label><input type="range" id="vax" min="0" max="90" step="5" value="0"></div>
+<button id="reset">Restart outbreak</button>
 <button class="secondary" id="pause">Pause</button>
+<h3 class="sec">Live counts</h3>
 <div id="stats">
 <div><span style="background:#4f8ce6"></span>Susceptible: <b id="s-count">0</b></div>
-<div><span style="background:#e65f5f"></span>Infected: <b id="i-count">0</b></div>
+<div><span style="background:#e65f5f"></span>Infected: <b id="i-count">0</b> (peak <b id="peak-count">0</b>)</div>
 <div><span style="background:#4fd196"></span>Recovered: <b id="r-count">0</b></div>
+<div><span style="background:#e6c04f"></span>Vaccinated: <b id="v-count">0</b></div>
+<div><span style="background:#5a6273"></span>Dead: <b id="d-count">0</b></div>
 </div>
 <div id="r0box">
-<b id="r0-val">–</b> effective R
-<div>average number of others each recovered case infected before recovering. Above 1 → outbreak grows. Below 1 → it dies out.</div>
+<b id="r0-val">&ndash;</b> effective R
+<div>average number of people each case infected. Above 1 &rarr; the outbreak grows; below 1 &rarr; it dies out. Distancing and vaccination push it down.</div>
 </div>
 </div>
 </div>
-<script>
-const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let N=150, rad=12, pinf=0.4, recTime=300;
-let px,py,vx,vy,state,timer,spreadCount; // state: 0=S,1=I,2=R
-let completedSpreads=[]; // spreadCount recorded at moment of recovery, for R readout
-
-function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
-function init(){
-  N=+document.getElementById('pop').value;
-  rad=+document.getElementById('rad').value;
-  pinf=+document.getElementById('pinf').value;
-  recTime=+document.getElementById('rec').value;
-  px=[];py=[];vx=[];vy=[];state=[];timer=[];spreadCount=[];
-  completedSpreads=[];
-  for(let i=0;i<N;i++){
-    px.push(Math.random()*canvas.width); py.push(Math.random()*canvas.height);
-    const ang=Math.random()*Math.PI*2;
-    vx.push(Math.cos(ang)*1.2); vy.push(Math.sin(ang)*1.2);
-    state.push(0); timer.push(0); spreadCount.push(0);
-  }
-}
-function seedAt(x,y){
-  let best=-1, bd=Infinity;
-  for(let i=0;i<N;i++){
-    if(state[i]!==0) continue;
-    const dx=px[i]-x, dy=py[i]-y, d=dx*dx+dy*dy;
-    if(d<bd){bd=d;best=i;}
-  }
-  if(best>=0){ state[best]=1; timer[best]=0; spreadCount[best]=0; }
-}
-function step(){
-  for(let i=0;i<N;i++){
-    px[i]+=vx[i]; py[i]+=vy[i];
-    if(px[i]<0||px[i]>canvas.width) vx[i]*=-1;
-    if(py[i]<0||py[i]>canvas.height) vy[i]*=-1;
-    px[i]=Math.max(0,Math.min(canvas.width,px[i]));
-    py[i]=Math.max(0,Math.min(canvas.height,py[i]));
-    if(state[i]===1){
-      timer[i]++;
-      if(timer[i]>recTime){ state[i]=2; completedSpreads.push(spreadCount[i]); if(completedSpreads.length>200) completedSpreads.shift(); }
-    }
-  }
-  for(let i=0;i<N;i++){
-    if(state[i]!==1) continue;
-    for(let j=0;j<N;j++){
-      if(state[j]!==0) continue;
-      const dx=px[i]-px[j], dy=py[i]-py[j];
-      if(dx*dx+dy*dy < rad*rad && Math.random()<pinf){ state[j]=1; timer[j]=0; spreadCount[j]=0; spreadCount[i]++; }
-    }
-  }
-}
-function draw(){
-  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  let s=0,inf=0,r=0;
-  for(let i=0;i<N;i++){
-    ctx.fillStyle = state[i]===0?'#4f8ce6':(state[i]===1?'#e65f5f':'#4fd196');
-    ctx.beginPath(); ctx.arc(px[i],py[i],4,0,Math.PI*2); ctx.fill();
-    if(state[i]===0) s++; else if(state[i]===1) inf++; else r++;
-  }
-  document.getElementById('s-count').textContent=s;
-  document.getElementById('i-count').textContent=inf;
-  document.getElementById('r-count').textContent=r;
-  const r0el=document.getElementById('r0-val');
-  if(completedSpreads.length>=5){
-    const avg=completedSpreads.reduce((a,b)=>a+b,0)/completedSpreads.length;
-    r0el.textContent=avg.toFixed(2);
-    r0el.style.color = avg>1 ? '#e65f5f' : '#4fd196';
-  } else {
-    r0el.textContent='–';
-    r0el.style.color='#4fd1c5';
-  }
-}
-let paused=false;
-function loop(){ if(!paused){ step(); draw(); } requestAnimationFrame(loop); }
-document.getElementById('pause').addEventListener('click', ()=>{ paused=!paused; document.getElementById('pause').textContent = paused?'Resume':'Pause'; });
-document.getElementById('reset').addEventListener('click', init);
-['pop','rad','pinf','rec'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', e=>{
-    const map={pop:'pop',rad:'rad',pinf:'pinf',rec:'rec'};
-    document.getElementById('v-'+map[id]).textContent=e.target.value;
-    if(id==='pop') init();
-  });
-});
-canvas.addEventListener('click', e=>{
-  const r=canvas.getBoundingClientRect();
-  seedAt((e.clientX-r.left)*canvas.width/r.width, (e.clientY-r.top)*canvas.height/r.height);
-});
-window.addEventListener('resize', ()=>{ resize(); init(); });
-resize(); init();
-requestAnimationFrame(loop);
-</script>
+<script src="epidemic.js"></script>
 </body></html>
