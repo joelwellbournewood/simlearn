@@ -1,15 +1,16 @@
 [
   {
     "id": "boids",
-    "title": "Boids: Flocking Simulation",
+    "title": "Boids: Three Rules, One Flock",
     "category": "Emergent Systems",
     "tags": [
       "agent-based",
       "emergence",
-      "biology"
+      "biology",
+      "3d"
     ],
     "difficulty": "Beginner",
-    "description": "Simple local rules — separation, alignment, cohesion — produce realistic flocking behavior. Based on Craig Reynolds' 1987 model.",
+    "description": "Separation, alignment and cohesion are all it takes to make a flock. Ten presets, 2D and 3D, plus predators, obstacles and hidden currents you can paint into the sky.",
     "status": "live"
   },
   {
