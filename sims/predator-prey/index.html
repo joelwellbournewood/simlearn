@@ -84,7 +84,7 @@
     text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
   .stat .v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
-  .dot.h{background:var(--hare)} .dot.l{background:var(--lynx)} .dot.g{background:var(--grass)}
+  .dot.h{background:var(--hare)} .dot.l{background:var(--lynx);width:10px;height:10px;border-radius:1px;clip-path:polygon(100% 50%,18% 100%,36% 50%,18% 0)} .dot.g{background:var(--grass)}
   .v.h{color:var(--hare)} .v.l{color:var(--lynx)} .v.g{color:#5cc585} .v.t{color:var(--ink)}
 
   /* ---------- transport ---------- */
@@ -252,12 +252,7 @@
 <div class="transport">
   <button class="btn primary" id="play">Pause</button>
   <button class="btn ghost" id="reset">Reset</button>
-  <div class="seg" id="speed">
-    <button data-s="0.12">½×</button>
-    <button data-s="0.25" class="on">1×</button>
-    <button data-s="0.5">2×</button>
-    <button data-s="1">4×</button>
-  </div>
+  
 </div>
 <div class="card">
   <div class="card-head">
@@ -388,7 +383,7 @@
   // speeds & agility (px / step)
   const HARE_SPD = 1.4, LYNX_SPD = 2.35;
   const HARE_TURN = 0.40, LYNX_TURN = 0.62;
-  const HARE_R = 3.0, LYNX_R = 4.2;
+  const HARE_R = 3.0, LYNX_R = 5.0;
   const CATCH = 6.5;               // lynx eats hare within this distance
   const DIGEST = 4;               // steps a lynx must digest before it can catch again
   const MAX_HARE = 2600, MAX_LYNX = 900;
@@ -414,7 +409,7 @@
     startHare:120, startLynx:28,
     hareBirth:4, grassEnergy:4, hareVision:3,
     lynxBirth:5, preyEnergy:20, lynxVision:4,
-    plant:6, metab:1, speed:0.25
+    plant:6, metab:1, speed:1   // fixed: 60 sim steps/s (was the old 4× preset)
   };
   const regrowthTime = ()=> Math.round(map(cfg.plant,1,10,60,6));
 
@@ -608,12 +603,53 @@
     fctx.beginPath();
     for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
     fctx.fill();
-    // lynx (batched fill + thin ring)
+    // lynx - stalking cat silhouette (tufted ears, tapered body, flicking tail)
+    const R = LYNX_R;
+    fctx.lineCap = 'round'; fctx.lineJoin = 'round';
+    // tails + ear tufts, stroked behind the bodies
+    fctx.strokeStyle = 'rgba(255,125,92,.8)';
+    fctx.lineWidth = Math.max(1, R*0.26);
+    fctx.beginPath();
+    for(let i=0;i<lynx.length;i++){
+      const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
+      const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
+      const f = (i&1) ? 1 : -1;                       // tail flicks either side
+      fctx.moveTo(X(-R*1.10,0), Y(-R*1.10,0));
+      fctx.quadraticCurveTo(X(-R*2.05,f*R*0.30), Y(-R*2.05,f*R*0.30),
+                            X(-R*2.00,f*R*1.20), Y(-R*2.00,f*R*1.20));
+      fctx.moveTo(X(R*0.50,-R*0.60), Y(R*0.50,-R*0.60));
+      fctx.lineTo(X(R*0.28,-R*1.18), Y(R*0.28,-R*1.18));
+      fctx.moveTo(X(R*0.50, R*0.60), Y(R*0.50, R*0.60));
+      fctx.lineTo(X(R*0.28, R*1.18), Y(R*0.28, R*1.18));
+    }
+    fctx.stroke();
+    // bodies
     fctx.fillStyle = '#ff7d5c';
     fctx.beginPath();
-    for(let i=0;i<lynx.length;i++){ const l=lynx[i]; fctx.moveTo(l.x+LYNX_R,l.y); fctx.arc(l.x,l.y,LYNX_R,0,TAU); }
+    for(let i=0;i<lynx.length;i++){
+      const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
+      const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
+      fctx.moveTo(X(R*1.42,0), Y(R*1.42,0));
+      fctx.quadraticCurveTo(X(R*0.90,-R*0.78), Y(R*0.90,-R*0.78), X(R*0.12,-R*0.70), Y(R*0.12,-R*0.70));
+      fctx.quadraticCurveTo(X(-R*0.85,-R*0.98), Y(-R*0.85,-R*0.98), X(-R*1.20,0), Y(-R*1.20,0));
+      fctx.quadraticCurveTo(X(-R*0.85, R*0.98), Y(-R*0.85, R*0.98), X(R*0.12, R*0.70), Y(R*0.12, R*0.70));
+      fctx.quadraticCurveTo(X(R*0.90, R*0.78), Y(R*0.90, R*0.78), X(R*1.42,0), Y(R*1.42,0));
+      fctx.closePath();
+    }
     fctx.fill();
-    fctx.lineWidth = 1; fctx.strokeStyle = 'rgba(255,160,130,.5)'; fctx.stroke();
+    fctx.lineWidth = 1; fctx.strokeStyle = 'rgba(255,196,166,.55)'; fctx.stroke();
+    // eye glints
+    fctx.fillStyle = 'rgba(255,242,206,.95)';
+    fctx.beginPath();
+    const ER = Math.max(0.7, R*0.17);
+    for(let i=0;i<lynx.length;i++){
+      const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
+      for(let k=-1;k<=1;k+=2){
+        const v=k*R*0.30, ex=l.x + R*0.80*c - v*s, ey=l.y + R*0.80*s + v*c;
+        fctx.moveTo(ex+ER, ey); fctx.arc(ex, ey, ER, 0, TAU);
+      }
+    }
+    fctx.fill();
     // vignette
     fctx.fillStyle = vignette; fctx.fillRect(0,0,W,H);
   }
@@ -749,11 +785,6 @@
     reset(); if(!running){ running=true; playBtn.textContent='Pause'; }
   });
 
-  el('speed').addEventListener('click', e=>{
-    const b=e.target.closest('button'); if(!b) return;
-    cfg.speed=parseFloat(b.dataset.s);
-    [...e.currentTarget.children].forEach(c=>c.classList.toggle('on', c===b));
-  });
   el('gmode').addEventListener('click', e=>{
     const b=e.target.closest('button'); if(!b) return;
     graphMode=b.dataset.m;
