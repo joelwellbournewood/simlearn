@@ -1,22 +1,22 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Game of Life</title>
 <style>
-html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;background:#0a1512;color:#e3efe9;font-family:sans-serif;overflow:hidden}
 #wrap{display:flex;height:100%}
 #canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
-#panel{width:250px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+canvas{display:block;width:100%;height:100%;background:#07120f;cursor:crosshair}
+#panel{width:250px;padding:14px 16px;background:#0f1f1a;border-left:1px solid #22362e;overflow-y:auto;font-size:13px}
 #panel h2{font-size:15px;margin:0 0 8px}
-#panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
+#panel p{color:#88a397;line-height:1.45;margin:0 0 12px}
 .row{margin-bottom:12px}
-.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
-.row input[type=range]{width:100%;accent-color:#4fd1c5}
-select{width:100%;background:#1f2636;color:#e8ecf4;border:1px solid #2a3348;border-radius:6px;padding:6px;margin-top:4px}
-button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
-button.secondary{background:#1f2636;color:#e8ecf4;margin-top:8px}
-#stats{display:flex;justify-content:space-between;background:#131826;border-radius:8px;padding:8px 10px;margin-bottom:12px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#c6d6cd}
+.row input[type=range]{width:100%;accent-color:#56e0c2}
+select{width:100%;background:#22362e;color:#e3efe9;border:1px solid #2a4237;border-radius:6px;padding:6px;margin-top:4px}
+button{width:100%;background:#56e0c2;border:none;color:#0a1512;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+button.secondary{background:#22362e;color:#e3efe9;margin-top:8px}
+#stats{display:flex;justify-content:space-between;background:#13261f;border-radius:8px;padding:8px 10px;margin-bottom:12px}
 #stats div{text-align:center}
-#stats span{display:block;color:#9aa5b8;font-size:11px}
-#stats b{font-size:16px;color:#4fd1c5}
+#stats span{display:block;color:#88a397;font-size:11px}
+#stats b{font-size:16px;color:#56e0c2}
 </style></head><body>
 <div id="wrap">
 <div id="canvas-holder"><canvas id="c"></canvas></div>
@@ -103,8 +103,8 @@ function step(){
   grid=next; gen++;
 }
 function draw(){
-  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='#4fd1c5';
+  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#56e0c2';
   for(let y=0;y<rows;y++) for(let x=0;x<cols;x++)
     if(grid[idx(x,y)]) ctx.fillRect(x*cell,y*cell,cell-1,cell-1);
 }

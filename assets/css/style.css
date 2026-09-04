@@ -1,41 +1,68 @@
+/* SimLearn design system — matched to the "field" style of the standalone sims
+   (Space Grotesk / Space Mono, deep-green field palette, teal + coral accents) */
 :root {
-  --bg: #0b0e14;
-  --bg-panel: #131826;
-  --text: #e8ecf4;
-  --text-dim: #9aa5b8;
-  --accent: #4fd1c5;
-  --accent-2: #7c8cff;
-  --border: #1f2636;
-  --radius: 12px;
+  --bg: #0a1512;
+  --field: #07120f;
+  --panel: #0f1f1a;
+  --panel-2: #13261f;
+  --line: rgba(130,170,150,.14);
+  --line-strong: rgba(130,170,150,.28);
+  --ink: #e3efe9;
+  --muted: #88a397;
+  --accent: #56e0c2;
+  --accent-dim: rgba(86,224,194,.14);
+  --accent-2: #ff7d5c;
+  --grass: #34905c;
+  --radius: 14px;
+  --display: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* legacy aliases used by older markup */
+  --text: #e3efe9;
+  --text-dim: #88a397;
+  --border: rgba(130,170,150,.14);
+  --bg-panel: #0f1f1a;
   font-size: 16px;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; }
-header.site-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: var(--bg-panel); position: sticky; top: 0; z-index: 10; }
-.logo { font-weight: 700; font-size: 1.3rem; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
+body {
+  margin: 0; color: var(--ink); font-family: var(--body); line-height: 1.5;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(86,224,194,.06), transparent 60%), var(--bg);
+}
+header.site-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--line); background: rgba(15,31,26,.85); backdrop-filter: blur(6px); position: sticky; top: 0; z-index: 10; }
+.logo { font-family: var(--display); font-weight: 700; font-size: 1.3rem; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
 .logo span { color: var(--accent); }
-nav a { color: var(--text-dim); text-decoration: none; margin-left: 1.5rem; font-size: 0.95rem; transition: color 0.15s; }
+nav a { font-family: var(--mono); font-size: 0.8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-decoration: none; margin-left: 1.5rem; transition: color 0.15s; }
 nav a:hover { color: var(--accent); }
 main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
 .hero { text-align: center; padding: 3rem 1rem 2.5rem; }
-.hero h1 { font-size: 2.4rem; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
-.hero p { color: var(--text-dim); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+.hero h1 { font-family: var(--display); font-weight: 600; font-size: 2.4rem; margin: 0 0 0.5rem; letter-spacing: .005em; line-height: 1.12; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p { color: var(--muted); font-size: 1.08rem; max-width: 620px; margin: 0 auto; }
 .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.5rem 0 2.5rem; }
-.filter-btn { background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-dim); padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
-.filter-btn:hover, .filter-btn.active { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
-.card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem; display: flex; flex-direction: column; gap: 0.6rem; text-decoration: none; color: var(--text); transition: transform 0.15s, border-color 0.15s; position: relative; }
-.card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.filter-btn { font-family: var(--display); background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); padding: 0.45rem 0.95rem; border-radius: 999px; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+.filter-btn:hover { border-color: var(--line-strong); }
+.filter-btn.active { color: var(--accent); background: var(--accent-dim); border-color: transparent; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.35rem; display: flex; flex-direction: column; gap: 0.55rem; text-decoration: none; color: var(--ink); transition: transform 0.15s, border-color 0.15s; position: relative; box-shadow: 0 1px 0 rgba(255,255,255,.03) inset; }
+.card:hover { transform: translateY(-3px); border-color: var(--line-strong); }
 .card.disabled { opacity: 0.5; cursor: default; }
-.card.disabled:hover { transform: none; border-color: var(--border); }
-.card-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-2); font-weight: 600; }
-.card h3 { margin: 0; font-size: 1.15rem; }
-.card p { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
-.badge-soon { position: absolute; top: 1rem; right: 1rem; font-size: 0.65rem; background: var(--border); color: var(--text-dim); padding: 0.2rem 0.5rem; border-radius: 999px; }
-footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-dim); font-size: 0.85rem; }
+.card.disabled:hover { transform: none; border-color: var(--line); }
+.card-tag { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); font-weight: 400; }
+.card h3 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
+.card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.badge-soon { position: absolute; top: 1rem; right: 1rem; font-family: var(--mono); font-size: 0.62rem; letter-spacing: .1em; text-transform: uppercase; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); padding: 0.2rem 0.5rem; border-radius: 999px; }
+footer { border-top: 1px solid var(--line); padding: 2rem; text-align: center; color: var(--muted); font-family: var(--mono); font-size: 0.78rem; letter-spacing: .06em; }
+footer a { color: inherit; }
 .sim-header { max-width: 1100px; margin: 0 auto; padding: 1.5rem 2rem 0.5rem; }
-.sim-header a.back { color: var(--text-dim); text-decoration: none; font-size: 0.9rem; }
-.sim-header h1 { margin: 0.6rem 0 0.3rem; font-size: 1.7rem; }
-.sim-header p { color: var(--text-dim); max-width: 700px; }
+.sim-header a.back { font-family: var(--mono); font-size: 0.78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+.sim-header a.back:hover { color: var(--accent); }
+.sim-header h1 { margin: 0.6rem 0 0.3rem; font-family: var(--display); font-weight: 600; font-size: 1.7rem; }
+.sim-header p { color: var(--muted); max-width: 700px; }
 .sim-frame-wrap { max-width: 1100px; margin: 1.5rem auto 3rem; padding: 0 2rem; }
-iframe.sim-frame { width: 100%; height: 640px; border: 1px solid var(--border); border-radius: var(--radius); background: #000; }
+iframe.sim-frame { width: 100%; height: 660px; border: 1px solid var(--line); border-radius: 16px; background: var(--field); box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 20px 40px -28px rgba(0,0,0,.9); }
+.prose { max-width: 700px; }
+.prose h1 { font-family: var(--display); font-weight: 600; font-size: 2rem; margin: 0 0 1rem; }
+.prose p { color: var(--muted); font-size: 1.02rem; }
+.prose a { color: var(--accent); }

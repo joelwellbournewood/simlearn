@@ -1,18 +1,18 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lorenz Attractor</title>
 <style>
-html,body{margin:0;height:100%;background:#05070c;color:#e8ecf4;font-family:sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;background:#0a1512;color:#e3efe9;font-family:sans-serif;overflow:hidden}
 #wrap{display:flex;height:100%}
 #canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#0d1220;cursor:crosshair}
-#panel{width:260px;padding:14px 16px;background:#0b0e16;border-left:1px solid #1f2636;overflow-y:auto;font-size:13px}
+canvas{display:block;width:100%;height:100%;background:#07120f;cursor:crosshair}
+#panel{width:260px;padding:14px 16px;background:#0f1f1a;border-left:1px solid #22362e;overflow-y:auto;font-size:13px}
 #panel h2{font-size:15px;margin:0 0 8px}
-#panel p{color:#9aa5b8;line-height:1.45;margin:0 0 12px}
+#panel p{color:#88a397;line-height:1.45;margin:0 0 12px}
 .row{margin-bottom:12px}
-.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#cfd6e4}
-.row input[type=range]{width:100%;accent-color:#4fd1c5}
-button{width:100%;background:#4fd1c5;border:none;color:#05070c;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#c6d6cd}
+.row input[type=range]{width:100%;accent-color:#56e0c2}
+button{width:100%;background:#56e0c2;border:none;color:#0a1512;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
 button.secondary{background:#f6ad55}
-.legend{display:flex;align-items:center;gap:6px;margin-top:10px;color:#cfd6e4}
+.legend{display:flex;align-items:center;gap:6px;margin-top:10px;color:#c6d6cd}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 </style></head><body>
 <div id="wrap">
@@ -28,7 +28,7 @@ button.secondary{background:#f6ad55}
 
 <button id="reset">New Trajectory</button>
 <button id="twin" class="secondary">Release a Twin (+0.001)</button>
-<div class="legend"><span class="dot" style="background:#4fd1c5"></span>Trajectory A</div>
+<div class="legend"><span class="dot" style="background:#56e0c2"></span>Trajectory A</div>
 <div class="legend"><span class="dot" style="background:#f6ad55"></span>Twin — started a thousandth apart</div>
 <p style="margin-top:16px">Click the canvas to drop a fresh trajectory starting near where you clicked. Try "Release a Twin" and watch two near-identical starts diverge completely within seconds — that's chaos, not randomness.</p>
 </div>
@@ -81,8 +81,8 @@ function drawTraj(t, color){
   ctx.strokeStyle=color; ctx.lineWidth=1.3; ctx.stroke();
 }
 function draw(){
-  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  drawTraj(trajA, '#4fd1c5');
+  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  drawTraj(trajA, '#56e0c2');
   drawTraj(trajB, '#f6ad55');
 }
 function loop(){

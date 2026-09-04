@@ -5,7 +5,7 @@ const P={pop:200,rad:12,pinf:0.3,rec:300,mort:0.05,dist:0,vax:0,imm:IMM_MAX,mut:
 // state: 0=S 1=I 2=R 3=D 4=V
 let ag=[],pulses=[],hist=[],sampleEvery=2,stepCount=0,peakI=0,spreads=[],paused=false;
 let maxStrain=0,reinf=0;
-const CHART_H=90, COL=['#4f8ce6','#e65f5f','#4fd196','#5a6273','#e6c04f'];
+const CHART_H=90, COL=['#4f8ce6','#e65f5f','#4fd196','#6d8479','#e6c04f'];
 const HUES=[0,315,270,30,255,345];
 function resize(){canvas.width=canvas.clientWidth;canvas.height=canvas.clientHeight;}
 function init(){
@@ -109,7 +109,7 @@ function face(a){
   ctx.beginPath();ctx.arc(a.x,a.y,R,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(a.x,a.y,R,0,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle='#101522';ctx.fillStyle='#101522';ctx.lineWidth=1.1;
+  ctx.strokeStyle='#13261f';ctx.fillStyle='#13261f';ctx.lineWidth=1.1;
   if(dead){ // x eyes + flat mouth
     for(const ex of[-2,2]){
       ctx.beginPath();
@@ -156,12 +156,12 @@ function draw(){
     const avg=spreads.reduce((a,b)=>a+b,0)/spreads.length;
     el.textContent=avg.toFixed(2);
     el.style.color=avg>1?'#e65f5f':'#4fd196';
-  }else{el.textContent='\u2013';el.style.color='#4fd1c5';}
+  }else{el.textContent='\u2013';el.style.color='#56e0c2';}
 }
 function drawChart(){
   const y0=canvas.height-CHART_H,w=canvas.width;
   ctx.fillStyle='rgba(5,7,12,0.85)';ctx.fillRect(0,y0,w,CHART_H);
-  ctx.strokeStyle='#1f2636';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(w,y0);ctx.stroke();
+  ctx.strokeStyle='#22362e';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(w,y0);ctx.stroke();
   if(hist.length<2)return;
   const n=hist.length,order=[1,3,2,4,0];
   for(let x=0;x<w;x++){
@@ -175,7 +175,7 @@ function drawChart(){
     }
   }
   ctx.globalAlpha=1;
-  ctx.fillStyle='#9aa5b8';ctx.font='11px sans-serif';
+  ctx.fillStyle='#88a397';ctx.font='11px sans-serif';
   ctx.fillText('epidemic curve \u2192 time',8,y0+14);
 }
 const DEF={pop:200,rad:12,pinf:0.3,rec:300,mort:5,dist:0,vax:0,imm:2200,mut:0};

@@ -89,7 +89,7 @@ class Boid {
     ctx.lineTo(-6, 4);
     ctx.lineTo(-6, -4);
     ctx.closePath();
-    ctx.fillStyle = '#4fd1c5';
+    ctx.fillStyle = '#56e0c2';
     ctx.fill();
     ctx.restore();
   }

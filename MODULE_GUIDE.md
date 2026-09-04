@@ -28,3 +28,12 @@ Ranked by "most static → most already interactive", based on current implement
 
 ## Process for the human or a future run to request a sim upgrade
 Say which sim + what to add. Because of the isolation above, this is always a single-file edit + a `git push` — no coordination with the other 9 sims required, and no risk of a regression elsewhere. A good ask looks like: "make Lorenz Attractor draggable and add sliders for σ/ρ/β" — that's a scoped, one-file, low-cost task.
+
+## Design system (as of 2026-09-04)
+The platform's visual language follows the human-supplied standalone sims ("Hare & Lynx" style):
+- Fonts: **Space Grotesk** (display/headings/buttons), **Space Mono** (labels, stats, uppercase eyebrows), system sans for body.
+- Palette: bg `#0a1512`, canvas field `#07120f`, panel `#0f1f1a`, panel-2 `#13261f`, border `#22362e` (strong `#2a4237`), ink `#e3efe9`, muted `#88a397`, accent teal `#56e0c2`, accent coral `#ff7d5c`, grass `#34905c`.
+- Shapes: cards radius 14px, buttons 12px, chips/pills 999px; subtle inset highlight `0 1px 0 rgba(255,255,255,.03)`.
+- Labels/eyebrows: Space Mono, ~11px, uppercase, letter-spacing .14–.18em, muted color.
+- Semantic state colors inside sims (sick red, recovered green, etc.) stay as-is.
+New sims dropped into the repo should be checked against this; retheme chrome colors, keep logic untouched. Viewport meta must be width=1200 (desktop layout on phones, standing guidance).
