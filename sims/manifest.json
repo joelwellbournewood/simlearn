@@ -10,12 +10,12 @@
       "3d"
     ],
     "difficulty": "Beginner",
-    "description": "Separation, alignment and cohesion are all it takes to make a flock. Ten presets, 2D and 3D, plus predators, obstacles and hidden currents you can paint into the sky.",
+    "description": "Separation, alignment and cohesion are the only three rules. The shape of the flock follows from them. Ten presets, 2D and 3D, with predators, obstacles and currents you can paint into the sky.",
     "status": "live"
   },
   {
     "id": "predator-prey",
-    "title": "Hare & Lynx: Predator–Prey Cycles",
+    "title": "Hare & Lynx: Predator and Prey Cycles",
     "category": "Population Dynamics",
     "tags": [
       "ecology",
@@ -23,7 +23,7 @@
       "Lotka-Volterra"
     ],
     "difficulty": "Intermediate",
-    "description": "Every dot is one animal grazing, hunting and breeding on its own energy budget — and the boom-and-bust population cycles emerge from those simple rules.",
+    "description": "Every dot is one animal with its own energy budget, grazing, hunting and breeding. The boom and bust population cycles come out of those individual decisions.",
     "status": "live"
   },
   {
@@ -35,7 +35,7 @@
       "emergence"
     ],
     "difficulty": "Beginner",
-    "description": "One simple rule about live and dead neighbors gives rise to gliders, oscillators, and endlessly complex patterns.",
+    "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators and patterns that never settle down.",
     "status": "live"
   },
   {
@@ -47,7 +47,7 @@
       "transportation"
     ],
     "difficulty": "Beginner",
-    "description": "See how traffic jams form out of nowhere on a road with no obstacles, purely from car-following dynamics.",
+    "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
     "status": "live"
   },
   {
@@ -60,7 +60,7 @@
       "emergence"
     ],
     "difficulty": "Intermediate",
-    "description": "Mild individual preferences for similar neighbors add up to strong citywide segregation — a classic result in social science.",
+    "description": "Mild individual preferences about who lives next door are enough to segregate a whole city. A classic result in social science.",
     "status": "live"
   },
   {
@@ -73,7 +73,7 @@
       "dynamical systems"
     ],
     "difficulty": "Intermediate",
-    "description": "A perfectly deterministic system whose motion becomes unpredictable — the clearest visual introduction to chaos theory.",
+    "description": "The equations are exact and the motion is still unpredictable. The clearest picture of what chaos actually means.",
     "status": "live"
   },
   {
@@ -86,7 +86,7 @@
       "public health"
     ],
     "difficulty": "Beginner",
-    "description": "Susceptible, infected, and recovered agents wander and mix — tune infection rate and recovery time to see outbreaks burn out or explode.",
+    "description": "Susceptible, infected and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
     "status": "live"
   },
   {
@@ -98,7 +98,7 @@
       "dynamical systems"
     ],
     "difficulty": "Intermediate",
-    "description": "The original chaotic system — a butterfly-shaped trajectory that never repeats, from a simplified model of atmospheric convection.",
+    "description": "The first chaotic system anyone plotted. A butterfly shaped path that never repeats, from a stripped down model of convection in the atmosphere.",
     "status": "live"
   },
   {
@@ -111,7 +111,7 @@
       "chaos"
     ],
     "difficulty": "Beginner",
-    "description": "Bodies pulling on each other with Newtonian gravity — click to drop in new masses and watch orbits, captures, and ejections unfold.",
+    "description": "Bodies pulling on each other under Newtonian gravity. Click to drop in a new mass and watch orbits form, capture and eject.",
     "status": "live"
   },
   {
@@ -124,7 +124,7 @@
       "cellular automaton"
     ],
     "difficulty": "Intermediate",
-    "description": "Two chemicals diffusing and reacting (Gray-Scott model) spontaneously form spots, stripes, and coral-like patterns — click presets or paint your own seeds.",
+    "description": "Two chemicals spread and react by the Gray-Scott rules. Spots, stripes and coral shapes appear on their own. Pick a preset or paint your own seed.",
     "status": "live"
   },
   {
@@ -137,7 +137,7 @@
       "dosing"
     ],
     "difficulty": "Intermediate",
-    "description": "Explore how drug concentration in the body changes over time under different dosing regimens.",
+    "description": "How the concentration of a drug in the body rises and falls over time, and what different dosing schedules do to that curve.",
     "status": "coming-soon"
   }
 ]
