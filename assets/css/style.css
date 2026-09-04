@@ -78,9 +78,18 @@ body.sim-page .logo { font-size: 1.1rem; }
   border-radius: 999px; cursor: pointer; transition: color .15s, border-color .15s; margin-left: auto; white-space: nowrap; }
 .fs-btn:hover { color: var(--accent); border-color: var(--line-strong); }
 .sim-frame-wrap { flex: 1 1 auto; min-height: 0; padding: 10px clamp(10px, 1.4vw, 22px) 12px; display: flex; }
+/* PERF: no border-radius and no box-shadow on this iframe. A rounded clip or a shadow
+   forces the compositor to re-mask/re-raster the whole frame surface on every animation
+   frame, which costs several ms per frame on a full-bleed 60fps canvas. Square edges are
+   cheap: the frame is drawn as a single composited quad. Do not re-add the radius. */
 iframe.sim-frame { width: 100%; height: 100%; flex: 1 1 auto; display: block; border: 1px solid var(--line);
-  border-radius: 14px; background: var(--field); box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -30px rgba(0,0,0,.9); }
-iframe.sim-frame:fullscreen { border: 0; border-radius: 0; }
+  border-radius: 0; background: var(--field); box-shadow: none; }
+iframe.sim-frame:fullscreen { border: 0; }
+/* PERF: on the player page the sticky header must NOT use backdrop-filter. A backdrop
+   filter forces the browser to keep a fresh rasterisation of everything behind it, and
+   "behind it" includes the animating simulation frame, so the whole page re-rasters at
+   60fps. Opaque background instead: visually identical over an opaque body. */
+body.sim-page header.site-header { backdrop-filter: none; -webkit-backdrop-filter: none; background: #0f1f1a; }
 @media (max-width: 900px) {
   body.sim-page { height: auto; overflow: visible; }
   .sim-frame-wrap { display: block; }

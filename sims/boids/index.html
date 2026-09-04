@@ -1610,6 +1610,18 @@ let view3d = null;
 let threePromise = null;
 const ctx = { mouse: { x: 0, y: 0, z: 0, active: false, mode: 'attract' }, tool: 'attract', dark: true, palette: PALETTES.abyss.colors, inspect: false, grid: false, draft: null };
 const inputs = {};
+/* PERF: cap the render resolution by AREA, not just by device pixel ratio. A retina
+   laptop showing a full-bleed 1900x950 field would otherwise ask for a 3800x1900
+   backing store (7.2M px) and become fill-rate bound. RES_BUDGET caps total device
+   pixels; the frame loop degrades further (down to 0.5x) if frames still run long,
+   and climbs back up once they are comfortable again. */
+const RES_BUDGET = 3.2e6;
+function capForArea(w, h) {
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  const a = Math.max(1, w * h);
+  return Math.max(0.6, Math.min(d, Math.sqrt(RES_BUDGET / a)));
+}
+let degrade = 1;                     // runtime quality multiplier, 1 -> 0.45
 let dprCap = Math.min(window.devicePixelRatio || 1, 2);
 let dpr = dprCap;
 let width = 0, height = 0;
@@ -1724,7 +1736,8 @@ function updateArena() {
 }
 function resize() {
   width = window.innerWidth; height = window.innerHeight;
-  dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+  dprCap = capForArea(width, height);
+  dpr = Math.max(0.45, dprCap * degrade);
   updateArena();
   view2d.resize(width, height, dpr);
   if (view3d) { view3d.renderer.setPixelRatio(dpr); view3d.resize(width, height); }
@@ -1955,7 +1968,8 @@ function frame(now) {
   if (fpsAcc > 500) {
     fps = 1000 * fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
     // if the device can't keep up, render at a lower resolution rather than stutter
-    if (!paused && fps < 40 && dprCap > 1) { slowFor += 0.5; if (slowFor >= 2) { dprCap = Math.max(1, dprCap - 0.5); slowFor = 0; resize(); } }
+    if (!paused && fps < 45 && degrade > 0.5) { slowFor += 0.5; if (slowFor >= 1.5) { degrade = Math.max(0.5, degrade - 0.2); slowFor = 0; resize(); } }
+    else if (!paused && fps > 57 && degrade < 1) { slowFor -= 0.5; if (slowFor <= -6) { degrade = Math.min(1, degrade + 0.1); slowFor = 0; resize(); } }
     else slowFor = 0;
   }
   if (!paused) flock.step(dt, P, ctx);
