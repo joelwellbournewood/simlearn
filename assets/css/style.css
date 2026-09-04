@@ -55,13 +55,39 @@ main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
 .badge-soon { position: absolute; top: 1rem; right: 1rem; font-family: var(--mono); font-size: 0.62rem; letter-spacing: .1em; text-transform: uppercase; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); padding: 0.2rem 0.5rem; border-radius: 999px; }
 footer { border-top: 1px solid var(--line); padding: 2rem; text-align: center; color: var(--muted); font-family: var(--mono); font-size: 0.78rem; letter-spacing: .06em; }
 footer a { color: inherit; }
-.sim-header { max-width: 1100px; margin: 0 auto; padding: 1.5rem 2rem 0.5rem; }
+
 .sim-header a.back { font-family: var(--mono); font-size: 0.78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
 .sim-header a.back:hover { color: var(--accent); }
-.sim-header h1 { margin: 0.6rem 0 0.3rem; font-family: var(--display); font-weight: 600; font-size: 1.7rem; }
-.sim-header p { color: var(--muted); max-width: 700px; }
-.sim-frame-wrap { max-width: 1100px; margin: 1.5rem auto 3rem; padding: 0 2rem; }
-iframe.sim-frame { width: 100%; height: 660px; border: 1px solid var(--line); border-radius: 16px; background: var(--field); box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 20px 40px -28px rgba(0,0,0,.9); }
+
+
+
+
+/* ---------- simulation player: full-bleed, fills the viewport ---------- */
+body.sim-page { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body.sim-page header.site-header { flex: none; padding: 0.6rem 1.4rem; }
+body.sim-page .logo { font-size: 1.1rem; }
+.sim-header { flex: none; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+  padding: 0.6rem clamp(12px, 1.6vw, 26px) 0.55rem; border-bottom: 1px solid var(--line); }
+.sim-header a.back { font-family: var(--mono); font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.sim-header a.back:hover { color: var(--accent); }
+.sim-header h1 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 1.12rem; letter-spacing: .005em; }
+.sim-header p { margin: 0; color: var(--muted); font-size: 0.82rem; flex: 1 1 240px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-btn { font-family: var(--mono); font-size: 0.68rem; letter-spacing: .12em; text-transform: uppercase;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); padding: 0.3rem 0.7rem;
+  border-radius: 999px; cursor: pointer; transition: color .15s, border-color .15s; margin-left: auto; white-space: nowrap; }
+.fs-btn:hover { color: var(--accent); border-color: var(--line-strong); }
+.sim-frame-wrap { flex: 1 1 auto; min-height: 0; padding: 10px clamp(10px, 1.4vw, 22px) 12px; display: flex; }
+iframe.sim-frame { width: 100%; height: 100%; flex: 1 1 auto; display: block; border: 1px solid var(--line);
+  border-radius: 14px; background: var(--field); box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -30px rgba(0,0,0,.9); }
+iframe.sim-frame:fullscreen { border: 0; border-radius: 0; }
+@media (max-width: 900px) {
+  body.sim-page { height: auto; overflow: visible; }
+  .sim-frame-wrap { display: block; }
+  iframe.sim-frame { height: 78vh; min-height: 560px; }
+}
+.sim-placeholder { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; text-align: center; border: 1px dashed var(--line-strong); border-radius: 14px; background: var(--panel); color: var(--muted); }
+.sim-placeholder a { color: var(--accent); }
 .prose { max-width: 700px; }
 .prose h1 { font-family: var(--display); font-weight: 600; font-size: 2rem; margin: 0 0 1rem; }
 .prose p { color: var(--muted); font-size: 1.02rem; }

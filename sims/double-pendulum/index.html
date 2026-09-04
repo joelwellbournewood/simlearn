@@ -78,7 +78,7 @@ function drawOne(b, ox, oy, boldColor, jointColor, tipColor){
   ctx.fillStyle=tipColor.fill; ctx.beginPath(); ctx.arc(x2,y2,7,0,Math.PI*2); ctx.fill();
 }
 function draw(){
-  ctx.fillStyle='rgba(13,18,32,0.25)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='rgba(7,18,15,0.25)'; ctx.fillRect(0,0,canvas.width,canvas.height);
   const ox=canvas.width/2, oy=canvas.height/3;
   drawOne(bob, ox, oy, '#c6d6cd', '#e6c34f', {fill:'#56e0c2', trail:'rgba(79,209,197,0.5)'});
   if(twin) drawOne(twin, ox, oy, '#88a397', '#e6c34f', {fill:'#ff8a5c', trail:'rgba(255,138,92,0.5)'});

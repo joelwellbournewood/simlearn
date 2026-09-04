@@ -71,11 +71,13 @@ function step(){
     for(let x=0;x<N;x++){
       const i=idx(x,y);
       const a=A[i], b=B[i];
-      const lapA = A[idx(x-1,y)]+A[idx(x+1,y)]+A[idx(x,y-1)]+A[idx(x,y+1)] - 4*a;
-      const lapB = B[idx(x-1,y)]+B[idx(x+1,y)]+B[idx(x,y-1)]+B[idx(x,y+1)] - 4*b;
+      const lapA = 0.2*(A[idx(x-1,y)]+A[idx(x+1,y)]+A[idx(x,y-1)]+A[idx(x,y+1)])
+                 + 0.05*(A[idx(x-1,y-1)]+A[idx(x+1,y-1)]+A[idx(x-1,y+1)]+A[idx(x+1,y+1)]) - a;
+      const lapB = 0.2*(B[idx(x-1,y)]+B[idx(x+1,y)]+B[idx(x,y-1)]+B[idx(x,y+1)])
+                 + 0.05*(B[idx(x-1,y-1)]+B[idx(x+1,y-1)]+B[idx(x-1,y+1)]+B[idx(x+1,y+1)]) - b;
       const reaction = a*b*b;
-      A2[i] = a + (dA*lapA - reaction + F*(1-a));
-      B2[i] = b + (dB*lapB + reaction - (K+F)*b);
+      A2[i] = Math.min(1, Math.max(0, a + (dA*lapA - reaction + F*(1-a))));
+      B2[i] = Math.min(1, Math.max(0, b + (dB*lapB + reaction - (K+F)*b)));
     }
   }
   [A,A2]=[A2,A]; [B,B2]=[B2,B];
@@ -91,14 +93,14 @@ function resize(){
 let paused=false;
 function frame(){
   if(paused){ requestAnimationFrame(frame); return; }
-  for(let i=0;i<10;i++) step();
+  for(let i=0;i<12;i++) step();
   const d = offCtx.createImageData(N,N).data;
   for(let i=0;i<N*N;i++){
     const b=B[i];
     const v = Math.max(0,Math.min(1, b*3.2));
-    d[i*4] = 10 + v*30;
-    d[i*4+1] = 12 + v*190;
-    d[i*4+2] = 20 + v*160;
+    d[i*4] = 7 + v*79;
+    d[i*4+1] = 18 + v*206;
+    d[i*4+2] = 15 + v*179;
     d[i*4+3] = 255;
   }
   const id2 = new ImageData(d, N, N);

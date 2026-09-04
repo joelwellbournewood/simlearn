@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
+<body class="sim-page">
 <header class="site-header">
   <a href="index.html" class="logo">Sim<span>Learn</span></a>
   <nav>
@@ -19,18 +19,15 @@
 </header>
 
 <div class="sim-header">
-  <a class="back" href="index.html">&larr; All simulations</a>
-  <h1 id="sim-title">Loading…</h1>
+  <a class="back" href="index.html">&larr; All</a>
+  <h1 id="sim-title">Loading&#8230;</h1>
   <p id="sim-desc"></p>
+  <button type="button" class="fs-btn" id="fs-btn">Fullscreen</button>
 </div>
 
 <div class="sim-frame-wrap">
-  <iframe id="sim-frame" class="sim-frame" title="Simulation" sandbox="allow-scripts allow-same-origin"></iframe>
+  <iframe id="sim-frame" class="sim-frame" title="Simulation" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>
 </div>
-
-<footer>
-  SimLearn &middot; <a href="about.html" style="color:inherit">About this project</a>
-</footer>
 
 <script>
   const params = new URLSearchParams(location.search);
@@ -47,9 +44,29 @@
       }
       document.getElementById('sim-title').textContent = sim.title;
       document.getElementById('sim-desc').textContent = sim.description;
-      document.title = sim.title + ' — SimLearn';
-      frame.src = `sims/${sim.id}/index.html`;
+      document.title = sim.title + ' \u2014 SimLearn';
+      if (sim.status && sim.status !== 'live') {
+        document.getElementById('fs-btn').style.display = 'none';
+        frame.remove();
+        var ph = document.createElement('div');
+        ph.className = 'sim-placeholder';
+        ph.innerHTML = '<p class="eyebrow">In development</p>' +
+          '<p>This simulation is not published yet.</p>' +
+          '<p><a href="index.html">Browse the published simulations</a></p>';
+        document.querySelector('.sim-frame-wrap').appendChild(ph);
+        return;
+      }
+      frame.src = 'sims/' + sim.id + '/index.html';
     });
+
+  const fsBtn = document.getElementById('fs-btn');
+  fsBtn.addEventListener('click', function () {
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (frame.requestFullscreen) { frame.requestFullscreen(); }
+  });
+  document.addEventListener('fullscreenchange', function () {
+    fsBtn.textContent = document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen';
+  });
 </script>
 </body>
 </html>
