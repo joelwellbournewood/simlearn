@@ -117,15 +117,52 @@
   .gtoggle button.on{background:var(--line);color:var(--ink)}
   #graph{display:block;width:100%;height:auto;border-radius:8px}
 
-  /* ---------- experiment chips ---------- */
-  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-  .chip{
-    font-family:var(--display);font-size:13px;color:var(--ink);background:var(--panel-2);
-    border:1px solid var(--line);border-radius:999px;padding:8px 13px;cursor:pointer;
-    touch-action:manipulation;transition:border-color .15s, background .15s
-  }
-  .chip:active{transform:translateY(1px)}
-  .chip:hover{border-color:var(--line-strong)}
+  /* ---------- experiment presets ---------- */
+  .presets{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
+  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);
+    border-radius:10px;background:transparent;text-align:left;color:var(--ink);cursor:pointer;
+    font-family:var(--body);transition:border-color .18s, background .18s}
+  .preset b{font-family:var(--display);font-weight:600;font-size:13px}
+  .preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+  .preset:hover{border-color:var(--line-strong)}
+  .preset[aria-pressed="true"]{border-color:var(--hare);background:var(--hare-dim)}
+
+  /* ---------- "?" tooltips ---------- */
+  .row{position:relative}
+  .row .nm{display:inline-flex;align-items:center;gap:6px}
+  .tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;
+    color:var(--muted);font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;
+    display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+  .tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+  .tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);
+    padding:8px 10px;border-radius:8px;background:#13261f;border:1px solid var(--line-strong);
+    color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;opacity:0;pointer-events:none;
+    transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.45);
+    font-family:var(--body);letter-spacing:normal;text-transform:none}
+  .tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+
+  /* ---------- "what am I looking at?" ---------- */
+  .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--display);font-size:14px;font-weight:600;color:var(--hare);
+    background:var(--hare-dim);border:1px solid rgba(86,224,194,.34);border-radius:12px;
+    padding:11px 14px;cursor:pointer;margin-bottom:10px;transition:border-color .18s, background .18s}
+  .about-btn:hover{border-color:var(--hare);background:rgba(86,224,194,.2)}
+  dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);
+    padding:0;width:min(620px,calc(100vw - 32px));max-height:min(82vh,760px);overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  dialog.about::backdrop{background:rgba(4,10,8,.62);backdrop-filter:blur(4px)}
+  .about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(82vh,760px);position:relative}
+  .about-inner h2{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+  .about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:20px 0 6px}
+  .about-inner p{margin:0 0 10px;color:#b9d0c6;font-size:14px;line-height:1.58;max-width:62ch}
+  .about-inner p b{color:var(--ink);font-weight:600}
+  .about-inner ul{margin:0 0 10px;padding-left:18px;color:#b9d0c6;font-size:14px;line-height:1.58}
+  .about-inner li{margin:0 0 5px}
+  .about-inner .hl{color:var(--hare)} .about-inner .hr{color:var(--lynx)}
+  .about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-size:16px;
+    line-height:1;cursor:pointer;display:grid;place-items:center}
+  .about-close:hover{color:var(--ink);border-color:var(--line-strong)}
 
   /* ---------- slider groups ---------- */
   .group{margin-top:12px}
@@ -204,6 +241,19 @@
     input[type=range]{margin:3px 0}
     details{margin-top:12px}
     footer{flex:none;margin-top:8px}
+    /* left column must hold: about button, counters, transport, graph, presets - all without scrolling */
+    .about-btn{padding:9px 12px;font-size:13.5px;margin-bottom:8px}
+    .status{gap:5px}
+    .stat{padding:6px 9px;border-radius:9px}
+    .stat .v{font-size:17px}
+    .transport{margin-top:8px}
+    .transport .btn{padding:9px 12px;font-size:13.5px}
+    .card-head{margin-bottom:8px}
+    .expwrap{margin-top:10px}
+    .presets{gap:5px;margin-top:0}
+    .preset{padding:6px 10px}
+    .preset b{font-size:12.5px}
+    .preset small{font-size:11px;line-height:1.25}
   }
   /* cramped laptop heights: the hints are what overflow, so trade them for fit */
   /* inside the SimLearn player the title/description are already shown above us */
@@ -243,6 +293,7 @@
 
 <div class="layout">
   <div class="col col-l">
+<button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
 <div class="status">
   <div class="stat"><div class="k"><span class="dot h"></span>Hares</div><div class="v h" id="cHare">0</div></div>
   <div class="stat"><div class="k"><span class="dot l"></span>Lynx</div><div class="v l" id="cLynx">0</div></div>
@@ -265,14 +316,14 @@
   <canvas id="graph"></canvas>
 </div>
 <div class="expwrap">
-<div style="margin-top:16px">
-  <span class="label">Try an experiment</span>
-  <div class="chips" id="chips">
-    <button class="chip" data-p="balance">Balanced cycle</button>
-    <button class="chip" data-p="boom">Boom &amp; bust</button>
-    <button class="chip" data-p="enrich">Paradox of enrichment</button>
-    <button class="chip" data-p="overhunt">Overhunting collapse</button>
-    <button class="chip" data-p="desert">Sparse habitat</button>
+<div class="card">
+  <div class="card-head"><span class="label">Try an experiment</span></div>
+  <div class="presets" id="chips">
+    <button class="preset" data-p="balance" aria-pressed="true"><b>Balanced cycle</b><small>Textbook out-of-phase oscillation</small></button>
+    <button class="preset" data-p="boom" aria-pressed="false"><b>Boom &amp; bust</b><small>Fast breeders overshoot their food</small></button>
+    <button class="preset" data-p="enrich" aria-pressed="false"><b>Paradox of enrichment</b><small>More grass, wilder swings</small></button>
+    <button class="preset" data-p="overhunt" aria-pressed="false"><b>Overhunting collapse</b><small>Too many lynx, too good at it</small></button>
+    <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
   </div>
 </div>
 </div>
@@ -290,24 +341,20 @@
   <div class="group hare">
     <p class="group-title">Hares <span class="tag">prey · herbivore</span></p>
     <div class="row">
-      <label for="s_startHare">Starting hares <span class="val" id="v_startHare"></span></label>
+      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
       <input type="range" id="s_startHare" min="0" max="400" step="5" value="120">
-      <div class="hint">Applies on Reset.</div>
     </div>
     <div class="row">
-      <label for="s_hareBirth">Birth rate <span class="val" id="v_hareBirth"></span></label>
+      <label for="s_hareBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed hare reproduces.">?</span></span><span class="val" id="v_hareBirth"></span></label>
       <input type="range" id="s_hareBirth" min="0" max="15" step="1" value="4">
-      <div class="hint">Chance per step a well-fed hare reproduces.</div>
     </div>
     <div class="row">
-      <label for="s_grassEnergy">Energy from grass <span class="val" id="v_grassEnergy"></span></label>
+      <label for="s_grassEnergy"><span class="nm">Energy from grass<span class="tip" role="button" tabindex="0" aria-label="What energy from grass means" data-tip="Food value of one grazed patch.">?</span></span><span class="val" id="v_grassEnergy"></span></label>
       <input type="range" id="s_grassEnergy" min="1" max="12" step="1" value="4">
-      <div class="hint">Food value of one grazed patch.</div>
     </div>
     <div class="row">
-      <label for="s_hareVision">Eyesight <span class="val" id="v_hareVision"></span></label>
+      <label for="s_hareVision"><span class="nm">Eyesight<span class="tip" role="button" tabindex="0" aria-label="What eyesight means" data-tip="How far hares spot grass to graze and lynx to flee.">?</span></span><span class="val" id="v_hareVision"></span></label>
       <input type="range" id="s_hareVision" min="1" max="6" step="1" value="3">
-      <div class="hint">How far hares spot grass to graze and lynx to flee.</div>
     </div>
   </div>
 
@@ -315,24 +362,20 @@
   <div class="group lynx">
     <p class="group-title">Lynx <span class="tag">predator · carnivore</span></p>
     <div class="row">
-      <label for="s_startLynx">Starting lynx <span class="val" id="v_startLynx"></span></label>
+      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
       <input type="range" id="s_startLynx" min="0" max="150" step="2" value="28">
-      <div class="hint">Applies on Reset.</div>
     </div>
     <div class="row">
-      <label for="s_lynxBirth">Birth rate <span class="val" id="v_lynxBirth"></span></label>
+      <label for="s_lynxBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed lynx reproduces.">?</span></span><span class="val" id="v_lynxBirth"></span></label>
       <input type="range" id="s_lynxBirth" min="0" max="15" step="1" value="5">
-      <div class="hint">Chance per step a well-fed lynx reproduces.</div>
     </div>
     <div class="row">
-      <label for="s_preyEnergy">Energy from a kill <span class="val" id="v_preyEnergy"></span></label>
+      <label for="s_preyEnergy"><span class="nm">Energy from a kill<span class="tip" role="button" tabindex="0" aria-label="What energy from a kill means" data-tip="Food value of catching one hare.">?</span></span><span class="val" id="v_preyEnergy"></span></label>
       <input type="range" id="s_preyEnergy" min="5" max="40" step="1" value="20">
-      <div class="hint">Food value of catching one hare.</div>
     </div>
     <div class="row">
-      <label for="s_lynxVision">Hunting range <span class="val" id="v_lynxVision"></span></label>
+      <label for="s_lynxVision"><span class="nm">Hunting range<span class="tip" role="button" tabindex="0" aria-label="What hunting range means" data-tip="How far lynx detect and chase hares.">?</span></span><span class="val" id="v_lynxVision"></span></label>
       <input type="range" id="s_lynxVision" min="1" max="8" step="1" value="4">
-      <div class="hint">How far lynx detect and chase hares.</div>
     </div>
   </div>
 
@@ -340,32 +383,39 @@
   <div class="group habitat">
     <p class="group-title">Habitat <span class="tag">environment</span></p>
     <div class="row">
-      <label for="s_plant">Plant regrowth <span class="val" id="v_plant"></span></label>
+      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back. This sets the land's carrying capacity.">?</span></span><span class="val" id="v_plant"></span></label>
       <input type="range" id="s_plant" min="1" max="10" step="1" value="6">
-      <div class="hint">How fast grazed patches grow back. This sets the land's carrying capacity.</div>
     </div>
     <div class="row">
-      <label for="s_metab">Metabolic cost <span class="val" id="v_metab"></span></label>
+      <label for="s_metab"><span class="nm">Metabolic cost<span class="tip" role="button" tabindex="0" aria-label="What metabolic cost means" data-tip="Energy every animal burns each step just to stay alive.">?</span></span><span class="val" id="v_metab"></span></label>
       <input type="range" id="s_metab" min="0.5" max="2.5" step="0.1" value="1">
-      <div class="hint">Energy every animal burns each step just to stay alive.</div>
     </div>
   </div>
 </div>
-<details>
-  <summary>What you're looking at</summary>
-  <div class="explain">
-    <p><b>Emergence.</b> No equation moves the dots. Each animal follows three rules — find food, avoid being food, and breed when energy is high — and the famous boom-and-bust cycles <i>emerge</i> from the crowd.</p>
+  </div>
+</div>
+
+<footer>BUILT AS A TEACHING MODEL · ADJUST · OBSERVE · EXPLAIN</footer>
+
+<dialog class="about" id="about" aria-labelledby="aboutTitle">
+  <div class="about-inner">
+    <button class="about-close" id="btnAboutClose" aria-label="Close">&#10005;</button>
+    <h2 id="aboutTitle">What am I looking at?</h2>
+<p><b>Emergence.</b> No equation moves the dots. Each animal follows three rules — find food, avoid being food, and breed when energy is high — and the famous boom-and-bust cycles <i>emerge</i> from the crowd.</p>
     <p><b>The cycle (Lotka–Volterra).</b> <span class="hl">Hares</span> rise when grass is plentiful → more prey feeds the <span class="hr">lynx</span> → lynx rise → hares get eaten faster and crash → lynx starve and crash → grass recovers → hares rise again. Predator peaks <i>lag</i> prey peaks by about a quarter-cycle. Switch the trace to <b>Phase orbit</b> to see this lag draw itself as a loop.</p>
     <p><b>Energy &amp; trophic levels.</b> Energy flows grass → hare → lynx, leaking away as metabolism at each step. That loss is why a healthy field always holds far more hares than lynx — the classic energy pyramid.</p>
     <p><b>Carrying capacity.</b> Plant regrowth sets the ceiling on how many hares the land can feed. Slow regrowth (Sparse habitat) means a low ceiling and small, fragile populations.</p>
     <p><b>Paradox of enrichment.</b> Push plant regrowth to the max and the swings get <i>wilder</i>, often ending in collapse — adding food can destabilize a system rather than steady it (Rosenzweig, 1971).</p>
     <p><b>Grounded in real data.</b> This mirrors the Canadian lynx and snowshoe hare, whose populations cycle on a roughly 10-year period — famously recorded in the Hudson's Bay Company fur-trade ledgers, one of ecology's longest datasets.</p>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Switch the trace to <b>Phase orbit</b> and watch the loop close on itself.</li>
+      <li>Run <b>Paradox of enrichment</b> and see the swings widen until something breaks.</li>
+      <li>Drag <b>Hunting range</b> up mid-run and watch the hares crash within a few hundred steps.</li>
+      <li>Set <b>Plant regrowth</b> to 1 and count how few animals the land can carry.</li>
+    </ul>
   </div>
-</details>
-  </div>
-</div>
-
-<footer>BUILT AS A TEACHING MODEL · ADJUST · OBSERVE · EXPLAIN</footer>
+</dialog>
 
 <script>
 (function(){
@@ -800,11 +850,48 @@
     overhunt: {startHare:110,startLynx:80,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:6,preyEnergy:26,lynxVision:7,plant:6,metab:1},
     desert:   {startHare:90, startLynx:18,hareBirth:5,grassEnergy:4,hareVision:4,lynxBirth:4,preyEnergy:22,lynxVision:4,plant:1,metab:1}
   };
-  el('chips').addEventListener('click', e=>{
-    const b=e.target.closest('button'); if(!b) return;
-    const p=PRESETS[b.dataset.p]; if(!p) return;
-    sliders.forEach(([sid,,key])=>{ if(key in p){ const s=el(sid); s.value=p[key]; s.dispatchEvent(new Event('input')); }});
+  const presetBtns = [...document.querySelectorAll('.preset')];
+  function applyPreset(key){
+    const p = PRESETS[key]; if(!p) return;
+    sliders.forEach(([sid,,k])=>{ if(k in p){ const s=el(sid); s.value=p[k]; s.dispatchEvent(new Event('input')); }});
+    presetBtns.forEach(b=> b.setAttribute('aria-pressed', String(b.dataset.p===key)));
     reset(); running=true; playBtn.textContent='Pause';
+  }
+  el('chips').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(b) applyPreset(b.dataset.p);
+  });
+  // a slider moved by hand means we are no longer on a named preset
+  sliders.forEach(([sid])=> el(sid).addEventListener('input', ()=>{
+    presetBtns.forEach(b=> b.setAttribute('aria-pressed','false'));
+  }));
+
+  // ---- "?" tooltips ----
+  function closeTips(){ document.querySelectorAll('.tip.show').forEach(t=>t.classList.remove('show')); }
+  document.addEventListener('pointerdown', e=>{ if(!e.target.closest('.tip')) closeTips(); });
+  document.querySelectorAll('.tip').forEach(t=>{
+    t.addEventListener('click', e=>{
+      e.preventDefault(); e.stopPropagation();
+      const on=t.classList.contains('show'); closeTips(); if(!on) t.classList.add('show');
+    });
+    t.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); t.click(); } });
+  });
+
+  // ---- what am I looking at? ----
+  const dlg = el('about');
+  el('btnAbout').addEventListener('click', ()=>{ dlg.showModal ? dlg.showModal() : dlg.setAttribute('open',''); });
+  el('btnAboutClose').addEventListener('click', ()=> dlg.close());
+  dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
+
+  // ---- keyboard: 1-5 pick a preset, space plays/pauses, R resets ----
+  const ORDER = ['balance','boom','enrich','overhunt','desert'];
+  document.addEventListener('keydown', e=>{
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    const t=e.target; if(t && (t.tagName==='INPUT'||t.tagName==='SELECT')) return;
+    if(dlg.open){ return; }
+    if(e.key>='1' && e.key<='5'){ applyPreset(ORDER[+e.key-1]); }
+    else if(e.key===' '){ e.preventDefault(); playBtn.click(); }
+    else if(e.key==='r'||e.key==='R'){ el('reset').click(); }
+    else if(e.key==='?'){ el('btnAbout').click(); }
   });
 
   // go
