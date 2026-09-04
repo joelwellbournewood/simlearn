@@ -12,14 +12,15 @@
   :root{
     --bg:#0a1512;
     --panel:rgba(15,31,26,.84);
-    --line:rgba(130,170,150,.14);
-    --line-strong:rgba(130,170,150,.30);
+    --panel-solid:rgba(15,31,26,.97);
+    --line:rgba(255,255,255,.09);
+    --line-strong:rgba(255,255,255,.18);
     --text:#e3efe9;
     --muted:#88a397;
     --accent:#56e0c2;
     --accent-ink:#04211a;
     --danger:#ff7d5c;
-    --ui:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --ui:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
     --display:'Space Grotesk',var(--ui);
     --mono:'Space Mono',ui-monospace,Menlo,monospace;
     --vignette:rgba(0,0,0,.45);
@@ -88,7 +89,7 @@
   .ctl input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--accent)}
   .ctl input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--text);border:2px solid #0a1512;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
   .ctl select, .ctl input[type=color]{grid-column:1/-1;margin-top:4px}
-  .ctl select{appearance:none;-webkit-appearance:none;width:100%;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%238e97ad' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center}
+  .ctl select{appearance:none;-webkit-appearance:none;width:100%;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%2388a397' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center}
   .ctl select option{background:#13261f;color:var(--text)}
   .ctl input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04)}
   .row2{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
@@ -119,6 +120,11 @@
   .about-inner li{margin:0 0 4px}
   .about-close{position:absolute;right:14px;top:14px}
   body.clean .about-btn{display:none}
+  /* blurring a live canvas costs a full-screen compositor pass every frame; drop it when the device is struggling */
+  body.cheap .seg, body.cheap .icon-btn, body.cheap .panel, body.cheap .about-btn, body.cheap .hud{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--panel-solid)}
+  #diag{position:absolute;left:20px;bottom:20px;z-index:8;display:none;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(10,21,18,.93);color:#cfe3da;font-family:var(--mono);font-size:11.5px;line-height:1.6;font-variant-numeric:tabular-nums;white-space:pre;max-width:calc(100vw - 40px);overflow:auto}
+  body.diag #diag{display:block}
+  #diag b{color:var(--accent);font-weight:600}
   body.light .about-btn{color:#0e1f19;background:rgba(255,255,255,.6);border-color:rgba(0,0,0,.12)}
   body.light .about-btn:hover{border-color:rgba(0,0,0,.3)}
   .text-btn{border:1px solid var(--line);background:transparent;color:var(--text);padding:7px 12px;border-radius:8px;font-weight:500;transition:border-color .18s}
@@ -133,17 +139,11 @@
   #stage.light ~ .tools .hint{text-shadow:0 1px 8px rgba(255,255,255,.7);color:#5c6b62}
 
   /* ---------- hud ---------- */
-  .hud b,.hud .stat span{font-family:var(--mono)}
   .hud{position:absolute;right:20px;bottom:20px;z-index:5;display:flex;align-items:center;gap:12px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
   .hud b{color:var(--text);font-weight:600}
   .hud canvas{width:84px;height:22px;display:block}
   .hud .stat{display:flex;flex-direction:column;line-height:1.15}
   .hud .stat span:first-child{font-size:11px}
-
-  /* ---------- embedded in the SimLearn player ---------- */
-  .in-frame .brand{display:none}
-  .in-frame .modes{top:18px}
-  .in-frame .about-btn{top:18px}
 
   /* ---------- clean mode ---------- */
   body.clean .brand, body.clean .modes, body.clean .panel, body.clean .tools, body.clean .hud, body.clean .actions .icon-btn:not(#btnClean){display:none}
@@ -174,10 +174,15 @@
   @media (prefers-reduced-motion:reduce){
     .panel{transition:none}
   }
+  .hud b,.hud .stat span{font-family:var(--mono)}
+  /* ---------- embedded in the SimLearn player ---------- */
+  .in-frame .brand{display:none}
+  .in-frame .modes{top:18px}
+  .in-frame .about-btn{top:18px}
 </style>
 </head>
-<script>if(self!==top)document.documentElement.classList.add('in-frame');</script>
 <body>
+<script>if(self!==top)document.documentElement.classList.add('in-frame');</script>
 <div id="stage">
   <canvas id="c2d"></canvas>
   <canvas id="c2o"></canvas>
@@ -251,6 +256,7 @@
       <dt><kbd>R</kbd></dt><dd>scatter the flock</dd>
       <dt><kbd>H</kbd></dt><dd>hide the interface</dd>
       <dt><kbd>F</kbd></dt><dd>fullscreen</dd>
+      <dt><kbd>D</kbd></dt><dd>performance readout</dd>
       <dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>presets</dd>
       <dt><kbd>Scroll</kbd></dt><dd>zoom</dd>
       <dt><kbd>Right-drag</kbd></dt><dd>move the view</dd>
@@ -295,6 +301,8 @@
   </div>
   <div class="hint" id="hint"></div>
 </div>
+
+<pre id="diag"></pre>
 
 <div class="hud">
   <div class="stat"><span>boids</span><b id="stBoids">0</b></div>
@@ -970,7 +978,7 @@ class View2D {
     this.octx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.clear();
   }
-  clear() { this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); }
+  clear() { this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); this.drew = false; }
   setTable(table) {
     this.table = table;
     this.css = table.map(c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`);
@@ -986,7 +994,9 @@ class View2D {
       return s;
     });
   }
-  render(flock, P, ctx) {
+  render(flock, P, ctx, steps) {
+    if (steps === 0 && this.drew && !ctx.dirty) { this.renderOverlay(flock, P, ctx); return; }
+    this.drew = true;
     const c = this.ctx, W = this.w, H = this.h, n = flock.n;
     const { px, py, vx, vy, species, nb, phase, flash } = flock;
     const dark = ctx.dark;
@@ -995,7 +1005,7 @@ class View2D {
     // fade or clear (screen space)
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (P.trail > 0) {
-      let a = 1 - P.trail;
+      let a = 1 - Math.pow(P.trail, Math.max(1, steps || 1));
       if (this.frame % 6 === 0) a = Math.min(1, a * 2);   // sweeps the 8-bit residue that never quite fades
       c.globalCompositeOperation = 'destination-out';
       c.fillStyle = `rgba(0,0,0,${a.toFixed(3)})`;
@@ -1222,9 +1232,9 @@ class View3D {
     this.obsVersion = -1;
 
     // inspect helpers
-    this.inspectSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf2c46d, wireframe: true, transparent: true, opacity: 0.25 }));
+    this.inspectSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0x56e0c2, wireframe: true, transparent: true, opacity: 0.25 }));
     this.inspectSphere.visible = false; this.scene.add(this.inspectSphere);
-    this.inspectLines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf2c46d, transparent: true, opacity: 0.6 }));
+    this.inspectLines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.6 }));
     this.inspectLines.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(512 * 6), 3));
     this.inspectLines.visible = false; this.scene.add(this.inspectLines);
 
@@ -1345,6 +1355,8 @@ class View3D {
     this.camera.lookAt(this.target);
   }
   render(flock, P, ctx, dt, interacting) {
+    if (dt === 0 && this.drew && !this.autoRotate && !interacting) { this.renderer.render(this.scene, this.camera); return; }
+    this.drew = true;
     const n = flock.n;
     const trailLen = P.trail <= 0 ? 0 : Math.round(2 + P.trail * 44);
     this.ensureCapacity(Math.max(n, flock.cap), trailLen);
@@ -1610,22 +1622,21 @@ let view3d = null;
 let threePromise = null;
 const ctx = { mouse: { x: 0, y: 0, z: 0, active: false, mode: 'attract' }, tool: 'attract', dark: true, palette: PALETTES.abyss.colors, inspect: false, grid: false, draft: null };
 const inputs = {};
-/* PERF: cap the render resolution by AREA, not just by device pixel ratio. A retina
-   laptop showing a full-bleed 1900x950 field would otherwise ask for a 3800x1900
-   backing store (7.2M px) and become fill-rate bound. RES_BUDGET caps total device
-   pixels; the frame loop degrades further (down to 0.5x) if frames still run long,
-   and climbs back up once they are comfortable again. */
-const RES_BUDGET = 3.2e6;
-function capForArea(w, h) {
-  const d = Math.min(window.devicePixelRatio || 1, 2);
-  const a = Math.max(1, w * h);
-  return Math.max(0.6, Math.min(d, Math.sqrt(RES_BUDGET / a)));
-}
-let degrade = 1;                     // runtime quality multiplier, 1 -> 0.45
 let dprCap = Math.min(window.devicePixelRatio || 1, 2);
 let dpr = dprCap;
 let width = 0, height = 0;
-let slowFor = 0;
+let slowFor = 0, quality = 2;   // 2 full, 1 no backdrop blur, 0 also lower resolution
+const PIXEL_BUDGET = 2600000;   // roughly 1920x1350; beyond this, resolution is scaled down
+const DPR_NATIVE = Math.min(window.devicePixelRatio || 1, 2);
+function downgrade() {
+  if (quality === 2) { quality = 1; document.body.classList.add('cheap'); }
+  else { quality = 0; dprCap = Math.max(0.55, dprCap * 0.8); resize(); }   /* keep stepping down; a 1x machine needs this too */
+}
+function upgrade() {                                   /* climb back once frames are comfortable again */
+  if (dprCap < DPR_NATIVE) { dprCap = Math.min(DPR_NATIVE, dprCap * 1.12); resize(); }
+  else if (quality === 0) { quality = 1; }
+  else if (quality === 1) { quality = 2; document.body.classList.remove('cheap'); }
+}
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------------- panel construction ---------------- */
@@ -1736,8 +1747,9 @@ function updateArena() {
 }
 function resize() {
   width = window.innerWidth; height = window.innerHeight;
-  dprCap = capForArea(width, height);
-  dpr = Math.max(0.45, dprCap * degrade);
+  dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+  const px = width * height * dpr * dpr;
+  if (px > PIXEL_BUDGET) dpr = Math.max(0.6, dpr * Math.sqrt(PIXEL_BUDGET / px));   // a huge canvas costs fill rate, not maths
   updateArena();
   view2d.resize(width, height, dpr);
   if (view3d) { view3d.renderer.setPixelRatio(dpr); view3d.resize(width, height); }
@@ -1929,6 +1941,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'Escape' && document.body.classList.contains('clean')) toggleClean();
   else if (e.key >= '1' && e.key <= '9') { const pr = PRESETS[parseInt(e.key) - 1]; if (pr) applyPreset(pr.key); }
   else if (e.key === '0' && PRESETS[9]) applyPreset(PRESETS[9].key);
+  else if (e.key === 'd' || e.key === 'D') document.body.classList.toggle('diag');
 });
 // close mobile sheet when tapping the stage
 stage.addEventListener('pointerdown', () => { if (window.innerWidth <= 820) $('panel').classList.remove('open'); });
@@ -1936,7 +1949,7 @@ stage.addEventListener('pointerdown', () => { if (window.innerWidth <= 820) $('p
 /* ---------------- HUD ---------------- */
 const spark = $('spark').getContext('2d');
 const orderHist = new Float32Array(84); let orderPtr = 0;
-let fpsAcc = 0, fpsN = 0, fps = 60, lastHud = 0;
+let fpsAcc = 0, fpsN = 0, fps = 60, lastHud = 0, fpsPrev = 0;
 function drawSpark() {
   const c = spark, W = 168, H = 44;
   c.clearRect(0, 0, W, H);
@@ -1958,25 +1971,62 @@ function updateHud(now) {
   drawSpark();
 }
 
-/* ---------------- main loop ---------------- */
-let last = performance.now();
+/* ---------------- main loop ----------------
+   The flock is simulated at a fixed 60 steps per second and drawn once per animation
+   frame. On a 144 Hz display that is 60 steps rather than 144, and the motion runs at
+   the same speed either way. */
+const SIM_HZ = 60, SIM_MS = 1000 / SIM_HZ;
+let last = performance.now(), acc = 0;
+let simMs = 0, drawMs = 0, steps = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  const elapsed = now - last; last = now;
-  const dt = clamp(elapsed / 16.667, 0.2, 1.6);
-  fpsAcc += elapsed; fpsN++;
+  const elapsed = Math.min(now - last, 250); last = now;
+  fpsAcc += now - (fpsPrev || now); fpsPrev = now; fpsN++;
   if (fpsAcc > 500) {
     fps = 1000 * fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
-    // if the device can't keep up, render at a lower resolution rather than stutter
-    if (!paused && fps < 45 && degrade > 0.5) { slowFor += 0.5; if (slowFor >= 1.5) { degrade = Math.max(0.5, degrade - 0.2); slowFor = 0; resize(); } }
-    else if (!paused && fps > 57 && degrade < 1) { slowFor -= 0.5; if (slowFor <= -6) { degrade = Math.min(1, degrade + 0.1); slowFor = 0; resize(); } }
+    if (!paused && fps < 40) { slowFor = Math.max(0, slowFor) + 0.5; if (slowFor >= 2) { downgrade(); slowFor = 0; } }
+    else if (!paused && fps > 57 && (quality < 2 || dprCap < DPR_NATIVE)) { slowFor = Math.min(0, slowFor) - 0.5; if (slowFor <= -6) { upgrade(); slowFor = 0; } }
     else slowFor = 0;
   }
-  if (!paused) flock.step(dt, P, ctx);
-  if (mode === '2d') view2d.render(flock, P, ctx);
-  else if (view3d) { view3d.render(flock, P, ctx, paused ? 0 : dt, interacting > 0 || ctx.mouse.active); }
-  if (interacting > 0) interacting -= dt;
+  let t0 = performance.now();
+  if (!paused) {
+    acc = Math.min(acc + elapsed, SIM_MS * 4);   // never try to catch up more than a few steps
+    let n = 0;
+    while (acc >= SIM_MS && n < 4) { flock.step(1, P, ctx); acc -= SIM_MS; n++; }
+    steps = n;
+    if (interacting > 0) interacting -= n;
+  } else steps = 0;
+  simMs += (performance.now() - t0 - simMs) * 0.1;
+  t0 = performance.now();
+  if (mode === '2d') view2d.render(flock, P, ctx, steps);
+  else if (view3d) view3d.render(flock, P, ctx, paused ? 0 : steps, interacting > 0 || ctx.mouse.active);
+  drawMs += (performance.now() - t0 - drawMs) * 0.1;
   updateHud(now);
+  if (document.body.classList.contains('diag')) updateDiag();
+}
+
+/* ---------------- diagnostics (?debug=1 or D) ---------------- */
+function gpuInfo() {
+  try {
+    const cv = document.createElement('canvas');
+    const gl = cv.getContext('webgl') || cv.getContext('experimental-webgl');
+    if (!gl) return 'WebGL unavailable';
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'renderer hidden';
+  } catch (e) { return 'WebGL error'; }
+}
+let gpuName = null;
+function updateDiag() {
+  if (gpuName === null) gpuName = gpuInfo();
+  const cv = mode === '2d' ? view2d.canvas : $('c3d');
+  const soft = /swiftshader|llvmpipe|software|basic render/i.test(gpuName);
+  $('diag').innerHTML =
+    `fps <b>${fps.toFixed(0)}</b>   sim <b>${simMs.toFixed(1)}ms</b>   draw <b>${drawMs.toFixed(1)}ms</b>\n` +
+    `boids ${flock.n}   steps/frame ${steps}   mode ${mode}\n` +
+    `css ${width}\u00d7${height}   canvas ${cv.width}\u00d7${cv.height}   dpr ${dpr.toFixed(2)} (device ${(window.devicePixelRatio || 1).toFixed(2)})\n` +
+    `pixels ${(cv.width * cv.height / 1e6).toFixed(2)}M   quality ${quality}\n` +
+    `in iframe ${window.top !== window.self ? 'yes' : 'no'}\n` +
+    `gpu ${gpuName}${soft ? '  <b>SOFTWARE RENDERING</b>' : ''}`;
 }
 
 /* ---------------- boot ---------------- */
@@ -1987,6 +2037,7 @@ const startPreset = PRESETS.find(p => p.key === url.get('preset')) ? url.get('pr
 applyPreset(startPreset);
 selectTool('attract');
 if (url.get('ui') === 'min') toggleClean();
+if (url.get('debug')) document.body.classList.add('diag');
 if (url.get('mode') === '3d') setMode('3d');
 requestAnimationFrame(frame);
 </script>
