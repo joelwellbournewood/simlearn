@@ -81,13 +81,13 @@ html,body{overflow-x:clip}
   opacity:0; animation:rise .62s cubic-bezier(.2,.7,.25,1) .3s forwards;
 }
 .hero-sub::before{content:""; width:34px; height:1px; background:linear-gradient(90deg,var(--accent),transparent); flex:none}
-.hero-flock{
-  position:absolute; left:50%; transform:translateX(-50%); width:100vw;
-  top:-74px; height:calc(100% + 118px); pointer-events:none; z-index:0;
-  opacity:.9;
-  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.30) 0%,#000 26%,#000 66%,transparent 97%);
-  mask-image:linear-gradient(180deg,rgba(0,0,0,.30) 0%,#000 26%,#000 66%,transparent 97%);
+.site-flock{
+  position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:0;
+  opacity:.92;
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.45) 0%,#000 14%,#000 72%,rgba(0,0,0,.55) 100%);
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.45) 0%,#000 14%,#000 72%,rgba(0,0,0,.55) 100%);
 }
+body.has-flock main, body.has-flock footer{position:relative; z-index:1}
 .hero > h1, .hero > .hero-sub{position:relative; z-index:1}
 .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:0 0 8px}
 
@@ -110,7 +110,7 @@ html,body{overflow-x:clip}
 .card{
   position:relative; display:block; padding:0; overflow:hidden; text-decoration:none; color:var(--ink);
   border:1px solid var(--line); border-radius:var(--radius);
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  background:linear-gradient(180deg,rgba(13,31,26,.88),rgba(10,23,20,.90));
   transition:transform .2s cubic-bezier(.2,.7,.25,1), border-color .2s, box-shadow .2s;
   will-change:transform;
 }
