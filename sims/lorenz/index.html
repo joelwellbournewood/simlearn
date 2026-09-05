@@ -1,111 +1,409 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lorenz Attractor</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200">
+<title>Lorenz Attractor: the first picture of chaos | SimLearn</title>
+<meta name="description" content="An interactive Lorenz attractor in rotatable 3D. Release a swarm of near-identical starts, change the Rayleigh number, and watch a system flip between settling down and never repeating.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-html,body{margin:0;height:100%;background:#0a1512;color:#e3efe9;font-family:sans-serif;overflow:hidden}
-#wrap{display:flex;height:100%}
-#canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#07120f;cursor:crosshair}
-#panel{width:260px;padding:14px 16px;background:#0f1f1a;border-left:1px solid #22362e;overflow-y:auto;font-size:13px}
-#panel h2{font-size:15px;margin:0 0 8px}
-#panel p{color:#88a397;line-height:1.45;margin:0 0 12px}
-.row{margin-bottom:12px}
-.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#c6d6cd}
-.row input[type=range]{width:100%;accent-color:#56e0c2}
-button{width:100%;background:#56e0c2;border:none;color:#0a1512;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
-button.secondary{background:#f6ad55}
-.legend{display:flex;align-items:center;gap:6px;margin-top:10px;color:#c6d6cd}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-</style></head><body>
-<div id="wrap">
-<div id="canvas-holder"><canvas id="c"></canvas></div>
-<div id="panel">
-<h2>Lorenz Attractor</h2>
-<p>Three simple equations meant to model convection in the atmosphere. The path never repeats and never settles down, yet it stays confined to a butterfly-shaped surface — the birthplace of the term "butterfly effect". Edward Lorenz, 1963.</p>
-
-<div class="row"><label><span>&sigma; (Prandtl number)</span><span id="v-sigma">10.0</span></label><input type="range" id="sigma" min="1" max="30" step="0.5" value="10"></div>
-<div class="row"><label><span>&rho; (Rayleigh number)</span><span id="v-rho">28.0</span></label><input type="range" id="rho" min="0.5" max="50" step="0.5" value="28"></div>
-<div class="row"><label><span>&beta;</span><span id="v-beta">2.67</span></label><input type="range" id="beta" min="0.5" max="6" step="0.1" value="2.67"></div>
-<div class="row"><label><span>Rotation speed</span><span id="v-rot">0.5</span></label><input type="range" id="rot" min="0" max="2" step="0.1" value="0.5"></div>
-
-<button id="reset">New Trajectory</button>
-<button id="twin" class="secondary">Release a Twin (+0.001)</button>
-<div class="legend"><span class="dot" style="background:#56e0c2"></span>Trajectory A</div>
-<div class="legend"><span class="dot" style="background:#f6ad55"></span>Twin — started a thousandth apart</div>
-<p style="margin-top:16px">Click the canvas to drop a fresh trajectory starting near where you clicked. Try "Release a Twin" and watch two near-identical starts diverge completely within seconds — that's chaos, not randomness.</p>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;right:20px;top:66px;width:300px;max-height:calc(100% - 86px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.presets{display:grid;gap:6px;margin-bottom:14px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:12px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.hud{position:absolute;left:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 360px)}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.hint{position:absolute;left:20px;bottom:74px;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(84vh,780px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:62ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+/* lorenz carries eight controls; tighten the panel so they fit without inner scroll */
+.panel .row{margin:9px 0}
+.panel input[type=range]{height:20px}
+.panel input[type=range]::-webkit-slider-thumb{width:17px;height:17px;margin-top:-7px}
+.presets{gap:5px} .preset{padding:7px 10px}
+.about-btn{padding:9px 14px;margin-bottom:9px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+<div class="brand">
+  <p class="kicker">Lorenz, 1963</p>
+  <h1>Lorenz Attractor</h1>
+  <p>Three equations. A path that never repeats and never leaves.</p>
 </div>
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Restart (R)" aria-label="Restart">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
 </div>
+<div class="panel">
+  <button class="about-btn" id="b-about">What am I looking at?</button>
+  <p class="label">Experiment</p>
+  <div class="presets" id="presets"></div>
+  <p class="label">The equations</p>
+  <div class="row">
+    <label for="s-rho"><span class="nm">&rho; Rayleigh<button class="tip" data-tip="How hard the fluid is being heated from below. Under about 24.7 the system settles to a steady roll. Above it, it never settles." aria-label="What rho does">?</button></span><span class="val" id="v-rho"></span></label>
+    <input type="range" id="s-rho" min="0.5" max="120" step="0.5" value="28">
+  </div>
+  <div class="row">
+    <label for="s-sigma"><span class="nm">&sigma; Prandtl<button class="tip" data-tip="The ratio of how fast momentum spreads through the fluid to how fast heat does. Lorenz used 10, roughly water." aria-label="What sigma does">?</button></span><span class="val" id="v-sigma"></span></label>
+    <input type="range" id="s-sigma" min="1" max="30" step="0.5" value="10">
+  </div>
+  <div class="row">
+    <label for="s-beta"><span class="nm">&beta; Geometry<button class="tip" data-tip="Set by the width-to-height shape of the convection cell. Lorenz used eight thirds, about 2.67." aria-label="What beta does">?</button></span><span class="val" id="v-beta"></span></label>
+    <input type="range" id="s-beta" min="0.4" max="6" step="0.05" value="2.65">
+  </div>
+  <p class="label">Display</p>
+  <div class="row">
+    <label for="s-copies"><span class="nm">Trajectories<button class="tip" data-tip="How many starts are released at once, spread across a tiny range. They begin as one line." aria-label="What trajectories does">?</button></span><span class="val" id="v-copies"></span></label>
+    <input type="range" id="s-copies" min="1" max="80" step="1" value="1">
+  </div>
+  <div class="row">
+    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="Distance in state space between the first start and the last, as a power of ten." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <input type="range" id="s-spread" min="-6" max="0" step="0.1" value="-3">
+  </div>
+  <div class="row">
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays drawn. Long trails show the attractor's shape; short ones show where the state is now." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <input type="range" id="s-trail" min="5" max="100" step="1" value="70">
+  </div>
+  <div class="pair">
+  <div class="row">
+    <label for="s-rot"><span class="nm">Rotation<button class="tip" data-tip="Spin speed of the viewpoint. Drag on the canvas to turn it yourself." aria-label="What rotation does">?</button></span><span class="val" id="v-rot"></span></label>
+    <input type="range" id="s-rot" min="0" max="2" step="0.05" value="0.45">
+  </div>
+  <div class="row">
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. Integration substeps scale with it." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <input type="range" id="s-speed" min="0.25" max="3" step="0.05" value="1">
+  </div>
+  </div>
+</div>
+<div class="hud">
+  <div class="stat"><div class="k">Paths</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
+  <div class="stat"><div class="k">Time</div><div class="v" id="s-t">0.0</div></div>
+  <div class="stat"><div class="k">Separation</div><div class="v" id="s-div" style="color:var(--danger)">-</div></div>
+  <div class="stat"><div class="k">Lobe swaps</div><div class="v" id="s-sw">0</div></div>
+</div>
+<div class="hint">Drag to turn the view. 1-5 presets, space pause, R restart, H hide.</div>
+<dialog class="about" id="about">
+  <div class="about-inner">
+    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
+    <h2>The Lorenz Attractor</h2>
+    <p>In 1963 Edward Lorenz stripped a model of atmospheric convection down to three numbers: how fast the fluid is rolling, and two measures of how the heat is distributed across it. Three equations, no randomness, no external forcing. He expected the answer to settle down or to repeat. It did neither.</p>
+    <p>What you are watching is the state of that system drawn as a single point moving through three dimensions. It never crosses its own path and it never escapes the region. Instead it winds around one lobe for a while, flips to the other, winds there, flips back, forever, in an order that has no pattern.</p>
+    <h3>Why this picture mattered</h3>
+    <p>Before Lorenz, an aperiodic wiggle in a model was assumed to be noise, or a bug, or not enough decimal places. He showed a system with none of those excuses doing it anyway. The set the path is drawn onto is a <b>strange attractor</b>: everything nearby is pulled towards it, and yet two points on it that start a millionth apart end up on opposite lobes. Attracting and unpredictable at the same time.</p>
+    <p>This is also the origin of the butterfly. The shape is a coincidence; the real point is Lorenz's question about whether a flap in Brazil could set off a tornado in Texas. Press <b class="hl">Swarm of fifty</b> and watch fifty starts a thousandth apart become fifty unrelated futures.</p>
+    <h3>The number that decides everything</h3>
+    <p>&rho; is the Rayleigh number: how hard you are heating the fluid.</p>
+    <ul>
+      <li><b>Below 1</b>: nothing moves. Heat just conducts through. Every start collapses to the origin.</li>
+      <li><b>Between 1 and about 24.74</b>: steady convection. The path spirals in and stops at one of two fixed points, one for each direction of roll. Try &rho; = 14.</li>
+      <li><b>Above 24.74</b>: both fixed points lose stability and there is nowhere left to settle. Chaos. Lorenz used 28.</li>
+      <li><b>Around 99.5 to 100.8</b>: a periodic window. The chaos gives way to a clean repeating loop, then goes back to chaos on either side. Try &rho; = 100.5.</li>
+    </ul>
+    <h3>The honest caveats</h3>
+    <ul>
+      <li>Integration is fourth-order Runge-Kutta. It has to be: with a first-order method the path visibly drifts off the attractor and you cannot tell physics from arithmetic.</li>
+      <li>This is not weather. It is three variables where the atmosphere has billions. It is a proof that unpredictability can be built into a system, not a model of anything you would forecast with.</li>
+      <li>The <b>separation</b> readout is the largest distance between any two of the released paths in state space. On a chaotic setting it grows roughly exponentially until it saturates at the size of the attractor.</li>
+    </ul>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Set &rho; to 14 and restart. Watch the spiral tighten and stop. Then nudge it to 25 and restart. Nothing about the equations changed shape, and the behaviour did.</li>
+      <li>Release the swarm, then read the <b>lobe swaps</b> counter. The sequence of left and right is as good a coin flip as anything in physics, and it is produced by arithmetic with no randomness in it.</li>
+      <li>Drag the view until you are looking down the attractor's axis. The two lobes are not flat discs; they are sheets that never quite touch.</li>
+    </ul>
+  </div>
+</dialog>
 <script>
-const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let sigma=10, rho=28, beta=8/3, dt=0.008;
-const dt_sub=4;
-let angle=0, rotSpeed=0.5;
-let trajA=null, trajB=null;
-
-function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
-
-function newTraj(x0,y0,z0){
-  return {x:x0, y:y0, z:z0, pts:[]};
+(function(){
+'use strict';
+if(window.self!==window.top) document.body.classList.add('in-frame');
+const TAU=Math.PI*2;
+const stage=document.getElementById('stage'), cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const el=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=stage.getBoundingClientRect();
+  W=Math.max(320,r.width); H=Math.max(240,r.height);
+  const native=Math.min(window.devicePixelRatio||1,2); const BUDGET=3.2e6;
+  let d=native; if(W*H*d*d>BUDGET) d=Math.max(1,Math.sqrt(BUDGET/(W*H)));
+  DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
 }
-function init(x0,y0,z0){
-  x0 = x0 ?? (0.1+Math.random()*0.02);
-  y0 = y0 ?? 0;
-  z0 = z0 ?? 0;
-  trajA = newTraj(x0,y0,z0);
-  trajB = null;
+let sigma=10, rho=28, beta=2.65, copies=1, spread=1e-3, trailPct=70, rotSpeed=0.45, speed=1;
+let paused=false, arr=[], tsim=0, swaps=0, yaw=0.6, pitch=0.28, activePreset='classic';
+function deriv(s,o){ o[0]=sigma*(s[1]-s[0]); o[1]=s[0]*(rho-s[2])-s[1]; o[2]=s[0]*s[1]-beta*s[2]; }
+const k1=[0,0,0],k2=[0,0,0],k3=[0,0,0],k4=[0,0,0],tmp=[0,0,0];
+function rk4(s,h){
+  deriv(s,k1);
+  for(let i=0;i<3;i++) tmp[i]=s[i]+h/2*k1[i]; deriv(tmp,k2);
+  for(let i=0;i<3;i++) tmp[i]=s[i]+h/2*k2[i]; deriv(tmp,k3);
+  for(let i=0;i<3;i++) tmp[i]=s[i]+h*k3[i];   deriv(tmp,k4);
+  for(let i=0;i<3;i++) s[i]+=h/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
 }
-function releaseTwin(){
-  if(!trajA) return;
-  trajB = newTraj(trajA.x+0.001, trajA.y, trajA.z);
+function colourAt(t){
+  let r,g,b;
+  if(t<0.5){ const u=t/0.5; r=86+(230-86)*u; g=224+(195-224)*u; b=194+(79-194)*u; }
+  else { const u=(t-0.5)/0.5; r=230+(255-230)*u; g=195+(125-195)*u; b=79+(92-79)*u; }
+  return [r|0,g|0,b|0];
 }
-function stepOne(t){
-  for(let i=0;i<dt_sub;i++){
-    const dx=sigma*(t.y-t.x), dy=t.x*(rho-t.z)-t.y, dz=t.x*t.y-beta*t.z;
-    t.x+=dx*dt; t.y+=dy*dt; t.z+=dz*dt;
+function trailCap(){ return Math.max(40,Math.min(Math.round(trailPct/100*3000), Math.floor(46000/Math.max(1,copies)))); }
+function release(){
+  arr=[]; tsim=0; swaps=0;
+  for(let i=0;i<copies;i++){
+    const f=copies===1?0:(i/(copies-1)-0.5);
+    arr.push({s:[0.9+f*spread,0.6,rho*0.4+2],pts:[],c:colourAt(copies===1?0:i/(copies-1)),lobe:0});
   }
-  t.pts.push([t.x,t.y,t.z]);
-  if(t.pts.length>4000) t.pts.shift();
+  [...document.querySelectorAll('.preset')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===activePreset)));
 }
-function project(px,py,pz){
-  const c=Math.cos(angle), s=Math.sin(angle);
-  const rx=px*c - py*s, ry=px*s + py*c;
-  return [rx, pz];
+const PRESETS={
+  classic:{name:'Classic butterfly',tag:'Lorenz\u2019s own numbers, one path',set:{rho:28,sigma:10,beta:2.65,copies:1,spread:-3,trail:85}},
+  swarm:{name:'Swarm of fifty',tag:'Fifty starts a thousandth apart',set:{rho:28,sigma:10,beta:2.65,copies:50,spread:-3,trail:45}},
+  settle:{name:'Settles down',tag:'Below \u03c1 24.7 it spirals in and stops',set:{rho:14,sigma:10,beta:2.65,copies:14,spread:-2,trail:90}},
+  window:{name:'Periodic window',tag:'At \u03c1 100.5 the chaos becomes a clean loop',set:{rho:100.5,sigma:10,beta:2.65,copies:1,spread:-3,trail:60}},
+  wild:{name:'Hard boil',tag:'\u03c1 60, a bigger and busier attractor',set:{rho:60,sigma:10,beta:2.65,copies:24,spread:-3,trail:40}}
+};
+function applyPreset(k){
+  activePreset=k; const p=PRESETS[k].set;
+  el('s-rho').value=p.rho; el('s-sigma').value=p.sigma; el('s-beta').value=p.beta;
+  el('s-copies').value=p.copies; el('s-spread').value=p.spread; el('s-trail').value=p.trail;
+  ['s-rho','s-sigma','s-beta','s-copies','s-spread','s-trail'].forEach(id=>el(id).dispatchEvent(new Event('input')));
+  release();
 }
-function drawTraj(t, color){
-  if(!t) return;
-  const cx=canvas.width/2, cy=canvas.height/2, scale=8;
-  ctx.beginPath();
-  t.pts.forEach(([px,py,pz],i)=>{
-    const [rx,rz]=project(px,py,pz);
-    const sx=cx+rx*scale, sy=cy+ (rz-25)*scale*0.9;
-    if(i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
-  });
-  ctx.strokeStyle=color; ctx.lineWidth=1.3; ctx.stroke();
+function step(){
+  /* 0.05 time units per frame is about 3 per wall second, which draws a
+     recognisable butterfly in a few seconds. h per substep stays near 0.005. */
+  const sub=Math.max(8,Math.min(28,Math.round(10*speed)));
+  const h=0.05*speed/sub;
+  const cap=trailCap();
+  for(const t of arr){
+    for(let k=0;k<sub;k++) rk4(t.s,h);
+    if(!isFinite(t.s[0])||Math.abs(t.s[0])>1e4){ t.s=[0.9,0.6,rho*0.4+2]; t.pts.length=0; }
+    t.pts.push(t.s[0],t.s[1],t.s[2]);
+    while(t.pts.length>cap*3) t.pts.splice(0,3);
+    const lb=t.s[0]>0?1:-1;
+    if(t.lobe && lb!==t.lobe && arr[0]===t) swaps++;
+    t.lobe=lb;
+  }
+  tsim+=0.05*speed;
+  yaw+=rotSpeed*0.004;
 }
+/* ---------- render ---------- */
 function draw(){
-  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  drawTraj(trajA, '#56e0c2');
-  drawTraj(trajB, '#f6ad55');
+  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  const cx=W/2, cy=H/2;
+  // fit the attractor to the canvas: it spans roughly +-26 in x/y and 0..(rho+22) in z
+  const span=Math.max(30, rho*0.9+24);
+  const scale=Math.min(W,H)/span*0.78;
+  const cyaw=Math.cos(yaw), syaw=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const zmid=rho*0.82; // the attractor sits roughly between z=0 and z=1.7*rho
+  const FOC=140;
+  function proj(x,y,z){
+    const rx=x*cyaw - y*syaw, ry=x*syaw + y*cyaw, rz=z-zmid;
+    const dy=ry*cp - rz*sp, dz=ry*sp + rz*cp;
+    const p=FOC/(FOC+dy*0.55);
+    return [cx+rx*scale*p, cy-dz*scale*p, dy];
+  }
+  const many=copies>6;
+  const K=many?6:14;
+  for(const t of arr){
+    const pts=t.pts, n=pts.length/3; if(n<4) continue;
+    const [r,g,b]=t.c;
+    for(let k=0;k<K;k++){
+      const s=Math.floor(n*k/K), e=Math.floor(n*(k+1)/K); if(e-s<2) continue;
+      const u=(k+1)/K;
+      ctx.strokeStyle='rgba('+r+','+g+','+b+','+((many?0.04:0.05)+(many?0.42:0.62)*Math.pow(u,1.8)).toFixed(3)+')';
+      ctx.lineWidth=(many?0.35:0.5)+(many?1.1:2.3)*u;
+      ctx.beginPath();
+      let p0=proj(pts[s*3],pts[s*3+1],pts[s*3+2]);
+      ctx.moveTo(p0[0],p0[1]);
+      for(let p=s+1;p<e;p++){ const q=proj(pts[p*3],pts[p*3+1],pts[p*3+2]); ctx.lineTo(q[0],q[1]); }
+      ctx.stroke();
+    }
+    // head
+    const hd=proj(t.s[0],t.s[1],t.s[2]);
+    const R=many?2:3.4;
+    if(!many){
+      const gr=ctx.createRadialGradient(hd[0],hd[1],R*0.3,hd[0],hd[1],R*4);
+      gr.addColorStop(0,'rgba('+r+','+g+','+b+',.45)'); gr.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+      ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(hd[0],hd[1],R*4,0,TAU); ctx.fill();
+    }
+    ctx.fillStyle='rgb('+r+','+g+','+b+')'; ctx.beginPath(); ctx.arc(hd[0],hd[1],R,0,TAU); ctx.fill();
+  }
+  // the two fixed points, when they exist
+  if(rho>1){
+    const q=Math.sqrt(beta*(rho-1));
+    ctx.strokeStyle='rgba(130,170,150,.35)'; ctx.lineWidth=1;
+    for(const sgn of [1,-1]){
+      const p=proj(sgn*q,sgn*q,rho-1);
+      ctx.beginPath(); ctx.arc(p[0],p[1],4,0,TAU); ctx.stroke();
+    }
+  }
 }
-function loop(){
-  angle += rotSpeed*0.01;
-  if(trajA) stepOne(trajA);
-  if(trajB) stepOne(trajB);
-  draw();
-  requestAnimationFrame(loop);
+let hudT=0;
+function hud(now){
+  if(now-hudT<180) return; hudT=now;
+  el('s-n').textContent=arr.length;
+  el('s-t').textContent=tsim.toFixed(1);
+  el('s-sw').textContent=swaps;
+  if(arr.length<2) el('s-div').textContent='n/a';
+  else{
+    let mx=0;
+    for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+      const a=arr[i].s,b=arr[j].s;
+      const d=Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]); if(d>mx)mx=d;
+    }
+    el('s-div').textContent = mx<0.01?mx.toExponential(1):mx.toFixed(mx<10?2:1);
+  }
 }
-document.getElementById('reset').addEventListener('click', ()=>init());
-document.getElementById('twin').addEventListener('click', releaseTwin);
-document.getElementById('sigma').addEventListener('input', e=>{ sigma=+e.target.value; document.getElementById('v-sigma').textContent=sigma.toFixed(1); });
-document.getElementById('rho').addEventListener('input', e=>{ rho=+e.target.value; document.getElementById('v-rho').textContent=rho.toFixed(1); });
-document.getElementById('beta').addEventListener('input', e=>{ beta=+e.target.value; document.getElementById('v-beta').textContent=beta.toFixed(2); });
-document.getElementById('rot').addEventListener('input', e=>{ rotSpeed=+e.target.value; document.getElementById('v-rot').textContent=e.target.value; });
-canvas.addEventListener('click', (ev)=>{
-  const rect=canvas.getBoundingClientRect();
-  const mx=(ev.clientX-rect.left - canvas.width/2)/8;
-  const mz=(ev.clientY-rect.top - canvas.height/2)/(8*0.9)+25;
-  init(mx*0.05+0.1, 0, Math.max(0,mz*0.2));
+/* ---------- ui ---------- */
+const pbox=el('presets');
+Object.keys(PRESETS).forEach((k,i)=>{
+  const p=PRESETS[k], b=document.createElement('button');
+  b.className='preset'; b.dataset.k=k; b.setAttribute('aria-pressed','false');
+  b.innerHTML='<b>'+(i+1)+'. '+p.name+'</b><small>'+p.tag+'</small>';
+  b.addEventListener('click',()=>applyPreset(k));
+  pbox.appendChild(b);
 });
-window.addEventListener('resize', resize);
-resize(); init();
+function bind(id,vid,fmt,fn){ const s=el(id),v=el(vid);
+  const upd=()=>{ v.textContent=fmt(+s.value); fn(+s.value); };
+  s.addEventListener('input',upd); upd(); }
+bind('s-rho','v-rho',x=>x.toFixed(1),x=>{rho=x;});
+bind('s-sigma','v-sigma',x=>x.toFixed(1),x=>{sigma=x;});
+bind('s-beta','v-beta',x=>x.toFixed(2),x=>{beta=x;});
+bind('s-copies','v-copies',x=>String(x),x=>{copies=x;});
+bind('s-spread','v-spread',x=>Math.pow(10,x).toExponential(0),x=>{spread=Math.pow(10,x);});
+bind('s-trail','v-trail',x=>x+'%',x=>{trailPct=x;});
+bind('s-rot','v-rot',x=>x===0?'off':x.toFixed(2)+'x',x=>{rotSpeed=x;});
+bind('s-speed','v-speed',x=>x.toFixed(2)+'x',x=>{speed=x;});
+['s-copies','s-spread','s-rho','s-sigma','s-beta'].forEach(id=>el(id).addEventListener('change',()=>release()));
+const bp=el('b-pause');
+function setPaused(p){ paused=p; bp.dataset.on=String(p); }
+bp.addEventListener('click',()=>setPaused(!paused));
+el('b-reset').addEventListener('click',()=>release());
+const bc=el('b-clean');
+bc.addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); });
+el('b-full').addEventListener('click',()=>{ if(document.fullscreenElement) document.exitFullscreen();
+  else (document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()); });
+const dlg=el('about');
+el('b-about').addEventListener('click',()=>dlg.showModal());
+el('b-close').addEventListener('click',()=>dlg.close());
+dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',e=>{ e.preventDefault();
+  document.querySelectorAll('.tip.show').forEach(o=>{ if(o!==t) o.classList.remove('show'); });
+  t.classList.toggle('show'); }));
+let dragp=null;
+cv.addEventListener('pointerdown',e=>{ dragp={x:e.clientX,y:e.clientY}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove',e=>{ if(!dragp) return;
+  yaw+=(e.clientX-dragp.x)*0.006;
+  pitch=Math.max(-1.2,Math.min(1.2,pitch+(e.clientY-dragp.y)*0.005));
+  dragp={x:e.clientX,y:e.clientY}; });
+window.addEventListener('pointerup',()=>{ dragp=null; });
+window.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  const k=e.key;
+  if(k===' '){ e.preventDefault(); setPaused(!paused); }
+  else if(k==='r'||k==='R') release();
+  else if(k==='h'||k==='H') bc.click();
+  else if(k==='f'||k==='F') el('b-full').click();
+  else if(k==='?'){ dlg.open?dlg.close():dlg.showModal(); }
+  else if(k>='1'&&k<='5'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) applyPreset(ks); }
+});
+let rt=null;
+window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(resize,150); });
+function loop(now){ if(!paused) step(); draw(); hud(now); requestAnimationFrame(loop); }
+resize(); applyPreset('classic');
 requestAnimationFrame(loop);
+})();
 </script>
 </body></html>
