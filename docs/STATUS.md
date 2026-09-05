@@ -52,3 +52,25 @@ one-line tag, and a "?" tooltip on every control.
   the only reliable channel. When installing one, retheme the **chrome only** and
   never touch per-preset palettes or per-preset background colours, which are
   colour-coded to the meaning of the scene.
+
+## 2026-09-05 update
+- Site banner now carries "Runs best on Google Chrome" in the header on every page.
+- **Control panel goes on the LEFT** in every sim from now on. Boids and Hare & Lynx were
+  already left; gravity, lorenz and double-pendulum were moved. In the shared shell that is
+  `.panel{left:20px;top:106px;max-height:calc(100% - 126px)}` with `.hud` and `.hint` moved
+  to the right, and `body.in-frame .panel{top:18px}` unchanged.
+- "Double Pendulum" renamed **Pendulum Chaos** (title, brand h1, manifest).
+- Every `dialog.about` `<h2>` is now literally "What am I looking at?", matching the button.
+  The explainer copy in boids, predator-prey, gravity, lorenz and double-pendulum was
+  rewritten for a more serious register.
+- Hare & Lynx gained a 0.5x / 1x / 2x speed segment under the transport buttons (`#spd`,
+  sets `cfg.speed`).
+- Manifest reordered so the top row of the home grid is boids, predator-prey,
+  double-pendulum (the three in the best shape). New sim `optics-lens` sits fourth.
+- **New: optics-lens** ("Lens & Image Formation"). Shared shell, six presets, ten controls,
+  drag the object / lens / sensor, auto-fitting view transform, live SENSOR inset showing
+  the blurred and dimmed recorded image. Physics: thin lens equation, real ray tracing
+  across the aperture, spherical aberration as f/(1+k*(y/(A/2))^2), blur measured from the
+  actual ray footprint on the screen rather than from a formula.
+- Roadmap for the remaining sims: `artifacts/sim-roadmap-2026-09-05.md` (also the ordering
+  the human asked for: optics first, then traffic, then epidemic, then two more optics).
