@@ -153,7 +153,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
     <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
   </button>
-  <button class="icon-btn" id="b-reset" title="Restart (R)" aria-label="Restart">
+  <button class="icon-btn" id="b-reset" title="Reset this arrangement to its original settings (R)" aria-label="Reset the arrangement">
     <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
   </button>
   <button class="icon-btn" id="b-fit" title="Fit everything in view (0)" aria-label="Fit everything in view">
@@ -181,8 +181,12 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-n"><span class="nm">Bodies<button class="tip" data-tip="How many bodies a restart creates. Each arrangement picks its own sensible number; move this to override it. Above about 400 the solver switches to a Barnes-Hut tree so thousands stay smooth." aria-label="What bodies does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="Planets, disc stars, cloud members and test particles: everything light enough to be pushed around rather than do the pushing. The number shown is exactly how many are created. Above about 400 bodies the solver switches to a Barnes-Hut tree so thousands stay smooth." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="0" max="100" step="1" value="30">
+  </div>
+  <div class="row">
+    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy ones: stars, galaxy nuclei, massive seeds. Two or more are placed on a ring and given the speed that keeps that ring turning. Some arrangements are defined by their heavy bodies, so the count is fixed there." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
+    <input type="range" id="s-nl" min="0" max="5" step="1" value="1">
   </div>
   <div class="row">
     <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. The integrator splits each frame into as many substeps as the closest encounter needs, so speeding up does not make orbits go wrong until it hits the substep ceiling." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
@@ -220,15 +224,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
 </div>
 
-<div class="hud">
-  <div class="stat"><div class="k">Bodies</div><div class="v" id="s-count" style="color:var(--accent)">-</div></div>
-  <div class="stat"><div class="k">Mergers</div><div class="v" id="s-merge" style="color:var(--danger)">0</div></div>
-  <div class="stat"><div class="k">Ejected</div><div class="v" id="s-eject" style="color:var(--gold)">0</div></div>
-  <div class="stat"><div class="k">Heaviest</div><div class="v" id="s-max">-</div></div>
-  <div class="stat"><div class="k">Energy drift</div><div class="v" id="s-e">-</div></div>
-  <div class="stat"><div class="k">Solver</div><div class="v" id="s-solver">-</div></div>
-</div>
-<div class="hint">Drag on empty space to sling a body. Click a body to inspect it. Scroll to zoom, right-drag to pan. 1-9 presets, space pause, R restart.</div>
+<div class="hint">Drag on empty space to sling a body. Click a body to inspect it. Scroll to zoom, right-drag to pan. 1-8 presets, space pause, R for a clean restart.</div>
 
 <div class="sel" id="sel">
   <h4><i id="sel-dot"></i><span id="sel-name">Body</span></h4>
@@ -253,49 +249,53 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <div class="about-inner">
     <button class="about-close" id="b-close" aria-label="Close">&times;</button>
     <h2>What am I looking at?</h2>
-    <p>A collection of bodies, each pulling on every other with Newton's law of gravitation: the force grows with both masses and falls off with the square of the distance. That is the entire rule. There is no code for "orbit", no code for "galaxy", no code for "Lagrange point". All of those follow from the one rule.</p>
+    <p>Every body on screen pulls on every other one, with the force Newton wrote down in 1687: it grows with both masses and falls away with the square of the distance between them. That single line of arithmetic is the whole program. Nothing in the code knows the word orbit, or galaxy, or Lagrange point. Those are emergent structures. They appear because a large number of bodies are all obeying the same simple law at once, which is exactly why the real sky is full of them.</p>
 
-    <h3>Kepler's laws, for free</h3>
-    <p>Click any body. The dashed curve is the orbit it would follow if only its main attractor existed: an ellipse if it is bound, a hyperbola if it is not. The card shows the eccentricity, the semi-major axis and the period. Watch the comet in <b class="hl">Star and planets</b>: it crawls at the far end and whips around the near end, sweeping equal areas in equal times. Compare two planets and you will find the period grows as the semi-major axis to the power 1.5. Nobody told the simulation any of that.</p>
+    <h3>Kepler's laws come out on their own</h3>
+    <p>Click any body. The dashed curve is the path it would follow if only its main attractor existed: an ellipse if it is bound to that body, a hyperbola if it is passing through. The card gives you its eccentricity, its semi-major axis and its period. Watch the comet in <b class="hl">Star and planets</b>. It crawls at the far end of its ellipse and whips around the near end, sweeping out equal areas in equal times, which is Kepler's second law. Compare any two planets and you will find the period grows as the semi-major axis to the power of one and a half, which is his third. Kepler spent years extracting those rules from Tycho Brahe's observations. Here they arrive free with the inverse square law.</p>
 
     <h3>Why two bodies are easy and three are not</h3>
-    <p>Two bodies have an exact solution, written down in 1687. Add a third and no such formula exists. Poincare proved in the 1890s that the general three-body problem is <b>chaotic</b>: two starts a hair apart end up somewhere completely different. <b class="hl">Pythagorean three</b> is the classic test case, posed by Burrau in 1913 and only solved numerically by Szebehely and Peters in 1967. Three bodies with masses 3, 4 and 5 start at rest on the corners of a 3-4-5 triangle. After a series of close passes one is flung away and the other two settle into a binary. That is the usual ending for three bodies: chaos resolves itself by throwing one out.</p>
+    <p>Two bodies have an exact solution. Add a third and no such formula exists. Henri Poincare showed in the 1890s that the general three-body problem is chaotic: two starts a hair apart end up in completely different places. <b class="hl">Pythagorean three</b> is the classic demonstration, posed by Burrau in 1913 and only followed through to the end numerically by Szebehely and Peters in 1967. Masses of 3, 4 and 5 start at rest on the corners of a 3-4-5 triangle. After a run of close passes one body is flung out and the other two settle into a binary. That is the usual ending. A three-body system resolves its own chaos by throwing a member away.</p>
 
     <h3>The figure-eight</h3>
-    <p><b class="hl">Figure-eight</b> is one of the few known periodic solutions for three equal masses. Moore found it numerically in 1993 and Chenciner and Montgomery proved it exists in 2000. Each body follows the same lemniscate, a third of a period behind the one in front. It is stable to small nudges, which is why it survives here, but no real system is known to do it. Try flinging a tiny body through the middle and see how long the choreography holds.</p>
+    <p><b class="hl">Figure-eight</b> is one of the few periodic solutions known for three equal masses. Cristopher Moore found it numerically in 1993, and Chenciner and Montgomery proved in 2000 that it genuinely exists. All three bodies chase each other around the same lemniscate, each a third of a period behind the one in front. It survives small nudges, which is why it holds together here. No real system has ever been seen doing it. Add a few small bodies with the slider, or sling one through the middle, and see how long the choreography lasts.</p>
 
     <h3>Lagrange points</h3>
-    <p>Around a star and planet in circular orbit there are five places where a small body can sit still relative to the pair. Euler found the three on the line through them in the 1760s; Lagrange found the two at the corners of equilateral triangles in 1772. Switch to the <b>co-rotating</b> view and they stop moving. L4 and L5 are stable if the planet is under about 1/25 the mass of the star: Jupiter's Trojan asteroids have sat there for billions of years. L1, L2 and L3 are saddle points; anything placed there drifts off within a few orbits, which is why the James Webb telescope at Sun-Earth L2 fires thrusters every few weeks. The bodies on nearly the same orbit as the planet trace horseshoes in the rotating frame. Saturn's moons Janus and Epimetheus do exactly this, swapping orbits every four years.</p>
+    <p>Around a star and a planet in a circular orbit there are five places where a small body can sit still relative to the pair. Euler found the three that lie on the line through them in the 1760s, and Lagrange found the two at the corners of equilateral triangles in 1772. Switch the view to <b>co-rotating</b> and they stop moving. L4 and L5 are stable when the planet is lighter than about a twenty-fifth of the star, which is why Jupiter's Trojan asteroids have held their positions for billions of years. L1, L2 and L3 are saddle points, so anything left there slides away within a few orbits. The James Webb telescope sits at Sun-Earth L2 and fires thrusters every few weeks for exactly that reason. Bodies sharing almost the same orbit as the planet trace horseshoes in the rotating view. Saturn's moons Janus and Epimetheus do this for real, trading orbits every four years.</p>
 
     <h3>The slingshot</h3>
-    <p>Send a light body past a heavy moving one and it can leave much faster than it arrived. No energy is created; it is borrowed from the heavy body's orbital motion, which slows by an amount too small to see. Voyager 2 reached Neptune on a chain of such assists. Use the launch preview to line one up.</p>
+    <p>Send a light body past a heavy one that is itself moving and it can leave far faster than it arrived. Nothing is created. The speed is borrowed from the heavy body's orbital motion, which slows by an amount far too small to measure. Voyager 2 reached Neptune on a chain of these assists. Drag on empty space to line one up: the dotted line previews where your body will go.</p>
 
     <h3>Tidal tails</h3>
-    <p>In 1972 Alar and Juri Toomre showed, with a few hundred test particles on a computer far weaker than your phone, that the bridges and tails of peculiar galaxies are tidal: a passing galaxy stretches the near and far sides of a disc in opposite directions, and differential rotation winds the debris into long arcs. <b class="hl">Galaxy and intruder</b> and <b class="hl">Galaxy collision</b> reproduce the recipe. Prograde encounters, where the discs spin the same way they orbit, throw the longest tails. Mergers are switched off in these arrangements because real stars almost never collide; the disc is collisionless and the stars pass straight through each other.</p>
+    <p>In 1972 Alar and Juri Toomre showed, using a few hundred test particles on a computer weaker than the one in your pocket, that the bridges and streamers around peculiar galaxies are tidal. A passing galaxy pulls harder on the near side of a disc than on the far side, stretching it both ways at once, and the disc's own rotation winds the debris into long arcs. <b class="hl">Galaxy and intruder</b> and <b class="hl">Galaxy collision</b> follow that recipe. Encounters where the disc spins the same way it orbits throw the longest tails. Mergers are switched off in these two, because stars in a real galaxy almost never hit each other. The discs pass straight through, and it is gravity alone that does the damage.</p>
 
-    <h3>Mergers</h3>
-    <p>When two bodies touch in the other arrangements they merge, conserving mass and momentum but not energy, since a real collision turns motion into heat. This is a crude stand-in for what an accretion disc does, but it captures the point: gravity is a ratchet. Large bodies grow larger, and a cloud of equals becomes a few heavy winners surrounded by leftovers. That is roughly how planets formed.</p>
+    <h3>Mergers and the growth of big things</h3>
+    <p>In the other arrangements, two bodies that touch are combined into one, conserving mass and momentum. Energy is not conserved, because a real collision turns motion into heat. It is a rough stand-in for what happens in a dust disc, and it shows the important asymmetry: the heaviest body pulls in the most material and so grows fastest. A cloud of near-equals turns into a few large winners with leftovers around them. Planets formed roughly that way.</p>
 
-    <h3>The honest caveats</h3>
+    <h3>Building your own arrangement</h3>
+    <p>Nothing here is locked. <b>Small bodies</b> sets how many light members are created, and the number shown is the number you get. <b>Large bodies</b> sets the heavy ones, and where an arrangement allows more than one they are placed on a ring turning at the speed that ring needs. Some arrangements are defined by their heavy bodies, so the count is held there. Beyond that, drag on empty space to sling in a new body at any time, click a body to inspect it, and delete anything you do not want. The reset button always puts the arrangement back to the settings it started with, so experiment freely.</p>
+
+    <h3>Under the bonnet</h3>
     <ul>
-      <li>Each body is a <b>softened</b> sphere, not a point, so the force stops growing inside its radius. This is what keeps close passes from producing infinities. The Pythagorean problem in particular depends on very close approaches, so the exact timing here will not match the textbook solution, though the qualitative story does.</li>
-      <li>Integration is velocity Verlet with an adaptive substep chosen from the strongest acceleration present. It conserves energy well but not perfectly. The <b>energy drift</b> readout subtracts the energy genuinely lost in mergers and carried away by ejected bodies, so what remains is integration error. Under 1% you are watching real physics; above 10% the picture is drifting. If the substep ceiling is hit during a violent pass, drift will climb.</li>
-      <li>Above about 400 bodies the force is computed with a <b>Barnes-Hut tree</b>, which groups distant bodies into single lumps. The force error is about one percent. The solver readout says which method is running.</li>
-      <li>Two dimensions only. Real discs are flattened anyway, but real galaxies also have dark matter halos and gas, neither of which is here. The rotation curves in the galaxy arrangements are Keplerian, not flat.</li>
+      <li>Each body is treated as a softened sphere rather than a point, so the force stops growing once two bodies are closer than their own size. That is what prevents infinities during a close pass. The Pythagorean problem depends on very close approaches, so its exact timing here will differ from the published solution while the story stays the same.</li>
+      <li>Motion is integrated with velocity Verlet, and each frame is cut into as many substeps as the fiercest acceleration on screen demands. Total energy holds to well under a percent through ordinary orbits, so what you see separating is physics rather than arithmetic.</li>
+      <li>Past about 400 bodies the forces are computed with a Barnes-Hut tree, which lumps distant groups together and cuts the cost from n squared to n log n, at a force error near one percent. This is the same idea used in professional galaxy codes.</li>
+      <li>Everything is two dimensional. Discs are flat anyway, but real galaxies also carry dark matter and gas, so the rotation here falls off in the Keplerian way rather than staying flat as it does in the sky.</li>
     </ul>
 
     <h3>Things to try</h3>
     <ul>
-      <li>Start <b class="hl">Star and planets</b>, click the comet, and watch its speed readout as it passes the star.</li>
-      <li>On <b class="hl">Lagrange points</b>, drop a body at rest right on L4 and another right on L1. One stays; one leaves.</li>
-      <li>Run <b class="hl">Pythagorean three</b> twice and compare the two runs. Then nudge the softening and run again.</li>
-      <li>On <b class="hl">Galaxy and intruder</b>, turn trails to zero and watch in the centre-of-mass view. The tail forms from the far side of the disc, not the near side.</li>
-      <li>Set gravity to 0.3 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge.</li>
-      <li>Sling a heavy body through <b class="hl">Binary pair</b> and count how many of the debris orbits survive.</li>
+      <li>Start <b class="hl">Star and planets</b>, click the comet, and watch its speed as it swings past the star.</li>
+      <li>Raise <b>Large bodies</b> on the same arrangement. Two or three stars at the centre still hold the planets, until they do not.</li>
+      <li>On <b class="hl">Lagrange points</b>, drop a body at rest on L4 and another on L1. One stays put for the whole run, the other leaves within an orbit or two.</li>
+      <li>Run <b class="hl">Pythagorean three</b> twice and compare. Then change the softening a little and run it again.</li>
+      <li>On <b class="hl">Galaxy and intruder</b>, watch in the centre-of-mass view. The long tail is thrown from the far side of the disc, not the side that was hit.</li>
+      <li>Set gravity to 0.3 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge on the way.</li>
+      <li>Sling a heavy body through <b class="hl">Binary pair</b> and count how many of the disc orbits survive it.</li>
     </ul>
 
     <h3>Keyboard</h3>
-    <p><kbd>Space</kbd> pause, <kbd>R</kbd> restart, <kbd>1</kbd>-<kbd>9</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>8</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
   </div>
 </dialog>
 
@@ -679,93 +679,115 @@ function disc(out,cx,cy,vx,vy,nStars,R,Mnuc,mStar,sense){
     out.push(mk(cx+ca*r,cy+sa*r, vx+sense*(-sa*v)+ca*vr, vy+sense*(ca*v)+sa*vr, mStar));
   }
 }
+/* equal masses on a ring: v^2 = G m / (4a) * sum 1/sin(pi k / N) */
+function ringSpeed(N,a,m){ let S=0; for(let k=1;k<N;k++) S+=1/(4*Math.sin(Math.PI*k/N)); return Math.sqrt(G*m*S/a); }
+function ringOf(out,cx,cy,vx,vy,N,a,m){
+  if(N<=0) return;
+  if(N===1){ out.push(mk(cx,cy,vx,vy,m)); return; }
+  const v=ringSpeed(N,a,m);
+  for(let i=0;i<N;i++){ const t=TAU*i/N+0.3;
+    out.push(mk(cx+Math.cos(t)*a, cy+Math.sin(t)*a, vx-Math.sin(t)*v, vy+Math.cos(t)*v, m)); }
+}
+/* every build gets (nSmall, nLarge) and creates exactly that many bodies */
 const PRESETS={
-  star:{name:'Star and planets',tag:'One heavy centre, near-circular orbits and a comet',n:12,frame:'fixed',merge:true,build(n){
-    const S=Math.min(W,H), R=S*0.44, M=4200, out=[mk(0,0,0,0,M)];
-    const np=Math.max(1,n-2);
-    for(let i=0;i<np;i++){
-      const r=R*(0.14+0.86*Math.pow((i+1)/(np+0.5),0.8)), a=Math.random()*TAU, e=Math.random()*0.12;
-      const v=Math.sqrt(G*M*(1+e)/r);   /* start at periapsis */
-      out.push(mk(Math.cos(a)*r,Math.sin(a)*r,-Math.sin(a)*v,Math.cos(a)*v,3+Math.random()*9));
-    }
-    const ra=S*0.48, ea=0.86, aa=Math.random()*TAU, va=Math.sqrt(G*M*(1-ea)/ra); /* comet at apoapsis */
-    out.push(mk(Math.cos(aa)*ra,Math.sin(aa)*ra,-Math.sin(aa)*va,Math.cos(aa)*va,1));
-    return out;}},
-  binary:{name:'Binary pair',tag:'Two heavy partners and a circumbinary disc',n:16,frame:'com',merge:true,build(n){
-    const S=Math.min(W,H), sep=S*0.16, M=1700;
-    const v=Math.sqrt(G*M/(4*sep))*1.02;
-    const out=[mk(-sep,0,0,v,M),mk(sep,0,0,-v,M)];
-    const R=S*0.47;
-    for(let i=2;i<n;i++){
-      const r=sep*2.6+Math.random()*(R-sep*2.6), a=Math.random()*TAU;
-      const p=circ(0,0,r,a,2*M,0.97+Math.random()*0.06);
-      out.push(mk(p.x,p.y,p.vx,p.vy,2+Math.random()*7));
+  star:{name:'Star and planets',tag:'One heavy centre, near-circular orbits and a comet',n:12,lmin:1,lmax:5,ldef:1,frame:'fixed',merge:true,build(n,nL){
+    const S=Math.min(W,H), R=S*0.44, M=4200, out=[];
+    const a=S*0.045;
+    ringOf(out,0,0,0,0,nL,a,M/nL);
+    if(n>0){
+      const np=n-1;
+      for(let i=0;i<np;i++){
+        const r=R*(0.24+0.76*Math.pow((i+1)/(np+0.5),0.8)), an=Math.random()*TAU, e=Math.random()*0.12;
+        const v=Math.sqrt(G*M*(1+e)/r);   /* start at periapsis */
+        out.push(mk(Math.cos(an)*r,Math.sin(an)*r,-Math.sin(an)*v,Math.cos(an)*v,3+Math.random()*9));
+      }
+      const ra=S*0.48, ea=0.86, aa=Math.random()*TAU, va=Math.sqrt(G*M*(1-ea)/ra); /* comet at apoapsis */
+      out.push(mk(Math.cos(aa)*ra,Math.sin(aa)*ra,-Math.sin(aa)*va,Math.cos(aa)*va,1));
     }
     return out;}},
-  eight:{name:'Figure-eight',tag:'Three equal masses on one shared loop (Moore 1993)',n:null,frame:'fixed',merge:false,soft:0.35,build(){
+  binary:{name:'Binary pair',tag:'Heavy partners with a disc around the outside',n:16,lmin:2,lmax:5,ldef:2,frame:'com',merge:true,build(n,nL){
+    const S=Math.min(W,H), sep=S*0.16, M=1700, out=[];
+    ringOf(out,0,0,0,0,nL,sep,M);
+    const R=S*0.47, inner=sep*2.6;
+    for(let i=0;i<n;i++){
+      const r=inner+Math.random()*(R-inner), an=Math.random()*TAU;
+      const q=circ(0,0,r,an,nL*M,0.97+Math.random()*0.06);
+      out.push(mk(q.x,q.y,q.vx,q.vy,2+Math.random()*7));
+    }
+    return out;}},
+  eight:{name:'Figure-eight',tag:'Three equal masses on one shared loop (Moore 1993)',n:0,lmin:3,lmax:3,ldef:3,frame:'fixed',merge:false,soft:0.35,build(n){
     const S=Math.min(W,H), L=S*0.27, M=700, vs=Math.sqrt(G*M/L);
     const x1=0.97000436, y1=-0.24308753, vx3=-0.93240737, vy3=-0.86473146;
-    return [mk( x1*L, y1*L, -vx3/2*vs, -vy3/2*vs, M),
-            mk(-x1*L,-y1*L, -vx3/2*vs, -vy3/2*vs, M),
-            mk(0,0, vx3*vs, vy3*vs, M)];}},
-  burrau:{name:'Pythagorean three',tag:'Masses 3, 4, 5 released from rest (Burrau 1913)',n:null,frame:'com',merge:false,soft:0.35,build(){
+    const out=[mk( x1*L, y1*L, -vx3/2*vs, -vy3/2*vs, M),
+               mk(-x1*L,-y1*L, -vx3/2*vs, -vy3/2*vs, M),
+               mk(0,0, vx3*vs, vy3*vs, M)];
+    for(let i=0;i<n;i++){                      /* test particles far enough out to feel the trio as one mass */
+      const r=S*(0.55+0.55*Math.random()), an=Math.random()*TAU;
+      const q=circ(0,0,r,an,3*M,0.96+Math.random()*0.08);
+      out.push(mk(q.x,q.y,q.vx,q.vy,0.3));
+    }
+    return out;}},
+  burrau:{name:'Pythagorean three',tag:'Masses 3, 4, 5 released from rest (Burrau 1913)',n:0,lmin:3,lmax:3,ldef:3,frame:'com',merge:false,soft:0.35,build(n){
     const S=Math.min(W,H), u=S*0.085, k=110;
-    return [mk(1*u,3*u,0,0,3*k), mk(-2*u,-1*u,0,0,4*k), mk(1*u,-1*u,0,0,5*k)];}},
-  lagrange:{name:'Lagrange points',tag:'A planet, its Trojans, and horseshoe companions',n:30,frame:'rot',merge:true,lag:true,build(n){
+    const out=[mk(1*u,3*u,0,0,3*k), mk(-2*u,-1*u,0,0,4*k), mk(1*u,-1*u,0,0,5*k)];
+    for(let i=0;i<n;i++){
+      const r=S*(0.45+0.5*Math.random()), an=Math.random()*TAU;
+      const q=circ(0,0,r,an,12*k,0.9+Math.random()*0.2);
+      out.push(mk(q.x,q.y,q.vx,q.vy,0.3));
+    }
+    return out;}},
+  lagrange:{name:'Lagrange points',tag:'A planet, its Trojans, and horseshoe companions',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:true,lag:true,build(n){
     const S=Math.min(W,H), d=S*0.30, M1=4000, M2=40, M=M1+M2, w=Math.sqrt(G*M/(d*d*d));
     const x1=-d*M2/M, x2=d*M1/M;
     const out=[mk(x1,0,0,w*x1,M1), mk(x2,0,0,w*x2,M2)];
-    const ring=(x,y,off)=>{ out.push(mk(x,y,-w*y+(off||0),w*x,0.05)); };
+    const small=[];
+    const ring=(x,y)=>{ small.push(mk(x,y,-w*y,w*x,0.05)); };
     /* Trojans, slightly displaced so they librate */
-    for(const s of [1,-1]) for(const da of [-0.06,0.03,0.09]){
-      const a=s*Math.PI/3+da; ring(x1+d*Math.cos(a),d*Math.sin(a));
+    for(const sgn of [1,-1]) for(const da of [-0.06,0.03,0.09]){
+      const an=sgn*Math.PI/3+da; ring(x1+d*Math.cos(an),d*Math.sin(an));
     }
-    /* seeds at the unstable points */
+    /* seeds at the three unstable points */
     const L=NBCore.lagrange(out[0],out[1]);
     for(let i=0;i<3;i++) ring(L[i].x*1.004,L[i].y);
-    /* horseshoe companions: same orbit as the planet, a hair inside and outside */
+    /* horseshoe companions: the planet's orbit, a hair inside and outside */
     for(let i=0;i<4;i++){
-      const a=Math.PI*(0.45+0.33*i)*(i%2?1:-1), r=d*(1+(i%2?0.014:-0.014));
-      ring(x1+Math.cos(a)*r,Math.sin(a)*r);
+      const an=Math.PI*(0.45+0.33*i)*(i%2?1:-1), r=d*(1+(i%2?0.014:-0.014));
+      ring(x1+Math.cos(an)*r,Math.sin(an)*r);
     }
-    for(let i=out.length;i<n;i++){
-      const a=Math.random()*TAU, r=d*(0.55+0.9*Math.random());
+    while(small.length<n){
+      const an=Math.random()*TAU, r=d*(0.55+0.9*Math.random());
       const v=Math.sqrt(G*M1/r);
-      out.push(mk(x1+Math.cos(a)*r,Math.sin(a)*r,-Math.sin(a)*v,Math.cos(a)*v,0.05));
+      small.push(mk(x1+Math.cos(an)*r,Math.sin(an)*r,-Math.sin(an)*v,Math.cos(an)*v,0.05));
     }
-    return out;}},
-  collapse:{name:'Cold collapse',tag:'A cloud with almost no spin falls together',n:40,frame:'com',merge:true,build(n){
+    small.length=n;
+    return out.concat(small);}},
+  collapse:{name:'Cold collapse',tag:'A cloud with almost no spin falls together',n:40,lmin:0,lmax:5,ldef:0,frame:'com',merge:true,build(n,nL){
     const S=Math.min(W,H), R=S*0.40, out=[];
+    for(let i=0;i<nL;i++){
+      const an=Math.random()*TAU, r=R*0.5*Math.sqrt(Math.random());
+      out.push(mk(Math.cos(an)*r,Math.sin(an)*r,0,0,900));
+    }
     for(let i=0;i<n;i++){
-      const a=Math.random()*TAU, r=R*Math.sqrt(Math.random());
-      out.push(mk(Math.cos(a)*r,Math.sin(a)*r,(Math.random()-0.5)*0.5,(Math.random()-0.5)*0.5,20+Math.random()*60));
+      const an=Math.random()*TAU, r=R*Math.sqrt(Math.random());
+      out.push(mk(Math.cos(an)*r,Math.sin(an)*r,(Math.random()-0.5)*0.5,(Math.random()-0.5)*0.5,20+Math.random()*60));
     }
     return out;}},
-  collision:{name:'Cluster collision',tag:'Two swarms meet and pick winners',n:60,frame:'com',merge:true,build(n){
-    const S=Math.min(W,H), out=[], R=S*0.15, per=Math.max(2,Math.floor(n/2));
-    for(let s=0;s<2;s++){
-      const cx=S*(s?0.34:-0.34), cy=S*(s?-0.13:0.13), drift=s?-0.55:0.55;
-      for(let i=0;i<per;i++){
-        const a=Math.random()*TAU, r=R*Math.sqrt(Math.random());
-        out.push(mk(cx+Math.cos(a)*r,cy+Math.sin(a)*r,drift+(Math.random()-0.5)*0.4,(s?0.22:-0.22)+(Math.random()-0.5)*0.4,10+Math.random()*40));
-      }
-    }
-    return out;}},
-  intruder:{name:'Galaxy and intruder',tag:'A compact mass grazes a disc and raises a tidal tail',n:900,frame:'com',merge:false,fit:true,trail:20,build(n){
+  intruder:{name:'Galaxy and intruder',tag:'A compact mass grazes a disc and raises a tidal tail',n:900,lmin:2,lmax:2,ldef:2,frame:'com',merge:false,fit:true,trail:20,build(n){
     const S=Math.min(W,H), out=[], Mn=6000, Mi=2200, R=S*0.30;
     const D=S*0.95, bImp=S*0.42, vp=Math.sqrt(2*G*(Mn+Mi)/D)*0.92;
-    disc(out,S*0.05,-S*0.02,0,0,Math.max(10,n-2),R,Mn,0.6,1);
+    disc(out,S*0.05,-S*0.02,0,0,n,R,Mn,0.6,1);
     out.push(mk(S*0.05-D*0.85,-S*0.02-bImp,vp,0,Mi));
     return out;}},
-  galaxies:{name:'Galaxy collision',tag:'Two discs on a prograde bound encounter',n:1200,frame:'com',merge:false,fit:true,trail:20,build(n){
-    const S=Math.min(W,H), out=[], Mn=5000, R=S*0.24, per=Math.max(10,Math.floor((n-2)/2));
-    const rx=S*0.80, ry=S*0.22, D=Math.hypot(rx,ry);
-    const vrel=Math.sqrt(2*G*(2*Mn+per*2*0.6)/D)*0.72;
-    const ux=-rx/D, uy=-ry/D, px=-uy, py=ux;          /* approach direction and a sideways component */
-    const vx=(ux*0.92+px*0.40)*vrel, vy=(uy*0.92+py*0.40)*vrel;
-    const sense=Math.sign(rx*vy-ry*vx)||1;
-    disc(out,-rx/2,-ry/2, vx/2, vy/2,per,R,Mn,0.6,sense);
-    disc(out, rx/2, ry/2,-vx/2,-vy/2,per,R,Mn,0.6,sense);
+  galaxies:{name:'Galaxy collision',tag:'Discs on a bound encounter, one nucleus each',n:1200,lmin:2,lmax:4,ldef:2,frame:'com',merge:false,fit:true,trail:20,build(n,nL){
+    const S=Math.min(W,H), out=[], Mn=5000, R=S*0.24, Rc=S*0.415;
+    const per=Math.floor(n/nL), extra=n-per*nL;
+    const vc=ringSpeed(nL,Rc,Mn)*0.72;          /* under circular, so the discs fall together */
+    for(let i=0;i<nL;i++){
+      const t=TAU*i/nL+0.35;
+      const cx=Math.cos(t)*Rc, cy=Math.sin(t)*Rc;
+      const vx=-Math.sin(t)*vc, vy=Math.cos(t)*vc;
+      disc(out,cx,cy,vx,vy,per+(i<extra?1:0),R,Mn,0.6,1);
+    }
     return out;}}
 };
 
@@ -1080,45 +1102,36 @@ function drawOrbit(b,z,ox,oy){
   if(o.e<1){ const ax=cx-o.ra*fx, ay=cy-o.ra*fy; ctx.beginPath(); ctx.arc(ax*z+ox,ay*z+oy,2.4,0,TAU); ctx.fill(); }
 }
 
-/* ---------- HUD ---------- */
-let hudT=0;
-function hud(now){
-  if(now-hudT<180) return; hudT=now;
-  el('s-count').textContent=bodies.length;
-  el('s-merge').textContent=merges;
-  el('s-eject').textContent=ejected;
-  const h=heaviest();
-  el('s-max').textContent=h?fmt(h.m):'-';
-  el('s-solver').innerHTML=(solverName==='tree'?'tree':'direct')+' <small>\u00d7'+lastSub+'</small>';
-  if(E0===null||!isFinite(E0)||bodies.length<2){ el('s-e').textContent='-'; el('s-e').style.color=''; }
-  else {
-    const E=currentEnergy(false); if(E===null) return;
-    /* normalise by the larger of the starting total and the current kinetic energy, so a system
-       that has merged down to near-zero total energy does not report a meaningless ratio */
-    const scale=Math.max(Math.abs(E0),KElast,1e-9);
-    const d=Math.abs(E-E0)/scale*100;
-    el('s-e').textContent=(d<0.05?'<0.1':d.toFixed(d<10?1:0))+'%';
-    el('s-e').style.color=d<1?'var(--accent)':d<10?'var(--gold)':'var(--danger)';
-  }
-}
-
 /* ---------- restart ---------- */
-const nSlider=el('s-n');
-function sliderToN(v){ return Math.round(2*Math.pow(1000,v/100)); }
-function nToSlider(n){ return Math.round(100*Math.log(n/2)/Math.log(1000)); }
-function restart(key,keepN){
-  if(key&&key!==activePreset){ activePreset=key; keepN=false; }
-  const P=PRESETS[activePreset];
-  if(!keepN){ if(P.n){ nSlider.value=nToSlider(P.n); } el('v-n').textContent=P.n?String(sliderToN(+nSlider.value)):'3 (fixed)'; }
-  const n=P.n?sliderToN(+nSlider.value):3;
-  if(!keepN){
+const nSlider=el('s-n'), lSlider=el('s-nl');
+function sliderToN(v){ return v<=0?0:Math.round(2*Math.pow(1000,v/100)); }
+function nToSlider(n){ return n<=0?0:Math.round(100*Math.log(Math.max(2,n)/2)/Math.log(1000)); }
+function largeRange(P){ return [P.lmin==null?1:P.lmin, P.lmax==null?1:P.lmax]; }
+function showCounts(nSmall,nL,fixed){
+  el('v-n').textContent=String(nSmall);
+  el('v-nl').textContent=fixed?nL+' (set by the arrangement)':String(nL);
+}
+/* keep=true rebuilds with whatever the sliders say now; keep=false is the full
+   reset back to the arrangement as it was first published */
+function restart(key,keep){
+  if(key&&key!==activePreset){ activePreset=key; keep=false; }
+  const P=PRESETS[activePreset], R=largeRange(P), lo=R[0], hi=R[1];
+  lSlider.min=lo; lSlider.max=hi; lSlider.disabled=(lo===hi);
+  if(!keep){
+    nSlider.value=nToSlider(P.n);
+    lSlider.value=P.ldef==null?lo:P.ldef;
     const sv=el('s-soft'), swant=P.soft||0.7;
     if(+sv.value!==swant){ sv.value=swant; sv.dispatchEvent(new Event('input')); }
     const tv=el('s-trail'), twant=P.trail||55;
     if(+tv.value!==twant){ tv.value=twant; tv.dispatchEvent(new Event('input')); }
+    const gv=el('s-g');
+    if(+gv.value!==1){ gv.value=1; gv.dispatchEvent(new Event('input')); }
   }
+  const nL=Math.max(lo,Math.min(hi,+lSlider.value||lo)); lSlider.value=nL;
+  const n=sliderToN(+nSlider.value);
   nextId=1; select(-1);
-  bodies=P.build(n);
+  bodies=P.build(n,nL);
+  showCounts(Math.max(0,bodies.length-nL),nL,lo===hi);
   let px=0,py=0,M=0;
   for(const b of bodies){ px+=b.vx*b.m; py+=b.vy*b.m; M+=b.m; }
   for(const b of bodies){ b.vx-=px/M; b.vy-=py/M; }
@@ -1152,13 +1165,15 @@ bind('s-speed','v-speed',x=>x.toFixed(2)+'x',x=>{speed=x;});
 bind('s-trail','v-trail',x=>x===0?'off':x+'%',x=>{trailPct=x;});
 bind('s-soft','v-soft',x=>x.toFixed(2)+'x',x=>{ const ch=softK!==x; softK=x; if(ch&&bodies.length){ for(const b of bodies) setSize(b); resetEnergy(); } });
 bind('s-launch','v-launch',x=>String(Math.round(0.5*Math.pow(8000,x/100))),x=>{launchM=Math.round(0.5*Math.pow(8000,x/100));});
-nSlider.addEventListener('input',()=>{ el('v-n').textContent=PRESETS[activePreset].n?String(sliderToN(+nSlider.value)):'3 (fixed)'; });
-nSlider.addEventListener('change',()=>{ if(PRESETS[activePreset].n) restart(null,true); });
+nSlider.addEventListener('input',()=>{ el('v-n').textContent=String(sliderToN(+nSlider.value)); });
+nSlider.addEventListener('change',()=>restart(null,true));
+lSlider.addEventListener('input',()=>{ const R=largeRange(PRESETS[activePreset]); el('v-nl').textContent=R[0]===R[1]?lSlider.value+' (set by the arrangement)':lSlider.value; });
+lSlider.addEventListener('change',()=>restart(null,true));
 
 const bp=el('b-pause');
 function setPaused(p){ paused=p; bp.dataset.on=String(p); }
 bp.addEventListener('click',()=>setPaused(!paused));
-el('b-reset').addEventListener('click',()=>restart(null,true));
+el('b-reset').addEventListener('click',()=>restart(activePreset,false));
 el('b-fit').addEventListener('click',()=>{ fitView(true); });
 const bc=el('b-clean');
 bc.addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); });
@@ -1248,7 +1263,7 @@ window.addEventListener('keydown',e=>{
   if(e.target.matches('input')) return;
   const k=e.key;
   if(k===' '){ e.preventDefault(); setPaused(!paused); }
-  else if(k==='r'||k==='R') restart(null,true);
+  else if(k==='r'||k==='R') restart(activePreset,false);
   else if(k==='h'||k==='H') bc.click();
   else if(k==='f'||k==='F') el('b-full').click();
   else if(k==='?') dlg.open?dlg.close():dlg.showModal();
@@ -1281,11 +1296,13 @@ function loop(now){
       predict(wx,wy,tmp.x,tmp.y,launchM);
     }
   }
-  draw(); hud(now); updateSel(now); govern(dtms);
+  draw(); updateSel(now); govern(dtms);
   requestAnimationFrame(loop);
 }
 let rt=null;
 window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(true); },150); });
+/* small hook for automated checks */
+window.__nb={ get bodies(){return bodies;}, restart, PRESETS };
 resize(true); restart('star');
 requestAnimationFrame(loop);
 })();
