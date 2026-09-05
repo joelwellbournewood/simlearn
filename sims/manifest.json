@@ -97,11 +97,13 @@
     "title": "Traffic Jams",
     "category": "Complex Systems",
     "tags": [
-      "cellular automaton",
+      "car-following",
+      "IDM",
+      "instability",
       "transportation"
     ],
-    "difficulty": "Beginner",
-    "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
+    "difficulty": "Intermediate",
+    "description": "A ring road with no junction, no obstacle and nowhere to turn off. Every driver follows the Intelligent Driver Model, and above a critical density the traffic jams itself. Space-time diagram, fundamental diagram, a brake tap you can fire yourself, and adaptive cruise control to try to fix it.",
     "status": "live",
     "hook": "Jams from nothing at all",
     "visible": false
