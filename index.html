@@ -10,8 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="has-flock">
-<canvas class="site-flock" aria-hidden="true"></canvas>
+<body>
 <header class="site-header">
   <a href="index.html" class="logo">Sim<span>Learn</span></a>
   <span class="chrome-note">Runs best on Google Chrome</span>
@@ -23,8 +22,14 @@
 
 <main>
   <section class="hero">
-    <h1><span class="w">Simulate.</span> <span class="w">Play.</span> <span class="w"><em>Learn.</em></span></h1>
-    <p class="hero-sub">Interactive Models</p>
+    <div class="hero-text">
+      <h1><span class="w">Simulate.</span> <span class="w">Play.</span> <span class="w"><em>Learn.</em></span></h1>
+      <p class="hero-sub">Interactive Models</p>
+    </div>
+    <figure class="hero-sim" id="cradle">
+      <canvas aria-label="Interactive Newton's cradle. Drag a ball sideways and release it."></canvas>
+      <figcaption>Newton&rsquo;s cradle &middot; elastic contacts</figcaption>
+    </figure>
   </section>
 
   <div class="filters" id="filters">
@@ -39,6 +44,6 @@
 </footer>
 
 <script src="assets/js/main.js"></script>
-<script src="assets/js/flock.js" defer></script>
+<script src="assets/js/cradle.js" defer></script>
 </body>
 </html>

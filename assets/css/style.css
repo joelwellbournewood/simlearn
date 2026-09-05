@@ -81,14 +81,24 @@ html,body{overflow-x:clip}
   opacity:0; animation:rise .62s cubic-bezier(.2,.7,.25,1) .3s forwards;
 }
 .hero-sub::before{content:""; width:34px; height:1px; background:linear-gradient(90deg,var(--accent),transparent); flex:none}
-.site-flock{
-  position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:0;
-  opacity:1;
-  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.55) 0%,#000 8%,#000 88%,rgba(0,0,0,.7) 100%);
-  mask-image:linear-gradient(180deg,rgba(0,0,0,.55) 0%,#000 8%,#000 88%,rgba(0,0,0,.7) 100%);
+.hero{position:relative; padding:2.2rem 0 1.6rem; display:flex; align-items:center;
+  justify-content:space-between; gap:clamp(18px,3vw,46px); overflow:visible}
+.hero-text{flex:1 1 auto; min-width:0}
+.hero-sim{
+  flex:0 0 auto; width:clamp(300px,32vw,392px); margin:0; padding:8px 12px 6px;
+  border-radius:16px; border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(20,30,30,.72),rgba(14,21,21,.58));
+  box-shadow:0 18px 40px -28px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.03);
+  opacity:0; animation:rise .62s cubic-bezier(.2,.7,.25,1) .24s forwards;
 }
-body.has-flock main, body.has-flock footer{position:relative; z-index:1}
-.hero > h1, .hero > .hero-sub{position:relative; z-index:1}
+.hero-sim canvas{display:block; width:100%; height:124px; touch-action:none; cursor:grab}
+.hero-sim canvas:active{cursor:grabbing}
+.hero-sim figcaption{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--muted); text-align:center; margin-top:4px;
+}
+@media(max-width:900px){.hero{flex-direction:column; align-items:stretch}
+  .hero-sim{width:100%}}
 .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:0 0 8px}
 
 /* ---------------- filter tabs ---------------- */
