@@ -11,7 +11,8 @@
     ],
     "difficulty": "Beginner",
     "description": "Separation, alignment and cohesion are the only three rules. The shape of the flock follows from them. Ten presets, 2D and 3D, with predators, obstacles and currents you can paint into the sky.",
-    "status": "live"
+    "status": "live",
+    "hook": "Three rules make a flock"
   },
   {
     "id": "predator-prey",
@@ -24,7 +25,8 @@
     ],
     "difficulty": "Intermediate",
     "description": "Every dot is one animal with its own energy budget, grazing, hunting and breeding. The boom and bust population cycles come out of those individual decisions.",
-    "status": "live"
+    "status": "live",
+    "hook": "Booms, busts and extinction"
   },
   {
     "id": "double-pendulum",
@@ -37,7 +39,8 @@
     ],
     "difficulty": "Intermediate",
     "description": "Release a hundred pendulums that differ by a tenth of a degree and watch them tear apart. The clearest demonstration that deterministic and predictable are not the same thing.",
-    "status": "live"
+    "status": "live",
+    "hook": "Deterministic, still unpredictable"
   },
   {
     "id": "optics-lens",
@@ -51,7 +54,8 @@
     ],
     "difficulty": "Beginner",
     "description": "An optical bench with real ray tracing. Move the object, the lens and the sensor, and watch the image form. Aperture, focus error, blur circles and spherical aberration, with a live view of what the sensor actually records.",
-    "status": "live"
+    "status": "live",
+    "hook": "Trace rays, form an image"
   },
   {
     "id": "epidemic",
@@ -64,7 +68,8 @@
     ],
     "difficulty": "Beginner",
     "description": "Susceptible, infected and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
-    "status": "live"
+    "status": "live",
+    "hook": "One case to an outbreak"
   },
   {
     "id": "traffic",
@@ -76,7 +81,8 @@
     ],
     "difficulty": "Beginner",
     "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
-    "status": "live"
+    "status": "live",
+    "hook": "Jams from nothing at all"
   },
   {
     "id": "gravity",
@@ -89,7 +95,8 @@
     ],
     "difficulty": "Beginner",
     "description": "Newton's one rule, applied to everything at once. Set up a star system, a binary pair or a collapsing cloud, then sling new bodies in and watch orbits form and merge.",
-    "status": "live"
+    "status": "live",
+    "hook": "One law, many orbits"
   },
   {
     "id": "lorenz",
@@ -101,7 +108,8 @@
     ],
     "difficulty": "Intermediate",
     "description": "The first picture of chaos anyone plotted. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate it, and release a swarm to watch identical starts come apart.",
-    "status": "live"
+    "status": "live",
+    "hook": "The first picture of chaos"
   },
   {
     "id": "reaction-diffusion",
@@ -114,7 +122,8 @@
     ],
     "difficulty": "Intermediate",
     "description": "Two chemicals spread and react by the Gray-Scott rules. Spots, stripes and coral shapes appear on their own. Pick a preset or paint your own seed.",
-    "status": "live"
+    "status": "live",
+    "hook": "Chemistry that draws patterns"
   },
   {
     "id": "segregation",
@@ -127,7 +136,8 @@
     ],
     "difficulty": "Intermediate",
     "description": "Mild individual preferences about who lives next door are enough to segregate a whole city. A classic result in social science.",
-    "status": "live"
+    "status": "live",
+    "hook": "Small preferences, split cities"
   },
   {
     "id": "game-of-life",
@@ -139,7 +149,8 @@
     ],
     "difficulty": "Beginner",
     "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators and patterns that never settle down.",
-    "status": "live"
+    "status": "live",
+    "hook": "Life from one rule"
   },
   {
     "id": "pharmacokinetics",
@@ -152,6 +163,7 @@
     ],
     "difficulty": "Intermediate",
     "description": "How the concentration of a drug in the body rises and falls over time, and what different dosing schedules do to that curve.",
-    "status": "coming-soon"
+    "status": "coming-soon",
+    "hook": "Dose in, curve out"
   }
 ]
