@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>SimLearn (previous design)</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Free interactive simulations of scientific models. Flocking, ecology, physics, epidemics and other complex systems, running live in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <a href="../index.html" class="logo">Sim<span>Learn</span></a>
+  <span class="chrome-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6H21M8.9 13.7 4.4 21M15.1 13.7 10.6 21"/></svg>Runs best on Google Chrome</span>
+  <nav>
+    <a href="../index.html">Simulations</a>
+    <a href="../about.html">About</a>
+  </nav>
+</header>
+
+<main>
+  <p style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#e6c34f;border:1px solid rgba(230,195,79,.35);background:rgba(230,195,79,.07);padding:8px 14px;border-radius:999px;display:inline-block">Archived design &mdash; the live site is at <a style="color:#e6c34f" href="../index.html">simlearn.ai</a></p>
+  <section class="hero">
+    <p class="eyebrow">Interactive models</p>
+    <h1>Learn it by <em>running</em> it</h1>
+    <p>Every simulation here is a working scientific model, running live in your browser. Change the numbers and watch what happens.</p>
+  </section>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <p style="color:var(--muted)">Loading simulations&hellip;</p>
+  </div>
+</main>
+
+<footer>
+  SimLearn &middot; <a href="../about.html">About</a>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>

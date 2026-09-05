@@ -1245,6 +1245,9 @@ class View3D {
     const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(400, 700, 300); this.scene.add(sun);
 
     const [w, h, d] = W.size;
+    /* the 3D world sits slightly high in the frame: the camera pans down by this much
+       (world units) so the box is not bottom-heavy under the header. */
+    this.lift = h * 0.12;
     this.box = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.16 }));
     this.scene.add(this.box);
     this.gridHelper = new THREE.GridHelper(Math.max(w, d), 18, 0xffffff, 0xffffff);
@@ -1297,6 +1300,7 @@ class View3D {
   }
   setWorld(size) {
     const [w, h, d] = size;
+    this.lift = h * 0.12;
     this.box.geometry.dispose();
     this.box.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d));
     this.scene.remove(this.gridHelper); this.gridHelper.geometry.dispose();
@@ -1402,8 +1406,9 @@ class View3D {
     c.r += (c.rTarget - c.r) * 0.16;
     if (this.autoRotate && !interacting) { c.idle += dt; if (c.idle > 90) c.theta += 0.0012 * dt; } else c.idle = 0;
     const sp = Math.sin(c.phi);
-    this.camera.position.set(this.target.x + c.r * sp * Math.cos(c.theta), this.target.y + c.r * Math.cos(c.phi), this.target.z + c.r * sp * Math.sin(c.theta));
-    this.camera.lookAt(this.target);
+    const ty = this.target.y - (this.lift || 0);
+    this.camera.position.set(this.target.x + c.r * sp * Math.cos(c.theta), ty + c.r * Math.cos(c.phi), this.target.z + c.r * sp * Math.sin(c.theta));
+    this.camera.lookAt(this.target.x, ty, this.target.z);
   }
   render(flock, P, ctx, dt, interacting) {
     if (dt === 0 && this.drew && !this.autoRotate && !interacting) { this.renderer.render(this.scene, this.camera); return; }
