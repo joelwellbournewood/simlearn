@@ -270,23 +270,23 @@
   <div class="about-inner">
     <button class="icon-btn about-close" id="btnAboutClose" aria-label="Close"><svg class="main" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2 id="aboutTitle">What am I looking at?</h2>
-    <p>A flock with no leader. Every arrow is a <b>boid</b> — short for "bird-oid object" — a tiny simulated animal that can only see its nearest neighbours and follows three rules. Nobody tells the flock where to go, yet it moves as one shape, splits, rejoins and dodges. Behaviour that appears at the level of the group without being programmed into any individual is called <b>emergence</b>, and this is one of the cleanest examples of it.</p>
+    <p>A simulated flock with no leader. Each arrow is a <b>boid</b>, short for "bird-oid object": a simple agent that perceives only its nearest neighbours and steers by three rules. No individual knows where the group is going, yet the flock holds a shape, splits around threats and re-forms. Behaviour that appears at the level of the group without being written into any individual is called <b>emergence</b>, and this model is one of the cleanest examples of it.</p>
     <h3>The three rules</h3>
     <ul>
-      <li><b>Separation</b> — steer away from neighbours that are too close, so nobody collides.</li>
-      <li><b>Alignment</b> — steer toward the average heading of your neighbours.</li>
-      <li><b>Cohesion</b> — steer toward the average position of your neighbours, so you don't get left behind.</li>
+      <li><b>Separation</b>: steer away from neighbours that are too close, preventing collisions.</li>
+      <li><b>Alignment</b>: steer toward the average heading of nearby boids.</li>
+      <li><b>Cohesion</b>: steer toward the average position of nearby boids, keeping the group together.</li>
     </ul>
-    <p>Each boid mixes these three pulls every frame, using only what it can see inside its perception radius and field of view. Change the balance with the sliders and the flock's personality changes completely: lots of alignment gives you streams and sheets, lots of cohesion gives you tight balls, lots of separation gives you a loose gas.</p>
+    <p>Every frame, each boid blends these three pulls using only what falls inside its perception radius and field of view. The sliders set the blend, and the blend determines the flock's character: strong alignment produces long streams, strong cohesion produces dense clusters, strong separation produces a diffuse gas.</p>
     <h3>Where it comes from</h3>
-    <p>Craig Reynolds published the boids model in 1987 to animate flocks for computer graphics. It was used for the bat swarms and penguin crowds in <i>Batman Returns</i> (1992), and it became a foundation for studying collective behaviour in birds, fish, insects and even crowds of people. Later fieldwork on real starlings found something the original model didn't have: each bird tracks its six or seven <b>nearest</b> neighbours, however far away they are, rather than everyone within a fixed distance. They also found that flock-wide turns usually begin with one bird on the edge, and spread through the flock faster than any bird flies. The Murmuration preset uses those findings, plus a roost to circle and a falcon to flee from.</p>
+    <p>Craig Reynolds published the boids model in 1987 as a way to animate flocks for computer graphics. It supplied the bat swarms and penguin crowds in <i>Batman Returns</i> (1992) and became a foundation for studying collective behaviour in birds, fish, insects and human crowds. Later fieldwork on real starlings found a rule the original model lacked: each bird tracks its six or seven <b>nearest</b> neighbours regardless of their distance, rather than everyone within a fixed radius. The same studies found that flock-wide turns usually begin with a single bird at the edge and spread through the flock faster than any bird flies. The Murmuration preset incorporates those findings, along with a roost to circle and a falcon to avoid.</p>
     <h3>Things to try</h3>
     <ul>
       <li>Hold the pointer on the flock with <b>Attract</b>, then switch to <b>Repel</b> and scatter it.</li>
-      <li>Drop a <b>predator</b> and watch fear ripple through the group.</li>
-      <li>Draw an <b>obstacle</b> and see the flock split around it and re-form.</li>
-      <li>Turn on "Show one boid's view" under the hood to see exactly what a single boid knows.</li>
-      <li>Watch the <b>order</b> number: it measures how much of the flock agrees on a direction.</li>
+      <li>Add a <b>predator</b> and watch avoidance propagate through the group.</li>
+      <li>Draw an <b>obstacle</b> and watch the flock divide around it and re-form.</li>
+      <li>Enable "Show one boid's view" under the hood to see exactly what a single boid knows.</li>
+      <li>Watch the <b>order</b> readout, which measures how closely the flock agrees on a direction.</li>
     </ul>
   </div>
 </dialog>

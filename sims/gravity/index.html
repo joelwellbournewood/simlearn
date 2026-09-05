@@ -37,7 +37,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .icon-btn .alt{display:none}
 .icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
-.panel{position:absolute;right:20px;top:66px;width:300px;max-height:calc(100% - 86px);overflow-y:auto;z-index:6;
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
   background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
 .panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
@@ -70,11 +70,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
   background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
 input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
 input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
-.hud{position:absolute;left:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 360px)}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
 .stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
 .stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
-.hint{position:absolute;left:20px;bottom:74px;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
+.hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -161,26 +161,26 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <dialog class="about" id="about">
   <div class="about-inner">
     <button class="about-close" id="b-close" aria-label="Close">&times;</button>
-    <h2>N-Body Gravity</h2>
-    <p>Every body here pulls on every other one with Newton's law of gravitation: the force falls off with the square of the distance and grows with both masses. That is the entire rule. There is no code for "orbit", no code for "solar system", no code for "collapse". Those all fall out of the one rule.</p>
+    <h2>What am I looking at?</h2>
+    <p>A collection of bodies, each pulling on every other with Newton's law of gravitation: the force grows with both masses and falls off with the square of the distance. That is the entire rule. There is no code for "orbit", no code for "solar system", no code for "collapse". All of those follow from the one rule.</p>
     <h3>Why two bodies are easy and three are not</h3>
-    <p>Two bodies have an exact solution written down in 1687: they trace conic sections, ellipses if they are bound, hyperbolas if they are not. Add a third and no such formula exists. Poincare proved in the 1890s that the general three-body problem has no closed-form solution, and that its paths are <b>chaotic</b>: two starts a hair apart end up somewhere completely different. Run <b class="hl">Chaotic three</b> twice and watch how quickly the two runs stop agreeing.</p>
+    <p>Two bodies have an exact solution, written down in 1687: they trace conic sections, ellipses if they are bound, hyperbolas if they are not. Add a third body and no such formula exists. Poincare proved in the 1890s that the general three-body problem has no closed-form solution, and that its paths are <b>chaotic</b>: two starts a hair apart end up somewhere completely different. Run <b class="hl">Chaotic three</b> twice and note how quickly the two runs stop agreeing.</p>
     <h3>The slingshot</h3>
-    <p>Fling a light body past a heavy moving one and it can leave much faster than it arrived. Energy is not created; it is borrowed from the heavy body's orbital motion, which slows by an amount too small to see. Real missions do this on purpose. Voyager 2 reached Neptune on a chain of these.</p>
+    <p>Send a light body past a heavy moving one and it can leave much faster than it arrived. No energy is created; it is borrowed from the heavy body's orbital motion, which slows by an amount too small to see. Real missions use this deliberately. Voyager 2 reached Neptune on a chain of such assists.</p>
     <h3>Mergers</h3>
-    <p>When two bodies touch they merge into one, keeping total mass and total momentum. This is a crude stand-in for what an accretion disc really does, but it captures the important part: gravity is a ratchet. Big things get bigger, and a cloud of equals becomes a few heavy winners surrounded by leftovers. That is roughly how planets formed.</p>
+    <p>When two bodies touch they merge into one, conserving total mass and total momentum. This is a crude stand-in for what an accretion disc really does, but it captures the essential point: gravity is a ratchet. Large bodies grow larger, and a cloud of equals becomes a few heavy winners surrounded by leftovers. That is roughly how planets formed.</p>
     <h3>The honest caveats</h3>
     <ul>
-      <li>The force is <b>softened</b> at very short range, so bodies that pass close do not fling off to infinity from a divide-by-almost-zero.</li>
-      <li>Integration is velocity Verlet with substeps, which conserves energy far better than a naive step, but not perfectly. The <b>energy drift</b> readout shows how far the total has wandered from its starting value. Under about 1% and you are watching real physics; above 10% and the picture is drifting.</li>
-      <li>Two dimensions only. Real systems have a third, which is why real discs flatten rather than merging as fast as this one does.</li>
+      <li>The force is <b>softened</b> at very short range, so bodies that pass close do not fly off to infinity from a divide-by-almost-zero.</li>
+      <li>Integration is velocity Verlet with substeps, which conserves energy far better than a naive step, but not perfectly. The <b>energy drift</b> readout shows how far the total has wandered from its starting value. Under about 1% you are watching real physics; above 10% the picture is drifting.</li>
+      <li>Two dimensions only. Real systems have a third, which is why real discs flatten instead of merging as fast as this one does.</li>
     </ul>
     <h3>Things to try</h3>
     <ul>
-      <li>Start <b class="hl">Star and planets</b> and sling a heavy body straight through the middle. Watch how few of the planets survive as planets.</li>
-      <li>Set gravity to 0.2 on <b class="hl">Cold collapse</b>. The cloud still falls in, just slowly, and far fewer bodies merge.</li>
-      <li>Turn trails to maximum on <b class="hl">Binary pair</b> and look at the shape a third body traces around two moving attractors.</li>
-      <li>Watch the energy drift while you crank time speed up. If it climbs, the picture has stopped being trustworthy.</li>
+      <li>Start <b class="hl">Star and planets</b> and sling a heavy body straight through the middle. Count how few of the planets survive as planets.</li>
+      <li>Set gravity to 0.2 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge.</li>
+      <li>Turn trails to maximum on <b class="hl">Binary pair</b> and study the path a third body traces around two moving attractors.</li>
+      <li>Watch the energy drift while raising the time speed. If it climbs, the picture has stopped being trustworthy.</li>
     </ul>
   </div>
 </dialog>

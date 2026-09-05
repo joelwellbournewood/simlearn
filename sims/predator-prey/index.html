@@ -99,6 +99,8 @@
   .btn.primary{background:var(--hare);color:#04201a;border-color:transparent;font-weight:600;flex:1}
   .btn.ghost{flex:1}
   .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+  #spd{flex:1}
+  #spd button{flex:1;justify-content:center;text-align:center;font-variant-numeric:tabular-nums}
   .seg button{
     font-family:var(--mono);font-size:13px;color:var(--muted);background:transparent;border:0;
     padding:7px 11px;border-radius:9px;cursor:pointer;touch-action:manipulation
@@ -303,7 +305,13 @@
 <div class="transport">
   <button class="btn primary" id="play">Pause</button>
   <button class="btn ghost" id="reset">Reset</button>
-  
+</div>
+<div class="transport">
+  <div class="seg" id="spd" role="group" aria-label="Simulation speed">
+    <button data-s="0.5" title="Half speed">0.5&times;</button>
+    <button data-s="1" class="on" title="Normal speed">1&times;</button>
+    <button data-s="2" title="Double speed">2&times;</button>
+  </div>
 </div>
 <div class="card">
   <div class="card-head">
@@ -401,17 +409,23 @@
   <div class="about-inner">
     <button class="about-close" id="btnAboutClose" aria-label="Close">&#10005;</button>
     <h2 id="aboutTitle">What am I looking at?</h2>
-<p><b>Emergence.</b> No equation moves the dots. Each animal follows three rules — find food, avoid being food, and breed when energy is high — and the famous boom-and-bust cycles <i>emerge</i> from the crowd.</p>
-    <p><b>The cycle (Lotka–Volterra).</b> <span class="hl">Hares</span> rise when grass is plentiful → more prey feeds the <span class="hr">lynx</span> → lynx rise → hares get eaten faster and crash → lynx starve and crash → grass recovers → hares rise again. Predator peaks <i>lag</i> prey peaks by about a quarter-cycle. Switch the trace to <b>Phase orbit</b> to see this lag draw itself as a loop.</p>
-    <p><b>Energy &amp; trophic levels.</b> Energy flows grass → hare → lynx, leaking away as metabolism at each step. That loss is why a healthy field always holds far more hares than lynx — the classic energy pyramid.</p>
-    <p><b>Carrying capacity.</b> Plant regrowth sets the ceiling on how many hares the land can feed. Slow regrowth (Sparse habitat) means a low ceiling and small, fragile populations.</p>
-    <p><b>Paradox of enrichment.</b> Push plant regrowth to the max and the swings get <i>wilder</i>, often ending in collapse — adding food can destabilize a system rather than steady it (Rosenzweig, 1971).</p>
-    <p><b>Grounded in real data.</b> This mirrors the Canadian lynx and snowshoe hare, whose populations cycle on a roughly 10-year period — famously recorded in the Hudson's Bay Company fur-trade ledgers, one of ecology's longest datasets.</p>
+    <p>An agent-based ecosystem. Each dot is an individual animal following simple rules: find food, avoid becoming food, and reproduce when energy is high. No equation drives the population curves. The boom-and-bust cycles emerge from many animals acting on local information.</p>
+    <h3>The cycle</h3>
+    <p><span class="hl">Hares</span> multiply while grass is plentiful. More prey feeds the <span class="hr">lynx</span>, whose numbers rise until hares are eaten faster than they can breed and crash. The lynx then starve, the grass recovers, and the hares recover with it. This is the pattern described by the Lotka-Volterra equations, in which predator peaks lag prey peaks by roughly a quarter of a cycle. Switch the trace to <b>Phase orbit</b> and the lag draws itself as a closed loop.</p>
+    <h3>Energy, capacity and enrichment</h3>
+    <p>Energy passes from grass to hare to lynx, and much of it is lost to metabolism at each step. That loss is why a healthy field always holds far more hares than lynx: the energy pyramid of any food chain. Plant regrowth sets the carrying capacity, the ceiling on how many hares the land can feed; slow regrowth, as in the Sparse habitat preset, means small and fragile populations. Faster regrowth is not necessarily safer. Push regrowth to its maximum and the oscillations widen, often ending in collapse. This is the paradox of enrichment (Rosenzweig, 1971): adding food to a predator-prey system can destabilize it rather than steady it.</p>
+    <h3>The real-world record</h3>
+    <p>Canadian lynx and snowshoe hare populations cycle with a period of roughly ten years. The Hudson's Bay Company fur-trade ledgers recorded those swings for over a century, giving ecology one of its longest datasets, and this simulation reproduces the same qualitative pattern.</p>
+    <h3>The honest caveats</h3>
+    <ul>
+      <li>This is an agent-based model, not an integration of the Lotka-Volterra equations. Because each animal follows individual rules, the cycles are noisy and their period drifts from run to run.</li>
+      <li>Populations here can go extinct, which the smooth textbook equations never allow. When numbers fall low, chance decides whether the last few animals find food or each other in time.</li>
+    </ul>
     <h3>Things to try</h3>
     <ul>
       <li>Switch the trace to <b>Phase orbit</b> and watch the loop close on itself.</li>
-      <li>Run <b>Paradox of enrichment</b> and see the swings widen until something breaks.</li>
-      <li>Drag <b>Hunting range</b> up mid-run and watch the hares crash within a few hundred steps.</li>
+      <li>Run <b>Paradox of enrichment</b> and watch the swings widen until something breaks.</li>
+      <li>Raise <b>Hunting range</b> mid-run and watch the hares crash within a few hundred steps.</li>
       <li>Set <b>Plant regrowth</b> to 1 and count how few animals the land can carry.</li>
     </ul>
   </div>
@@ -812,6 +826,12 @@
   });
   el('reset').addEventListener('click', ()=>{
     reset(); if(!running){ running=true; playBtn.textContent='Pause'; }
+  });
+
+  el('spd').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    cfg.speed=parseFloat(b.dataset.s);
+    [...e.currentTarget.children].forEach(c=>c.classList.toggle('on', c===b));
   });
 
   el('gmode').addEventListener('click', e=>{

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=1200">
-<title>Double Pendulum: what chaos actually means | SimLearn</title>
-<meta name="description" content="An interactive double pendulum. Release a hundred copies that differ by a thousandth of a degree and watch determinism and unpredictability turn out to be compatible.">
+<title>Pendulum Chaos | SimLearn</title>
+<meta name="description" content="Pendulum Chaos: an interactive double pendulum. Release a hundred copies that differ by a thousandth of a degree and watch a deterministic system become unpredictable.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -37,7 +37,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .icon-btn .alt{display:none}
 .icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
-.panel{position:absolute;right:20px;top:66px;width:300px;max-height:calc(100% - 86px);overflow-y:auto;z-index:6;
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
   background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
 .panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
@@ -70,11 +70,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
   background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
 input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
 input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
-.hud{position:absolute;left:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 360px)}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
 .stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
 .stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
-.hint{position:absolute;left:20px;bottom:74px;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
+.hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -99,7 +99,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
 <div class="brand">
   <p class="kicker">Deterministic chaos</p>
-  <h1>Double Pendulum</h1>
+  <h1>Pendulum Chaos</h1>
   <p>Exact equations. No randomness. Still unpredictable.</p>
 </div>
 
@@ -162,26 +162,26 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <dialog class="about" id="about">
   <div class="about-inner">
     <button class="about-close" id="b-close" aria-label="Close">&times;</button>
-    <h2>Double Pendulum</h2>
-    <p>One rod swinging from a pivot, with a second rod swinging from the end of the first. The equations of motion are exact and written down in full in this page's source. Nothing here is random. Run the same starting numbers twice and you get the same motion twice, to the last decimal place.</p>
-    <p>And yet you cannot predict it. That combination is what <b>chaos</b> means, and it is the whole point of this page.</p>
+    <h2>What am I looking at?</h2>
+    <p>One rod swinging from a pivot, with a second rod swinging from the end of the first. The equations of motion are exact and written out in full in this page's source. Nothing here is random. Run the same starting numbers twice and you get the same motion twice, to the last decimal place.</p>
+    <p>The motion is still unpredictable. That combination is what <b>chaos</b> means, and it is the subject of this page.</p>
     <h3>The demonstration</h3>
-    <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree. For the first few seconds they move as one thick line, because they are, for practical purposes, the same pendulum. Then the line frays, then it splits, then within about fifteen seconds the hundred copies are scattered over every angle and any memory of their shared start is gone.</p>
-    <p>Nothing was added. No noise, no rounding trick, no forcing. The tiny difference they began with was simply <b>stretched</b>, at a roughly constant exponential rate, until it was the size of the whole system. That rate is called the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days no matter how good the measurements get.</p>
-    <h3>What "sensitive dependence" costs you</h3>
-    <p>If errors grow exponentially, then buying one more decimal place of accuracy in your starting measurement buys you a fixed extra amount of forecast time, not a proportional one. Ten times better instruments do not give you ten times the warning. That is a hard limit set by the system, not by the technology.</p>
+    <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree. For the first few seconds they move as one thick line, because for practical purposes they are the same pendulum. Then the line frays and splits, and within about fifteen seconds the hundred copies are scattered over every angle, with no memory of their shared start.</p>
+    <p>Nothing was added. No noise was injected and no forcing applied. The tiny difference they began with was simply <b>stretched</b>, at a roughly constant exponential rate, until it reached the size of the whole system. That rate is the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days however good the measurements get.</p>
+    <h3>The cost of sensitive dependence</h3>
+    <p>If errors grow exponentially, one more decimal place of accuracy in the starting measurement buys a fixed extra amount of forecast time rather than a proportional one. Instruments ten times better do not give ten times the warning. That limit is set by the system, not by the technology.</p>
     <h3>Not everything is chaotic</h3>
-    <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the double pendulum behaves like two coupled linear oscillators and is perfectly well behaved. Chaos here is a property of the energy, not of the machine.</p>
+    <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the system behaves like two coupled linear oscillators and is perfectly well behaved. Chaos here is a property of the energy, not of the machine.</p>
     <h3>The honest caveats</h3>
     <ul>
-      <li>Integration is fourth-order Runge-Kutta with substeps. The <b>energy drift</b> readout shows how far total energy has moved from its starting value. While that stays small the divergence you see is physics, not arithmetic.</li>
+      <li>Integration is fourth-order Runge-Kutta with substeps. The <b>energy drift</b> readout shows how far total energy has moved from its starting value. While that stays small, the divergence on screen is physics rather than arithmetic.</li>
       <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
       <li>The rods are massless and the bobs are points. Real hardware has friction, and eventually stops.</li>
     </ul>
     <h3>Things to try</h3>
     <ul>
-      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than you would guess.</li>
-      <li>Watch the <b>spread now</b> readout climb. Its growth is close to a straight line on a log scale, which is exactly what an exponent looks like.</li>
+      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than most people expect.</li>
+      <li>Watch the <b>spread now</b> readout climb. Its growth is close to a straight line on a log scale, which is what an exponent looks like.</li>
       <li>Give the lower arm a length of 1.6 and release from 180 degrees. The tip trace fills the whole disc it can reach.</li>
     </ul>
   </div>

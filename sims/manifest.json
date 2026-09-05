@@ -27,45 +27,8 @@
     "status": "live"
   },
   {
-    "id": "game-of-life",
-    "title": "Conway's Game of Life",
-    "category": "Emergent Systems",
-    "tags": [
-      "cellular automaton",
-      "emergence"
-    ],
-    "difficulty": "Beginner",
-    "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators and patterns that never settle down.",
-    "status": "live"
-  },
-  {
-    "id": "traffic",
-    "title": "Traffic Jams",
-    "category": "Complex Systems",
-    "tags": [
-      "cellular automaton",
-      "transportation"
-    ],
-    "difficulty": "Beginner",
-    "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
-    "status": "live"
-  },
-  {
-    "id": "segregation",
-    "title": "Schelling's Segregation Model",
-    "category": "Social Dynamics",
-    "tags": [
-      "agent-based",
-      "sociology",
-      "emergence"
-    ],
-    "difficulty": "Intermediate",
-    "description": "Mild individual preferences about who lives next door are enough to segregate a whole city. A classic result in social science.",
-    "status": "live"
-  },
-  {
     "id": "double-pendulum",
-    "title": "Double Pendulum: Chaos",
+    "title": "Pendulum Chaos",
     "category": "Physics",
     "tags": [
       "chaos",
@@ -90,15 +53,15 @@
     "status": "live"
   },
   {
-    "id": "lorenz",
-    "title": "Lorenz Attractor",
-    "category": "Physics",
+    "id": "traffic",
+    "title": "Traffic Jams",
+    "category": "Complex Systems",
     "tags": [
-      "chaos",
-      "dynamical systems"
+      "cellular automaton",
+      "transportation"
     ],
-    "difficulty": "Intermediate",
-    "description": "The first picture of chaos anyone plotted. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate it, and release a swarm to watch identical starts come apart.",
+    "difficulty": "Beginner",
+    "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
     "status": "live"
   },
   {
@@ -115,6 +78,18 @@
     "status": "live"
   },
   {
+    "id": "lorenz",
+    "title": "Lorenz Attractor",
+    "category": "Physics",
+    "tags": [
+      "chaos",
+      "dynamical systems"
+    ],
+    "difficulty": "Intermediate",
+    "description": "The first picture of chaos anyone plotted. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate it, and release a swarm to watch identical starts come apart.",
+    "status": "live"
+  },
+  {
     "id": "reaction-diffusion",
     "title": "Reaction-Diffusion",
     "category": "Emergent Systems",
@@ -125,6 +100,31 @@
     ],
     "difficulty": "Intermediate",
     "description": "Two chemicals spread and react by the Gray-Scott rules. Spots, stripes and coral shapes appear on their own. Pick a preset or paint your own seed.",
+    "status": "live"
+  },
+  {
+    "id": "segregation",
+    "title": "Schelling's Segregation Model",
+    "category": "Social Dynamics",
+    "tags": [
+      "agent-based",
+      "sociology",
+      "emergence"
+    ],
+    "difficulty": "Intermediate",
+    "description": "Mild individual preferences about who lives next door are enough to segregate a whole city. A classic result in social science.",
+    "status": "live"
+  },
+  {
+    "id": "game-of-life",
+    "title": "Conway's Game of Life",
+    "category": "Emergent Systems",
+    "tags": [
+      "cellular automaton",
+      "emergence"
+    ],
+    "difficulty": "Beginner",
+    "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators and patterns that never settle down.",
     "status": "live"
   },
   {
