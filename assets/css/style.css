@@ -29,7 +29,7 @@ a{color:var(--accent)}
 
 /* ---------------- header ---------------- */
 header.site-header{
-  display:flex; align-items:center; gap:1rem; padding:.85rem clamp(16px,2.4vw,34px);
+  display:flex; align-items:center; gap:1rem; padding:.62rem clamp(16px,2.4vw,34px);
   background:rgba(5,12,10,.74); backdrop-filter:blur(10px) saturate(140%);
   position:sticky; top:0; z-index:20; border-bottom:1px solid var(--line);
 }
@@ -65,7 +65,7 @@ main{max-width:1240px; margin:0 auto; padding:0 clamp(16px,2.4vw,34px) 4.5rem}
 html,body{overflow-x:clip}
 
 /* ---------------- hero ---------------- */
-.hero{position:relative; padding:6.4rem 0 3.4rem; overflow:visible}
+.hero{position:relative; padding:3.2rem 0 2.1rem; overflow:visible}
 .hero h1{
   font-family:var(--display); font-weight:600; margin:0;
   font-size:clamp(2.6rem,6.4vw,4.4rem); line-height:1.02; letter-spacing:-.03em; color:var(--ink);
@@ -83,9 +83,9 @@ html,body{overflow-x:clip}
 .hero-sub::before{content:""; width:34px; height:1px; background:linear-gradient(90deg,var(--accent),transparent); flex:none}
 .site-flock{
   position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:0;
-  opacity:.92;
-  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.45) 0%,#000 14%,#000 72%,rgba(0,0,0,.55) 100%);
-  mask-image:linear-gradient(180deg,rgba(0,0,0,.45) 0%,#000 14%,#000 72%,rgba(0,0,0,.55) 100%);
+  opacity:1;
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.55) 0%,#000 8%,#000 88%,rgba(0,0,0,.7) 100%);
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.55) 0%,#000 8%,#000 88%,rgba(0,0,0,.7) 100%);
 }
 body.has-flock main, body.has-flock footer{position:relative; z-index:1}
 .hero > h1, .hero > .hero-sub{position:relative; z-index:1}
@@ -93,7 +93,7 @@ body.has-flock main, body.has-flock footer{position:relative; z-index:1}
 
 /* ---------------- filter tabs ---------------- */
 .filters{
-  display:flex; flex-wrap:wrap; gap:0 1.35rem; margin:2.6rem 0 1.6rem;
+  display:flex; flex-wrap:wrap; gap:0 1.35rem; margin:1.7rem 0 1.35rem;
   border-bottom:1px solid var(--line); position:relative;
 }
 .filter-btn{
@@ -110,7 +110,7 @@ body.has-flock main, body.has-flock footer{position:relative; z-index:1}
 .card{
   position:relative; display:block; padding:0; overflow:hidden; text-decoration:none; color:var(--ink);
   border:1px solid var(--line); border-radius:var(--radius);
-  background:linear-gradient(180deg,rgba(13,31,26,.88),rgba(10,23,20,.90));
+  background:linear-gradient(180deg,rgba(13,31,26,.93),rgba(10,23,20,.95));
   transition:transform .2s cubic-bezier(.2,.7,.25,1), border-color .2s, box-shadow .2s;
   will-change:transform;
 }

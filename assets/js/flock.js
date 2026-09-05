@@ -12,24 +12,26 @@
   var ACCENT = '86,224,194', WARM = '255,125,92';
 
   // --- Murmuration preset, translated to px and seconds -------------------
-  var MAXSPEED = 168, MINSPEED = MAXSPEED * 0.55;
+  var MAXSPEED = 168, MINSPEED = MAXSPEED * 0.68;
   var MAXFORCE = MAXSPEED * 4.2;          // agility 0.12
   var PERC = 78, SEP = 27, K = 7;         // perception / separation / topo
   var W_SEP = 2.15, W_ALI = 2.2, W_COH = 0.8;
   var CRUISE = 0.7, JITTER = 0.8, STARTLE = 0.8 * 4, INITIATIVE = 1;
-  var ATTRACT = 0.20, ROOST = 0.3, COS_FOV = Math.cos(300 * Math.PI / 360);
+  var ATTRACT = 0.85, ROOST = 0.55, COS_FOV = Math.cos(300 * Math.PI / 360);
 
   var W = 0, H = 0, dpr = 1, t = 0, last = 0, running = false;
   var boids = [], clusters = [];
   var kd2 = new Float64Array(K), kj = new Int32Array(K);
 
+  var LANES = [0.19, 0.62, 0.34, 0.80, 0.50];
+
   function makeCluster(i, nc) {
     return {
       cx: 0, cy: 0, r: 0,
-      ax: (0.5 + i) / nc, ay: (i % 2 ? 0.68 : 0.30) + (Math.random() - 0.5) * 0.1,
+      ax: (0.5 + i) / nc, ay: LANES[i % LANES.length] + (Math.random() - 0.5) * 0.05,
       sx: 0.055 + Math.random() * 0.05, sy: 0.041 + Math.random() * 0.05,
       px: Math.random() * 6.28, py: Math.random() * 6.28,
-      rx: 0.06 + Math.random() * 0.06, ry: 0.10 + Math.random() * 0.09
+      rx: 0.06 + Math.random() * 0.06, ry: 0.055 + Math.random() * 0.05
     };
   }
 
@@ -57,7 +59,7 @@
       boids = [];
     }
     moveAnchors();
-    var want = Math.max(150, Math.min(430, Math.round(W * H / 4600)));
+    var want = Math.max(260, Math.min(760, Math.round(W * H / 2200)));
     while (boids.length > want) boids.pop();
     while (boids.length < want) boids.push(spawnAt(clusters[boids.length % clusters.length]));
   }
@@ -65,10 +67,10 @@
   function moveAnchors() {
     for (var i = 0; i < clusters.length; i++) {
       var c = clusters[i];
-      c.r = Math.min(W, H) * 0.19;
+      c.r = Math.min(W, H) * 0.16;
       c.cx = W * (c.ax + c.rx * Math.sin(t * c.sx + c.px));
       c.cy = H * (c.ay + c.ry * Math.sin(t * c.sy + c.py));
-      var mx = W * 0.10, my = H * 0.14;
+      var mx = c.r * 0.95, my = c.r * 1.05;
       if (c.cx < mx) c.cx = mx; else if (c.cx > W - mx) c.cx = W - mx;
       if (c.cy < my) c.cy = my; else if (c.cy > H - my) c.cy = H - my;
     }
@@ -162,8 +164,8 @@
       }
       var c = clusters[b.g], adx = c.cx - x, ady = c.cy - y;
       var ad = Math.sqrt(adx * adx + ady * ady) || 1, roostR = c.r * ROOST;
-      var aw = (ad - roostR) / roostR; aw = aw < 0 ? 0 : aw > 1 ? 1 : aw;
-      if (aw > 0) steer(adx, ady, vx, vy, MAXFORCE, ATTRACT * 1.2 * aw);
+      var aw = (ad - roostR) / (c.r - roostR); aw = aw < 0 ? 0 : aw > 1 ? 1 : aw;
+      if (aw > 0) steer(adx, ady, vx, vy, MAXFORCE, ATTRACT * aw * aw);
 
       if (b.imp > 0) { b.imp -= dt; S0 += b.ix * MAXFORCE * 2.2; S1 += b.iy * MAXFORCE * 2.2; }
       if (CRUISE > 0) { var dv = (cruiseSpeed - sp) * CRUISE * 3.4; S0 += ux * dv; S1 += uy * dv; }
@@ -179,8 +181,11 @@
       var dec = b.bank * decay; b.bank = turn > dec ? (turn > 1 ? 1 : turn) : dec;
 
       b.vx = vx; b.vy = vy; b.x = x + vx * dt; b.y = y + vy * dt;
-      if (b.x < -60) b.x = W + 60; else if (b.x > W + 60) b.x = -60;
-      if (b.y < -60) b.y = H + 60; else if (b.y > H + 60) b.y = -60;
+      // soft walls: birds belong to a cluster, so bounce rather than wrap
+      if (b.x < -24) { b.x = -24; b.vx = Math.abs(b.vx) * 0.6; }
+      else if (b.x > W + 24) { b.x = W + 24; b.vx = -Math.abs(b.vx) * 0.6; }
+      if (b.y < -24) { b.y = -24; b.vy = Math.abs(b.vy) * 0.6; }
+      else if (b.y > H + 24) { b.y = H + 24; b.vy = -Math.abs(b.vy) * 0.6; }
     }
   }
 
@@ -190,11 +195,11 @@
       var b = boids[i];
       var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy) || 1e-6;
       var ux = b.vx / sp, uy = b.vy / sp;
-      var len = 8.2 * b.z, wid = 3.0 * b.z;
+      var len = 9.2 * b.z, wid = 3.4 * b.z;
       var rgb = b.warm ? WARM : ACCENT;
-      var alpha = (b.warm ? 0.62 : 0.52) * (0.4 + b.z * 0.6);
+      var alpha = Math.min(1, (b.warm ? 1.0 : 0.92) * (0.4 + b.z * 0.6));
 
-      ctx.strokeStyle = 'rgba(' + rgb + ',' + (alpha * 0.3).toFixed(3) + ')';
+      ctx.strokeStyle = 'rgba(' + rgb + ',' + (alpha * 0.32).toFixed(3) + ')';
       ctx.lineWidth = wid * 0.6;
       ctx.beginPath();
       ctx.moveTo(b.x - ux * len * 3.0, b.y - uy * len * 3.0);
