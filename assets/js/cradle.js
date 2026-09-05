@@ -16,7 +16,7 @@
   var REST = 0.995;             // restitution between balls
   var MAXA = 1.05;              // largest lift angle, radians
   var W = 0, H = 0, cx = 0, px = [];
-  var th = [], om = [], grabbed = -1, grabSet = [], hinted = true;
+  var th = [], om = [], grabbed = -1, grabSet = [];
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   for (var i = 0; i < N; i++) { th[i] = 0; om[i] = 0; }
@@ -64,39 +64,27 @@
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    var barW = 2 * R * N + 34, bx0 = cx - barW / 2;
-    // frame
-    ctx.strokeStyle = 'rgba(150,175,180,.30)'; ctx.lineWidth = 1;
+    var barW = 2 * R * N + 30, bx0 = cx - barW / 2;
+    var LINE = 'rgba(163,188,190,.42)';
+
+    // frame: one top bar with two short end stubs
+    ctx.strokeStyle = LINE; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(bx0, PIVY); ctx.lineTo(bx0 + barW, PIVY);
-    ctx.moveTo(bx0 + 6, PIVY); ctx.lineTo(bx0 + 6, H - 16);
-    ctx.moveTo(bx0 + barW - 6, PIVY); ctx.lineTo(bx0 + barW - 6, H - 16);
-    ctx.moveTo(bx0 - 10, H - 16); ctx.lineTo(bx0 + barW + 10, H - 16);
+    ctx.moveTo(bx0, PIVY); ctx.lineTo(bx0, PIVY + 9);
+    ctx.moveTo(bx0 + barW, PIVY); ctx.lineTo(bx0 + barW, PIVY + 9);
     ctx.stroke();
 
-    for (var i = 0; i < N; i++) {
-      var x = bx(i), y = by(i);
-      var swinging = Math.abs(th[i]) > 0.04;
-      ctx.strokeStyle = swinging ? 'rgba(86,224,194,.55)' : 'rgba(150,175,180,.34)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(px[i] - R * 0.55, PIVY); ctx.lineTo(x, y);
-      ctx.moveTo(px[i] + R * 0.55, PIVY); ctx.lineTo(x, y); ctx.stroke();
+    // strings: one line per ball
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var i = 0; i < N; i++) { ctx.moveTo(px[i], PIVY); ctx.lineTo(bx(i), by(i)); }
+    ctx.stroke();
 
-      if (swinging) {
-        ctx.beginPath(); ctx.fillStyle = 'rgba(86,224,194,' + Math.min(0.22, Math.abs(th[i]) * 0.24) + ')';
-        ctx.arc(x, y, R + 7, 0, 6.2832); ctx.fill();
-      }
-      var g = ctx.createRadialGradient(x - R * 0.4, y - R * 0.5, R * 0.15, x, y, R);
-      g.addColorStop(0, '#eafbf6'); g.addColorStop(0.45, '#9fc4c0');
-      g.addColorStop(1, swinging ? '#2b6f66' : '#33403f');
-      ctx.beginPath(); ctx.fillStyle = g; ctx.arc(x, y, R, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = 'rgba(10,16,16,.55)'; ctx.lineWidth = 1; ctx.stroke();
-    }
-    if (hinted) {
-      ctx.fillStyle = 'rgba(150,175,180,.5)';
-      ctx.font = '10px "Space Mono", ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('DRAG A BALL', cx, H - 4);
+    // balls: flat, uniform, no shading
+    ctx.fillStyle = '#9fd8cd';
+    for (var j = 0; j < N; j++) {
+      ctx.beginPath(); ctx.arc(bx(j), by(j), R, 0, 6.2832); ctx.fill();
     }
   }
 
@@ -125,7 +113,6 @@
     grabbed = i; grabSet = [];
     if (i < N / 2) { for (var j = 0; j <= i; j++) grabSet.push(j); }
     else { for (var k = i; k < N; k++) grabSet.push(k); }
-    hinted = false;
     cv.setPointerCapture(e.pointerId);
     setDrag(p); e.preventDefault();
   });
