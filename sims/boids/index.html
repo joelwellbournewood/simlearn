@@ -33,7 +33,7 @@
 
   /* ---------- stage ---------- */
   #stage{position:fixed;inset:0;background:var(--bg);transition:background .5s ease}
-  #stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+  #stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none;transform:translateZ(0)}
   #c2o{pointer-events:none}
   #c3d{display:none}
   #stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 70% at 50% 50%, transparent 40%, var(--vignette) 100%)}
@@ -122,6 +122,7 @@
   body.clean .about-btn{display:none}
   /* blurring a live canvas costs a full-screen compositor pass every frame; drop it when the device is struggling */
   body.cheap .seg, body.cheap .icon-btn, body.cheap .panel, body.cheap .about-btn, body.cheap .hud{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--panel-solid)}
+  body.novignette #stage::after{display:none}
   #diag{position:absolute;left:20px;bottom:20px;z-index:8;display:none;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(10,21,18,.93);color:#cfe3da;font-family:var(--mono);font-size:11.5px;line-height:1.6;font-variant-numeric:tabular-nums;white-space:pre;max-width:calc(100vw - 40px);overflow:auto}
   body.diag #diag{display:block}
   #diag b{color:var(--accent);font-weight:600}
@@ -348,12 +349,14 @@ function gradient(stops, t) {
   const a = hexToRgb(stops[i]), b = hexToRgb(stops[i + 1]);
   return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f)];
 }
-/* 64-entry colour table for a colour mode + palette */
+/* Colour lookup table. Each bucket costs a separate path fill every frame, so keep the
+   count modest; 32 steps is indistinguishable from 64 on a gradient. */
+const NBUCKET = 32;
 function buildColorTable(mode, palette) {
   const out = [];
   const cyc = palette.concat([palette[0]]);
-  for (let i = 0; i < 64; i++) {
-    const u = i / 63;
+  for (let i = 0; i < NBUCKET; i++) {
+    const u = i / (NBUCKET - 1);
     if (mode === 'tribe') out.push(hexToRgb(palette[i % palette.length]));
     else if (mode === 'heading') out.push(gradient(cyc, u));
     else out.push(gradient(palette, u));
@@ -952,15 +955,15 @@ function bucketOf(i, P, flock, palLen) {
     case 'tribe': return flock.tribe[i] % palLen;
     case 'heading': {
       const a = flock.dims === 3 ? Math.atan2(flock.vz[i], flock.vx[i]) : Math.atan2(flock.vy[i], flock.vx[i]);
-      return ((a / TAU + 1) % 1) * 63.999 | 0;
+      return ((a / TAU + 1) % 1) * (NBUCKET - 0.001) | 0;
     }
     case 'speed': {
       const v = Math.sqrt(flock.vx[i] ** 2 + flock.vy[i] ** 2 + flock.vz[i] ** 2) / P.maxSpeed;
-      return clamp((v - 0.35) / 0.65, 0, 0.999) * 64 | 0;
+      return clamp((v - 0.35) / 0.65, 0, 0.999) * NBUCKET | 0;
     }
-    case 'turning': return flock.bank[i] * 63.999 | 0;
-    case 'starling': return clamp(0.45 * flock.nb[i] / (2.2 * flock.nbMean + 1) + flock.bank[i], 0, 0.999) * 64 | 0;
-    default: return Math.min(0.999, flock.nb[i] / (2.2 * flock.nbMean + 1)) * 64 | 0;
+    case 'turning': return flock.bank[i] * (NBUCKET - 0.001) | 0;
+    case 'starling': return clamp(0.45 * flock.nb[i] / (2.2 * flock.nbMean + 1) + flock.bank[i], 0, 0.999) * NBUCKET | 0;
+    default: return Math.min(0.999, flock.nb[i] / (2.2 * flock.nbMean + 1)) * NBUCKET | 0;
   }
 }
 
@@ -977,8 +980,8 @@ class View2D {
     this.w = 0; this.h = 0; this.dpr = 1;
     this.frame = 0;
     this.order = new Int32Array(256);
-    this.counts = new Int32Array(65);
-    this.starts = new Int32Array(65);
+    this.counts = new Int32Array(NBUCKET + 1);
+    this.starts = new Int32Array(NBUCKET + 1);
     this.zoom = 1; this.ox = 0; this.oy = 0;
     this.tmp = document.createElement('canvas');
   }
@@ -1006,7 +1009,7 @@ class View2D {
   toWorld(sx, sy) { return { x: (sx - this.ox) / this.zoom, y: (sy - this.oy) / this.zoom, z: 0 }; }
   resize(w, h, dpr) {
     this.w = w; this.h = h; this.dpr = dpr;
-    this.zoom = 1; this.ox = 0; this.oy = 0;
+    this.zoom = 1; this.ox = 0; this.oy = 0; this.overlayUsed = null;
     for (const c of [this.canvas, this.overlay]) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.octx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1055,10 +1058,10 @@ class View2D {
     counts.fill(0);
     const palLen = ctx.palette.length;
     for (let i = 0; i < n; i++) { if (species[i] === 0) { const b = bucketOf(i, P, flock, palLen); bidx[i] = b; counts[b + 1]++; } }
-    for (let b = 0; b < 64; b++) counts[b + 1] += counts[b];
+    for (let b = 0; b < NBUCKET; b++) counts[b + 1] += counts[b];
     const start = this.starts; start.set(counts);
     for (let i = 0; i < n; i++) if (species[i] === 0) order[start[bidx[i]]++] = i;
-    const preyTotal = counts[64];
+    const preyTotal = counts[NBUCKET];
 
     const size = P.size;
     const pulsing = P.pulse > 0;
@@ -1070,7 +1073,7 @@ class View2D {
       c.globalCompositeOperation = dark ? 'lighter' : 'source-over';
       const gs = size * (3.5 + P.glow * 7);
       const base = P.glow * (dark ? 0.32 : 0.10);
-      for (let b = 0; b < 64; b++) {
+      for (let b = 0; b < NBUCKET; b++) {
         const from = counts[b], to = counts[b + 1];
         if (from === to) continue;
         const spr = this.sprites[b];
@@ -1089,7 +1092,7 @@ class View2D {
     // boid bodies
     c.globalCompositeOperation = 'source-over';
     const tip = size * 1.9, tail = size * 1.1, wing = size * 0.85, notch = size * 0.45;
-    for (let b = 0; b < 64; b++) {
+    for (let b = 0; b < NBUCKET; b++) {
       const from = counts[b], to = counts[b + 1];
       if (from === to) continue;
       c.fillStyle = this.css[b];
@@ -1148,6 +1151,21 @@ class View2D {
     this.renderOverlay(flock, P, ctx);
   }
   renderOverlay(flock, P, ctx) {
+    // Clearing and compositing a second full-screen canvas every frame is expensive in
+    // Firefox, so when there is nothing to draw on it we hide the layer instead.
+    const m = ctx.mouse;
+    const used = ctx.grid || ctx.inspect || ctx.draft || flock.obstacles.length > 0 || flock.events.length > 0 ||
+                 (m.active && (m.mode === 'attract' || m.mode === 'repel'));
+    if (!used) {
+      if (this.overlayUsed !== false) {
+        this.octx.setTransform(1, 0, 0, 1, 0, 0);
+        this.octx.clearRect(0, 0, this.overlay.width, this.overlay.height);
+        this.overlay.style.visibility = 'hidden';
+        this.overlayUsed = false;
+      }
+      return;
+    }
+    if (this.overlayUsed !== true) { this.overlay.style.visibility = 'visible'; this.overlayUsed = true; }
     const o = this.octx, W = this.w, H = this.h, dpr = this.dpr, z = this.zoom;
     o.setTransform(dpr, 0, 0, dpr, 0, 0);
     o.clearRect(0, 0, W, H);
@@ -1173,7 +1191,6 @@ class View2D {
       o.setLineDash([4, 5]); o.strokeStyle = `rgba(${ink},0.6)`; o.stroke(); o.setLineDash([]);
     }
     // pointer field
-    const m = ctx.mouse;
     if (m.active && (m.mode === 'attract' || m.mode === 'repel')) {
       const r = P.mouseRadius;
       const g = o.createRadialGradient(m.x, m.y, 0, m.x, m.y, r);
@@ -1523,14 +1540,16 @@ const DEFAULTS = {
   count: 700, predators: 0, maxSpeed: 3, agility: 0.08, perception: 60, separation: 22, fov: 270,
   wSep: 1.5, wAli: 1.0, wCoh: 0.9, tribes: 1, tribeMix: 1, bounds: 'soft', flow: 0, flowScale: 320,
   attractor: 0, swirl: 0, mouseRadius: 180, mouseForce: 1, predSpeed: 3.4, fleeRadius: 130, pulse: 0,
-  topo: 0, cruise: 0, jitter: 0, startle: 0, initiative: 0, roost: 0, level: 0, sky: null, arena: 1,
+  topo: 0, cruise: 0, jitter: 0, startle: 0, initiative: 0, roost: 0, level: 0, sky: null, arena: 1, quality: '3',
   trail: 0.35, size: 4, glow: 0.25, colorMode: 'tribe', palette: 'abyss', bg: '#0a1512',
 };
 
 const PRESETS = [
   { key: 'murmuration', name: 'Murmuration', tag: 'Starlings at dusk',
     p: { count: 2200, predators: 1, predSpeed: 3.6, fleeRadius: 170, maxSpeed: 4, agility: 0.12, perception: 50, separation: 18, fov: 300, topo: 7, wSep: 2.15, wAli: 2.2, wCoh: 0.8, cruise: 0.7, jitter: 0.8, startle: 0.8, initiative: 1, attractor: 0.2, swirl: 0, roost: 0.3, trail: 0.1, size: 1.9, glow: 0, arena: 0.9, colorMode: 'starling', palette: 'starling', bg: '#d0c7c4', sky: 'linear-gradient(180deg,#aab3cb 0%,#d3c6c2 55%,#e8cfba 100%)' },
-    three: { count: 1200, size: 2.2, perception: 100, separation: 28, cruise: 0, level: 1, attractor: 0.3, roost: 0.15, world: [1100, 900, 1100], cam: { theta: 0.8, phi: 1.2, r: 1400 } } },
+    // every slider matches the 2D preset; only the world shape, the camera and the
+    // level-flight preference (which has no 2D meaning) differ
+    three: { level: 1, world: [1100, 900, 1100], cam: { theta: 0.8, phi: 1.2, r: 1400 } } },
   { key: 'bioluminescence', name: 'Bioluminescence', tag: 'A shoal lights the deep',
     p: { count: 600, maxSpeed: 2.2, agility: 0.05, perception: 70, separation: 24, fov: 240, wSep: 1.4, wAli: 0.9, wCoh: 0.7, flow: 0.3, flowScale: 420, trail: 0.9, size: 2.6, glow: 0.55, colorMode: 'speed', palette: 'abyss', bg: '#040c19' } },
   { key: 'vortex', name: 'Vortex', tag: 'One swirl, a thousand wings',
@@ -1589,6 +1608,7 @@ const TIPS = {
   colorMode: 'What the colour of a boid encodes: its tribe, direction, speed, how crowded it is, or how hard it is turning.',
   palette: 'The set of colours used by the current colour mode.',
   bg: 'Background colour. Light backgrounds switch the interface to a light theme.',
+  quality: 'Automatic measures the frame rate and switches off whichever effects are costing the most on your browser. The fixed settings drop the frosted panels and the render resolution. None of them change the flock itself.',
 };
 
 const CONTROLS = {
@@ -1630,6 +1650,7 @@ const CONTROLS = {
     { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning']] },
     { key: 'palette', label: 'Palette', type: 'select', options: Object.keys(PALETTES).map(k => [k, PALETTES[k].name]) },
     { key: 'bg', label: 'Background', type: 'color' },
+    { key: 'quality', label: 'Graphics quality', type: 'select', options: [['3', 'Automatic'], ['2', 'High'], ['1', 'Balanced'], ['0', 'Fast']] },
   ],
 };
 
@@ -1659,19 +1680,81 @@ const inputs = {};
 let dprCap = Math.min(window.devicePixelRatio || 1, 2);
 let dpr = dprCap;
 let width = 0, height = 0;
-let slowFor = 0, quality = 2;   // 2 full, 1 no backdrop blur, 0 also lower resolution
+let quality = 3;   // 3 automatic, 2 high, 1 balanced, 0 fast
 const PIXEL_BUDGET = 2600000;   // roughly 1920x1350; beyond this, resolution is scaled down
-const DPR_NATIVE = Math.min(window.devicePixelRatio || 1, 2);
-function downgrade() {
-  if (quality === 2) { quality = 1; document.body.classList.add('cheap'); }
-  else { quality = 0; dprCap = Math.max(0.55, dprCap * 0.8); resize(); }   /* keep stepping down; a 1x machine needs this too */
+/* ---------------- performance governor ----------------
+   Browsers differ enormously in what they charge for the same drawing: a blurred panel
+   over a live canvas is nearly free in one engine and a full readback every frame in
+   another. Rather than guess from the user agent, which goes stale, the page measures
+   its own frame time, works out whether the cost is in our code or in the browser's
+   compositing, and switches off whichever kind of thing is actually hurting. It steps
+   back up again when there is headroom, and stops trying a step that has already
+   failed twice so it cannot oscillate. */
+const EFFECTS = [
+  // kind: 'composite' costs are paid by the browser after our code returns;
+  //       'work' costs are paid inside our own sim and draw.
+  { key: 'blur',     kind: 'composite', label: 'frosted panels', off: on => document.body.classList.toggle('cheap', !on) },
+  { key: 'vignette', kind: 'composite', label: 'vignette',       off: on => document.body.classList.toggle('novignette', !on) },
+  { key: 'hidpi',    kind: 'work',      label: 'high resolution', off: on => { dprCap = on ? Math.min(window.devicePixelRatio || 1, 2) : 1; resize(); } },
+  { key: 'lowres',   kind: 'work',      label: 'full resolution', off: on => { dprCap = on ? 1 : 0.7; resize(); } },
+];
+const gov = { on: {}, fails: {}, auto: true, samples: 0, good: 0, bad: 0, note: '' };
+EFFECTS.forEach(e => { gov.on[e.key] = true; gov.fails[e.key] = 0; });
+function applyEffects() { EFFECTS.forEach(e => e.off(gov.on[e.key])); }
+function disableNext(kind) {
+  // turn off the most expensive thing of the kind that is actually costing time
+  for (const e of EFFECTS) {
+    if (gov.on[e.key] && e.kind === kind && gov.fails[e.key] < 2) { gov.on[e.key] = false; gov.fails[e.key]++; e.off(false); gov.note = 'off: ' + e.label; return true; }
+  }
+  for (const e of EFFECTS) {   // nothing left of that kind, take anything
+    if (gov.on[e.key] && gov.fails[e.key] < 2) { gov.on[e.key] = false; gov.fails[e.key]++; e.off(false); gov.note = 'off: ' + e.label; return true; }
+  }
+  return false;
 }
-function upgrade() {                                   /* climb back once frames are comfortable again */
-  if (dprCap < DPR_NATIVE) { dprCap = Math.min(DPR_NATIVE, dprCap * 1.12); resize(); }
-  else if (quality === 0) { quality = 1; }
-  else if (quality === 1) { quality = 2; document.body.classList.remove('cheap'); }
+function enablePrev() {
+  for (let i = EFFECTS.length - 1; i >= 0; i--) {
+    const e = EFFECTS[i];
+    if (!gov.on[e.key] && gov.fails[e.key] < 2) { gov.on[e.key] = true; e.off(true); gov.note = 'on: ' + e.label; return true; }
+  }
+  return false;
 }
+/* Called about twice a second. target is the frame rate we are actually aiming at:
+   drawing is capped at the simulation rate, so anything at or above that is perfect. */
+function govern() {
+  if (!gov.auto || paused) return;
+  const target = Math.min(refreshHz, simHz) * 0.85;
+  const ours = simMs + drawMs, notOurs = Math.max(0, frameMs - ours);
+  if (fps < target) {
+    gov.bad++; gov.good = 0;
+    if (gov.bad >= 3) { gov.bad = 0; disableNext(notOurs > ours ? 'composite' : 'work'); }
+  } else if (fps > target * 1.15 && frameMs < 1000 / Math.min(refreshHz, simHz) * 0.7) {
+    gov.good++; gov.bad = 0;
+    if (gov.good >= 12) { gov.good = 0; enablePrev(); }   // only after several seconds of headroom
+  } else { gov.good = 0; gov.bad = 0; }
+}
+/* manual override: 0 fast, 1 balanced, 2 high, 3 automatic */
+function setQuality(q) {
+  quality = q;
+  gov.auto = (q === 3);
+  EFFECTS.forEach(e => { gov.on[e.key] = true; gov.fails[e.key] = 0; });   // start from full and re-probe
+  gov.good = 0; gov.bad = 0; gov.note = '';
+  if (!gov.auto) {
+    if (q < 2) { gov.on.blur = false; gov.on.vignette = false; }
+    if (q < 1) { gov.on.hidpi = false; }
+  }
+  applyEffects();
+}
+function downgrade() { if (gov.auto) disableNext('composite'); }
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* The display's refresh rate is the fastest frames can possibly arrive, so it is the
+   smallest gap we ever see, not the average: averaging would mistake a slow machine for
+   a slow screen. Keep watching, since a window can move to another monitor. */
+let refreshHz = 60, minGap = 1e9, gapSamples = 0, gapPrev = 0;
+function sampleRefresh(t) {
+  const g = t - gapPrev; gapPrev = t;
+  if (g > 1 && g < 40) { if (g < minGap) minGap = g; gapSamples++; }
+  if (gapSamples >= 20) { refreshHz = clamp(Math.round(1000 / minGap), 50, 240); gapSamples = 0; minGap = 1e9; }
+}
 
 /* ---------------- panel construction ---------------- */
 function buildControls() {
@@ -1746,6 +1829,8 @@ function setParam(key, value) {
     case 'count': case 'predators': flock.setCounts(P.count, P.predators, P.tribes); break;
     case 'tribes': flock.assignTribes(P.tribes); break;
     case 'colorMode': case 'palette': case 'bg': applyLook(); break;
+    case 'quality': setQuality(parseInt(value, 10)); break;
+    case 'arena': updateArena(); break;
     case 'trail': if (P.trail === 0) view2d.clear(); break;
   }
 }
@@ -1763,7 +1848,9 @@ function applyLook() {
 }
 function applyPreset(key) {
   const pr = PRESETS.find(p => p.key === key); if (!pr) return;
+  const keepQuality = P.quality;
   P = Object.assign({}, DEFAULTS, pr.p, mode === '3d' && pr.three ? pr.three : {});
+  P.quality = keepQuality;
   if (P.cam) { if (view3d && mode === '3d') Object.assign(view3d.cam, { theta: P.cam.theta, phi: P.cam.phi, rTarget: P.cam.r }); delete P.cam; }
   if (mode === '3d') setWorld3(P.world); delete P.world;
   if (mode === '2d') { updateArena(); P.count = Math.max(10, Math.round(P.count * clamp(width * height / (1300 * 800), 0.3, 1) / 10) * 10); }
@@ -2017,6 +2104,7 @@ function updateHud(now) {
 let simHz = 60, simMs_ = 1000 / 60;
 let last = performance.now(), acc = 0;
 let simMs = 0, drawMs = 0, steps = 0, stepMs = 0, drawn = 0, needsDraw = true, lastDiag = 0, diagOn = false;
+let frameMs = 16.7, longFrames = 0;
 /* If a single step costs more than about a fifth of its own budget the machine cannot
    sustain 60 steps a second, so halve the rate and double the time step. The flock
    moves at exactly the same speed either way. */
@@ -2028,12 +2116,13 @@ function tuneSimRate() {
 function frame(now) {
   requestAnimationFrame(frame);
   const elapsed = Math.min(now - last, 250); last = now;
+  frameMs += (Math.min(elapsed, 200) - frameMs) * 0.1;
+  sampleRefresh(now);
   fpsAcc += now - (fpsPrev || now); fpsPrev = now; fpsN++;
+  if (elapsed > 40) longFrames++;
   if (fpsAcc > 500) {
     fps = 1000 * fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
-    if (!paused && fps < 40) { slowFor = Math.max(0, slowFor) + 0.5; if (slowFor >= 2) { downgrade(); slowFor = 0; } }
-    else if (!paused && fps > 57 && (quality < 2 || dprCap < DPR_NATIVE)) { slowFor = Math.min(0, slowFor) - 0.5; if (slowFor <= -6) { upgrade(); slowFor = 0; } }
-    else slowFor = 0;
+    govern();
   }
   let t0 = performance.now();
   if (!paused) {
@@ -2086,11 +2175,15 @@ function updateDiag() {
   const cv = mode === '2d' ? view2d.canvas : $('c3d');
   const soft = /swiftshader|llvmpipe|software|basic render/i.test(gpuName);
   $('diag').innerHTML =
-    `rAF <b>${fps.toFixed(0)}</b>/s   drawn <b>${drawFps.toFixed(0)}</b>/s   sim <b>${simMs.toFixed(1)}ms</b>   draw <b>${drawMs.toFixed(1)}ms</b>\n` +
+    `rAF <b>${fps.toFixed(0)}</b>/s   drawn <b>${drawFps.toFixed(0)}</b>/s   frame <b>${frameMs.toFixed(1)}ms</b>\n` +
+    `  of which  ours <b>${(simMs + drawMs).toFixed(1)}ms</b>  (sim ${simMs.toFixed(1)} + draw ${drawMs.toFixed(1)})   ` +
+    `not ours <b>${Math.max(0, frameMs - simMs - drawMs).toFixed(1)}ms</b>${frameMs - simMs - drawMs > 12 ? '  \u2190 the page or the browser, not the flock' : ''}\n` +
+    `long frames (>40ms) ${longFrames}\n` +
     `boids ${flock.n}   sim ${simHz}Hz   step ${stepMs.toFixed(1)}ms   steps/frame ${steps}   mode ${mode}\n` +
     `css ${width}\u00d7${height}   canvas ${cv.width}\u00d7${cv.height}   dpr ${dpr.toFixed(2)} (device ${(window.devicePixelRatio || 1).toFixed(2)})\n` +
     `pixels ${(cv.width * cv.height / 1e6).toFixed(2)}M   quality ${quality}\n` +
-    `in iframe ${window.top !== window.self ? 'yes' : 'no'}\n` +
+    `in iframe ${window.top !== window.self ? 'yes' : 'no'}   overlay ${view2d.overlayUsed ? 'on' : 'off'}   display ${refreshHz}Hz\n` +
+    `effects ${EFFECTS.filter(e => gov.on[e.key]).map(e => e.key).join(' ') || 'none'}${gov.auto ? '' : ' (manual)'}${gov.note ? '   last change ' + gov.note : ''}\n` +
     `gpu ${gpuName}${soft ? '  <b>SOFTWARE RENDERING</b>' : ''}`;
 }
 
@@ -2103,6 +2196,10 @@ applyPreset(startPreset);
 selectTool('attract');
 if (url.get('ui') === 'min') toggleClean();
 if (url.get('debug')) { document.body.classList.add('diag'); diagOn = true; }
+if (url.get('quality') !== null && url.get('quality') !== '') {
+  P.quality = String(clamp(parseInt(url.get('quality'), 10), 0, 3));
+  setQuality(parseInt(P.quality, 10)); reflect('quality');
+} else setQuality(3);
 if (url.get('mode') === '3d') setMode('3d');
 requestAnimationFrame(frame);
 </script>
