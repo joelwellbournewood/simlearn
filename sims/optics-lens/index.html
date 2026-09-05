@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200">
+<title>Lens and Image Formation | SimLearn</title>
+<meta name="description" content="An interactive optical bench. Trace real rays through a lens, watch a real image form on a sensor, and see how focal length, aperture and spherical aberration change the picture.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.presets{display:grid;gap:6px;margin-bottom:14px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:12px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(84vh,780px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:62ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+</style>
+<style>
+.row label.chk{display:flex;align-items:center;gap:8px;justify-content:flex-start;cursor:pointer}
+.row label.chk input{accent-color:var(--accent);width:15px;height:15px;flex:none}
+.row label.chk .nm{font-size:13px}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="brand">
+  <p class="kicker">Geometric optics</p>
+  <h1>Lens &amp; Image Formation</h1>
+  <p>Real rays, a real lens, and the picture that lands on the sensor.</p>
+</div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Restart (R)" aria-label="Restart">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel">
+  <button class="about-btn" id="b-about" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg>
+    What am I looking at?
+  </button>
+
+  <p class="label">Presets</p>
+  <div class="presets" id="presets"></div>
+
+  <p class="label">The lens</p>
+  <div class="row">
+    <label><span class="nm">Focal length <button class="tip" data-tip="How strongly the lens bends light. A short focal length bends hard and forms a small image close behind the lens. Negative values give a diverging lens, which can only form a virtual image." aria-label="What is this?">?</button></span><span class="val" id="v-f">60 mm</span></label>
+    <input type="range" id="s-f" min="-200" max="240" step="2" value="60">
+  </div>
+  <div class="row">
+    <label><span class="nm">Aperture <button class="tip" data-tip="The clear diameter of the lens. It sets how much light gets through, how large the blur circle is when the sensor is out of focus, and therefore the depth of field." aria-label="What is this?">?</button></span><span class="val" id="v-ap">40 mm</span></label>
+    <input type="range" id="s-ap" min="6" max="130" step="1" value="40">
+  </div>
+  <div class="row">
+    <label><span class="nm">Spherical aberration <button class="tip" data-tip="A real spherical surface bends rays near the rim more strongly than rays near the axis, so they cross the axis short of the true focus. At zero the lens is ideal." aria-label="What is this?">?</button></span><span class="val" id="v-sph">0.00</span></label>
+    <input type="range" id="s-sph" min="0" max="1" step="0.02" value="0">
+  </div>
+
+  <p class="label">The bench</p>
+  <div class="row">
+    <label><span class="nm">Object distance <button class="tip" data-tip="How far the object stands in front of the lens. Everything about the image follows from this and the focal length." aria-label="What is this?">?</button></span><span class="val" id="v-u">180 mm</span></label>
+    <input type="range" id="s-u" min="20" max="270" step="1" value="180">
+  </div>
+  <div class="row">
+    <label><span class="nm">Object height <button class="tip" data-tip="How tall the arrow is. The image height is this multiplied by the magnification, so it scales but the sharpness does not change." aria-label="What is this?">?</button></span><span class="val" id="v-ho">60 mm</span></label>
+    <input type="range" id="s-ho" min="8" max="140" step="1" value="60">
+  </div>
+  <div class="row">
+    <label><span class="nm">Sensor distance <button class="tip" data-tip="Where the screen sits behind the lens. Put it exactly at the image distance and the picture is sharp. Move it away and every point spreads into a disc." aria-label="What is this?">?</button></span><span class="val" id="v-sd">90 mm</span></label>
+    <input type="range" id="s-sd" min="10" max="400" step="1" value="90">
+  </div>
+
+  <p class="label">Display</p>
+  <div class="row">
+    <label><span class="nm">Rays drawn <button class="tip" data-tip="How many rays are traced from the tip of the arrow across the aperture. More rays fill in the cone; fewer make each path easier to follow." aria-label="What is this?">?</button></span><span class="val" id="v-n">28</span></label>
+    <input type="range" id="s-n" min="3" max="80" step="1" value="28">
+  </div>
+  <div class="row"><label class="chk"><input type="checkbox" id="k-cons" checked><span class="nm">Construction rays <button class="tip" data-tip="Picks out the three textbook rays in teal: parallel then through the far focus, straight through the centre, and through the near focus then parallel. Any two of them locate the image." aria-label="What is this?">?</button></span></label></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="k-base"><span class="nm">Fan from the arrow base <button class="tip" data-tip="Traces a second, dimmer fan from the foot of the arrow so you can see the whole image being built rather than one point of it." aria-label="What is this?">?</button></span></label></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="k-auto"><span class="nm">Keep the sensor in focus <button class="tip" data-tip="Locks the screen to the image plane, so it tracks whatever the thin lens equation says as you move the object or change the focal length." aria-label="What is this?">?</button></span></label></div>
+</div>
+
+<div class="hud">
+  <div class="stat"><div class="k">Image dist</div><div class="v" id="s-v" style="color:var(--accent)">90</div></div>
+  <div class="stat"><div class="k">Magnification</div><div class="v" id="s-m">-0.50</div></div>
+  <div class="stat"><div class="k">Image</div><div class="v" id="s-type" style="font-size:13px">real, inverted</div></div>
+  <div class="stat"><div class="k">Blur circle</div><div class="v" id="s-blur" style="color:var(--danger)">0.0</div></div>
+  <div class="stat"><div class="k">f-number</div><div class="v" id="s-fn">f/1.5</div></div>
+</div>
+<div class="hint">Drag the arrow, the lens or the sensor. 1-6 presets, space pause, R reset, H hide, F fullscreen.</div>
+
+<dialog class="about" id="about">
+  <div class="about-inner">
+    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
+    <h2>What am I looking at?</h2>
+    <p>An optical bench seen from the side. A coral arrow stands in front of a lens, light leaves the tip of that arrow in every direction, and the lens bends the rays that reach it so they meet again at one point. Where they meet is the image, and the pale bar on the right is a sensor placed to catch it.</p>
+    <p>The rays here are traced one by one. Nothing is drawn from a formula for where the image should be; the image appears where the rays actually cross.</p>
+    <h3>The thin lens equation</h3>
+    <p>For a lens thin enough to ignore its own width, the object distance u, the image distance v and the focal length f are related by 1/v = 1/f - 1/u. Magnification is m = -v/u, and the minus sign is why a real image is upside down. The inset marked SENSOR shows the picture the right way round for the sensor, so a negative magnification appears there as an inverted arrow.</p>
+    <p>Two distances on the axis are marked F and 2F. They are the whole story in miniature. Beyond 2F the image is real, inverted and smaller. At exactly 2F it is real, inverted and the same size. Between F and 2F it is real, inverted and larger. Inside F there is no real image at all.</p>
+    <h3>Real and virtual images</h3>
+    <p>A real image is a place where light genuinely arrives, so a sensor or a sheet of paper put there records it. A virtual image is where the diverging rays appear to come from when your eye traces them backwards, drawn here as dashed lines. Nothing arrives there and no sensor can record it. Press <b class="hl">Magnifier</b> to put the object inside the focal length and watch the outgoing rays spread instead of converging.</p>
+    <h3>Aperture, blur and depth of field</h3>
+    <p>When the sensor is not at the image plane, each point of the object lands as a disc rather than a point. That disc is the blur circle, and its diameter is the aperture diameter multiplied by how far the sensor is from focus, divided by the image distance. Aperture therefore does two jobs at once: it controls how much light gets through, and it controls how much focus error you can tolerate before the picture looks soft.</p>
+    <p>That trade is what the f-number describes. It is the focal length divided by the aperture diameter, so f/2 is a wide opening and f/16 is a narrow one. Compare <b class="hl">Wide open</b> with <b class="hl">Stopped down</b>: the second is much sharper away from the focus plane and much darker, which in a real camera is paid for with a longer exposure.</p>
+    <h3>The honest caveats</h3>
+    <ul>
+      <li>This is two dimensional and paraxial. Real lenses work in three dimensions, and the exact refraction at a curved glass surface is not the linear rule used here.</li>
+      <li>The spherical aberration is modelled, not derived. Rays are given a focal length that shortens with the square of their height on the lens, which reproduces the shape of the defect without coming from a real spherical surface.</li>
+      <li>The lens is treated as infinitely thin, so it has no thickness, no back focal distance and no refractive index.</li>
+      <li>There is no chromatic aberration: every ray here behaves as one wavelength.</li>
+      <li>There is no diffraction. Stopping the aperture down in this model makes the picture sharper without limit, and in a real system diffraction sets a floor on spot size that gets worse as the aperture closes. That limit is a wave effect and needs a different simulation.</li>
+    </ul>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Turn on <b>Keep the sensor in focus</b> and drag the arrow slowly towards the lens. Watch the sensor run away to the right and the image grow. As the object approaches the focal length the sensor distance heads for infinity.</li>
+      <li>Turn that off, focus by hand, then change nothing except the aperture. The image geometry does not move at all. Only the brightness and the size of the blur circle change.</li>
+      <li>Load <b class="hl">Spherical aberration</b> and follow a single edge ray. It crosses the axis noticeably before the rays near the centre do, so no sensor position makes the whole cone sharp at once. Then drop the aperture and watch the defect disappear, which is exactly why stopping a cheap lens down improves it.</li>
+      <li>Set the focal length negative to get a diverging lens. There is no object position that produces a real image, which is why a diverging lens is never used alone as a camera lens.</li>
+    </ul>
+  </div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+if(window.self!==window.top) document.body.classList.add('in-frame');
+var stage=document.getElementById('stage'), cv=document.getElementById('c'), ctx=cv.getContext('2d');
+var el=function(id){return document.getElementById(id);};
+var W=0,H=0,DPR=1,PAD=26,SCENE=700,scale=1;
+var TEAL='#56e0c2', CORAL='#ff7d5c', GOLD='#e6c34f', INK='#e3efe9', MUTED='#88a397', FAINT='rgba(130,170,150,.20)';
+var cfg={f:60,ap:40,sph:0,u:180,ho:60,sd:90,n:28,cons:true,base:false,auto:false};
+var xLens=280, paused=false, phase=0, active='camera';
+var off=document.createElement('canvas'); off.width=248; off.height=156;
+var octx=off.getContext('2d');
+
+var PRESETS={
+  camera:{name:'Camera',tag:'Distant object, small real image on the sensor',f:60,ap:34,sph:0,u:260,ho:70,sd:78,n:28,cons:true,base:false,auto:true},
+  one21:{name:'One to one',tag:'Object at 2F, image the same size and inverted',f:80,ap:40,sph:0,u:160,ho:60,sd:160,n:28,cons:true,base:false,auto:true},
+  magnifier:{name:'Magnifier',tag:'Object inside F, upright virtual image',f:130,ap:60,sph:0,u:80,ho:44,sd:120,n:26,cons:true,base:false,auto:false},
+  wide:{name:'Wide open',tag:'f/1 and a shallow depth of field',f:70,ap:100,sph:0,u:200,ho:60,sd:136,n:40,cons:false,base:false,auto:false},
+  stop:{name:'Stopped down',tag:'Same focus error, sharp but dim',f:70,ap:14,sph:0,u:200,ho:60,sd:136,n:20,cons:false,base:false,auto:false},
+  aberr:{name:'Spherical aberration',tag:'Edge rays cross short of the focus',f:90,ap:90,sph:0.35,u:250,ho:60,sd:141,n:40,cons:false,base:false,auto:false}
+};
+var KEYS=Object.keys(PRESETS);
+
+function resize(){
+  var r=stage.getBoundingClientRect();
+  W=Math.max(320,r.width); H=Math.max(240,r.height);
+  var native=Math.min(window.devicePixelRatio||1,2), BUDGET=3.2e6;
+  var d=native; if(W*H*d*d>BUDGET) d=Math.max(1,Math.sqrt(BUDGET/(W*H)));
+  DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
+  vInit=false;
+}
+var viewX0=0, viewSpan=SCENE, viewCen=SCENE/2, vInit=false;
+function PX(x){return PAD+(x-viewX0)*scale;}
+function PY(y){return H/2-y*scale;}
+function SX(px){return viewX0+(px-PAD)/scale;}
+function SY(py){return (H/2-py)/scale;}
+function fitView(){
+  var s=solve(), xo=xLens-cfg.u, xs=xLens+cfg.sd;
+  var lo=Math.min(xo,xLens), hi=Math.max(xs,xLens);
+  if(isFinite(s.v)&&Math.abs(s.v)<620){ var xi=xLens+s.v; if(xi<lo) lo=xi; if(xi>hi) hi=xi; }
+  var af=Math.abs(cfg.f); if(af<300){ lo=Math.min(lo,xLens-af); hi=Math.max(hi,xLens+af); }
+  var spanT=Math.max(240,(hi-lo)*1.14+70), cenT=(lo+hi)/2;
+  if(!vInit){ viewSpan=spanT; viewCen=cenT; vInit=true; }
+  else { viewSpan+=(spanT-viewSpan)*0.14; viewCen+=(cenT-viewCen)*0.14; }
+  var sh=(W-2*PAD)/viewSpan;
+  var tall=Math.max(cfg.ho,cfg.ap/2,10);
+  if(isFinite(s.v)) tall=Math.max(tall,Math.min(240,Math.abs(s.m*cfg.ho)));
+  var sv=(H*0.42)/(tall+14);
+  scale=Math.min(sh,sv);
+  viewX0=viewCen-((W-2*PAD)/scale)/2;
+}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+
+function limits(){
+  var uMax=Math.min(270, xLens-12);
+  var sdMax=Math.min(400, SCENE-10-xLens);
+  return {uMax:uMax, sdMax:sdMax};
+}
+function solve(){
+  var f=cfg.f, u=cfg.u, inv=1/f-1/u, v, inf=false;
+  if(Math.abs(inv)<2e-6){ v=Infinity; inf=true; } else v=1/inv;
+  return {v:v, m:inf?Infinity:(-v/u), inf:inf};
+}
+function feff(y){
+  var A=Math.max(cfg.ap,1), t=y/(A/2);
+  return cfg.f/(1+cfg.sph*t*t);
+}
+function trace(h0,y){
+  var s0=(y-h0)/cfg.u;
+  return s0-y/feff(y);
+}
+
+/* ---------- drawing ---------- */
+function arrow(x,h,color,dash,lw){
+  var px=PX(x), y0=PY(0), y1=PY(h), dir=h>=0?1:-1;
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=lw||2.4;
+  ctx.setLineDash(dash?[6,5]:[]);
+  ctx.beginPath(); ctx.moveTo(px,y0); ctx.lineTo(px,y1); ctx.stroke();
+  ctx.setLineDash([]);
+  var hs=Math.min(11,Math.max(5,Math.abs(y1-y0)*0.28));
+  ctx.beginPath(); ctx.moveTo(px,y1); ctx.lineTo(px-hs*0.62,y1+dir*hs); ctx.lineTo(px+hs*0.62,y1+dir*hs); ctx.closePath();
+  if(dash){ ctx.stroke(); } else { ctx.fill(); }
+  ctx.restore();
+}
+function drawAxis(){
+  ctx.save();
+  ctx.strokeStyle=FAINT; ctx.lineWidth=1; ctx.setLineDash([5,7]);
+  ctx.beginPath(); ctx.moveTo(8,PY(0)); ctx.lineTo(W-8,PY(0)); ctx.stroke();
+  ctx.setLineDash([]);
+  var af=Math.abs(cfg.f);
+  var marks=[[xLens-af,'F'],[xLens+af,'F'],[xLens-2*af,'2F'],[xLens+2*af,'2F']];
+  ctx.font='11px "Space Mono",monospace'; ctx.textAlign='center';
+  for(var i=0;i<marks.length;i++){
+    var x=marks[i][0]; var px=PX(x); if(px<14||px>W-14) continue;
+    ctx.strokeStyle='rgba(130,170,150,.38)'; ctx.beginPath();
+    ctx.moveTo(px,PY(0)-6); ctx.lineTo(px,PY(0)+6); ctx.stroke();
+    ctx.fillStyle=MUTED; ctx.fillText(marks[i][1],px,PY(0)+21);
+  }
+  ctx.restore();
+}
+function drawLens(){
+  var A=cfg.ap, px=PX(xLens), half=A/2*scale, conv=cfg.f>0;
+  var bulge=clamp(half*0.30,5,26);
+  ctx.save();
+  ctx.beginPath();
+  if(conv){
+    ctx.moveTo(px,PY(0)-half);
+    ctx.quadraticCurveTo(px+bulge,PY(0),px,PY(0)+half);
+    ctx.quadraticCurveTo(px-bulge,PY(0),px,PY(0)-half);
+  } else {
+    ctx.moveTo(px-bulge*0.8,PY(0)-half);
+    ctx.quadraticCurveTo(px,PY(0),px-bulge*0.8,PY(0)+half);
+    ctx.lineTo(px+bulge*0.8,PY(0)+half);
+    ctx.quadraticCurveTo(px,PY(0),px+bulge*0.8,PY(0)-half);
+    ctx.closePath();
+  }
+  var g=ctx.createLinearGradient(px-bulge,0,px+bulge,0);
+  g.addColorStop(0,'rgba(86,224,194,.34)'); g.addColorStop(.5,'rgba(86,224,194,.10)'); g.addColorStop(1,'rgba(86,224,194,.34)');
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle='rgba(86,224,194,.95)'; ctx.lineWidth=2; ctx.shadowColor='rgba(86,224,194,.55)'; ctx.shadowBlur=10; ctx.stroke(); ctx.shadowBlur=0;
+  ctx.fillStyle='#0a1512';
+  ctx.fillRect(px-7,0,14,PY(0)-half);
+  ctx.fillRect(px-7,PY(0)+half,14,H-(PY(0)+half));
+  ctx.strokeStyle='rgba(130,170,150,.45)'; ctx.lineWidth=1.4;
+  ctx.beginPath();
+  ctx.moveTo(px-7,PY(0)-half); ctx.lineTo(px+7,PY(0)-half);
+  ctx.moveTo(px-7,PY(0)+half); ctx.lineTo(px+7,PY(0)+half);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawScreen(lo,hi){
+  var xs=xLens+cfg.sd, px=PX(xs);
+  ctx.save();
+  ctx.fillStyle='rgba(200,220,212,.10)'; ctx.fillRect(px-4,PY(0)-H*0.42,8,H*0.84);
+  ctx.strokeStyle='rgba(200,220,212,.42)'; ctx.lineWidth=1.2; ctx.strokeRect(px-4,PY(0)-H*0.42,8,H*0.84);
+  if(isFinite(lo)&&isFinite(hi)){
+    var a=PY(hi), b=PY(lo);
+    var g=ctx.createLinearGradient(0,a,0,b);
+    g.addColorStop(0,'rgba(230,195,79,0)'); g.addColorStop(.5,'rgba(230,195,79,.9)'); g.addColorStop(1,'rgba(230,195,79,0)');
+    ctx.fillStyle=g; ctx.fillRect(px-3.2,a,6.4,Math.max(2,b-a));
+  }
+  ctx.fillStyle=MUTED; ctx.font='10px "Space Mono",monospace'; ctx.textAlign='center';
+  ctx.fillText('SENSOR',px,PY(0)-H*0.42-8);
+  ctx.restore();
+}
+
+function rayPaths(h0){
+  var A=cfg.ap, N=cfg.n, out=[], i, y, s1;
+  for(i=0;i<N;i++){
+    y=-A/2+(i+0.5)*A/N;
+    s1=trace(h0,y);
+    out.push({y:y,s:s1});
+  }
+  return out;
+}
+function drawFan(h0,paths,color,alpha,lw){
+  var xo=cfg.u, xs=cfg.sd, px0=PX(xLens-cfg.u), py0=PY(h0), pxL=PX(xLens);
+  var xEnd=xLens+cfg.sd, i, p;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  ctx.strokeStyle=color; ctx.globalAlpha=alpha; ctx.lineWidth=lw;
+  ctx.beginPath();
+  for(i=0;i<paths.length;i++){
+    p=paths[i];
+    ctx.moveTo(px0,py0); ctx.lineTo(pxL,PY(p.y));
+    ctx.lineTo(PX(xEnd),PY(p.y+p.s*cfg.sd));
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+function drawVirtualBack(h0,paths){
+  var s=solve(); if(!(s.v<0)) return;
+  var pxL=PX(xLens), xv=xLens+s.v, i,p;
+  ctx.save(); ctx.setLineDash([5,6]); ctx.strokeStyle='rgba(86,224,194,.45)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  for(i=0;i<paths.length;i++){
+    p=paths[i];
+    ctx.moveTo(pxL,PY(p.y)); ctx.lineTo(PX(xv),PY(p.y+p.s*s.v));
+  }
+  ctx.stroke(); ctx.restore();
+}
+function drawBlocked(h0){
+  var A=cfg.ap, px0=PX(xLens-cfg.u), py0=PY(h0), pxL=PX(xLens), i, y;
+  ctx.save(); ctx.strokeStyle='rgba(255,125,92,.22)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath();
+  for(i=-1;i<=1;i+=2){
+    y=i*(A/2+Math.min(60,A*0.5+16));
+    if(Math.abs(PY(y)-PY(0))>H*0.48) continue;
+    ctx.moveTo(px0,py0); ctx.lineTo(pxL,PY(y));
+  }
+  ctx.stroke(); ctx.restore();
+}
+function drawConstruction(h0){
+  var f=cfg.f, u=cfg.u, pxL=PX(xLens), px0=PX(xLens-u), py0=PY(h0);
+  var xEnd=xLens+Math.max(cfg.sd,20), lines=[];
+  lines.push({y:h0, s:-h0/f});
+  lines.push({y:0, s:(0-h0)/u});
+  if(Math.abs(u-f)>1e-3){
+    var sIn=-h0/(u-f), yL=h0+sIn*u;
+    lines.push({y:yL, s:0});
+  }
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.85; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(var i=0;i<lines.length;i++){
+    var L=lines[i];
+    ctx.moveTo(px0,py0); ctx.lineTo(pxL,PY(L.y));
+    ctx.lineTo(PX(xEnd),PY(L.y+L.s*(xEnd-xLens)));
+  }
+  ctx.stroke(); ctx.restore();
+}
+function drawPulse(h0,paths){
+  if(paths.length===0) return;
+  var px0=PX(xLens-cfg.u), py0=PY(h0), pxL=PX(xLens), xEnd=xLens+cfg.sd;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1.4;
+  ctx.setLineDash([10,150]); ctx.lineDashOffset=-phase;
+  ctx.beginPath();
+  for(var i=0;i<paths.length;i+=Math.max(1,Math.round(paths.length/14))){
+    var p=paths[i];
+    ctx.moveTo(px0,py0); ctx.lineTo(pxL,PY(p.y));
+    ctx.lineTo(PX(xEnd),PY(p.y+p.s*cfg.sd));
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+function drawInset(s,blur){
+  var IW=248,IH=156, x=W-20-IW, y=68;
+  if(x<PAD+320) { x=W-20-IW; }
+  ctx.save();
+  ctx.fillStyle='rgba(7,18,15,.86)'; ctx.strokeStyle=FAINT; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(x,y,IW,IH); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=MUTED; ctx.font='9.5px "Space Mono",monospace'; ctx.textAlign='left';
+  ctx.fillText('SENSOR',x+10,y+16);
+  var real = isFinite(s.v) && s.v>0;
+  if(!real){
+    ctx.fillStyle=MUTED; ctx.font='12px ui-sans-serif,system-ui,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(s.inf?'Image at infinity':'No real image to record',x+IW/2,y+IH/2+4);
+    ctx.textAlign='center'; ctx.font='10.5px ui-sans-serif,system-ui,sans-serif';
+    ctx.fillText(s.inf?'rays leave parallel':'the image is virtual',x+IW/2,y+IH/2+20);
+    ctx.restore(); return;
+  }
+  var FOV=170, isc=IH/FOV;
+  var hi=s.m*cfg.ho;
+  octx.setTransform(1,0,0,1,0,0);
+  octx.clearRect(0,0,off.width,off.height);
+  var cxo=IW/2, cyo=IH/2;
+  octx.strokeStyle=CORAL; octx.fillStyle=CORAL; octx.lineWidth=Math.max(2,2.6);
+  var hpx=hi*isc, ty=cyo-hpx;
+  octx.beginPath(); octx.moveTo(cxo,cyo); octx.lineTo(cxo,ty); octx.stroke();
+  var hs=Math.min(11,Math.max(4,Math.abs(hpx)*0.28));
+  var by=ty+(hpx>=0?hs:-hs);
+  octx.beginPath(); octx.moveTo(cxo,ty);
+  octx.lineTo(cxo-hs*0.62,by); octx.lineTo(cxo+hs*0.62,by);
+  octx.closePath(); octx.fill();
+  octx.strokeStyle='rgba(200,220,212,.35)'; octx.lineWidth=1;
+  octx.beginPath(); octx.moveTo(cxo-60,cyo); octx.lineTo(cxo+60,cyo); octx.stroke();
+  var br=clamp(blur/2*isc,0,26);
+  var lum=clamp(Math.pow(cfg.ap/130,1.5)*2.2,0.10,1);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x+1,y+1,IW-2,IH-2); ctx.clip();
+  ctx.globalAlpha=lum;
+  if(br>0.4 && typeof ctx.filter==='string'){ ctx.filter='blur('+br.toFixed(1)+'px)'; }
+  ctx.drawImage(off,x,y);
+  ctx.filter='none';
+  ctx.restore();
+  ctx.fillStyle=MUTED; ctx.font='9.5px "Space Mono",monospace'; ctx.textAlign='right';
+  ctx.fillText('blur '+blur.toFixed(1)+' mm',x+IW-10,y+IH-9);
+  ctx.restore();
+}
+
+function render(){
+  fitView();
+  ctx.clearRect(0,0,W,H);
+  var s=solve(), h0=cfg.ho, paths=rayPaths(h0);
+  var lo=Infinity, hi=-Infinity, i, yS;
+  for(i=0;i<paths.length;i++){
+    yS=paths[i].y+paths[i].s*cfg.sd;
+    if(yS<lo) lo=yS; if(yS>hi) hi=yS;
+  }
+  var blur=(paths.length>1)?(hi-lo):0;
+  drawAxis();
+  if(cfg.base){
+    var bp=rayPaths(0);
+    drawFan(0,bp,'rgba(86,224,194,.9)',0.22,1);
+  }
+  drawBlocked(h0);
+  drawFan(h0,paths,GOLD,0.55,1.1);
+  drawVirtualBack(h0,paths);
+  if(cfg.cons) drawConstruction(h0);
+  if(!paused) drawPulse(h0,paths);
+  drawLens();
+  arrow(xLens-cfg.u,cfg.ho,CORAL,false,2.6);
+  if(isFinite(s.v)&&Math.abs(s.v)<SCENE&&(xLens+s.v)>2&&(xLens+s.v)<SCENE-2){
+    arrow(xLens+s.v,s.m*cfg.ho,TEAL,s.v<0,2.2);
+  }
+  drawScreen(lo,hi);
+  drawInset(s,blur);
+  readout(s,blur);
+}
+function readout(s,blur){
+  el('s-v').textContent = s.inf?'inf':(s.v>0?s.v.toFixed(0):s.v.toFixed(0));
+  el('s-m').textContent = s.inf?'inf':s.m.toFixed(2);
+  var t;
+  if(s.inf) t='at infinity';
+  else if(s.v>0) t='real, '+(s.m<0?'inverted':'upright');
+  else t='virtual, '+(s.m>0?'upright':'inverted');
+  el('s-type').textContent=t;
+  el('s-blur').textContent=(isFinite(s.v)&&s.v>0)?blur.toFixed(1):'n/a';
+  el('s-fn').textContent='f/'+(Math.abs(cfg.f)/Math.max(cfg.ap,0.1)).toFixed(1);
+}
+
+/* ---------- controls ---------- */
+var SL=[
+  ['s-f','v-f','f',function(v){return v.toFixed(0)+' mm';}],
+  ['s-ap','v-ap','ap',function(v){return v.toFixed(0)+' mm';}],
+  ['s-sph','v-sph','sph',function(v){return v.toFixed(2);}],
+  ['s-u','v-u','u',function(v){return v.toFixed(0)+' mm';}],
+  ['s-ho','v-ho','ho',function(v){return v.toFixed(0)+' mm';}],
+  ['s-sd','v-sd','sd',function(v){return v.toFixed(0)+' mm';}],
+  ['s-n','v-n','n',function(v){return v.toFixed(0);}]
+];
+function fixF(v){
+  if(v>-20&&v<20) return v>=0?20:-20;
+  return v;
+}
+function syncVals(){
+  for(var i=0;i<SL.length;i++){
+    var r=SL[i];
+    el(r[0]).value=cfg[r[2]];
+    el(r[1]).textContent=r[3](cfg[r[2]]);
+  }
+  el('k-cons').checked=cfg.cons; el('k-base').checked=cfg.base; el('k-auto').checked=cfg.auto;
+}
+function autoFocus(){
+  if(!cfg.auto) return;
+  var s=solve();
+  if(isFinite(s.v)&&s.v>0){
+    var L=limits();
+    cfg.sd=clamp(s.v,10,L.sdMax);
+    el('s-sd').value=cfg.sd; el('v-sd').textContent=cfg.sd.toFixed(0)+' mm';
+  }
+}
+function bind(){
+  for(var i=0;i<SL.length;i++){
+    (function(r){
+      var s=el(r[0]);
+      s.addEventListener('input',function(){
+        var v=parseFloat(s.value);
+        if(r[2]==='f') v=fixF(v);
+        var L=limits();
+        if(r[2]==='u') v=clamp(v,20,L.uMax);
+        if(r[2]==='sd') v=clamp(v,10,L.sdMax);
+        cfg[r[2]]=v; s.value=v; el(r[1]).textContent=r[3](v);
+        if(r[2]!=='sd') autoFocus();
+        else cfg.auto=false, el('k-auto').checked=false;
+      });
+    })(SL[i]);
+  }
+  el('k-cons').addEventListener('change',function(){cfg.cons=this.checked;});
+  el('k-base').addEventListener('change',function(){cfg.base=this.checked;});
+  el('k-auto').addEventListener('change',function(){cfg.auto=this.checked; autoFocus();});
+}
+function buildPresets(){
+  var box=el('presets'), html='';
+  for(var i=0;i<KEYS.length;i++){
+    var p=PRESETS[KEYS[i]];
+    html+='<button class="preset" data-k="'+KEYS[i]+'" aria-pressed="false"><b>'+p.name+'</b><small>'+p.tag+'</small></button>';
+  }
+  box.innerHTML=html;
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('button.preset'); if(!b) return;
+    applyPreset(b.dataset.k);
+  });
+}
+function applyPreset(k){
+  var p=PRESETS[k]; if(!p) return;
+  active=k; xLens=280;
+  cfg.f=p.f; cfg.ap=p.ap; cfg.sph=p.sph; cfg.u=p.u; cfg.ho=p.ho; cfg.sd=p.sd;
+  cfg.n=p.n; cfg.cons=p.cons; cfg.base=p.base; cfg.auto=p.auto;
+  var L=limits();
+  cfg.u=clamp(cfg.u,20,L.uMax); cfg.sd=clamp(cfg.sd,10,L.sdMax);
+  syncVals(); autoFocus();
+  var cards=document.querySelectorAll('.preset');
+  for(var i=0;i<cards.length;i++) cards[i].setAttribute('aria-pressed', cards[i].dataset.k===k?'true':'false');
+}
+
+/* ---------- pointer ---------- */
+var drag=null, dragRef=null;
+function hit(px,py){
+  var x=SX(px), y=SY(py), tol=16/scale;
+  var xo=xLens-cfg.u, xs=xLens+cfg.sd;
+  if(Math.abs(x-xo)<tol && Math.abs(y-cfg.ho)<tol*1.6) return 'tip';
+  if(Math.abs(x-xo)<tol && y*Math.sign(cfg.ho)>=-tol && Math.abs(y)<=Math.abs(cfg.ho)+tol) return 'obj';
+  if(Math.abs(x-xLens)<tol) return 'lens';
+  if(Math.abs(x-xs)<tol) return 'screen';
+  return null;
+}
+cv.addEventListener('pointermove',function(e){
+  var r=cv.getBoundingClientRect();
+  if(!drag){ cv.style.cursor=hit(e.clientX-r.left,e.clientY-r.top)?'grab':'crosshair'; return; }
+  var x=SX(e.clientX-r.left), y=SY(e.clientY-r.top), L;
+  if(drag==='tip'){ cfg.ho=clamp(Math.abs(y)<8?8:Math.abs(y),8,140); }
+  else if(drag==='obj'){ L=limits(); cfg.u=clamp(xLens-x,20,L.uMax); }
+  else if(drag==='screen'){ L=limits(); cfg.sd=clamp(x-xLens,10,L.sdMax); cfg.auto=false; }
+  else if(drag==='lens'){
+    var nx=clamp(x, dragRef.xo+22, dragRef.xs-12);
+    nx=clamp(nx,60,SCENE-30);
+    xLens=nx; cfg.u=clamp(xLens-dragRef.xo,20,270); cfg.sd=clamp(dragRef.xs-xLens,10,400);
+  }
+  if(drag!=='screen') autoFocus();
+  syncVals();
+});
+cv.addEventListener('pointerdown',function(e){
+  var r=cv.getBoundingClientRect();
+  var h=hit(e.clientX-r.left,e.clientY-r.top);
+  if(!h) return;
+  drag=h; dragRef={xo:xLens-cfg.u, xs:xLens+cfg.sd};
+  cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing';
+});
+function endDrag(){ drag=null; cv.style.cursor='crosshair'; }
+cv.addEventListener('pointerup',endDrag);
+cv.addEventListener('pointercancel',endDrag);
+
+/* ---------- chrome ---------- */
+var dlg=el('about');
+el('b-about').addEventListener('click',function(){ dlg.showModal(); });
+el('b-close').addEventListener('click',function(){ dlg.close(); });
+dlg.addEventListener('click',function(e){ if(e.target===dlg) dlg.close(); });
+function setPause(v){ paused=v; el('b-pause').setAttribute('data-on',paused?'true':'false'); }
+el('b-pause').addEventListener('click',function(){ setPause(!paused); });
+el('b-reset').addEventListener('click',function(){ applyPreset(active); });
+el('b-clean').addEventListener('click',function(){
+  var on=document.body.classList.toggle('clean');
+  el('b-clean').setAttribute('data-on',on?'true':'false');
+});
+el('b-full').addEventListener('click',function(){
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+});
+window.addEventListener('keydown',function(e){
+  if(dlg.open){ return; }
+  var t=e.target.tagName;
+  if(t==='INPUT'&&e.key!==' ') return;
+  if(e.key===' '){ e.preventDefault(); setPause(!paused); }
+  else if(e.key==='r'||e.key==='R'){ applyPreset(active); }
+  else if(e.key==='h'||e.key==='H'){ el('b-clean').click(); }
+  else if(e.key==='f'||e.key==='F'){ el('b-full').click(); }
+  else if(e.key>='1'&&e.key<='6'){ var k=KEYS[parseInt(e.key,10)-1]; if(k) applyPreset(k); }
+});
+document.addEventListener('click',function(e){
+  var tips=document.querySelectorAll('.tip.show');
+  for(var i=0;i<tips.length;i++) tips[i].classList.remove('show');
+  var t=e.target.closest?e.target.closest('.tip'):null;
+  if(t) t.classList.add('show');
+});
+window.addEventListener('resize',function(){ resize(); });
+
+/* ---------- go ---------- */
+resize(); buildPresets(); bind(); applyPreset('camera');
+function loop(){
+  if(!paused) phase=(phase+2.2)%160;
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+})();
+</script>
+</body>
+</html>

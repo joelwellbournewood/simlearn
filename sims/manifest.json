@@ -40,6 +40,20 @@
     "status": "live"
   },
   {
+    "id": "optics-lens",
+    "title": "Lens & Image Formation",
+    "category": "Optics",
+    "tags": [
+      "optics",
+      "imaging",
+      "ray tracing",
+      "cameras"
+    ],
+    "difficulty": "Beginner",
+    "description": "An optical bench with real ray tracing. Move the object, the lens and the sensor, and watch the image form. Aperture, focus error, blur circles and spherical aberration, with a live view of what the sensor actually records.",
+    "status": "live"
+  },
+  {
     "id": "epidemic",
     "title": "Epidemic Spread (SIR)",
     "category": "Social Dynamics",
