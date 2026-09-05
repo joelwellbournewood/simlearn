@@ -12,7 +12,8 @@
     "difficulty": "Beginner",
     "description": "Separation, alignment and cohesion are the only three rules. The shape of the flock follows from them. Ten presets, 2D and 3D, with predators, obstacles and currents you can paint into the sky.",
     "status": "live",
-    "hook": "Three rules make a flock"
+    "hook": "Three rules make a flock",
+    "visible": true
   },
   {
     "id": "predator-prey",
@@ -26,7 +27,8 @@
     "difficulty": "Intermediate",
     "description": "Every dot is one animal with its own energy budget, grazing, hunting and breeding. The boom and bust population cycles come out of those individual decisions.",
     "status": "live",
-    "hook": "Booms, busts and extinction"
+    "hook": "Booms, busts and extinction",
+    "visible": true
   },
   {
     "id": "double-pendulum",
@@ -40,49 +42,8 @@
     "difficulty": "Intermediate",
     "description": "Release a hundred pendulums that differ by a tenth of a degree and watch them tear apart. The clearest demonstration that deterministic and predictable are not the same thing.",
     "status": "live",
-    "hook": "Deterministic, still unpredictable"
-  },
-  {
-    "id": "optics-lens",
-    "title": "Lens & Image Formation",
-    "category": "Optics",
-    "tags": [
-      "optics",
-      "imaging",
-      "ray tracing",
-      "cameras"
-    ],
-    "difficulty": "Beginner",
-    "description": "An optical bench with real ray tracing. Move the object, the lens and the sensor, and watch the image form. Aperture, focus error, blur circles and spherical aberration, with a live view of what the sensor actually records.",
-    "status": "live",
-    "hook": "Trace rays, form an image"
-  },
-  {
-    "id": "epidemic",
-    "title": "Epidemic Spread (SIR)",
-    "category": "Social Dynamics",
-    "tags": [
-      "epidemiology",
-      "agent-based",
-      "public health"
-    ],
-    "difficulty": "Beginner",
-    "description": "Susceptible, infected and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
-    "status": "live",
-    "hook": "One case to an outbreak"
-  },
-  {
-    "id": "traffic",
-    "title": "Traffic Jams",
-    "category": "Complex Systems",
-    "tags": [
-      "cellular automaton",
-      "transportation"
-    ],
-    "difficulty": "Beginner",
-    "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
-    "status": "live",
-    "hook": "Jams from nothing at all"
+    "hook": "Deterministic, still unpredictable",
+    "visible": true
   },
   {
     "id": "gravity",
@@ -97,7 +58,53 @@
     "difficulty": "Beginner",
     "description": "Newton's one rule, applied to everything at once. Build a star system, run the figure-eight, watch three bodies go chaotic, park a probe at a Lagrange point, or collide two galaxies.",
     "status": "live",
-    "hook": "One law, many orbits"
+    "hook": "One law, many orbits",
+    "visible": true
+  },
+  {
+    "id": "optics-lens",
+    "title": "Lens & Image Formation",
+    "category": "Optics",
+    "tags": [
+      "optics",
+      "imaging",
+      "ray tracing",
+      "cameras"
+    ],
+    "difficulty": "Beginner",
+    "description": "An optical bench with real ray tracing. Move the object, the lens and the sensor, and watch the image form. Aperture, focus error, blur circles and spherical aberration, with a live view of what the sensor actually records.",
+    "status": "live",
+    "hook": "Trace rays, form an image",
+    "visible": false
+  },
+  {
+    "id": "epidemic",
+    "title": "Epidemic Spread (SIR)",
+    "category": "Social Dynamics",
+    "tags": [
+      "epidemiology",
+      "agent-based",
+      "public health"
+    ],
+    "difficulty": "Beginner",
+    "description": "Susceptible, infected and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
+    "status": "live",
+    "hook": "One case to an outbreak",
+    "visible": false
+  },
+  {
+    "id": "traffic",
+    "title": "Traffic Jams",
+    "category": "Complex Systems",
+    "tags": [
+      "cellular automaton",
+      "transportation"
+    ],
+    "difficulty": "Beginner",
+    "description": "Jams form on an open road with no obstacle and no accident. All it takes is drivers reacting to the car in front.",
+    "status": "live",
+    "hook": "Jams from nothing at all",
+    "visible": false
   },
   {
     "id": "lorenz",
@@ -110,7 +117,8 @@
     "difficulty": "Intermediate",
     "description": "The first picture of chaos anyone plotted. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate it, and release a swarm to watch identical starts come apart.",
     "status": "live",
-    "hook": "The first picture of chaos"
+    "hook": "The first picture of chaos",
+    "visible": false
   },
   {
     "id": "reaction-diffusion",
@@ -124,7 +132,8 @@
     "difficulty": "Intermediate",
     "description": "Two chemicals spread and react by the Gray-Scott rules. Spots, stripes and coral shapes appear on their own. Pick a preset or paint your own seed.",
     "status": "live",
-    "hook": "Chemistry that draws patterns"
+    "hook": "Chemistry that draws patterns",
+    "visible": false
   },
   {
     "id": "segregation",
@@ -138,7 +147,8 @@
     "difficulty": "Intermediate",
     "description": "Mild individual preferences about who lives next door are enough to segregate a whole city. A classic result in social science.",
     "status": "live",
-    "hook": "Small preferences, split cities"
+    "hook": "Small preferences, split cities",
+    "visible": false
   },
   {
     "id": "game-of-life",
@@ -151,7 +161,8 @@
     "difficulty": "Beginner",
     "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators and patterns that never settle down.",
     "status": "live",
-    "hook": "Life from one rule"
+    "hook": "Life from one rule",
+    "visible": false
   },
   {
     "id": "pharmacokinetics",
@@ -165,6 +176,7 @@
     "difficulty": "Intermediate",
     "description": "How the concentration of a drug in the body rises and falls over time, and what different dosing schedules do to that curve.",
     "status": "coming-soon",
-    "hook": "Dose in, curve out"
+    "hook": "Dose in, curve out",
+    "visible": false
   }
 ]

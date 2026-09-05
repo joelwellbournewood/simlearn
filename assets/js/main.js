@@ -15,11 +15,19 @@ function fit(pts, x0, x1, y0, y1) {
 
 const GLYPH = {
   boids() {
-    const bird = (x, y, k) => `<path class="${k}" d="M${x} ${y} l15 6.5 l-15 6.5 l4.6-6.5z"/>`;
-    const streak = (x, y, l) => `<path class="soft" d="M${x - l} ${y + 6.5} h${l - 4}"/>`;
-    const P = [[198, 54], [163, 34], [163, 76], [128, 18], [128, 92], [93, 44], [93, 66]];
-    return `<g class="g-drift">${P.map((p, i) => streak(p[0], p[1], 20 + (i % 3) * 9)).join('')}
-      ${P.map((p, i) => bird(p[0], p[1], i === 0 ? 'fill2' : 'fillA')).join('')}</g>`;
+    // The flock flies right; the predator is the odd-coloured bird at the BACK, chasing.
+    const bird = (x, y, k, s) => {
+      s = s || 1;
+      const a = (15 * s).toFixed(1), b = (6.5 * s).toFixed(1), c = (4.6 * s).toFixed(1);
+      return `<path class="${k}" d="M${x} ${y} l${a} ${b} l-${a} ${b} l${c} -${b}z"/>`;
+    };
+    const streak = (x, y, l, s) => `<path class="soft" d="M${x - l} ${(y + 6.5 * (s || 1)).toFixed(1)} h${l - 4}"/>`;
+    const P = [[236, 52], [212, 30], [212, 74], [186, 16], [186, 90], [160, 40], [160, 66], [136, 58]];
+    const PRED = [58, 48], PS = 1.55;
+    return `<g class="g-drift">${P.map((p, i) => streak(p[0], p[1], 18 + (i % 3) * 8)).join('')}
+      ${streak(PRED[0], PRED[1], 30, PS)}
+      ${P.map(p => bird(p[0], p[1], 'fillA')).join('')}
+      ${bird(PRED[0], PRED[1], 'fill2', PS)}</g>`;
   },
   'predator-prey'() {
     const hare = sample(t => [t, CY - 26 * Math.sin((t - 26) / 100 * Math.PI * 2)], 26, 254, 70);
@@ -172,8 +180,11 @@ function wireTransitions() {
 
 fetch('sims/manifest.json')
   .then(r => { if (!r.ok) throw new Error('manifest ' + r.status); return r.json(); })
-  .then(sims => {
-    renderFilters(sims, f => renderGrid(sims, f));
+  .then(all => {
+    const sims = all.filter(s => s.visible !== false);
+    const bar = document.getElementById('filters');
+    if (sims.length < 6) { bar.hidden = true; bar.style.display = 'none'; }
+    else renderFilters(sims, f => renderGrid(sims, f));
     renderGrid(sims, 'all');
     wireTransitions();
   })

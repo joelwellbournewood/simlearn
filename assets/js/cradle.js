@@ -65,14 +65,12 @@
   function draw() {
     ctx.clearRect(0, 0, W, H);
     var barW = 2 * R * N + 30, bx0 = cx - barW / 2;
-    var LINE = 'rgba(163,188,190,.42)';
 
-    // frame: one top bar with two short end stubs
-    ctx.strokeStyle = LINE; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    // one horizontal bar, nothing else
+    ctx.strokeStyle = 'rgba(163,188,190,.40)';
+    ctx.lineWidth = 1.5; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(bx0, PIVY); ctx.lineTo(bx0 + barW, PIVY);
-    ctx.moveTo(bx0, PIVY); ctx.lineTo(bx0, PIVY + 9);
-    ctx.moveTo(bx0 + barW, PIVY); ctx.lineTo(bx0 + barW, PIVY + 9);
     ctx.stroke();
 
     // strings: one line per ball
@@ -81,11 +79,14 @@
     for (var i = 0; i < N; i++) { ctx.moveTo(px[i], PIVY); ctx.lineTo(bx(i), by(i)); }
     ctx.stroke();
 
-    // balls: flat, uniform, no shading
+    // balls: a single merged path so touching circles leave no seam between them
     ctx.fillStyle = '#9fd8cd';
+    ctx.beginPath();
     for (var j = 0; j < N; j++) {
-      ctx.beginPath(); ctx.arc(bx(j), by(j), R, 0, 6.2832); ctx.fill();
+      ctx.moveTo(bx(j) + R, by(j));
+      ctx.arc(bx(j), by(j), R, 0, 6.2832);
     }
+    ctx.fill();
   }
 
   // ---- pointer input ------------------------------------------------------
