@@ -91,10 +91,11 @@
     "tags": [
       "mechanics",
       "astronomy",
-      "chaos"
+      "chaos",
+      "orbits"
     ],
     "difficulty": "Beginner",
-    "description": "Newton's one rule, applied to everything at once. Set up a star system, a binary pair or a collapsing cloud, then sling new bodies in and watch orbits form and merge.",
+    "description": "Newton's one rule, applied to everything at once. Build a star system, run the figure-eight, watch three bodies go chaotic, park a probe at a Lagrange point, or collide two galaxies.",
     "status": "live",
     "hook": "One law, many orbits"
   },
