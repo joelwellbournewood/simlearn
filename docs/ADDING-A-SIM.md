@@ -66,3 +66,20 @@ python3 tools/qa.py 1600 900
 ```
 
 Requires: 0 JS errors, no inner scrollbars, non-trivial canvas ink coverage.
+
+## The shared shell (added 2026-09-05)
+
+`sims/gravity/index.html`, `sims/double-pendulum/index.html` and
+`sims/lorenz/index.html` share a byte-identical `<head>` CSS block apart from the
+title and meta description. Copy that block when writing a new sim rather than
+starting from the old two-column layout, which is deprecated. It gives you, for
+free: the tokens, the full-bleed stage with vignette, the floating glass panel, the
+`.about-btn` and `dialog.about`, `.preset` cards, the `.tip` bubble, restyled
+range inputs, the `.hud` stat chips, `body.clean` for hide-UI, and the
+`body.in-frame` rules that hide the brand line and lift the panel when the sim is
+loaded inside `sim.html`.
+
+The matching script skeleton is also worth copying: DPR capped to a 3.2M device
+pixel budget in `resize()`, a `PRESETS` object whose keys drive both the cards and
+the 1-9 number keys, `bind(id, valueId, formatter, setter)` for sliders, and the
+space / R / H / F key handlers.
