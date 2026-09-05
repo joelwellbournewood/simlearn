@@ -653,51 +653,30 @@
     fctx.beginPath();
     for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
     fctx.fill();
-    // lynx - stalking cat silhouette (tufted ears, tapered body, flicking tail)
+    /* lynx - a lean directional dart. Deliberately minimal: two batched fills, no
+       outline, no eyes, no tail. The shape alone says predator and says heading, and
+       it stays legible down to a few pixels where the old cat silhouette turned to mush.
+       Do not add per-lynx strokes here; at 900 lynx that is 900 extra path segments. */
     const R = LYNX_R;
-    fctx.lineCap = 'round'; fctx.lineJoin = 'round';
-    // tails + ear tufts, stroked behind the bodies
-    fctx.strokeStyle = 'rgba(255,125,92,.8)';
-    fctx.lineWidth = Math.max(1, R*0.26);
+    // soft halo so the hunters read as hot points against the field
+    fctx.fillStyle = 'rgba(255,125,92,.13)';
     fctx.beginPath();
     for(let i=0;i<lynx.length;i++){
-      const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
-      const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
-      const f = (i&1) ? 1 : -1;                       // tail flicks either side
-      fctx.moveTo(X(-R*1.10,0), Y(-R*1.10,0));
-      fctx.quadraticCurveTo(X(-R*2.05,f*R*0.30), Y(-R*2.05,f*R*0.30),
-                            X(-R*2.00,f*R*1.20), Y(-R*2.00,f*R*1.20));
-      fctx.moveTo(X(R*0.50,-R*0.60), Y(R*0.50,-R*0.60));
-      fctx.lineTo(X(R*0.28,-R*1.18), Y(R*0.28,-R*1.18));
-      fctx.moveTo(X(R*0.50, R*0.60), Y(R*0.50, R*0.60));
-      fctx.lineTo(X(R*0.28, R*1.18), Y(R*0.28, R*1.18));
+      const l=lynx[i];
+      fctx.moveTo(l.x + R*1.45, l.y); fctx.arc(l.x, l.y, R*1.45, 0, TAU);
     }
-    fctx.stroke();
-    // bodies
+    fctx.fill();
+    // the dart itself
     fctx.fillStyle = '#ff7d5c';
     fctx.beginPath();
     for(let i=0;i<lynx.length;i++){
       const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
       const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
-      fctx.moveTo(X(R*1.42,0), Y(R*1.42,0));
-      fctx.quadraticCurveTo(X(R*0.90,-R*0.78), Y(R*0.90,-R*0.78), X(R*0.12,-R*0.70), Y(R*0.12,-R*0.70));
-      fctx.quadraticCurveTo(X(-R*0.85,-R*0.98), Y(-R*0.85,-R*0.98), X(-R*1.20,0), Y(-R*1.20,0));
-      fctx.quadraticCurveTo(X(-R*0.85, R*0.98), Y(-R*0.85, R*0.98), X(R*0.12, R*0.70), Y(R*0.12, R*0.70));
-      fctx.quadraticCurveTo(X(R*0.90, R*0.78), Y(R*0.90, R*0.78), X(R*1.42,0), Y(R*1.42,0));
+      fctx.moveTo(X( R*1.60, 0),        Y( R*1.60, 0));
+      fctx.lineTo(X(-R*0.78,  R*0.82),  Y(-R*0.78,  R*0.82));
+      fctx.lineTo(X(-R*0.30, 0),        Y(-R*0.30, 0));
+      fctx.lineTo(X(-R*0.78, -R*0.82),  Y(-R*0.78, -R*0.82));
       fctx.closePath();
-    }
-    fctx.fill();
-    fctx.lineWidth = 1; fctx.strokeStyle = 'rgba(255,196,166,.55)'; fctx.stroke();
-    // eye glints
-    fctx.fillStyle = 'rgba(255,242,206,.95)';
-    fctx.beginPath();
-    const ER = Math.max(0.7, R*0.17);
-    for(let i=0;i<lynx.length;i++){
-      const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
-      for(let k=-1;k<=1;k+=2){
-        const v=k*R*0.30, ex=l.x + R*0.80*c - v*s, ey=l.y + R*0.80*s + v*c;
-        fctx.moveTo(ex+ER, ey); fctx.arc(ex, ey, ER, 0, TAU);
-      }
     }
     fctx.fill();
     // vignette
