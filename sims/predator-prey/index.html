@@ -213,7 +213,7 @@
     h1{font-size:20px}
     .sub{font-size:12.5px;margin:5px 0 0}
     .layout{flex:1 1 auto;min-height:0;display:grid;
-            grid-template-columns:minmax(250px,300px) minmax(0,1fr) minmax(400px,500px);
+            grid-template-columns:minmax(240px,272px) minmax(0,1fr) minmax(300px,340px);
             gap:16px;align-items:stretch}
     .col{min-width:0;min-height:0}
     .col-l,.col-r{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
@@ -224,7 +224,7 @@
     .col-c{display:flex;justify-content:center;align-items:stretch;overflow:hidden}
     .field-wrap{margin-top:0;flex:0 1 auto;height:100%;min-height:0;
                 display:flex;align-items:center;justify-content:center}
-    #field{height:100%;width:auto;max-width:100%;display:block}
+    #field{width:auto;height:auto;max-width:100%;max-height:100%;display:block}
     .status{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:0}
     .stat{min-width:0}
     .transport{flex-wrap:wrap}
@@ -232,8 +232,7 @@
     .card{margin-top:12px}
     .col-l > .card:first-child,.col-r > .card:first-child{margin-top:0}
     .expwrap{margin-top:14px}
-    .group{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
-    .group-title{grid-column:1 / -1}
+    .group{display:block}
     .row{margin:4px 0}
     .row label{font-size:11.5px}
     .row .hint{font-size:10.5px;line-height:1.32;margin-top:2px}
@@ -276,8 +275,7 @@
     .card .group-title .tag{display:none}
   }
   @media (min-width:1061px) and (max-width:1400px){
-    .layout{grid-template-columns:minmax(220px,250px) minmax(0,1fr) minmax(380px,420px);gap:12px}
-    .group{gap:0 10px}
+    .layout{grid-template-columns:minmax(220px,252px) minmax(0,1fr) minmax(280px,310px);gap:12px}
   }
   @media (max-width:1060px){
     body{max-width:720px}
@@ -409,24 +407,24 @@
   <div class="about-inner">
     <button class="about-close" id="btnAboutClose" aria-label="Close">&#10005;</button>
     <h2 id="aboutTitle">What am I looking at?</h2>
-    <p>An agent-based ecosystem. Each dot is an individual animal following simple rules: find food, avoid becoming food, and reproduce when energy is high. No equation drives the population curves. The boom-and-bust cycles emerge from many animals acting on local information.</p>
-    <h3>The cycle</h3>
-    <p><span class="hl">Hares</span> multiply while grass is plentiful. More prey feeds the <span class="hr">lynx</span>, whose numbers rise until hares are eaten faster than they can breed and crash. The lynx then starve, the grass recovers, and the hares recover with it. This is the pattern described by the Lotka-Volterra equations, in which predator peaks lag prey peaks by roughly a quarter of a cycle. Switch the trace to <b>Phase orbit</b> and the lag draws itself as a closed loop.</p>
-    <h3>Energy, capacity and enrichment</h3>
-    <p>Energy passes from grass to hare to lynx, and much of it is lost to metabolism at each step. That loss is why a healthy field always holds far more hares than lynx: the energy pyramid of any food chain. Plant regrowth sets the carrying capacity, the ceiling on how many hares the land can feed; slow regrowth, as in the Sparse habitat preset, means small and fragile populations. Faster regrowth is not necessarily safer. Push regrowth to its maximum and the oscillations widen, often ending in collapse. This is the paradox of enrichment (Rosenzweig, 1971): adding food to a predator-prey system can destabilize it rather than steady it.</p>
-    <h3>The real-world record</h3>
-    <p>Canadian lynx and snowshoe hare populations cycle with a period of roughly ten years. The Hudson's Bay Company fur-trade ledgers recorded those swings for over a century, giving ecology one of its longest datasets, and this simulation reproduces the same qualitative pattern.</p>
-    <h3>The honest caveats</h3>
-    <ul>
-      <li>This is an agent-based model, not an integration of the Lotka-Volterra equations. Because each animal follows individual rules, the cycles are noisy and their period drifts from run to run.</li>
-      <li>Populations here can go extinct, which the smooth textbook equations never allow. When numbers fall low, chance decides whether the last few animals find food or each other in time.</li>
-    </ul>
+    <p>Every dot on the field is a single animal carrying its own energy budget. Hares wander until they find a green patch and graze it. Lynx wander until a hare comes within hunting range and then chase it. Both spend energy on every step, both die when it runs out, and both breed when they have plenty to spare. Nobody has written a rule that says the populations should rise and fall together. The curves in the graph are emergent dynamics: they are produced by thousands of small encounters between individuals, which is where real population cycles come from as well.</p>
+    <h3>Why the two curves chase each other</h3>
+    <p><span class="hl">Hares</span> breed quickly when grass is easy to find, so they climb first. A field crowded with hares is easy hunting, so the <span class="hr">lynx</span> feed well and climb afterwards. Once there are enough lynx, hares are being caught faster than they are being born, and the hare population turns over and falls. The lynx are then hunting an empty field, and they starve back. Grass regrows, the surviving hares find it, and the whole thing starts again.</p>
+    <p>Each population is driven by the size of the other one, and that delay is why the lynx peak always arrives after the hare peak rather than with it, by roughly a quarter of a cycle. Alfred Lotka and Vito Volterra described the same lag with a pair of differential equations in the 1920s. Switch the trace to <b>Phase orbit</b> to watch it directly: the graph drops time and plots hares against lynx, so the state of the whole field becomes one point tracing a loop.</p>
+    <h3>Energy sets the ceiling</h3>
+    <p>Follow the energy and the numbers stop being mysterious. Sunlight is stored in grass, some of that reaches a hare, and a smaller share again reaches a lynx, because every animal burns energy simply staying alive. That loss at each step is why any healthy field holds far more hares than lynx. It is the reason food chains are short and predators are rare.</p>
+    <p>The <b>Plant regrowth</b> slider is the carrying capacity of the land: the ceiling on how many hares it can feed. Turn it down, as the Sparse habitat preset does, and you get a small population living close to the edge. Turning it up is not automatically kinder. Rich land lets the hares boom higher, which lets the lynx boom higher, and the swings grow until one of the crashes reaches zero. Michael Rosenzweig named this the paradox of enrichment in 1971, and the preset of that name sets it up for you.</p>
+    <h3>How it compares with the real record</h3>
+    <p>Snowshoe hares and Canadian lynx cycle with a period of about ten years. The Hudson's Bay Company recorded the pelts it bought for well over a century, and those ledgers became one of the longest population datasets in ecology. Field studies since have shown that the real cycle is driven by food supply and predation together, which is close to what this model contains. What you get here is the same shape of behaviour from a much simpler world.</p>
+    <h3>Where individual animals matter</h3>
+    <p>The classic equations treat a population as a smooth quantity that can fall to a fraction of an animal and recover. This model counts whole animals instead, so two things appear that the equations cannot show. The period wanders from run to run, and a population that gets low enough can disappear for good because the last few animals never happen to meet. Extinction by bad luck is a real feature of small populations, and it shows up here for the same reason it does in the field.</p>
     <h3>Things to try</h3>
     <ul>
       <li>Switch the trace to <b>Phase orbit</b> and watch the loop close on itself.</li>
-      <li>Run <b>Paradox of enrichment</b> and watch the swings widen until something breaks.</li>
-      <li>Raise <b>Hunting range</b> mid-run and watch the hares crash within a few hundred steps.</li>
+      <li>Run <b>Paradox of enrichment</b> and watch the swings widen until one of them hits the floor.</li>
+      <li>Raise <b>Hunting range</b> in the middle of a run and see how few steps it takes to empty the field.</li>
       <li>Set <b>Plant regrowth</b> to 1 and count how few animals the land can carry.</li>
+      <li>Remove the lynx entirely with <b>Starting lynx</b> at 0, then watch the hares stop at the grass ceiling instead of growing without limit.</li>
     </ul>
   </div>
 </dialog>
@@ -440,7 +438,7 @@
   const rand = (a,b)=> a + Math.random()*(b-a);
 
   // ---- world (fixed logical size, CSS scales it to fit any phone) ----
-  const W = 384, H = 510, CELL = 12;
+  const W = 504, H = 384, CELL = 12;
   const COLS = Math.floor(W/CELL), ROWS = Math.floor(H/CELL);
   const NCELL = COLS*ROWS;
 
@@ -465,8 +463,25 @@
     ctx.setTransform(dpr,0,0,dpr,0,0);
   }
   sizeCanvas(field, fctx, W, H);
-  const GW = 384, GH = 156;
+  let GW = 384, GH = 156;
+  function sizeGraph(){
+    const r = graph.getBoundingClientRect();
+    const cw = Math.round(r.width);
+    if(!cw) return false;
+    const nw = Math.max(240, cw);
+    const nh = Math.round(clamp(nw*0.46, 132, 210));
+    if(nw===GW && nh===GH) return false;
+    GW = nw; GH = nh; sizeCanvas(graph, gctx, GW, GH);
+    return true;
+  }
   sizeCanvas(graph, gctx, GW, GH);
+  requestAnimationFrame(()=>{ if(sizeGraph()) drawGraph(); });
+  if(window.ResizeObserver){
+    let raf=0;
+    new ResizeObserver(()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(sizeGraph()) drawGraph(); }); }).observe(graph);
+  }else{
+    window.addEventListener('resize', ()=>{ if(sizeGraph()) drawGraph(); });
+  }
 
   // ---- config (live) ----
   const cfg = {
@@ -710,20 +725,20 @@
     return step*p;
   }
   function drawTime(){
-    const pad={l:6,r:30,t:10,b:16};
+    const pad={l:8,r:42,t:12,b:24};
     const w = GW-pad.l-pad.r, h = GH-pad.t-pad.b;
     let mx=10; for(let i=0;i<history.length;i++){ mx=Math.max(mx,history[i].h,history[i].l); }
     mx = niceMax(mx);
     const X = i => pad.l + (history.length<=1?0:i/(history.length-1))*w;
     const Y = v => pad.t + h - (v/mx)*h;
     // gridlines
-    gctx.font = '9px "Space Mono", monospace'; gctx.textBaseline='middle';
+    gctx.font = '12px "Space Mono", monospace'; gctx.textBaseline='middle';
     for(let k=0;k<=2;k++){
       const gy = pad.t + (h*k/2), val = Math.round(mx*(1-k/2));
       gctx.strokeStyle='rgba(130,170,150,.10)'; gctx.lineWidth=1;
       gctx.beginPath(); gctx.moveTo(pad.l,gy); gctx.lineTo(pad.l+w,gy); gctx.stroke();
       gctx.fillStyle='#6f8a7e'; gctx.textAlign='left';
-      gctx.fillText(String(val), pad.l+w+4, gy);
+      gctx.fillText(String(val), pad.l+w+6, gy);
     }
     // line + soft fill helper
     function line(key,color,fill){
@@ -742,10 +757,10 @@
     gctx.strokeStyle='rgba(130,170,150,.22)'; gctx.beginPath();
     gctx.moveTo(pad.l,pad.t+h); gctx.lineTo(pad.l+w,pad.t+h); gctx.stroke();
     gctx.fillStyle='#6f8a7e'; gctx.textAlign='left';
-    gctx.fillText('time →', pad.l, GH-6);
+    gctx.textBaseline='alphabetic'; gctx.fillText('time →', pad.l, GH-7);
   }
   function drawPhase(){
-    const pad={l:34,r:12,t:12,b:22};
+    const pad={l:42,r:14,t:14,b:30};
     const w=GW-pad.l-pad.r, h=GH-pad.t-pad.b;
     let mxh=10,mxl=10;
     for(let i=0;i<history.length;i++){ mxh=Math.max(mxh,history[i].h); mxl=Math.max(mxl,history[i].l); }
@@ -754,14 +769,14 @@
     // frame
     gctx.strokeStyle='rgba(130,170,150,.18)'; gctx.lineWidth=1;
     gctx.strokeRect(pad.l,pad.t,w,h);
-    gctx.font='9px "Space Mono", monospace';
+    gctx.font='12px "Space Mono", monospace';
     gctx.fillStyle='#56e0c2'; gctx.textAlign='center'; gctx.textBaseline='top';
-    gctx.fillText('hares →', pad.l+w/2, GH-11);
-    gctx.save(); gctx.translate(9,pad.t+h/2); gctx.rotate(-Math.PI/2);
+    gctx.fillText('hares →', pad.l+w/2, GH-15);
+    gctx.save(); gctx.translate(13,pad.t+h/2); gctx.rotate(-Math.PI/2);
     gctx.fillStyle='#ff7d5c'; gctx.textBaseline='middle'; gctx.fillText('lynx →',0,0); gctx.restore();
     gctx.fillStyle='#6f8a7e'; gctx.textAlign='right'; gctx.textBaseline='middle';
-    gctx.fillText(String(mxh), pad.l+w, pad.t+h+9);
-    gctx.fillText(String(mxl), pad.l-3, pad.t);
+    gctx.fillText(String(mxh), pad.l+w, pad.t+h+11);
+    gctx.fillText(String(mxl), pad.l-5, pad.t);
     // orbit trail (older = fainter), then current marker
     const n=history.length, lo=Math.max(0,n-280);
     for(let i=lo+1;i<n;i++){

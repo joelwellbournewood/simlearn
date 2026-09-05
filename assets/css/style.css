@@ -82,10 +82,10 @@ html,body{overflow-x:clip}
 }
 .hero-sub::before{content:""; width:34px; height:1px; background:linear-gradient(90deg,var(--accent),transparent); flex:none}
 .hero{position:relative; padding:2.2rem 0 1.6rem; display:flex; align-items:center;
-  justify-content:space-between; gap:clamp(18px,3vw,46px); overflow:visible}
-.hero-text{flex:1 1 auto; min-width:0}
+  justify-content:flex-start; gap:clamp(18px,3vw,46px); overflow:visible}
+.hero-text{flex:0 1 auto; min-width:0}
 .hero-sim{
-  flex:0 0 auto; width:clamp(300px,32vw,392px); margin:0; padding:0;
+  flex:0 0 auto; width:clamp(300px,32vw,392px); margin:0 auto 0 0; padding:0;
   border:0; background:none; box-shadow:none;
   opacity:0; animation:rise .62s cubic-bezier(.2,.7,.25,1) .24s forwards;
 }
