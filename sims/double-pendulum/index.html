@@ -1,113 +1,430 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Double Pendulum</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200">
+<title>Double Pendulum: what chaos actually means | SimLearn</title>
+<meta name="description" content="An interactive double pendulum. Release a hundred copies that differ by a thousandth of a degree and watch determinism and unpredictability turn out to be compatible.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-html,body{margin:0;height:100%;background:#0a1512;color:#e3efe9;font-family:sans-serif;overflow:hidden}
-#wrap{display:flex;height:100%}
-#canvas-holder{flex:1;position:relative}
-canvas{display:block;width:100%;height:100%;background:#07120f;cursor:crosshair}
-#panel{width:250px;padding:14px 16px;background:#0f1f1a;border-left:1px solid #22362e;overflow-y:auto;font-size:13px}
-#panel h2{font-size:15px;margin:0 0 8px}
-#panel p{color:#88a397;line-height:1.45;margin:0 0 12px}
-.row{margin-bottom:12px}
-.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#c6d6cd}
-.row input[type=range]{width:100%;accent-color:#56e0c2}
-button{width:100%;background:#56e0c2;border:none;color:#0a1512;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
-button.secondary{background:#22362e;color:#e3efe9;margin-top:8px}
-button.twin{background:#e6c34f}
-#hint{position:absolute;bottom:10px;left:12px;color:#6d8479;font-size:12px;pointer-events:none}
-</style></head><body>
-<div id="wrap">
-<div id="canvas-holder"><canvas id="c"></canvas><div id="hint">Click anywhere to swing the pendulum from that angle</div></div>
-<div id="panel">
-<h2>Double Pendulum: Chaos</h2>
-<p>A rod with a rod hanging off it. Fully deterministic physics — no randomness anywhere — yet two runs started a hair's breadth apart diverge completely within seconds. This is the signature of chaos: sensitive dependence on initial conditions.</p>
-<div class="row"><label><span>Gravity</span><span id="v-g">1.0</span></label><input type="range" id="g" min="0.2" max="2" step="0.1" value="1.0"></div>
-<div class="row"><label><span>Upper rod length</span><span id="v-l1">120</span></label><input type="range" id="l1" min="60" max="180" step="5" value="120"></div>
-<div class="row"><label><span>Lower rod length</span><span id="v-l2">120</span></label><input type="range" id="l2" min="60" max="180" step="5" value="120"></div>
-<button id="reset">Restart (random tiny nudge)</button>
-<button class="secondary" id="pause">Pause</button>
-<button class="twin" id="twinbtn">Release a Twin</button>
-<button class="secondary" id="trail">Toggle Trail</button>
-<p style="margin-top:12px" id="twin-p">"Release a Twin" starts a second pendulum 0.5° away from the first. Watch the two golden/teal paths ride together, then rip apart — that's the butterfly effect, not a bug.</p>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;right:20px;top:66px;width:300px;max-height:calc(100% - 86px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.presets{display:grid;gap:6px;margin-bottom:14px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:12px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.hud{position:absolute;left:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 360px)}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.hint{position:absolute;left:20px;bottom:74px;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(84vh,780px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:62ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="brand">
+  <p class="kicker">Deterministic chaos</p>
+  <h1>Double Pendulum</h1>
+  <p>Exact equations. No randomness. Still unpredictable.</p>
 </div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Restart (R)" aria-label="Restart">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
 </div>
+
+<div class="panel">
+  <button class="about-btn" id="b-about">What am I looking at?</button>
+  <p class="label">Experiment</p>
+  <div class="presets" id="presets"></div>
+  <p class="label">Controls</p>
+  <div class="row">
+    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once. They are spread across a tiny range of starting angles, so at first they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
+  </div>
+  <div class="row">
+    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="The angle, in degrees, between the first copy and the last. At 0.001 degrees they are identical to the eye, and still tear apart." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
+  </div>
+  <div class="row">
+    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="How high both arms are lifted before release. Below about 20 degrees the motion stays regular; above that it goes chaotic." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
+  </div>
+  <div class="row">
+    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Length of the second arm relative to the first. A long lower arm carries more of the energy and whips harder." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
+    <input type="range" id="s-l2" min="0.4" max="1.6" step="0.05" value="1">
+  </div>
+  <div class="row">
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each tip's path stays on screen. With many copies, short trails read more clearly." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <input type="range" id="s-trail" min="0" max="100" step="1" value="60">
+  </div>
+  <div class="row">
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. Integration substeps scale with it, so the physics stays accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <input type="range" id="s-speed" min="0.25" max="2.5" step="0.05" value="1">
+  </div>
+</div>
+
+<div class="hud">
+  <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
+  <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
+  <div class="stat"><div class="k">Spread now</div><div class="v" id="s-div" style="color:var(--danger)">-</div></div>
+  <div class="stat"><div class="k">Energy drift</div><div class="v" id="s-e">-</div></div>
+</div>
+<div class="hint">Click the field to re-release from that angle. 1-5 presets, space pause, R restart, H hide.</div>
+
+<dialog class="about" id="about">
+  <div class="about-inner">
+    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
+    <h2>Double Pendulum</h2>
+    <p>One rod swinging from a pivot, with a second rod swinging from the end of the first. The equations of motion are exact and written down in full in this page's source. Nothing here is random. Run the same starting numbers twice and you get the same motion twice, to the last decimal place.</p>
+    <p>And yet you cannot predict it. That combination is what <b>chaos</b> means, and it is the whole point of this page.</p>
+    <h3>The demonstration</h3>
+    <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree. For the first few seconds they move as one thick line, because they are, for practical purposes, the same pendulum. Then the line frays, then it splits, then within about fifteen seconds the hundred copies are scattered over every angle and any memory of their shared start is gone.</p>
+    <p>Nothing was added. No noise, no rounding trick, no forcing. The tiny difference they began with was simply <b>stretched</b>, at a roughly constant exponential rate, until it was the size of the whole system. That rate is called the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days no matter how good the measurements get.</p>
+    <h3>What "sensitive dependence" costs you</h3>
+    <p>If errors grow exponentially, then buying one more decimal place of accuracy in your starting measurement buys you a fixed extra amount of forecast time, not a proportional one. Ten times better instruments do not give you ten times the warning. That is a hard limit set by the system, not by the technology.</p>
+    <h3>Not everything is chaotic</h3>
+    <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the double pendulum behaves like two coupled linear oscillators and is perfectly well behaved. Chaos here is a property of the energy, not of the machine.</p>
+    <h3>The honest caveats</h3>
+    <ul>
+      <li>Integration is fourth-order Runge-Kutta with substeps. The <b>energy drift</b> readout shows how far total energy has moved from its starting value. While that stays small the divergence you see is physics, not arithmetic.</li>
+      <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
+      <li>The rods are massless and the bobs are points. Real hardware has friction, and eventually stops.</li>
+    </ul>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than you would guess.</li>
+      <li>Watch the <b>spread now</b> readout climb. Its growth is close to a straight line on a log scale, which is exactly what an exponent looks like.</li>
+      <li>Give the lower arm a length of 1.6 and release from 180 degrees. The tip trace fills the whole disc it can reach.</li>
+    </ul>
+  </div>
+</dialog>
 <script>
-const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let g=1.0, showTrail=true;
-let L1=120, L2=120; const m1=10, m2=10;
-
-function makeBob(a1,a2){ return {a1,a2,a1v:0,a2v:0,trail:[]}; }
-let bob, twin=null;
-
-function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
-function init(a1seed, a2seed){
-  g=+document.getElementById('g').value;
-  L1=+document.getElementById('l1').value;
-  L2=+document.getElementById('l2').value;
-  const a1 = a1seed!==undefined ? a1seed : Math.PI/2 + (Math.random()-0.5)*0.02;
-  const a2 = a2seed!==undefined ? a2seed : Math.PI/2 + (Math.random()-0.5)*0.02;
-  bob = makeBob(a1,a2);
-  twin = null;
-  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,canvas.width,canvas.height);
+(function(){
+'use strict';
+if(window.self!==window.top) document.body.classList.add('in-frame');
+const TAU=Math.PI*2, DEG=Math.PI/180;
+const stage=document.getElementById('stage'), cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const el=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=stage.getBoundingClientRect();
+  W=Math.max(320,r.width); H=Math.max(240,r.height);
+  const native=Math.min(window.devicePixelRatio||1,2); const BUDGET=3.2e6;
+  let d=native; if(W*H*d*d>BUDGET) d=Math.max(1,Math.sqrt(BUDGET/(W*H)));
+  DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
 }
-function step(b,dt){
-  const {a1,a2,a1v,a2v} = b;
-  const num1 = -g*(2*m1+m2)*Math.sin(a1) - m2*g*Math.sin(a1-2*a2) - 2*Math.sin(a1-a2)*m2*(a2v*a2v*L2+a1v*a1v*L1*Math.cos(a1-a2));
-  const den1 = L1*(2*m1+m2-m2*Math.cos(2*a1-2*a2));
-  const a1a = num1/den1;
-  const num2 = 2*Math.sin(a1-a2)*(a1v*a1v*L1*(m1+m2)+g*(m1+m2)*Math.cos(a1)+a2v*a2v*L2*m2*Math.cos(a1-a2));
-  const den2 = L2*(2*m1+m2-m2*Math.cos(2*a1-2*a2));
-  const a2a = num2/den2;
-  b.a1v+=a1a*dt; b.a2v+=a2a*dt;
-  b.a1+=b.a1v*dt; b.a2+=b.a2v*dt;
+/* ---------- model ---------- */
+const M1=1, M2=1;
+let g=1.0, L1=140, L2=140, l2r=1, copies=1, spreadDeg=0.1, angleDeg=120,
+    trailPct=60, speed=1, paused=false, arr=[], E0=null, tsec=0, activePreset='single';
+function deriv(s){
+  const a1=s[0],a2=s[1],w1=s[2],w2=s[3], d=a1-a2;
+  const den=2*M1+M2-M2*Math.cos(2*d);
+  const n1=-g*(2*M1+M2)*Math.sin(a1)-M2*g*Math.sin(a1-2*a2)-2*Math.sin(d)*M2*(w2*w2*L2+w1*w1*L1*Math.cos(d));
+  const n2=2*Math.sin(d)*(w1*w1*L1*(M1+M2)+g*(M1+M2)*Math.cos(a1)+w2*w2*L2*M2*Math.cos(d));
+  return [w1,w2,n1/(L1*den),n2/(L2*den)];
 }
-function pos(b, ox, oy){
-  const x1=ox+L1*Math.sin(b.a1), y1=oy+L1*Math.cos(b.a1);
-  const x2=x1+L2*Math.sin(b.a2), y2=y1+L2*Math.cos(b.a2);
-  return {x1,y1,x2,y2};
+function rk4(s,h){
+  const k1=deriv(s);
+  const s2=[s[0]+h/2*k1[0],s[1]+h/2*k1[1],s[2]+h/2*k1[2],s[3]+h/2*k1[3]], k2=deriv(s2);
+  const s3=[s[0]+h/2*k2[0],s[1]+h/2*k2[1],s[2]+h/2*k2[2],s[3]+h/2*k2[3]], k3=deriv(s3);
+  const s4=[s[0]+h*k3[0],s[1]+h*k3[1],s[2]+h*k3[2],s[3]+h*k3[3]], k4=deriv(s4);
+  for(let i=0;i<4;i++) s[i]+=h/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
 }
-function drawOne(b, ox, oy, boldColor, jointColor, tipColor){
-  const {x1,y1,x2,y2} = pos(b,ox,oy);
-  if(showTrail){
-    b.trail.push([x2,y2]); if(b.trail.length>600) b.trail.shift();
-    ctx.strokeStyle=tipColor.trail; ctx.lineWidth=1.5; ctx.beginPath();
-    b.trail.forEach(([tx,ty],i)=>{ i===0?ctx.moveTo(tx,ty):ctx.lineTo(tx,ty); }); ctx.stroke();
+function energyOf(s){
+  const a1=s[0],a2=s[1],w1=s[2],w2=s[3];
+  const v1s=L1*L1*w1*w1;
+  const v2s=L1*L1*w1*w1+L2*L2*w2*w2+2*L1*L2*w1*w2*Math.cos(a1-a2);
+  const y1=-L1*Math.cos(a1), y2=y1-L2*Math.cos(a2);
+  return 0.5*M1*v1s+0.5*M2*v2s+M1*g*y1+M2*g*y2;
+}
+function colourAt(t){
+  let r,gg,b;
+  if(t<0.5){ const u=t/0.5; r=86+(230-86)*u; gg=224+(195-224)*u; b=194+(79-194)*u; }
+  else { const u=(t-0.5)/0.5; r=230+(255-230)*u; gg=195+(125-195)*u; b=79+(92-79)*u; }
+  return [r|0,gg|0,b|0];
+}
+function geom(){
+  /* g is tied to arm length so the swing takes the same wall-clock time whatever
+     the canvas size. omega = sqrt(g/L1) is then constant, about 0.47 per time unit,
+     which puts a small-amplitude period near two and a half seconds at 60fps. */
+  const base=Math.min(W,H)*0.20;
+  L1=base; L2=base*l2r; g=0.22*base;
+}
+function release(a1seed){
+  geom();
+  const a0=(a1seed!==undefined)?a1seed:angleDeg*DEG;
+  arr=[];
+  const sp=spreadDeg*DEG;
+  for(let i=0;i<copies;i++){
+    const f=copies===1?0:(i/(copies-1)-0.5);
+    arr.push({s:[a0+f*sp, a0, 0, 0], trail:[], c:colourAt(copies===1?0:i/(copies-1))});
   }
-  ctx.strokeStyle=boldColor; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  ctx.fillStyle=jointColor; ctx.beginPath(); ctx.arc(x1,y1,7,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle=tipColor.fill; ctx.beginPath(); ctx.arc(x2,y2,7,0,Math.PI*2); ctx.fill();
+  tsec=0; E0=energyOf(arr[0].s.slice());
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+/* ---------- presets ---------- */
+const PRESETS={
+  fan:{name:'Fan of a hundred',tag:'A hundred starts inside a tenth of a degree',set:{copies:110,spread:-1,angle:130,l2:1,trail:35}},
+  single:{name:'One pendulum',tag:'Just watch the shape the tip traces',set:{copies:1,spread:-1,angle:120,l2:1,trail:75}},
+  twins:{name:'The twin test',tag:'Two starts half a degree apart',set:{copies:2,spread:-0.3,angle:120,l2:1,trail:70}},
+  gentle:{name:'Gentle swing',tag:'Small angles stay regular and predictable',set:{copies:60,spread:-1,angle:15,l2:1,trail:80}},
+  whip:{name:'Long whip',tag:'A long lower arm carries most of the energy',set:{copies:40,spread:-1.5,angle:180,l2:1.55,trail:45}}
+};
+function applyPreset(k){
+  activePreset=k; const p=PRESETS[k].set;
+  el('s-copies').value=p.copies; el('s-spread').value=p.spread;
+  el('s-angle').value=p.angle; el('s-l2').value=p.l2; el('s-trail').value=p.trail;
+  ['s-copies','s-spread','s-angle','s-l2','s-trail'].forEach(id=>el(id).dispatchEvent(new Event('input')));
+  release();
+  [...document.querySelectorAll('.preset')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===k)));
+}
+/* ---------- render ---------- */
+function trailCap(){
+  if(trailPct===0) return 0;
+  return Math.max(0,Math.min(Math.round(trailPct/100*600), Math.floor(16000/Math.max(1,copies))));
 }
 function draw(){
-  ctx.fillStyle='rgba(7,18,15,0.25)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  const ox=canvas.width/2, oy=canvas.height/3;
-  drawOne(bob, ox, oy, '#c6d6cd', '#e6c34f', {fill:'#56e0c2', trail:'rgba(79,209,197,0.5)'});
-  if(twin) drawOne(twin, ox, oy, '#88a397', '#e6c34f', {fill:'#ff8a5c', trail:'rgba(255,138,92,0.5)'});
+  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
+  const ox=W/2, oy=H*0.34;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  // reach circle, so you can see the space the tip can explore
+  ctx.strokeStyle='rgba(130,170,150,.10)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(ox,oy,L1+L2,0,TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(ox,oy,Math.abs(L1-L2),0,TAU); ctx.stroke();
+  const many=copies>12;
+  // tip trails
+  for(const b of arr){
+    const t=b.trail, n=t.length/2; if(n<3) continue;
+    const [r,g2,bl]=b.c;
+    if(many){
+      ctx.strokeStyle='rgba('+r+','+g2+','+bl+',.30)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(t[0],t[1]);
+      for(let p=1;p<n;p++) ctx.lineTo(t[p*2],t[p*2+1]);
+      ctx.stroke();
+    } else {
+      const K=12;
+      for(let k=0;k<K;k++){
+        const s=Math.floor(n*k/K), e=Math.floor(n*(k+1)/K); if(e-s<2) continue;
+        const u=(k+1)/K;
+        ctx.strokeStyle='rgba('+r+','+g2+','+bl+','+(0.05+0.55*Math.pow(u,1.7)).toFixed(3)+')';
+        ctx.lineWidth=0.5+2.1*u;
+        ctx.beginPath(); ctx.moveTo(t[s*2],t[s*2+1]);
+        for(let p=s+1;p<e;p++) ctx.lineTo(t[p*2],t[p*2+1]);
+        ctx.stroke();
+      }
+    }
+  }
+  // rods, batched by alpha
+  ctx.strokeStyle='rgba(198,214,205,'+(many?0.16:0.62)+')';
+  ctx.lineWidth=many?1:2.4; ctx.beginPath();
+  for(const b of arr){
+    const a1=b.s[0],a2=b.s[1];
+    const x1=ox+L1*Math.sin(a1), y1=oy+L1*Math.cos(a1);
+    const x2=x1+L2*Math.sin(a2), y2=y1+L2*Math.cos(a2);
+    b.x1=x1;b.y1=y1;b.x2=x2;b.y2=y2;
+    ctx.moveTo(ox,oy); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2);
+  }
+  ctx.stroke();
+  // bobs
+  const R=many?2.6:7;
+  for(const b of arr){
+    const [r,g2,bl]=b.c;
+    if(!many){
+      ctx.fillStyle='rgba(230,195,79,.9)'; ctx.beginPath(); ctx.arc(b.x1,b.y1,R*0.72,0,TAU); ctx.fill();
+      const gr=ctx.createRadialGradient(b.x2,b.y2,R*0.3,b.x2,b.y2,R*3.4);
+      gr.addColorStop(0,'rgba('+r+','+g2+','+bl+',.4)');
+      gr.addColorStop(1,'rgba('+r+','+g2+','+bl+',0)');
+      ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(b.x2,b.y2,R*3.4,0,TAU); ctx.fill();
+    }
+    ctx.fillStyle='rgb('+r+','+g2+','+bl+')'; ctx.beginPath(); ctx.arc(b.x2,b.y2,R,0,TAU); ctx.fill();
+  }
+  // pivot
+  ctx.fillStyle='#88a397'; ctx.beginPath(); ctx.arc(ox,oy,4,0,TAU); ctx.fill();
 }
-let paused=false;
-function loop(){
-  if(!paused){ for(let i=0;i<3;i++){ step(bob,0.03); if(twin) step(twin,0.03); } draw(); }
-  requestAnimationFrame(loop);
+/* ---------- step ---------- */
+function step(){
+  const sub=Math.max(2,Math.min(8,Math.round(4*speed)));
+  const h=0.09*speed/sub;
+  for(const b of arr) for(let k=0;k<sub;k++) rk4(b.s,h);
+  tsec+=speed/60; // wall-clock seconds of simulated motion at 1x on a 60Hz display
+  const cap=trailCap(), ox=W/2, oy=H*0.34;
+  for(const b of arr){
+    if(cap===0){ if(b.trail.length) b.trail.length=0; continue; }
+    const a1=b.s[0],a2=b.s[1];
+    const x2=ox+L1*Math.sin(a1)+L2*Math.sin(a2), y2=oy+L1*Math.cos(a1)+L2*Math.cos(a2);
+    b.trail.push(x2,y2); while(b.trail.length>cap*2) b.trail.splice(0,2);
+  }
 }
-document.getElementById('pause').addEventListener('click', ()=>{ paused=!paused; document.getElementById('pause').textContent = paused?'Resume':'Pause'; });
-document.getElementById('reset').addEventListener('click', ()=>{ init(); });
-document.getElementById('twinbtn').addEventListener('click', ()=>{
-  twin = makeBob(bob.a1 + 0.5*Math.PI/180, bob.a2);
-  twin.a1v = bob.a1v; twin.a2v = bob.a2v;
+/* ---------- hud ---------- */
+let hudT=0;
+function hud(now){
+  if(now-hudT<180) return; hudT=now;
+  el('s-n').textContent=arr.length;
+  el('s-t').textContent=tsec.toFixed(1)+'s';
+  if(arr.length<2) el('s-div').textContent='n/a';
+  else{
+    let mn=Infinity,mx=-Infinity;
+    for(const b of arr){ const a=b.s[0]; if(a<mn)mn=a; if(a>mx)mx=a; }
+    const dg=(mx-mn)/DEG;
+    el('s-div').textContent = dg<0.01 ? dg.toExponential(1)+'\u00b0' : dg.toFixed(dg<10?2:0)+'\u00b0';
+  }
+  if(E0===null||!isFinite(E0)) el('s-e').textContent='-';
+  else{
+    const d=Math.abs((energyOf(arr[0].s)-E0)/(Math.abs(E0)||1))*100;
+    el('s-e').textContent=(d<0.05?'<0.1':d.toFixed(d<10?1:0))+'%';
+    el('s-e').style.color=d<1?'var(--accent)':d<10?'#e6c34f':'var(--danger)';
+  }
+}
+/* ---------- ui ---------- */
+const pbox=el('presets');
+Object.keys(PRESETS).forEach((k,i)=>{
+  const p=PRESETS[k], b=document.createElement('button');
+  b.className='preset'; b.dataset.k=k; b.setAttribute('aria-pressed','false');
+  b.innerHTML='<b>'+(i+1)+'. '+p.name+'</b><small>'+p.tag+'</small>';
+  b.addEventListener('click',()=>applyPreset(k));
+  pbox.appendChild(b);
 });
-document.getElementById('trail').addEventListener('click', ()=>{ showTrail=!showTrail; });
-document.getElementById('g').addEventListener('input', e=>{ document.getElementById('v-g').textContent=e.target.value; g=+e.target.value; });
-document.getElementById('l1').addEventListener('input', e=>{ document.getElementById('v-l1').textContent=e.target.value; L1=+e.target.value; });
-document.getElementById('l2').addEventListener('input', e=>{ document.getElementById('v-l2').textContent=e.target.value; L2=+e.target.value; });
-canvas.addEventListener('click', (e)=>{
-  const rect = canvas.getBoundingClientRect();
-  const ox=canvas.width/2, oy=canvas.height/3;
-  const cx = (e.clientX-rect.left) * (canvas.width/rect.width);
-  const cy = (e.clientY-rect.top) * (canvas.height/rect.height);
-  const a1 = Math.atan2(cx-ox, cy-oy);
-  init(a1, a1 + 0.05);
+function bind(id,vid,fmt,fn){
+  const s=el(id), v=el(vid);
+  const upd=()=>{ v.textContent=fmt(+s.value); fn(+s.value); };
+  s.addEventListener('input',upd); upd();
+}
+bind('s-copies','v-copies',x=>String(x),x=>{copies=x;});
+bind('s-spread','v-spread',x=>{const d=Math.pow(10,x);return d<0.01?d.toExponential(0)+'\u00b0':d.toFixed(d<1?3:2)+'\u00b0';},x=>{spreadDeg=Math.pow(10,x);});
+bind('s-angle','v-angle',x=>x+'\u00b0',x=>{angleDeg=x;});
+bind('s-l2','v-l2',x=>x.toFixed(2)+'x',x=>{l2r=x; geom();});
+bind('s-trail','v-trail',x=>x===0?'off':x+'%',x=>{trailPct=x;});
+bind('s-speed','v-speed',x=>x.toFixed(2)+'x',x=>{speed=x;});
+['s-copies','s-spread','s-angle','s-l2'].forEach(id=>el(id).addEventListener('change',()=>release()));
+const bp=el('b-pause');
+function setPaused(p){ paused=p; bp.dataset.on=String(p); }
+bp.addEventListener('click',()=>setPaused(!paused));
+el('b-reset').addEventListener('click',()=>release());
+const bc=el('b-clean');
+bc.addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); });
+el('b-full').addEventListener('click',()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else (document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen());
 });
-window.addEventListener('resize', resize);
-resize(); init();
+const dlg=el('about');
+el('b-about').addEventListener('click',()=>dlg.showModal());
+el('b-close').addEventListener('click',()=>dlg.close());
+dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',e=>{
+  e.preventDefault();
+  document.querySelectorAll('.tip.show').forEach(o=>{ if(o!==t) o.classList.remove('show'); });
+  t.classList.toggle('show');
+}));
+cv.addEventListener('click',e=>{
+  const r=cv.getBoundingClientRect(), ox=W/2, oy=H*0.34;
+  const a=Math.atan2(e.clientX-r.left-ox, e.clientY-r.top-oy);
+  release(a);
+});
+window.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  const k=e.key;
+  if(k===' '){ e.preventDefault(); setPaused(!paused); }
+  else if(k==='r'||k==='R') release();
+  else if(k==='h'||k==='H') bc.click();
+  else if(k==='f'||k==='F') el('b-full').click();
+  else if(k==='?'){ dlg.open?dlg.close():dlg.showModal(); }
+  else if(k>='1'&&k<='5'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) applyPreset(ks); }
+});
+let rt=null;
+window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(); geom(); },150); });
+function loop(now){ if(!paused) step(); draw(); hud(now); requestAnimationFrame(loop); }
+resize(); applyPreset('fan');
 requestAnimationFrame(loop);
+})();
 </script>
 </body></html>
