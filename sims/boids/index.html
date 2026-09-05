@@ -2101,16 +2101,25 @@ function updateHud(now) {
    The flock is simulated at a fixed 60 steps per second and drawn once per animation
    frame. On a 144 Hz display that is 60 steps rather than 144, and the motion runs at
    the same speed either way. */
-let simHz = 60, simMs_ = 1000 / 60;
+let simHz = 60, simMs_ = 1000 / 60, simHi = 0, simLo = 0;
 let last = performance.now(), acc = 0;
 let simMs = 0, drawMs = 0, steps = 0, stepMs = 0, drawn = 0, needsDraw = true, lastDiag = 0, diagOn = false;
 let frameMs = 16.7, longFrames = 0;
 /* If a single step costs more than about a fifth of its own budget the machine cannot
    sustain 60 steps a second, so halve the rate and double the time step. The flock
    moves at exactly the same speed either way. */
+/* Drop to 30Hz only if a step is genuinely eating the frame budget, and recover as soon
+   as there is comfortable headroom again. The two thresholds must leave real overlap:
+   the old code needed stepMs to fall from "caused a drop" all the way down to a value
+   far below anything a moderately busy flock ever reaches, so once it dropped it could
+   never come back. Each direction also needs a few consecutive readings, so one brief
+   hiccup on either side can't flip the rate back and forth. */
 function tuneSimRate() {
-  if (simHz === 60 && stepMs > 5.5) { simHz = 30; }
-  else if (simHz === 30 && stepMs < 2.2) { simHz = 60; }
+  if (simHz === 60) {
+    if (stepMs > 9) { if (++simHi > 8) { simHz = 30; simHi = 0; simLo = 0; } } else simHi = 0;
+  } else {
+    if (stepMs < 6) { if (++simLo > 8) { simHz = 60; simHi = 0; simLo = 0; } } else simLo = 0;
+  }
   simMs_ = 1000 / simHz;
 }
 function frame(now) {
