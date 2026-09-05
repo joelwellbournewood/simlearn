@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boids — three rules, one flock</title>
+<meta name="description" content="An interactive boids flocking simulation in 2D and 3D. Play with separation, alignment and cohesion, add predators, obstacles and currents, and watch complex order emerge from simple rules.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1626;
+    --panel:rgba(13,18,31,.80);
+    --panel-solid:rgba(13,18,31,.96);
+    --line:rgba(255,255,255,.09);
+    --line-strong:rgba(255,255,255,.18);
+    --text:#eef0f5;
+    --muted:#8e97ad;
+    --accent:#f2c46d;
+    --accent-ink:#2b1e04;
+    --danger:#ff6b6b;
+    --ui:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --display:'Bricolage Grotesque',var(--ui);
+    --vignette:rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--ui);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ---------- stage ---------- */
+  #stage{position:fixed;inset:0;background:var(--bg);transition:background .5s ease}
+  #stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+  #c2o{pointer-events:none}
+  #c3d{display:none}
+  #stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 70% at 50% 50%, transparent 40%, var(--vignette) 100%)}
+  #stage.light{--vignette:rgba(70,60,40,.22)}
+  body.light .brand h1{color:#1b2330}
+  body.light .brand p{color:#5a6070}
+
+  /* ---------- top bar ---------- */
+  .brand{position:absolute;left:20px;top:18px;display:flex;align-items:baseline;gap:14px;z-index:5;pointer-events:none}
+  .brand h1{font-family:var(--display);font-weight:600;font-size:34px;letter-spacing:-.02em;margin:0;line-height:1;font-variation-settings:'opsz' 96}
+  .brand p{margin:0;color:var(--muted);font-size:13px}
+  .modes{position:absolute;left:20px;top:64px;z-index:6}
+  .seg{display:inline-flex;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .seg button{border:0;background:transparent;color:var(--muted);padding:6px 14px;border-radius:999px;font-weight:500;transition:background .18s,color .18s}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+  .seg button:hover:not([aria-pressed="true"]){color:var(--text)}
+
+  .actions{position:absolute;right:20px;top:18px;display:flex;gap:8px;z-index:6}
+  .icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:grid;place-items:center;color:var(--text);transition:border-color .18s,background .18s}
+  .icon-btn:hover{border-color:var(--line-strong)}
+  .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .icon-btn .alt{display:none}
+  .icon-btn[data-on="true"] .main{display:none}
+  .icon-btn[data-on="true"] .alt{display:block}
+  #btnPanel{display:none}
+
+  /* ---------- panel ---------- */
+  .panel{position:absolute;left:20px;top:112px;bottom:20px;width:300px;z-index:5;border:1px solid var(--line);border-radius:16px;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+  .panel::-webkit-scrollbar{width:8px}
+  .panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  .panel > section, .panel > details{padding:16px 18px;border-bottom:1px solid var(--line)}
+  .panel > :last-child{border-bottom:0}
+  .panel h2, .panel summary{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;margin:0 0 12px;font-variation-settings:'opsz' 24}
+  .panel summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;margin:0;user-select:none}
+  .panel summary::-webkit-details-marker{display:none}
+  .panel summary::after{content:'';width:8px;height:8px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(-45deg);transition:transform .2s;margin-right:4px}
+  .panel details[open] summary::after{transform:rotate(45deg)}
+  .panel details[open] summary{margin-bottom:12px}
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;text-align:left;color:var(--text);transition:border-color .18s,background .18s}
+  .preset b{font-weight:600;font-size:13px}
+  .preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+  .preset:hover{border-color:var(--line-strong)}
+  .preset[aria-pressed="true"]{border-color:var(--accent);background:rgba(242,196,109,.09)}
+
+  .ctl{display:grid;grid-template-columns:1fr auto;align-items:center;row-gap:2px;margin:0 0 10px;position:relative}
+  .ctl .name{font-weight:500;font-size:13px}
+  .ctl output{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .ctl input[type=range]{grid-column:1/-1;-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;margin:0}
+  .ctl input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--accent),var(--accent)) 0/var(--p,50%) 100% no-repeat,rgba(255,255,255,.14)}
+  .ctl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--text);margin-top:-5.5px;border:2px solid #0d121f;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+  .ctl input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14)}
+  .ctl input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--accent)}
+  .ctl input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--text);border:2px solid #0d121f;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+  .ctl select, .ctl input[type=color]{grid-column:1/-1;margin-top:4px}
+  .ctl select{appearance:none;-webkit-appearance:none;width:100%;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%238e97ad' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center}
+  .ctl select option{background:#161d2e;color:var(--text)}
+  .ctl input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;font-size:13px;font-weight:500;cursor:pointer}
+  .toggle input{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:999px;background:rgba(255,255,255,.14);position:relative;margin:0;transition:background .18s;flex:none}
+  .toggle input::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:transform .18s}
+  .toggle input:checked{background:var(--accent)}
+  .toggle input:checked::after{transform:translateX(14px);background:var(--accent-ink)}
+  .note{color:var(--muted);font-size:12.5px;line-height:1.5;margin:0 0 10px}
+  .note b{color:var(--text);font-weight:600}
+  .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12.5px;color:var(--muted);margin:0}
+  .keys kbd{font-family:var(--ui);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;color:var(--text);background:rgba(255,255,255,.05)}
+  .ctl .name{display:inline-flex;align-items:center;gap:6px}
+  .tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);font-size:10px;font-weight:600;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+  .tip:hover,.tip.show,.tip:focus-visible{color:var(--text);border-color:var(--text)}
+  .tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;background:#1c2436;border:1px solid var(--line-strong);color:var(--text);font-size:12px;line-height:1.45;font-weight:400;opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+  .tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+  .about-btn{position:absolute;left:150px;top:64px;z-index:6;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--text);padding:9px 14px;font-weight:500;transition:border-color .18s}
+  .about-btn:hover{border-color:var(--line-strong)}
+  dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#131a2a;color:var(--text);padding:0;width:min(600px,calc(100vw - 32px));max-height:min(80vh,760px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  dialog.about::backdrop{background:rgba(5,8,16,.55);backdrop-filter:blur(4px)}
+  .about-inner{padding:28px 30px 30px;overflow-y:auto;max-height:min(80vh,760px)}
+  .about-inner h2{font-family:var(--display);font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px;font-variation-settings:'opsz' 96}
+  .about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:22px 0 6px}
+  .about-inner p{margin:0 0 10px;color:#c9cfdc;font-size:14px;line-height:1.55;max-width:60ch}
+  .about-inner p b{color:var(--text);font-weight:600}
+  .about-inner ul{margin:0 0 10px;padding-left:18px;color:#c9cfdc;font-size:14px;line-height:1.55}
+  .about-inner li{margin:0 0 4px}
+  .about-close{position:absolute;right:14px;top:14px}
+  body.clean .about-btn{display:none}
+  /* blurring a live canvas costs a full-screen compositor pass every frame; drop it when the device is struggling */
+  body.cheap .seg, body.cheap .icon-btn, body.cheap .panel, body.cheap .about-btn, body.cheap .hud{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--panel-solid)}
+  #diag{position:absolute;left:20px;bottom:20px;z-index:8;display:none;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(8,11,20,.92);color:#dfe4ee;font-size:11.5px;line-height:1.6;font-variant-numeric:tabular-nums;white-space:pre;max-width:calc(100vw - 40px);overflow:auto}
+  body.diag #diag{display:block}
+  #diag b{color:var(--accent);font-weight:600}
+  body.light .about-btn{color:#1b2330;background:rgba(255,255,255,.6);border-color:rgba(0,0,0,.12)}
+  body.light .about-btn:hover{border-color:rgba(0,0,0,.3)}
+  .text-btn{border:1px solid var(--line);background:transparent;color:var(--text);padding:7px 12px;border-radius:8px;font-weight:500;transition:border-color .18s}
+  .text-btn:hover{border-color:var(--line-strong)}
+
+  /* ---------- tools ---------- */
+  .tools{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .tools .seg button{display:flex;align-items:center;gap:7px;padding:7px 12px}
+  .tools .seg button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .tools .seg button[hidden]{display:none}
+  .hint{color:var(--muted);font-size:12px;text-shadow:0 1px 8px rgba(0,0,0,.6);min-height:16px}
+  #stage.light ~ .tools .hint{text-shadow:0 1px 8px rgba(255,255,255,.7);color:#5a5f6e}
+
+  /* ---------- hud ---------- */
+  .hud{position:absolute;right:20px;bottom:20px;z-index:5;display:flex;align-items:center;gap:12px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .hud b{color:var(--text);font-weight:600}
+  .hud canvas{width:84px;height:22px;display:block}
+  .hud .stat{display:flex;flex-direction:column;line-height:1.15}
+  .hud .stat span:first-child{font-size:11px}
+
+  /* ---------- clean mode ---------- */
+  body.clean .brand, body.clean .modes, body.clean .panel, body.clean .tools, body.clean .hud, body.clean .actions .icon-btn:not(#btnClean){display:none}
+  body.clean .actions{opacity:.25;transition:opacity .3s}
+  body.clean .actions:hover{opacity:1}
+
+  /* ---------- mobile ---------- */
+  .sheet-grip{display:none}
+  @media (max-width:820px){
+    .brand h1{font-size:26px}
+    .brand p{display:none}
+    .modes{top:58px}
+    .about-btn{top:58px;left:130px;padding:8px 12px;font-size:13px}
+    #btnPanel{display:grid}
+    .panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:66vh;border-radius:18px 18px 0 0;border-bottom:0;transform:translateY(102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom)}
+    .panel.open{transform:none}
+    .sheet-grip{display:block;position:sticky;top:0;z-index:2;background:linear-gradient(var(--panel),transparent);padding:10px 0 4px}
+    .sheet-grip::before{content:'';display:block;width:40px;height:4px;border-radius:2px;background:var(--line-strong);margin:0 auto}
+    .tools{bottom:auto;top:110px;left:20px;right:20px;transform:none;align-items:flex-start}
+    .tools .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+    .tools .seg::-webkit-scrollbar{display:none}
+    .tools .seg button{padding:8px 11px;font-size:0;gap:0}
+    .tools .seg button svg{width:16px;height:16px}
+    .panel.open ~ .hud{display:none}
+    .hud{bottom:16px;right:16px;left:16px;justify-content:space-between}
+    .hud canvas{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .panel{transition:none}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c2d"></canvas>
+  <canvas id="c2o"></canvas>
+  <canvas id="c3d"></canvas>
+</div>
+
+<header class="brand">
+  <h1>Boids</h1>
+  <p>Three rules, one flock.</p>
+</header>
+
+<div class="modes">
+  <div class="seg" role="group" aria-label="Dimensions">
+    <button id="mode2d" aria-pressed="true">2D</button>
+    <button id="mode3d" aria-pressed="false">3D</button>
+  </div>
+</div>
+
+<button class="about-btn" id="btnAbout">What am I looking at?</button>
+
+<div class="actions">
+  <button class="icon-btn" id="btnPause" title="Pause (space)" aria-label="Pause">
+    <svg class="main" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="btnRestart" title="Scatter the flock (R)" aria-label="Scatter">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4"/></svg>
+  </button>
+  <button class="icon-btn" id="btnClean" title="Hide interface (H)" aria-label="Hide interface">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.5 10.5 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.8 8.6 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 4.4-1"/></svg>
+  </button>
+  <button class="icon-btn" id="btnFull" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="btnPanel" title="Controls" aria-label="Controls">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+  </button>
+</div>
+
+<aside class="panel" id="panel">
+  <div class="sheet-grip"></div>
+  <section>
+    <h2>Presets</h2>
+    <div class="presets" id="presets"></div>
+  </section>
+  <details open>
+    <summary>Flock</summary>
+    <div id="secFlock"></div>
+  </details>
+  <details>
+    <summary>Behaviour</summary>
+    <div id="secBehaviour"></div>
+  </details>
+  <details>
+    <summary>Look</summary>
+    <div id="secLook"></div>
+  </details>
+  <details>
+    <summary>Under the hood</summary>
+    <p class="note">Every boid looks only at neighbours inside its <b>perception</b> radius and <b>field of view</b>, then follows three rules: <b>separation</b> (steer away from crowding), <b>alignment</b> (match neighbours' heading) and <b>cohesion</b> (drift toward their centre). Nothing is coordinating the flock; the patterns are emergent.</p>
+    <p class="note">Starlings don't watch everyone within a radius; each bird tracks its six or seven <b>nearest neighbours</b> however far away they are. That topological rule is what keeps a murmuration one body and lets a turn ripple across it, so the Murmuration preset uses it.</p>
+    <p class="note">Two more things from the field: an escape wave travels because birds copy neighbours that are turning hard (<b>startle</b>), and most flock-wide turns begin with a single bird on the edge deciding to turn (<b>initiative</b>).</p>
+    <p class="note"><b>Order</b> in the corner is the average heading agreement: 1 means the whole flock flies the same way, 0 means no shared direction at all.</p>
+    <label class="toggle"><span>Show one boid's view</span><input type="checkbox" id="tgInspect"></label>
+    <label class="toggle"><span>Show the neighbour grid</span><input type="checkbox" id="tgGrid"></label>
+    <label class="toggle" id="rowRotate"><span>Slowly orbit the camera</span><input type="checkbox" id="tgRotate" checked></label>
+    <p class="note" style="margin-top:14px">Keyboard</p>
+    <dl class="keys">
+      <dt><kbd>Space</kbd></dt><dd>pause</dd>
+      <dt><kbd>R</kbd></dt><dd>scatter the flock</dd>
+      <dt><kbd>H</kbd></dt><dd>hide the interface</dd>
+      <dt><kbd>F</kbd></dt><dd>fullscreen</dd>
+      <dt><kbd>D</kbd></dt><dd>performance readout</dd>
+      <dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>presets</dd>
+      <dt><kbd>Scroll</kbd></dt><dd>zoom</dd>
+      <dt><kbd>Right-drag</kbd></dt><dd>move the view</dd>
+      <dt><kbd>Double-click</kbd></dt><dd>reset the view</dd>
+    </dl>
+  </details>
+</aside>
+
+<dialog class="about" id="about" aria-labelledby="aboutTitle">
+  <div class="about-inner">
+    <button class="icon-btn about-close" id="btnAboutClose" aria-label="Close"><svg class="main" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 id="aboutTitle">What am I looking at?</h2>
+    <p>A flock with no leader. Every arrow is a <b>boid</b> — short for "bird-oid object" — a tiny simulated animal that can only see its nearest neighbours and follows three rules. Nobody tells the flock where to go, yet it moves as one shape, splits, rejoins and dodges. Behaviour that appears at the level of the group without being programmed into any individual is called <b>emergence</b>, and this is one of the cleanest examples of it.</p>
+    <h3>The three rules</h3>
+    <ul>
+      <li><b>Separation</b> — steer away from neighbours that are too close, so nobody collides.</li>
+      <li><b>Alignment</b> — steer toward the average heading of your neighbours.</li>
+      <li><b>Cohesion</b> — steer toward the average position of your neighbours, so you don't get left behind.</li>
+    </ul>
+    <p>Each boid mixes these three pulls every frame, using only what it can see inside its perception radius and field of view. Change the balance with the sliders and the flock's personality changes completely: lots of alignment gives you streams and sheets, lots of cohesion gives you tight balls, lots of separation gives you a loose gas.</p>
+    <h3>Where it comes from</h3>
+    <p>Craig Reynolds published the boids model in 1987 to animate flocks for computer graphics. It was used for the bat swarms and penguin crowds in <i>Batman Returns</i> (1992), and it became a foundation for studying collective behaviour in birds, fish, insects and even crowds of people. Later fieldwork on real starlings found something the original model didn't have: each bird tracks its six or seven <b>nearest</b> neighbours, however far away they are, rather than everyone within a fixed distance. They also found that flock-wide turns usually begin with one bird on the edge, and spread through the flock faster than any bird flies. The Murmuration preset uses those findings, plus a roost to circle and a falcon to flee from.</p>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Hold the pointer on the flock with <b>Attract</b>, then switch to <b>Repel</b> and scatter it.</li>
+      <li>Drop a <b>predator</b> and watch fear ripple through the group.</li>
+      <li>Draw an <b>obstacle</b> and see the flock split around it and re-form.</li>
+      <li>Turn on "Show one boid's view" under the hood to see exactly what a single boid knows.</li>
+      <li>Watch the <b>order</b> number: it measures how much of the flock agrees on a direction.</li>
+    </ul>
+  </div>
+</dialog>
+
+<div class="tools">
+  <div class="seg" role="group" aria-label="Pointer tool" id="tools">
+    <button data-tool="orbit" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M3.5 14.5c-1.3-3.6 4-8 11-9.5s12 1 12.5 4.5M20.5 9.5c1.3 3.6-4 8-11 9.5S-2 18 -2.5 14.5"/></svg>Orbit</button>
+    <button data-tool="attract" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg>Attract</button>
+    <button data-tool="repel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 7V3M12 21v-4M7 12H3M21 12h-4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Repel</button>
+    <button data-tool="obstacle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Obstacle</button>
+    <button data-tool="predator"><svg viewBox="0 0 24 24"><path d="M4 12l16-7-5 7 5 7z"/></svg>Predator</button>
+    <button data-tool="erase"><svg viewBox="0 0 24 24"><path d="M4 16l9-9 6 6-6 6H8z"/><path d="M4 21h16"/></svg>Erase</button>
+  </div>
+  <div class="hint" id="hint"></div>
+</div>
+
+<pre id="diag"></pre>
+
+<div class="hud">
+  <div class="stat"><span>boids</span><b id="stBoids">0</b></div>
+  <div class="stat"><span>fps</span><b id="stFps">0</b></div>
+  <div class="stat"><span>order</span><b id="stOrder">0.00</b></div>
+  <canvas id="spark" width="168" height="44"></canvas>
+</div>
+
+<script>
+/* =====================================================================
+   Boids — simulation core (2D & 3D)
+   ===================================================================== */
+'use strict';
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hexToRgb(h) {
+  h = h.replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function luminance(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+function gradient(stops, t) {
+  const n = stops.length;
+  if (n === 1) return hexToRgb(stops[0]);
+  const x = clamp(t, 0, 1) * (n - 1);
+  const i = Math.min(n - 2, Math.floor(x));
+  const f = x - i;
+  const a = hexToRgb(stops[i]), b = hexToRgb(stops[i + 1]);
+  return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f)];
+}
+/* 64-entry colour table for a colour mode + palette */
+function buildColorTable(mode, palette) {
+  const out = [];
+  const cyc = palette.concat([palette[0]]);
+  for (let i = 0; i < 64; i++) {
+    const u = i / 63;
+    if (mode === 'tribe') out.push(hexToRgb(palette[i % palette.length]));
+    else if (mode === 'heading') out.push(gradient(cyc, u));
+    else out.push(gradient(palette, u));
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------------
+   Flow field: curl of a sum of sine waves → divergence-free "currents"
+   --------------------------------------------------------------------- */
+class Flow {
+  constructor(dims, seed = 7) {
+    const rand = mulberry32(seed);
+    this.dims = dims;
+    this.pot = [];
+    for (let p = 0; p < 3; p++) {
+      const waves = [];
+      for (let k = 0; k < 6; k++) {
+        let dx, dy, dz;
+        if (dims === 2) { const a = rand() * TAU; dx = Math.cos(a); dy = Math.sin(a); dz = 0; }
+        else {
+          const z = rand() * 2 - 1, a = rand() * TAU, r = Math.sqrt(1 - z * z);
+          dx = r * Math.cos(a); dy = r * Math.sin(a); dz = z;
+        }
+        const lf = 0.45 + rand() * 2.6;
+        waves.push({ dx, dy, dz, lf, w: (0.0012 + rand() * 0.0035) * (rand() < 0.5 ? -1 : 1), phi: rand() * TAU, amp: lf });
+      }
+      this.pot.push(waves);
+    }
+  }
+  sample(x, y, z, t, scale, out) {
+    let d1y = 0, d1z = 0, d2x = 0, d2z = 0, d3x = 0, d3y = 0, norm = 0;
+    const p0 = this.dims === 2 ? 2 : 0;   // in 2D only the third potential contributes
+    for (let p = p0; p < 3; p++) {
+      const waves = this.pot[p];
+      for (let k = 0; k < waves.length; k++) {
+        const w = waves[k];
+        const kk = TAU / (scale * w.lf);
+        const kx = w.dx * kk, ky = w.dy * kk, kz = w.dz * kk;
+        const c = Math.cos(kx * x + ky * y + kz * z + w.w * t + w.phi) * w.amp;
+        if (p === 0) { d1y += ky * c; d1z += kz * c; norm += w.amp * kk; }
+        else if (p === 1) { d2x += kx * c; d2z += kz * c; }
+        else { d3x += kx * c; d3y += ky * c; if (p0 === 2) norm += w.amp * kk; }
+      }
+    }
+    const inv = 1 / norm;
+    if (this.dims === 2) { out[0] = d3y * inv; out[1] = -d3x * inv; out[2] = 0; }
+    else { out[0] = (d3y - d2z) * inv; out[1] = (d1z - d3x) * inv; out[2] = (d2x - d1y) * inv; }
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Flock
+   --------------------------------------------------------------------- */
+class Flock {
+  constructor(dims, W) {
+    this.dims = dims;
+    this.W = W;                     // {lo:[x,y,z], size:[w,h,d]}
+    this.n = 0; this.cap = 0;
+    this.alloc(256);
+    this.obstacles = [];
+    this.obstaclesVersion = 0;
+    this.flow = new Flow(dims);
+    this.flowOut = new Float32Array(3);
+    this.S = new Float32Array(3);
+    this.order = 0;
+    this.caught = 0;
+    this.time = 0;
+    this.inspect = 0;
+    this.inspectN = 0;
+    this.inspectList = new Int32Array(512);
+    this.events = [];
+    this.spawnSpeed = 2.5;
+    this.rand = mulberry32(1234);
+    this.cell = 60; this.nx = 1; this.ny = 1; this.nz = 1;
+    this.head = new Int32Array(1);
+    this.preds = [];
+    this.kd2 = new Float32Array(32); this.kj = new Int32Array(32);
+    this.nbMean = 8; this.nbLast = 0; this.nbFast = 0; this.candFast = 0; this.reff = 0; this.meanY = 0;
+  }
+  alloc(cap) {
+    const grow = (old, T) => { const a = new T(cap); if (old) a.set(old.subarray(0, Math.min(old.length, cap))); return a; };
+    this.px = grow(this.px, Float32Array); this.py = grow(this.py, Float32Array); this.pz = grow(this.pz, Float32Array);
+    this.vx = grow(this.vx, Float32Array); this.vy = grow(this.vy, Float32Array); this.vz = grow(this.vz, Float32Array);
+    this.species = grow(this.species, Uint8Array);
+    this.tribe = grow(this.tribe, Uint8Array);
+    this.nb = grow(this.nb, Uint16Array);
+    this.phase = grow(this.phase, Float32Array);
+    this.omega = grow(this.omega, Float32Array);
+    this.flash = grow(this.flash, Float32Array);
+    this.bank = grow(this.bank, Float32Array);
+    this.imp = grow(this.imp, Float32Array);
+    this.impX = grow(this.impX, Float32Array); this.impY = grow(this.impY, Float32Array); this.impZ = grow(this.impZ, Float32Array);
+    this.predTarget = grow(this.predTarget, Int32Array);
+    this.predTimer = grow(this.predTimer, Float32Array);
+    this.predChase = grow(this.predChase, Float32Array);
+    this.perch = grow(this.perch, Float32Array);   // x per predator; y and z live in perchY / perchZ
+    this.perchY = grow(this.perchY, Float32Array);
+    this.perchZ = grow(this.perchZ, Float32Array);
+    this.next = new Int32Array(cap);
+    this.cap = cap;
+  }
+  randomPoint(out) {
+    const W = this.W;
+    out[0] = W.lo[0] + this.rand() * W.size[0];
+    out[1] = W.lo[1] + this.rand() * W.size[1];
+    out[2] = this.dims === 3 ? W.lo[2] + this.rand() * W.size[2] : 0;
+  }
+  spawn(i, species, tribes, x, y, z) {
+    if (x === undefined) { const p = [0, 0, 0]; this.randomPoint(p); x = p[0]; y = p[1]; z = p[2]; }
+    this.px[i] = x; this.py[i] = y; this.pz[i] = this.dims === 3 ? z : 0;
+    const sp = this.spawnSpeed * (0.6 + this.rand() * 0.6);
+    if (this.dims === 2) { const a = this.rand() * TAU; this.vx[i] = Math.cos(a) * sp; this.vy[i] = Math.sin(a) * sp; this.vz[i] = 0; }
+    else {
+      const zz = this.rand() * 2 - 1, a = this.rand() * TAU, r = Math.sqrt(1 - zz * zz);
+      this.vx[i] = r * Math.cos(a) * sp; this.vy[i] = r * Math.sin(a) * sp; this.vz[i] = zz * sp;
+    }
+    this.species[i] = species;
+    this.tribe[i] = species === 1 ? 0 : (i % tribes);
+    this.nb[i] = 0;
+    this.phase[i] = this.rand() * TAU;
+    this.omega[i] = 0.045 + this.rand() * 0.02;
+    this.flash[i] = 0;
+    this.bank[i] = 0; this.imp[i] = 0;
+    this.predTarget[i] = -1; this.predTimer[i] = 0; this.predChase[i] = 0;
+  }
+  respawn(i) {
+    const p = [0, 0, 0]; this.randomPoint(p);
+    const t = this.tribe[i], s = this.species[i];
+    if (s === 0) {
+      // rejoin the flock beside a random other boid rather than appearing alone
+      for (let tries = 0; tries < 8; tries++) {
+        const j = (this.rand() * this.n) | 0;
+        if (j !== i && this.species[j] === 0) {
+          p[0] = this.px[j] + (this.rand() - 0.5) * 30; p[1] = this.py[j] + (this.rand() - 0.5) * 30;
+          p[2] = this.dims === 3 ? this.pz[j] + (this.rand() - 0.5) * 30 : 0;
+          break;
+        }
+      }
+    }
+    this.spawn(i, s, 1, p[0], p[1], p[2]);
+    this.tribe[i] = t;
+  }
+  /* rebuild so that prey/predator counts match, keeping survivors */
+  setCounts(prey, pred, tribes) {
+    const n = this.n;
+    let keepPrey = 0, keepPred = 0;
+    const keep = [];
+    for (let i = 0; i < n; i++) {
+      if (this.species[i] === 0 && keepPrey < prey) { keep.push(i); keepPrey++; }
+      else if (this.species[i] === 1 && keepPred < pred) { keep.push(i); keepPred++; }
+    }
+    const total = prey + pred;
+    if (total > this.cap) this.alloc(Math.max(total, Math.ceil(this.cap * 1.5)));
+    // compact in place (keep is ascending so writes never overtake reads)
+    const arrays = [this.px, this.py, this.pz, this.vx, this.vy, this.vz, this.species, this.tribe, this.nb, this.phase, this.omega, this.flash, this.bank, this.imp, this.impX, this.impY, this.impZ, this.predTarget, this.predTimer, this.predChase, this.perch, this.perchY, this.perchZ];
+    for (let k = 0; k < keep.length; k++) {
+      const src = keep[k];
+      if (src !== k) for (const a of arrays) a[k] = a[src];
+    }
+    let idx = keep.length;
+    for (let i = keepPrey; i < prey; i++) this.spawn(idx++, 0, tribes);
+    for (let i = keepPred; i < pred; i++) this.spawn(idx++, 1, 1);
+    this.n = idx;
+    this.assignTribes(tribes);
+  }
+  assignTribes(tribes) {
+    let k = 0;
+    for (let i = 0; i < this.n; i++) if (this.species[i] === 0) this.tribe[i] = (k++) % tribes;
+  }
+  addPredator(x, y, z) {
+    if (this.n + 1 > this.cap) this.alloc(Math.ceil(this.cap * 1.5));
+    this.spawn(this.n, 1, 1, x, y, z);
+    this.n++;
+  }
+  removeIndex(i) {
+    const last = this.n - 1;
+    const arrays = [this.px, this.py, this.pz, this.vx, this.vy, this.vz, this.species, this.tribe, this.nb, this.phase, this.omega, this.flash, this.bank, this.imp, this.impX, this.impY, this.impZ, this.predTarget, this.predTimer, this.predChase, this.perch, this.perchY, this.perchZ];
+    if (i !== last) for (const a of arrays) a[i] = a[last];
+    this.n = last;
+  }
+  countSpecies(s) { let c = 0; for (let i = 0; i < this.n; i++) if (this.species[i] === s) c++; return c; }
+  reset(P) {
+    this.n = 0;
+    this.spawnSpeed = P.maxSpeed * 0.7;
+    this.setCounts(P.count, P.predators, P.tribes);
+    this.events.length = 0;
+    this.caught = 0;
+  }
+  scatter() { for (let i = 0; i < this.n; i++) this.respawn(i); }
+
+  /* Bucket the flock into grid cells with a counting sort, then copy the fields the
+     neighbour search reads into cell order. Scanning a cell then walks a contiguous
+     run of memory instead of chasing a linked list all over the heap, which is most
+     of the cost of a step. */
+  buildGrid(cell) {
+    const W = this.W;
+    this.cell = cell;
+    this.nx = Math.max(1, Math.ceil(W.size[0] / cell));
+    this.ny = Math.max(1, Math.ceil(W.size[1] / cell));
+    this.nz = this.dims === 3 ? Math.max(1, Math.ceil(W.size[2] / cell)) : 1;
+    const n = this.n, nx = this.nx, ny = this.ny, nz = this.nz, cells = nx * ny * nz;
+    if (!this.cellStart || this.cellStart.length < cells + 1) this.cellStart = new Int32Array(cells + 1);
+    if (!this.ci || this.ci.length < n) {
+      this.ci = new Int32Array(n * 2); this.sorted = new Int32Array(n * 2);
+      const q = k => new Float32Array(n * 2);
+      this.qx = q(); this.qy = q(); this.qz = q(); this.qvx = q(); this.qvy = q(); this.qvz = q();
+      this.qbank = q(); this.qphase = q();
+      this.qsp = new Uint8Array(n * 2); this.qtr = new Uint8Array(n * 2);
+    }
+    const cellStart = this.cellStart, ci = this.ci, sorted = this.sorted;
+    cellStart.fill(0, 0, cells + 1);
+    const px = this.px, py = this.py, pz = this.pz;
+    const lo0 = W.lo[0], lo1 = W.lo[1], lo2 = W.lo[2], inv = 1 / cell;
+    const is3 = this.dims === 3;
+    for (let i = 0; i < n; i++) {
+      const cx = clamp(((px[i] - lo0) * inv) | 0, 0, nx - 1);
+      const cy = clamp(((py[i] - lo1) * inv) | 0, 0, ny - 1);
+      const cz = is3 ? clamp(((pz[i] - lo2) * inv) | 0, 0, nz - 1) : 0;
+      const c = (cz * ny + cy) * nx + cx;
+      ci[i] = c; cellStart[c + 1]++;
+    }
+    for (let c = 0; c < cells; c++) cellStart[c + 1] += cellStart[c];
+    const cursor = this.cursor && this.cursor.length >= cells ? this.cursor : (this.cursor = new Int32Array(cells));
+    cursor.set(cellStart.subarray(0, cells));
+    const qx = this.qx, qy = this.qy, qz = this.qz, qvx = this.qvx, qvy = this.qvy, qvz = this.qvz;
+    const qsp = this.qsp, qtr = this.qtr, qbank = this.qbank, qphase = this.qphase;
+    const vx = this.vx, vy = this.vy, vz = this.vz, species = this.species, tribe = this.tribe, bank = this.bank, phase = this.phase;
+    for (let i = 0; i < n; i++) {
+      const s = cursor[ci[i]]++;
+      sorted[s] = i;
+      qx[s] = px[i]; qy[s] = py[i]; qz[s] = pz[i];
+      qvx[s] = vx[i]; qvy[s] = vy[i]; qvz[s] = vz[i];
+      qsp[s] = species[i]; qtr[s] = tribe[i]; qbank[s] = bank[i]; qphase[s] = phase[i];
+    }
+  }
+
+  step(dt, P, ctx) {
+    const { dims, n, W } = this;
+    const px = this.px, py = this.py, pz = this.pz, vx = this.vx, vy = this.vy, vz = this.vz;
+    const species = this.species, tribe = this.tribe, nb = this.nb, phase = this.phase, omega = this.omega, flash = this.flash, bank = this.bank;
+    const lo0 = W.lo[0], lo1 = W.lo[1], lo2 = W.lo[2], s0 = W.size[0], s1 = W.size[1], s2 = W.size[2];
+    const hi0 = lo0 + s0, hi1 = lo1 + s1, hi2 = lo2 + s2;
+    const K = Math.min(32, P.topo | 0), topo = K > 0;
+    // Perception shrinks in a crowd (you can't see through a dense flock). This bounds the work per boid.
+    // A bird cannot see through a dense flock, and scanning a dense neighbourhood is
+    // what costs time, so the effective radius shrinks until roughly candTarget birds
+    // fall inside it. Cost per step then stays flat however tightly the flock packs.
+    const candTarget = topo ? 90 : 140, floor = 0.3, maxCand = candTarget * 2;
+    const rf = this.candFast > candTarget ? Math.max(floor, Math.sqrt(candTarget / this.candFast)) : 1;
+    const R = P.perception * rf, R2 = R * R;
+    this.reff = R;
+    const sepR = Math.min(P.separation, R), sepR2 = sepR * sepR;
+    const cosFov = P.fov >= 360 ? -2 : Math.cos(P.fov * Math.PI / 360), cf2 = cosFov * cosFov;
+    const maxSpeed = P.maxSpeed, minSpeed = maxSpeed * 0.35, maxForce = P.agility;
+    const tribeMix = P.tribeMix, pulse = P.pulse;
+    const wrap = P.bounds === 'wrap';
+    const margin = P.roost > 0 ? 150 : clamp(R * 1.2, 50, 140);
+    const flee = P.fleeRadius, flee2 = flee * flee;
+    const mouse = ctx.mouse, mr = P.mouseRadius, mr2 = mr * mr;
+    const mouseOn = mouse.active && (mouse.mode === 'attract' || mouse.mode === 'repel');
+    const mouseSign = mouse.mode === 'attract' ? 1 : -1;
+    const obs = this.obstacles;
+    const flowOn = P.flow > 0, fo = this.flowOut, flow = this.flow, flowScale = P.flowScale;
+    const attract = P.attractor, swirl = P.swirl;
+    const c0 = lo0 + s0 / 2, c1 = lo1 + s1 / 2, c2 = dims === 3 ? lo2 + s2 / 2 : 0;
+    const S = this.S;
+    const is3 = dims === 3;
+    this.spawnSpeed = maxSpeed * 0.7;
+    const kd2 = this.kd2, kj = this.kj;
+    const decay = Math.pow(0.9, dt);
+    const cruise = P.cruise, cruiseSpeed = maxSpeed * 0.75, jitter = P.jitter, rand = this.rand;
+    const centreW = 1.2 * clamp(attract + swirl, 0, 1);
+    const startle = P.startle * 4, turnRef = maxForce / (maxSpeed * 0.25);
+    let nbSum = 0;
+
+    const cell = Math.max(R, 12);
+    this.buildGrid(cell);
+    const nx = this.nx, ny = this.ny, nz = this.nz, inv = 1 / cell;
+    const cellStart = this.cellStart, sorted = this.sorted;
+    const qx = this.qx, qy = this.qy, qz = this.qz, qvx = this.qvx, qvy = this.qvy, qvz = this.qvz;
+    const qsp = this.qsp, qtr = this.qtr, qbank = this.qbank, qphase = this.qphase;
+
+    const preds = this.preds; preds.length = 0;
+    for (let i = 0; i < n; i++) if (species[i] === 1) preds.push(i);
+
+    const insp = ctx.inspect && this.inspect < n && species[this.inspect] === 0 ? this.inspect : -1;
+    this.inspectN = 0;
+
+    // steer toward a desired direction, limited by maxForce, accumulated into S
+    function steer(dx, dy, dz, ux, uy, uz, top, force, w) {
+      const l = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (l < 1e-9) return;
+      const k = top / l;
+      let ax = dx * k - ux, ay = dy * k - uy, az = dz * k - uz;
+      const al = Math.sqrt(ax * ax + ay * ay + az * az);
+      if (al > force) { const q = force / al; ax *= q; ay *= q; az *= q; }
+      S[0] += ax * w; S[1] += ay * w; S[2] += az * w;
+    }
+    function environment(i, x, y, z, vx0, vy0, vz0, ux, uy, uz, top, force) {
+      // obstacles
+      for (let o = 0; o < obs.length; o++) {
+        const ob = obs[o];
+        const dx = x - ob.x, dy = y - ob.y, dz = is3 ? z - ob.z : 0;
+        const dd = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        const reach = ob.r + margin * 0.9;
+        if (dd < reach) {
+          const t = clamp(1 - (dd - ob.r) / (reach - ob.r), 0, 1);
+          const nxn = dx / dd, nyn = dy / dd, nzn = dz / dd;
+          const dot = nxn * ux + nyn * uy + nzn * uz;
+          let lx = nxn - ux * dot, ly = nyn - uy * dot, lz = nzn - uz * dot;
+          const ll = Math.sqrt(lx * lx + ly * ly + lz * lz);
+          if (ll < 1e-3) { lx = -uy; ly = ux; lz = 0; } else { lx /= ll; ly /= ll; lz /= ll; }
+          steer(nxn * 0.7 + lx * 0.9, nyn * 0.7 + ly * 0.9, nzn * 0.7 + lz * 0.9, vx0, vy0, vz0, top, force * 3, 1.5 * t * t + 1);
+          if (dd < ob.r) { px[i] = ob.x + nxn * ob.r; py[i] = ob.y + nyn * ob.r; if (is3) pz[i] = ob.z + nzn * ob.r; }
+        }
+      }
+      // soft walls
+      if (!wrap) {
+        const k = force * 3;
+        if (x < lo0 + margin) S[0] += k * (1 - (x - lo0) / margin);
+        else if (x > hi0 - margin) S[0] -= k * (1 - (hi0 - x) / margin);
+        if (y < lo1 + margin) S[1] += k * (1 - (y - lo1) / margin);
+        else if (y > hi1 - margin) S[1] -= k * (1 - (hi1 - y) / margin);
+        if (is3) {
+          if (z < lo2 + margin) S[2] += k * (1 - (z - lo2) / margin);
+          else if (z > hi2 - margin) S[2] -= k * (1 - (hi2 - z) / margin);
+        }
+      }
+    }
+    function integrate(i, vx0, vy0, vz0, top, low) {
+      let nvx = vx0 + S[0] * dt, nvy = vy0 + S[1] * dt, nvz = is3 ? vz0 + S[2] * dt : 0;
+      let sp = Math.sqrt(nvx * nvx + nvy * nvy + nvz * nvz);
+      if (sp > top) { const q = top / sp; nvx *= q; nvy *= q; nvz *= q; sp = top; }
+      else if (sp < low) { const q = sp > 1e-6 ? low / sp : 0; nvx *= q; nvy *= q; nvz *= q; if (sp <= 1e-6) nvx = low; sp = low; }
+      vx[i] = nvx; vy[i] = nvy; vz[i] = nvz;
+      let x = px[i] + nvx * dt, y = py[i] + nvy * dt, z = is3 ? pz[i] + nvz * dt : 0;
+      if (wrap) {
+        if (x < lo0) x += s0; else if (x >= hi0) x -= s0;
+        if (y < lo1) y += s1; else if (y >= hi1) y -= s1;
+        if (is3) { if (z < lo2) z += s2; else if (z >= hi2) z -= s2; }
+      } else {
+        if (x < lo0) { x = lo0; vx[i] = Math.abs(vx[i]); } else if (x > hi0) { x = hi0; vx[i] = -Math.abs(vx[i]); }
+        if (y < lo1) { y = lo1; vy[i] = Math.abs(vy[i]); } else if (y > hi1) { y = hi1; vy[i] = -Math.abs(vy[i]); }
+        if (is3) { if (z < lo2) { z = lo2; vz[i] = Math.abs(vz[i]); } else if (z > hi2) { z = hi2; vz[i] = -Math.abs(vz[i]); } }
+      }
+      px[i] = x; py[i] = y; pz[i] = z;
+      return sp;
+    }
+
+    // initiators: now and then one bird on the flock's edge starts a sharp turn (Attanasi et al. 2014)
+    const imp = this.imp, impX = this.impX, impY = this.impY, impZ = this.impZ;
+    if (P.initiative > 0 && n > 0 && this.rand() < P.initiative * 2 / 60 * dt) {
+      let pick = -1, fewest = 1e9;
+      for (let t = 0; t < 4; t++) { const c = (this.rand() * n) | 0; if (species[c] === 0 && nb[c] < fewest) { fewest = nb[c]; pick = c; } }
+      if (pick >= 0 && imp[pick] <= 0) {
+        const vx1 = vx[pick], vy1 = vy[pick], vz1 = vz[pick], sp1 = Math.sqrt(vx1 * vx1 + vy1 * vy1 + vz1 * vz1) || 1;
+        if (is3) {   // a random direction perpendicular to the heading
+          const ux1 = vx1 / sp1, uy1 = vy1 / sp1, uz1 = vz1 / sp1;
+          let ax = -uz1, ay = 0, az = ux1; let al = Math.sqrt(ax * ax + az * az); if (al < 1e-4) { ax = 1; az = 0; al = 1; } ax /= al; az /= al;
+          const bx = uy1 * az - uz1 * ay, by = uz1 * ax - ux1 * az, bz = ux1 * ay - uy1 * ax;
+          const a = this.rand() * TAU, ca = Math.cos(a), sa = Math.sin(a);
+          impX[pick] = ax * ca + bx * sa; impY[pick] = ay * ca + by * sa; impZ[pick] = az * ca + bz * sa;
+        } else { const sgn = this.rand() < 0.5 ? -1 : 1; impX[pick] = -vy1 / sp1 * sgn; impY[pick] = vx1 / sp1 * sgn; impZ[pick] = 0; }
+        imp[pick] = 30;
+      }
+    }
+    const level = is3 ? P.level : 0, meanY = this.meanY, roostR = P.roost * Math.min(s0, s1, is3 ? s2 : 1e9);
+    let ordX = 0, ordY = 0, ordZ = 0, preyCount = 0, ySum = 0, candSum = 0;
+    const zlo = is3 ? -1 : 0, zhi = is3 ? 1 : 0;
+
+    /* ---------------- prey ---------------- */
+    for (let si = 0; si < n; si++) {
+      if (qsp[si] !== 0) continue;
+      const i = sorted[si];
+      const x = qx[si], y = qy[si], z = qz[si];
+      const vx0 = qvx[si], vy0 = qvy[si], vz0 = qvz[si];
+      const sp = Math.sqrt(vx0 * vx0 + vy0 * vy0 + vz0 * vz0) || 1e-6;
+      const ux = vx0 / sp, uy = vy0 / sp, uz = vz0 / sp;
+      let sx = 0, sy = 0, sz = 0, alx = 0, aly = 0, alz = 0, cxs = 0, cys = 0, czs = 0, wsum = 0, wsumC = 0, nbc = 0, ph = 0, kn = 0, cand = 0;
+      const ti = qtr[si], phi = qphase[si];
+      const gx = clamp(((x - lo0) * inv) | 0, 0, nx - 1);
+      const gy = clamp(((y - lo1) * inv) | 0, 0, ny - 1);
+      const gz = is3 ? clamp(((z - lo2) * inv) | 0, 0, nz - 1) : 0;
+      scan: for (let dz = zlo; dz <= zhi; dz++) {
+        const cz = gz + dz; if (cz < 0 || cz >= nz) continue;
+        for (let dy = -1; dy <= 1; dy++) {
+          const cy = gy + dy; if (cy < 0 || cy >= ny) continue;
+          const rowBase = (cz * ny + cy) * nx;
+          const xa = gx > 0 ? gx - 1 : 0, xb = gx + 1 < nx ? gx + 1 : nx - 1;
+          const from = cellStart[rowBase + xa]; let to = cellStart[rowBase + xb + 1];   // the three cells in a row are contiguous
+          if (to - from > maxCand - cand) to = from + Math.max(0, maxCand - cand);   // bound the work in a dense clump
+          cand += to - from;
+          for (let sj = from; sj < to; sj++) {
+            if (sj === si || qsp[sj] !== 0) continue;
+            const ddx = qx[sj] - x, ddy = qy[sj] - y, ddz = qz[sj] - z;
+            const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+            if (d2 >= R2 || d2 <= 1e-6) continue;
+            if (cosFov > -2) {   // dot/|d| < cosFov, tested without the square root
+              const dot = ddx * ux + ddy * uy + ddz * uz;
+              if (!(cosFov <= 0 ? (dot >= 0 || dot * dot <= cf2 * d2) : (dot > 0 && dot * dot >= cf2 * d2))) continue;
+            }
+            nbc++;
+            const tw = qtr[sj] === ti ? 1 : tribeMix;
+            if (d2 < sepR2) { const q = (1 + (1 - tw)) / d2; sx -= ddx * q; sy -= ddy * q; sz -= ddz * q; }
+            if (pulse > 0) ph += Math.sin(qphase[sj] - phi);
+            if (topo) {
+              // weak long-range cohesion so separate groups still merge
+              cxs += qx[sj] * tw * 0.3; cys += qy[sj] * tw * 0.3; czs += qz[sj] * tw * 0.3; wsumC += tw * 0.3;
+              // keep the K nearest, sorted by distance
+              if (kn < K || d2 < kd2[kn - 1]) {
+                let m = kn < K ? kn : K - 1;
+                while (m > 0 && kd2[m - 1] > d2) { kd2[m] = kd2[m - 1]; kj[m] = kj[m - 1]; m--; }
+                kd2[m] = d2; kj[m] = sj; if (kn < K) kn++;
+              }
+            } else {
+              const ta = tw * (1 + startle * qbank[sj]);
+              alx += qvx[sj] * ta; aly += qvy[sj] * ta; alz += qvz[sj] * ta;
+              cxs += qx[sj] * tw; cys += qy[sj] * tw; czs += qz[sj] * tw;
+              wsum += ta; wsumC += tw;
+              if (i === insp && this.inspectN < 512) this.inspectList[this.inspectN++] = sorted[sj];
+            }
+          }
+        }
+      }
+      if (topo) {
+        for (let m = 0; m < kn; m++) {
+          const sj = kj[m], tw = qtr[sj] === ti ? 1 : tribeMix;
+          const ta = tw * (1 + startle * qbank[sj]);
+          alx += qvx[sj] * ta; aly += qvy[sj] * ta; alz += qvz[sj] * ta;
+          cxs += qx[sj] * tw; cys += qy[sj] * tw; czs += qz[sj] * tw;
+          wsum += ta; wsumC += tw;
+          if (i === insp) this.inspectList[this.inspectN++] = sorted[sj];
+        }
+      }
+      nb[i] = nbc; nbSum += nbc; candSum += cand;
+      S[0] = 0; S[1] = 0; S[2] = 0;
+      if (sx !== 0 || sy !== 0 || sz !== 0) steer(sx, sy, sz, vx0, vy0, vz0, maxSpeed, maxForce, P.wSep);
+      if (wsum > 0) steer(alx, aly, alz, vx0, vy0, vz0, maxSpeed, maxForce, P.wAli);
+      if (wsumC > 0) {
+        const gx_ = cxs / wsumC - x, gy_ = cys / wsumC - y, gz_ = czs / wsumC - z;
+        let cw = P.wCoh;
+        if (topo) cw *= clamp(Math.sqrt(gx_ * gx_ + gy_ * gy_ + gz_ * gz_) / (sepR * 2.5), 0, 1);   // ease off near the local centre
+        steer(gx_, gy_, gz_, vx0, vy0, vz0, maxSpeed, maxForce, cw);
+      }
+      // fear
+      for (let k = 0; k < preds.length; k++) {
+        const p = preds[k];
+        const ddx = x - px[p], ddy = y - py[p], ddz = z - pz[p];
+        const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+        if (d2 < flee2) { const t = 1 - Math.sqrt(d2) / flee; steer(ddx, ddy, ddz, vx0, vy0, vz0, maxSpeed, maxForce * 2.5, 1.2 + 2.5 * t); }
+      }
+      // pointer
+      if (mouseOn) {
+        const ddx = mouse.x - x, ddy = mouse.y - y, ddz = is3 ? mouse.z - z : 0;
+        const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+        if (d2 < mr2) { const t = 1 - Math.sqrt(d2) / mr; steer(ddx * mouseSign, ddy * mouseSign, ddz * mouseSign, vx0, vy0, vz0, maxSpeed, maxForce * 1.6, P.mouseForce * (0.5 + 1.2 * t)); }
+      }
+      // centre pull + swirl
+      if (attract > 0 || swirl > 0) {
+        const ddx = c0 - x, ddy = c1 - y, ddz = is3 ? c2 - z : 0;
+        const dd = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz) || 1;
+        let tx, ty, tz;
+        if (is3) { tx = -ddz; ty = 0; tz = ddx; } else { tx = ddy; ty = -ddx; tz = 0; }
+        const aw = attract * (roostR > 0 ? clamp((dd - roostR) / roostR, 0, 1) : 1);   // free flight inside the roost zone
+        steer(ddx / dd * aw + tx / dd * swirl, ddy / dd * aw + ty / dd * swirl, ddz / dd * aw + tz / dd * swirl, vx0, vy0, vz0, maxSpeed, maxForce, centreW);
+      }
+      // currents
+      if (flowOn) {
+        flow.sample(x, y, z, this.time, flowScale, fo);
+        steer(fo[0], fo[1], fo[2], vx0, vy0, vz0, maxSpeed, maxForce, P.flow);
+      }
+      environment(i, x, y, z, vx0, vy0, vz0, ux, uy, uz, maxSpeed, maxForce);
+      if (cruise > 0) {
+        const dv = (cruiseSpeed - sp) * cruise * 0.08; S[0] += ux * dv; S[1] += uy * dv; S[2] += uz * dv;
+
+      }
+      if (imp[i] > 0) { imp[i] -= dt; const k = maxForce * 2.5; S[0] += impX[i] * k; S[1] += impY[i] * k; S[2] += impZ[i] * k; }
+      // preference for level flight: a soft, lightly damped spring toward the flock's own altitude, so the sheet can tilt and fold in turns
+      if (level > 0) S[1] += (meanY - y) * 0.002 * level - vy0 * 0.03 * level;
+      if (jitter > 0) { const jf = jitter * maxForce * 2; S[0] += (rand() - 0.5) * jf; S[1] += (rand() - 0.5) * jf; if (is3) S[2] += (rand() - 0.5) * jf; }
+      const nsp = integrate(i, vx0, vy0, vz0, maxSpeed, minSpeed);
+      {  // how sharply this boid just turned (sin of the heading change), used for startle and banking
+        const nvx = vx[i] / nsp, nvy = vy[i] / nsp, nvz = vz[i] / nsp;
+        const tx_ = uy * nvz - uz * nvy, ty_ = uz * nvx - ux * nvz, tz_ = ux * nvy - uy * nvx;
+        const turn = Math.sqrt(tx_ * tx_ + ty_ * ty_ + tz_ * tz_) / (turnRef * dt);
+        const decayed = bank[i] * decay;
+        bank[i] = turn > decayed ? (turn > 1 ? 1 : turn) : decayed;
+      }
+      if (pulse > 0) phase[i] += (omega[i] + (nbc > 0 ? pulse * 0.3 * ph / nbc : 0)) * dt;
+      if (flash[i] > 0) flash[i] *= decay;
+      ordX += vx[i] / nsp; ordY += vy[i] / nsp; ordZ += vz[i] / nsp; ySum += py[i]; preyCount++;
+    }
+    this.order = preyCount ? Math.sqrt(ordX * ordX + ordY * ordY + ordZ * ordZ) / preyCount : 0;
+    if (preyCount) {
+      this.meanY = ySum / preyCount; this.nbLast = nbSum / preyCount;
+      this.candFast += (candSum / preyCount - this.candFast) * 0.15;
+      this.nbFast += (this.nbLast - this.nbFast) * 0.15; this.nbMean += (this.nbLast - this.nbMean) * 0.05;
+    }
+
+    /* ---------------- predators ---------------- */
+    const huntR = P.perception * 3, hunt2 = huntR * huntR, rr = Math.min(6, Math.ceil(huntR / cell));
+    const pTop = P.predSpeed, pForce = maxForce * 0.9, catch2 = Math.pow(P.size * 1.5 + 5, 2);
+    const predTarget = this.predTarget, predTimer = this.predTimer, predChase = this.predChase;
+    const perchX = this.perch, perchY = this.perchY, perchZ = this.perchZ;
+    const pickPerch = (i) => {   // a point on the edge of the world, so the next attack comes from outside the flock
+      const axis = (this.rand() * (is3 ? 3 : 2)) | 0, side = this.rand() < 0.5 ? 0 : 1;
+      let x = lo0 + this.rand() * s0, y = lo1 + this.rand() * s1, z = is3 ? lo2 + this.rand() * s2 : 0;
+      if (axis === 0) x = side ? hi0 - 10 : lo0 + 10; else if (axis === 1) y = side ? hi1 - 10 : lo1 + 10; else z = side ? hi2 - 10 : lo2 + 10;
+      perchX[i] = x; perchY[i] = y; perchZ[i] = z;
+    };
+    for (let k = 0; k < preds.length; k++) {
+      const i = preds[k];
+      const x = px[i], y = py[i], z = pz[i];
+      const vx0 = vx[i], vy0 = vy[i], vz0 = vz[i];
+      const sp = Math.sqrt(vx0 * vx0 + vy0 * vy0 + vz0 * vz0) || 1e-6;
+      const ux = vx0 / sp, uy = vy0 / sp, uz = vz0 / sp;
+      const gx = clamp(((x - lo0) * inv) | 0, 0, nx - 1);
+      const gy = clamp(((y - lo1) * inv) | 0, 0, ny - 1);
+      const gz = is3 ? clamp(((z - lo2) * inv) | 0, 0, nz - 1) : 0;
+      let best = -1, bd2 = hunt2;
+      const resting = predTimer[i] > 0;
+      if (resting) predTimer[i] -= dt;
+      else
+      for (let dz = is3 ? -rr : 0; dz <= (is3 ? rr : 0); dz++) {
+        const cz = gz + dz; if (cz < 0 || cz >= nz) continue;
+        for (let dy = -rr; dy <= rr; dy++) {
+          const cy = gy + dy; if (cy < 0 || cy >= ny) continue;
+          const rowBase = (cz * ny + cy) * nx;
+          const xa = clamp(gx - rr, 0, nx - 1), xb = clamp(gx + rr, 0, nx - 1);
+          const from = cellStart[rowBase + xa], to = cellStart[rowBase + xb + 1];
+          for (let sj = from; sj < to; sj++) {
+            if (qsp[sj] !== 0) continue;
+            const ddx = qx[sj] - x, ddy = qy[sj] - y, ddz = qz[sj] - z;
+            const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+            if (d2 < bd2) { bd2 = d2; best = sorted[sj]; }
+          }
+        }
+      }
+      S[0] = 0; S[1] = 0; S[2] = 0;
+      if (best >= 0) {
+        // a hunt that drags on (usually a bird pinned in a corner) is abandoned; a catch is followed by a rest
+        if (best === predTarget[i]) predChase[i] += dt; else { predTarget[i] = best; predChase[i] = 0; }
+        if (predChase[i] > 360) { predTimer[i] = 150; predTarget[i] = -1; predChase[i] = 0; best = -1; pickPerch(i); }
+      }
+      if (best >= 0) {
+        const lead = 6;
+        steer(px[best] + vx[best] * lead - x, py[best] + vy[best] * lead - y, pz[best] + vz[best] * lead - z, vx0, vy0, vz0, pTop, pForce, 1.4);
+        if (bd2 < catch2) {
+          this.events.push({ x: px[best], y: py[best], z: pz[best], age: 0 });
+          this.respawn(best); flash[best] = 1; this.caught++;
+          predTimer[i] = 130; predTarget[i] = -1; predChase[i] = 0; pickPerch(i);
+        }
+      } else if (resting) {
+        // pull out to the edge of the world before the next attack
+        steer(perchX[i] - x, perchY[i] - y, is3 ? perchZ[i] - z : 0, vx0, vy0, vz0, pTop * 0.8, pForce, 0.9);
+      } else {
+        // wander: drift toward centre with a little noise
+        flow.sample(x, y, z, this.time * 3, 260, fo);
+        steer((c0 - x) * 0.2 + fo[0] * 200, (c1 - y) * 0.2 + fo[1] * 200, is3 ? (c2 - z) * 0.2 + fo[2] * 200 : 0, vx0, vy0, vz0, pTop * 0.7, pForce, 0.6);
+      }
+      for (let m = 0; m < preds.length; m++) {
+        if (m === k) continue;
+        const p = preds[m];
+        const ddx = x - px[p], ddy = y - py[p], ddz = z - pz[p];
+        const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+        if (d2 < R2 * 2.25 && d2 > 1e-6) steer(ddx, ddy, ddz, vx0, vy0, vz0, pTop, pForce, 1.0);
+      }
+      if (mouseOn) {
+        const ddx = mouse.x - x, ddy = mouse.y - y, ddz = is3 ? mouse.z - z : 0;
+        const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+        if (d2 < mr2) steer(ddx * mouseSign, ddy * mouseSign, ddz * mouseSign, vx0, vy0, vz0, pTop, pForce, P.mouseForce);
+      }
+      environment(i, x, y, z, vx0, vy0, vz0, ux, uy, uz, pTop, pForce);
+      integrate(i, vx0, vy0, vz0, pTop, pTop * 0.45);
+    }
+
+    for (let e = this.events.length - 1; e >= 0; e--) { this.events[e].age += dt; if (this.events[e].age > 28) this.events.splice(e, 1); }
+    this.time += dt;
+  }
+}
+</script>
+
+<script>
+/* =====================================================================
+   Colour buckets shared by both views
+   ===================================================================== */
+function bucketOf(i, P, flock, palLen) {
+  switch (P.colorMode) {
+    case 'tribe': return flock.tribe[i] % palLen;
+    case 'heading': {
+      const a = flock.dims === 3 ? Math.atan2(flock.vz[i], flock.vx[i]) : Math.atan2(flock.vy[i], flock.vx[i]);
+      return ((a / TAU + 1) % 1) * 63.999 | 0;
+    }
+    case 'speed': {
+      const v = Math.sqrt(flock.vx[i] ** 2 + flock.vy[i] ** 2 + flock.vz[i] ** 2) / P.maxSpeed;
+      return clamp((v - 0.35) / 0.65, 0, 0.999) * 64 | 0;
+    }
+    case 'turning': return flock.bank[i] * 63.999 | 0;
+    case 'starling': return clamp(0.45 * flock.nb[i] / (2.2 * flock.nbMean + 1) + flock.bank[i], 0, 0.999) * 64 | 0;
+    default: return Math.min(0.999, flock.nb[i] / (2.2 * flock.nbMean + 1)) * 64 | 0;
+  }
+}
+
+/* =====================================================================
+   2D view
+   ===================================================================== */
+class View2D {
+  constructor() {
+    this.canvas = document.getElementById('c2d');
+    this.overlay = document.getElementById('c2o');
+    this.ctx = this.canvas.getContext('2d');
+    this.octx = this.overlay.getContext('2d');
+    this.sprites = [];
+    this.w = 0; this.h = 0; this.dpr = 1;
+    this.frame = 0;
+    this.order = new Int32Array(256);
+    this.counts = new Int32Array(65);
+    this.starts = new Int32Array(65);
+    this.zoom = 1; this.ox = 0; this.oy = 0;
+    this.tmp = document.createElement('canvas');
+  }
+  /* change the view transform, carrying the existing trails along with it */
+  setView(z, ox, oy) {
+    const w = this.w, h = this.h;
+    ox = clamp(ox, Math.min(0, w - w * z) - w * 0.3, Math.max(0, w - w * z) + w * 0.3);
+    oy = clamp(oy, Math.min(0, h - h * z) - h * 0.3, Math.max(0, h - h * z) + h * 0.3);
+    const cw = this.canvas.width, ch = this.canvas.height, dpr = this.dpr;
+    if (this.tmp.width !== cw || this.tmp.height !== ch) { this.tmp.width = cw; this.tmp.height = ch; }
+    const tc = this.tmp.getContext('2d');
+    tc.clearRect(0, 0, cw, ch); tc.drawImage(this.canvas, 0, 0);
+    const k = z / this.zoom;
+    const c = this.ctx;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, cw, ch);
+    c.drawImage(this.tmp, 0, 0, cw, ch, (ox - this.ox * k) * dpr, (oy - this.oy * k) * dpr, cw * k, ch * k);
+    this.zoom = z; this.ox = ox; this.oy = oy;
+  }
+  zoomAt(sx, sy, factor) {
+    const z = clamp(this.zoom * factor, 0.5, 8), f = z / this.zoom;
+    this.setView(z, sx - (sx - this.ox) * f, sy - (sy - this.oy) * f);
+  }
+  pan(dx, dy) { this.setView(this.zoom, this.ox + dx, this.oy + dy); }
+  resetView() { this.setView(1, 0, 0); }
+  toWorld(sx, sy) { return { x: (sx - this.ox) / this.zoom, y: (sy - this.oy) / this.zoom, z: 0 }; }
+  resize(w, h, dpr) {
+    this.w = w; this.h = h; this.dpr = dpr;
+    this.zoom = 1; this.ox = 0; this.oy = 0;
+    for (const c of [this.canvas, this.overlay]) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.clear();
+  }
+  clear() { this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); this.drew = false; }
+  setTable(table) {
+    this.table = table;
+    this.css = table.map(c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`);
+    this.sprites = table.map(c => {
+      const s = document.createElement('canvas'); s.width = s.height = 64;
+      const g = s.getContext('2d');
+      const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      const r = c[0] | 0, gg = c[1] | 0, b = c[2] | 0;
+      grd.addColorStop(0, `rgba(${Math.min(255, r + 90)},${Math.min(255, gg + 90)},${Math.min(255, b + 90)},0.9)`);
+      grd.addColorStop(0.28, `rgba(${r},${gg},${b},0.42)`);
+      grd.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+      g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+      return s;
+    });
+  }
+  render(flock, P, ctx, steps) {
+    if (steps === 0 && this.drew && !ctx.dirty) { this.renderOverlay(flock, P, ctx); return; }
+    this.drew = true;
+    const c = this.ctx, W = this.w, H = this.h, n = flock.n;
+    const { px, py, vx, vy, species, nb, phase, flash } = flock;
+    const dark = ctx.dark;
+    const dpr = this.dpr, z = this.zoom;
+    this.frame++;
+    // fade or clear (screen space)
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (P.trail > 0) {
+      let a = 1 - Math.pow(P.trail, Math.max(1, steps || 1));
+      if (this.frame % 6 === 0) a = Math.min(1, a * 2);   // sweeps the 8-bit residue that never quite fades
+      c.globalCompositeOperation = 'destination-out';
+      c.fillStyle = `rgba(0,0,0,${a.toFixed(3)})`;
+      c.fillRect(0, 0, W, H);
+    } else c.clearRect(0, 0, W, H);
+    c.setTransform(dpr * z, 0, 0, dpr * z, dpr * this.ox, dpr * this.oy);
+
+    // bucket sort prey by colour
+    if (this.order.length < n) { this.order = new Int32Array(n * 2); }
+    const buckets = this.bucketIdx || (this.bucketIdx = new Uint8Array(0));
+    if (buckets.length < n) this.bucketIdx = new Uint8Array(n * 2);
+    const bidx = this.bucketIdx, counts = this.counts, order = this.order;
+    counts.fill(0);
+    const palLen = ctx.palette.length;
+    for (let i = 0; i < n; i++) { if (species[i] === 0) { const b = bucketOf(i, P, flock, palLen); bidx[i] = b; counts[b + 1]++; } }
+    for (let b = 0; b < 64; b++) counts[b + 1] += counts[b];
+    const start = this.starts; start.set(counts);
+    for (let i = 0; i < n; i++) if (species[i] === 0) order[start[bidx[i]]++] = i;
+    const preyTotal = counts[64];
+
+    const size = P.size;
+    const pulsing = P.pulse > 0;
+    const banking = P.colorMode === 'starling' || P.colorMode === 'turning';
+    const bank = flock.bank;
+
+    // glow layer
+    if (P.glow > 0) {
+      c.globalCompositeOperation = dark ? 'lighter' : 'source-over';
+      const gs = size * (3.5 + P.glow * 7);
+      const base = P.glow * (dark ? 0.32 : 0.10);
+      for (let b = 0; b < 64; b++) {
+        const from = counts[b], to = counts[b + 1];
+        if (from === to) continue;
+        const spr = this.sprites[b];
+        for (let k = from; k < to; k++) {
+          const i = order[k];
+          let a = base;
+          if (pulsing) { const br = Math.max(0, Math.cos(phase[i])); a *= 0.05 + Math.pow(br, 6); }
+          if (flash[i] > 0.02) a = Math.min(1, a + flash[i]);
+          c.globalAlpha = a;
+          c.drawImage(spr, px[i] - gs, py[i] - gs, gs * 2, gs * 2);
+        }
+      }
+      c.globalAlpha = 1;
+    }
+
+    // boid bodies
+    c.globalCompositeOperation = 'source-over';
+    const tip = size * 1.9, tail = size * 1.1, wing = size * 0.85, notch = size * 0.45;
+    for (let b = 0; b < 64; b++) {
+      const from = counts[b], to = counts[b + 1];
+      if (from === to) continue;
+      c.fillStyle = this.css[b];
+      if (!pulsing) c.beginPath();
+      for (let k = from; k < to; k++) {
+        const i = order[k];
+        const x = px[i], y = py[i];
+        let ux = vx[i], uy = vy[i];
+        const sp = Math.sqrt(ux * ux + uy * uy) || 1e-6; ux /= sp; uy /= sp;
+        if (pulsing) {
+          c.globalAlpha = 0.2 + 0.8 * Math.pow(Math.max(0, Math.cos(phase[i])), 4);
+          c.beginPath(); c.arc(x, y, size * 0.8, 0, TAU); c.fill();
+          continue;
+        }
+        if (banking) {   // a rolling bird shows more wing
+          const wg = wing * (1 + 1.4 * bank[i]);
+          c.moveTo(x + ux * tip, y + uy * tip);
+          c.lineTo(x - ux * tail - uy * wg, y - uy * tail + ux * wg);
+          c.lineTo(x - ux * notch, y - uy * notch);
+          c.lineTo(x - ux * tail + uy * wg, y - uy * tail - ux * wg);
+          c.closePath();
+          continue;
+        }
+        c.moveTo(x + ux * tip, y + uy * tip);
+        c.lineTo(x - ux * tail - uy * wing, y - uy * tail + ux * wing);
+        c.lineTo(x - ux * notch, y - uy * notch);
+        c.lineTo(x - ux * tail + uy * wing, y - uy * tail - ux * wing);
+        c.closePath();
+      }
+      if (!pulsing) c.fill();
+    }
+    c.globalAlpha = 1;
+
+    // predators
+    if (n > preyTotal) {
+      const ps = size * 1.9;
+      const tip2 = ps * 2.1, tail2 = ps * 1.2, wing2 = ps * 0.95, notch2 = ps * 0.5;
+      c.fillStyle = dark ? '#ff6b57' : '#c8321b';
+      c.strokeStyle = dark ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.35)';
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let i = 0; i < n; i++) {
+        if (species[i] !== 1) continue;
+        const x = px[i], y = py[i];
+        let ux = vx[i], uy = vy[i];
+        const sp = Math.sqrt(ux * ux + uy * uy) || 1e-6; ux /= sp; uy /= sp;
+        c.moveTo(x + ux * tip2, y + uy * tip2);
+        c.lineTo(x - ux * tail2 - uy * wing2, y - uy * tail2 + ux * wing2);
+        c.lineTo(x - ux * notch2, y - uy * notch2);
+        c.lineTo(x - ux * tail2 + uy * wing2, y - uy * tail2 - ux * wing2);
+        c.closePath();
+      }
+      c.fill(); c.stroke();
+    }
+
+    this.renderOverlay(flock, P, ctx);
+  }
+  renderOverlay(flock, P, ctx) {
+    const o = this.octx, W = this.w, H = this.h, dpr = this.dpr, z = this.zoom;
+    o.setTransform(dpr, 0, 0, dpr, 0, 0);
+    o.clearRect(0, 0, W, H);
+    o.setTransform(dpr * z, 0, 0, dpr * z, dpr * this.ox, dpr * this.oy);
+    const ink = ctx.dark ? '255,255,255' : '20,24,36';
+    // spatial grid
+    if (ctx.grid) {
+      const cell = flock.cell, Wl = flock.W;
+      const x0 = Wl.lo[0], y0 = Wl.lo[1], x1 = x0 + Wl.size[0], y1 = y0 + Wl.size[1];
+      o.strokeStyle = `rgba(${ink},0.07)`; o.lineWidth = 1; o.beginPath();
+      for (let x = x0; x <= x1 + 0.5; x += cell) { o.moveTo(x, y0); o.lineTo(x, y1); }
+      for (let y = y0; y <= y1 + 0.5; y += cell) { o.moveTo(x0, y); o.lineTo(x1, y); }
+      o.stroke();
+    }
+    // obstacles
+    for (const ob of flock.obstacles) {
+      o.beginPath(); o.arc(ob.x, ob.y, ob.r, 0, TAU);
+      o.fillStyle = `rgba(${ink},0.06)`; o.fill();
+      o.strokeStyle = `rgba(${ink},0.4)`; o.lineWidth = 1.2; o.stroke();
+    }
+    if (ctx.draft) {
+      o.beginPath(); o.arc(ctx.draft.x, ctx.draft.y, ctx.draft.r, 0, TAU);
+      o.setLineDash([4, 5]); o.strokeStyle = `rgba(${ink},0.6)`; o.stroke(); o.setLineDash([]);
+    }
+    // pointer field
+    const m = ctx.mouse;
+    if (m.active && (m.mode === 'attract' || m.mode === 'repel')) {
+      const r = P.mouseRadius;
+      const g = o.createRadialGradient(m.x, m.y, 0, m.x, m.y, r);
+      g.addColorStop(0, `rgba(${ink},${m.mode === 'attract' ? 0.10 : 0.0})`);
+      g.addColorStop(1, `rgba(${ink},${m.mode === 'attract' ? 0.0 : 0.10})`);
+      o.beginPath(); o.arc(m.x, m.y, r, 0, TAU); o.fillStyle = g; o.fill();
+      o.strokeStyle = `rgba(${ink},0.25)`; o.lineWidth = 1; o.stroke();
+    }
+    // catch events
+    for (const e of flock.events) {
+      const t = e.age / 28;
+      o.beginPath(); o.arc(e.x, e.y, 4 + t * 34, 0, TAU);
+      o.strokeStyle = `rgba(255,120,100,${(1 - t) * 0.8})`; o.lineWidth = 1.5 * (1 - t) + 0.3; o.stroke();
+    }
+    // inspect one boid
+    if (ctx.inspect && flock.n > 0 && flock.species[flock.inspect] === 0) {
+      const i = flock.inspect;
+      const x = flock.px[i], y = flock.py[i];
+      const ang = Math.atan2(flock.vy[i], flock.vx[i]);
+      const half = P.fov * Math.PI / 360;
+      o.beginPath();
+      const Rv = flock.reff || P.perception;
+      if (P.fov >= 360) o.arc(x, y, Rv, 0, TAU);
+      else { o.moveTo(x, y); o.arc(x, y, Rv, ang - half, ang + half); o.closePath(); }
+      o.fillStyle = 'rgba(242,196,109,0.10)'; o.fill();
+      o.strokeStyle = 'rgba(242,196,109,0.55)'; o.lineWidth = 1; o.stroke();
+      o.beginPath(); o.arc(x, y, Math.min(P.separation, Rv), 0, TAU);
+      o.strokeStyle = 'rgba(242,196,109,0.35)'; o.setLineDash([3, 4]); o.stroke(); o.setLineDash([]);
+      o.beginPath();
+      for (let k = 0; k < flock.inspectN; k++) { const j = flock.inspectList[k]; o.moveTo(x, y); o.lineTo(flock.px[j], flock.py[j]); }
+      o.strokeStyle = 'rgba(242,196,109,0.45)'; o.stroke();
+      o.beginPath(); o.arc(x, y, P.size * 2.6, 0, TAU); o.strokeStyle = '#f2c46d'; o.lineWidth = 1.5; o.stroke();
+      o.fillStyle = '#f2c46d'; o.font = '12px Instrument Sans, system-ui, sans-serif';
+      o.fillText(`${flock.inspectN} neighbour${flock.inspectN === 1 ? '' : 's'}`, x + P.size * 3 + 4, y - P.size * 3);
+    }
+  }
+}
+
+/* =====================================================================
+   3D view (three.js)
+   ===================================================================== */
+class View3D {
+  constructor(canvas, W) {
+    this.canvas = canvas; this.W = W;
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(50, 1, 1, 8000);
+    this.cam = { theta: 0.65, phi: 1.12, r: 1500, rTarget: 1500, idle: 0 };
+    this.target = new THREE.Vector3(0, 0, 0);
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.9));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(400, 700, 300); this.scene.add(sun);
+
+    const [w, h, d] = W.size;
+    this.box = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.16 }));
+    this.scene.add(this.box);
+    this.gridHelper = new THREE.GridHelper(Math.max(w, d), 18, 0xffffff, 0xffffff);
+    this.gridHelper.position.y = -h / 2;
+    this.gridHelper.material.transparent = true; this.gridHelper.material.opacity = 0.08;
+    this.scene.add(this.gridHelper);
+
+    this.boidGeo = new THREE.ConeGeometry(1, 3.2, 5); this.boidGeo.rotateX(Math.PI / 2);
+    this.predGeo = new THREE.ConeGeometry(1.2, 4, 6); this.predGeo.rotateX(Math.PI / 2);
+    this.boidMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    this.predMat = new THREE.MeshLambertMaterial({ color: 0xff6b57, emissive: 0x551a10 });
+    this.dummy = new THREE.Object3D();
+    this.zAxis = new THREE.Vector3(0, 0, 1);
+    this.dir = new THREE.Vector3();
+    this.tmpColor = new THREE.Color();
+    this.cap = 0; this.trailLen = 0;
+
+    // glow sprite texture
+    const s = document.createElement('canvas'); s.width = s.height = 64;
+    const g = s.getContext('2d'); const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.3, 'rgba(255,255,255,0.35)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+    this.glowTex = new THREE.CanvasTexture(s);
+    this.glowMat = new THREE.PointsMaterial({ size: 30, map: this.glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true, opacity: 0.6, sizeAttenuation: true });
+    this.trailMat = new THREE.ShaderMaterial({
+      uniforms: { uHead: { value: 0 }, uL: { value: 1 }, uOpacity: { value: 0.85 }, uAdditive: { value: 1 } },
+      vertexShader: `attribute float aSlot; attribute vec3 aColor; uniform float uHead, uL; varying float vFade; varying vec3 vColor;
+        void main(){ float age = mod(uHead - aSlot + uL, uL); vFade = 1.0 - age / uL; vColor = aColor; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `uniform float uOpacity, uAdditive; varying float vFade; varying vec3 vColor;
+        void main(){ float f = vFade * uOpacity; gl_FragColor = uAdditive > 0.5 ? vec4(vColor * f, 1.0) : vec4(vColor, f); }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+
+    this.obstacleGroup = new THREE.Group(); this.scene.add(this.obstacleGroup);
+    this.obstacleMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 });
+    this.obstacleWire = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.15 });
+    this.obsVersion = -1;
+
+    // inspect helpers
+    this.inspectSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf2c46d, wireframe: true, transparent: true, opacity: 0.25 }));
+    this.inspectSphere.visible = false; this.scene.add(this.inspectSphere);
+    this.inspectLines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf2c46d, transparent: true, opacity: 0.6 }));
+    this.inspectLines.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(512 * 6), 3));
+    this.inspectLines.visible = false; this.scene.add(this.inspectLines);
+
+    // pointer plane helpers
+    this.raycaster = new THREE.Raycaster(); this.plane = new THREE.Plane(); this.ndc = new THREE.Vector2(); this.hit = new THREE.Vector3();
+    this.pointerRing = new THREE.Mesh(new THREE.RingGeometry(0.96, 1, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
+    this.pointerRing.visible = false; this.scene.add(this.pointerRing);
+    this.autoRotate = true;
+  }
+  setWorld(size) {
+    const [w, h, d] = size;
+    this.box.geometry.dispose();
+    this.box.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d));
+    this.scene.remove(this.gridHelper); this.gridHelper.geometry.dispose();
+    this.gridHelper = new THREE.GridHelper(Math.max(w, d), 18, 0xffffff, 0xffffff);
+    this.gridHelper.position.y = -h / 2;
+    this.gridHelper.material.transparent = true; this.gridHelper.material.opacity = 0.08;
+    this.gridHelper.material.color.copy(this.box.material.color);
+    this.scene.add(this.gridHelper);
+  }
+  ensureCapacity(cap, trailLen) {
+    if (cap <= this.cap && trailLen === this.trailLen) return;
+    cap = Math.max(cap, 64);
+    if (this.mesh) { this.scene.remove(this.mesh); this.mesh.dispose(); }
+    if (this.pmesh) { this.scene.remove(this.pmesh); this.pmesh.dispose(); }
+    this.mesh = new THREE.InstancedMesh(this.boidGeo, this.boidMat, cap);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.frustumCulled = false;
+    this.scene.add(this.mesh);
+    this.pmesh = new THREE.InstancedMesh(this.predGeo, this.predMat, 64);
+    this.pmesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.pmesh.frustumCulled = false;
+    this.scene.add(this.pmesh);
+    if (this.glow) { this.scene.remove(this.glow); this.glow.geometry.dispose(); }
+    const gg = new THREE.BufferGeometry();
+    gg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cap * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    gg.setAttribute('color', new THREE.BufferAttribute(new Float32Array(cap * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    this.glow = new THREE.Points(gg, this.glowMat); this.glow.frustumCulled = false; this.scene.add(this.glow);
+    if (this.trails) { this.scene.remove(this.trails); this.trails.geometry.dispose(); }
+    this.trailLen = trailLen;
+    if (trailLen > 1) {
+      // segment (slot s, boid b) lives at index s*cap + b, so each frame updates one contiguous block
+      const segs = cap * trailLen;
+      const tg = new THREE.BufferGeometry();
+      const slot = new Float32Array(segs * 2);
+      for (let sIdx = 0; sIdx < trailLen; sIdx++) for (let b = 0; b < cap; b++) { const v = (sIdx * cap + b) * 2; slot[v] = sIdx; slot[v + 1] = sIdx; }
+      tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(segs * 6), 3).setUsage(THREE.DynamicDrawUsage));
+      tg.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(segs * 6), 3).setUsage(THREE.DynamicDrawUsage));
+      tg.setAttribute('aSlot', new THREE.BufferAttribute(slot, 1));
+      this.trailMat.uniforms.uL.value = trailLen;
+      this.trails = new THREE.LineSegments(tg, this.trailMat); this.trails.frustumCulled = false; this.scene.add(this.trails);
+      this.prevPos = new Float32Array(cap * 3); this.prevInit = new Uint8Array(cap); this.head = 0; this.lastDrawn = 0;
+    } else this.trails = null;
+    this.cap = cap;
+  }
+  resetTrails() {
+    if (!this.trails) return;
+    this.prevInit.fill(0);
+    const pa = this.trails.geometry.attributes.position, ca = this.trails.geometry.attributes.aColor;
+    pa.array.fill(0); ca.array.fill(0);
+    pa.updateRange.count = -1; ca.updateRange.count = -1; pa.needsUpdate = true; ca.needsUpdate = true;
+  }
+  resize(w, h) {
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+  }
+  setTable(table) { this.table3 = table.map(c => [c[0] / 255, c[1] / 255, c[2] / 255]); }
+  setBackground(hex, dark) {
+    const col = new THREE.Color(hex);
+    this.renderer.setClearColor(col, 1);
+    this.scene.fog = new THREE.Fog(col, 900, 3200);
+    const ink = dark ? 0xffffff : 0x1a2030;
+    this.box.material.color.setHex(ink); this.gridHelper.material.color.setHex(ink);
+    this.obstacleMat.color.setHex(ink); this.obstacleWire.color.setHex(ink); this.pointerRing.material.color.setHex(ink);
+    this.trailMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
+    this.trailMat.uniforms.uAdditive.value = dark ? 1 : 0;
+    this.trailMat.uniforms.uOpacity.value = dark ? 0.85 : 0.5;
+    this.glowMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
+    this.trailMat.needsUpdate = true; this.glowMat.needsUpdate = true;
+  }
+  screenToWorld(nx, ny) {
+    this.ndc.set(nx, ny);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
+    this.camera.getWorldDirection(this.dir);
+    this.plane.setFromNormalAndCoplanarPoint(this.dir, this.target);
+    if (!this.raycaster.ray.intersectPlane(this.plane, this.hit)) return null;
+    const W = this.W;
+    this.hit.x = clamp(this.hit.x, W.lo[0], W.lo[0] + W.size[0]);
+    this.hit.y = clamp(this.hit.y, W.lo[1], W.lo[1] + W.size[1]);
+    this.hit.z = clamp(this.hit.z, W.lo[2], W.lo[2] + W.size[2]);
+    return this.hit;
+  }
+  /* what is under the pointer: the nearest obstacle sphere or predator along the view ray */
+  pick(nx, ny, flock) {
+    this.ndc.set(nx, ny);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
+    const o = this.raycaster.ray.origin, d = this.raycaster.ray.direction;
+    let bestT = Infinity, res = null;
+    const test = (x, y, z, r, make) => {
+      const cx = x - o.x, cy = y - o.y, cz = z - o.z;
+      const t = cx * d.x + cy * d.y + cz * d.z;
+      if (t < 0 || t >= bestT) return;
+      if (cx * cx + cy * cy + cz * cz - t * t < r * r) { bestT = t; res = make(); }
+    };
+    flock.obstacles.forEach((ob, idx) => test(ob.x, ob.y, ob.z, ob.r, () => ({ type: 'obstacle', index: idx })));
+    for (let i = 0; i < flock.n; i++) if (flock.species[i] === 1) test(flock.px[i], flock.py[i], flock.pz[i], 28, () => ({ type: 'predator', index: i }));
+    return res;
+  }
+  resetCamera() { Object.assign(this.cam, { theta: 0.65, phi: 1.12, rTarget: 1500 }); }
+  updateCamera(dt, interacting) {
+    const c = this.cam;
+    c.phi = clamp(c.phi, 0.15, Math.PI - 0.15);
+    c.rTarget = clamp(c.rTarget, 300, 4000);
+    c.r += (c.rTarget - c.r) * 0.16;
+    if (this.autoRotate && !interacting) { c.idle += dt; if (c.idle > 90) c.theta += 0.0012 * dt; } else c.idle = 0;
+    const sp = Math.sin(c.phi);
+    this.camera.position.set(this.target.x + c.r * sp * Math.cos(c.theta), this.target.y + c.r * Math.cos(c.phi), this.target.z + c.r * sp * Math.sin(c.theta));
+    this.camera.lookAt(this.target);
+  }
+  render(flock, P, ctx, dt, interacting) {
+    if (dt === 0 && this.drew && !this.autoRotate && !interacting) { this.renderer.render(this.scene, this.camera); return; }
+    this.drew = true;
+    const n = flock.n;
+    const trailLen = P.trail <= 0 ? 0 : Math.round(2 + P.trail * 44);
+    this.ensureCapacity(Math.max(n, flock.cap), trailLen);
+    this.updateCamera(dt, interacting);
+    const { px, py, pz, vx, vy, vz, species, phase, flash } = flock;
+    const table = this.table3, palLen = ctx.palette.length, pulsing = P.pulse > 0;
+    const mesh = this.mesh, pmesh = this.pmesh, dummy = this.dummy;
+    const gpos = this.glow.geometry.attributes.position.array, gcol = this.glow.geometry.attributes.color.array;
+    const size = P.size * 1.15;
+    let bi = 0, pi = 0;
+    const L = this.trailLen, prevPos = this.prevPos, prevInit = this.prevInit, cap = this.cap;
+    if (L > 1) this.head = (this.head + 1) % L;
+    const head = this.head, block = head * cap * 6;
+    const tpos = this.trails ? this.trails.geometry.attributes.position.array : null;
+    const tcol = this.trails ? this.trails.geometry.attributes.aColor.array : null;
+    const glowBase = P.glow;
+
+    for (let i = 0; i < n; i++) {
+      const x = px[i], y = py[i], z = pz[i];
+      this.dir.set(vx[i], vy[i], vz[i]);
+      if (this.dir.lengthSq() < 1e-8) this.dir.set(0, 0, 1); else this.dir.normalize();
+      dummy.position.set(x, y, z);
+      dummy.quaternion.setFromUnitVectors(this.zAxis, this.dir);
+      if (species[i] === 1) {
+        dummy.scale.set(size * 1.6, size * 1.6, size * 2.2);
+        dummy.updateMatrix(); if (pi < 64) pmesh.setMatrixAt(pi++, dummy.matrix);
+        continue;
+      }
+      const b = bucketOf(i, P, flock, palLen);
+      const col = table[b];
+      let bright = 1;
+      if (pulsing) bright = 0.15 + 0.85 * Math.pow(Math.max(0, Math.cos(phase[i])), 4);
+      const wingScale = (P.colorMode === 'starling' || P.colorMode === 'turning') ? 1 + 1.4 * flock.bank[i] : 1;
+      dummy.scale.set(size * 0.75 * wingScale, size * 0.75, size * 1.2 * (pulsing ? 0.6 + 0.4 * bright : 1));
+      dummy.updateMatrix();
+      mesh.setMatrixAt(bi, dummy.matrix);
+      this.tmpColor.setRGB(col[0] * bright, col[1] * bright, col[2] * bright);
+      mesh.setColorAt(bi, this.tmpColor);
+      // glow
+      const ga = glowBase * (pulsing ? Math.pow(Math.max(0, Math.cos(phase[i])), 6) : 1) + flash[i];
+      gpos[bi * 3] = x; gpos[bi * 3 + 1] = y; gpos[bi * 3 + 2] = z;
+      gcol[bi * 3] = col[0] * ga; gcol[bi * 3 + 1] = col[1] * ga; gcol[bi * 3 + 2] = col[2] * ga;
+      // trails: write this frame's segment (previous position → current) into the current slot
+      if (L > 1) {
+        const p3 = bi * 3;
+        let ox = prevPos[p3], oy = prevPos[p3 + 1], oz = prevPos[p3 + 2];
+        if (!prevInit[bi] || (ox - x) ** 2 + (oy - y) ** 2 + (oz - z) ** 2 > 3600) { ox = x; oy = y; oz = z; prevInit[bi] = 1; }
+        const w = block + bi * 6;
+        tpos[w] = ox; tpos[w + 1] = oy; tpos[w + 2] = oz; tpos[w + 3] = x; tpos[w + 4] = y; tpos[w + 5] = z;
+        const f = 0.9 * (pulsing ? bright : 1);
+        tcol[w] = tcol[w + 3] = col[0] * f; tcol[w + 1] = tcol[w + 4] = col[1] * f; tcol[w + 2] = tcol[w + 5] = col[2] * f;
+        prevPos[p3] = x; prevPos[p3 + 1] = y; prevPos[p3 + 2] = z;
+      }
+      bi++;
+    }
+    mesh.count = bi; mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    pmesh.count = pi; pmesh.instanceMatrix.needsUpdate = true;
+    this.glow.geometry.setDrawRange(0, glowBase > 0 ? bi : 0);
+    this.glow.geometry.attributes.position.needsUpdate = true; this.glow.geometry.attributes.color.needsUpdate = true;
+    this.glowMat.size = P.size * (6 + P.glow * 10); this.glowMat.opacity = ctx.dark ? 0.7 : 0.18;
+    if (this.trails) {
+      // unused capacity gets zero-length segments so removed boids leave no ghosts
+      for (let b = bi; b < cap; b++) { const w = block + b * 6; tpos[w] = tpos[w + 1] = tpos[w + 2] = tpos[w + 3] = tpos[w + 4] = tpos[w + 5] = 0; prevInit[b] = 0; }
+      const pa = this.trails.geometry.attributes.position, ca = this.trails.geometry.attributes.aColor;
+      pa.updateRange.offset = block; pa.updateRange.count = cap * 6; pa.needsUpdate = true;
+      ca.updateRange.offset = block; ca.updateRange.count = cap * 6; ca.needsUpdate = true;
+      this.trailMat.uniforms.uHead.value = head;
+    }
+    // obstacles
+    if (flock.obstaclesVersion !== this.obsVersion || ctx.draft) this.rebuildObstacles(flock, ctx.draft);
+    // pointer ring
+    const m = ctx.mouse;
+    if (m.active && (m.mode === 'attract' || m.mode === 'repel')) {
+      this.pointerRing.visible = true;
+      this.pointerRing.position.set(m.x, m.y, m.z);
+      this.pointerRing.scale.setScalar(P.mouseRadius);
+      this.pointerRing.lookAt(this.camera.position);
+    } else this.pointerRing.visible = false;
+    // inspect
+    if (ctx.inspect && n > 0 && species[flock.inspect] === 0) {
+      const i = flock.inspect;
+      this.inspectSphere.visible = true; this.inspectSphere.position.set(px[i], py[i], pz[i]); this.inspectSphere.scale.setScalar(flock.reff || P.perception);
+      const arr = this.inspectLines.geometry.attributes.position.array;
+      for (let k = 0; k < flock.inspectN; k++) {
+        const j = flock.inspectList[k];
+        arr[k * 6] = px[i]; arr[k * 6 + 1] = py[i]; arr[k * 6 + 2] = pz[i];
+        arr[k * 6 + 3] = px[j]; arr[k * 6 + 4] = py[j]; arr[k * 6 + 5] = pz[j];
+      }
+      this.inspectLines.geometry.setDrawRange(0, flock.inspectN * 2);
+      this.inspectLines.geometry.attributes.position.needsUpdate = true;
+      this.inspectLines.visible = flock.inspectN > 0;
+    } else { this.inspectSphere.visible = false; this.inspectLines.visible = false; }
+    this.gridHelper.visible = true;
+    this.renderer.render(this.scene, this.camera);
+  }
+  rebuildObstacles(flock, draft) {
+    const g = this.obstacleGroup;
+    while (g.children.length) { const c = g.children.pop(); c.geometry.dispose(); }
+    const add = (ob, wire) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(ob.r, 24, 16), wire ? this.obstacleWire : this.obstacleMat);
+      m.position.set(ob.x, ob.y, ob.z); g.add(m);
+      if (!wire) { const w = new THREE.Mesh(new THREE.SphereGeometry(ob.r, 12, 8), this.obstacleWire); w.position.copy(m.position); g.add(w); }
+    };
+    for (const ob of flock.obstacles) add(ob, false);
+    if (draft) add(draft, true);
+    this.obsVersion = flock.obstaclesVersion;
+  }
+}
+</script>
+
+<script>
+/* =====================================================================
+   Presets, palettes, UI and main loop
+   ===================================================================== */
+const PALETTES = {
+  dusk:     { name: 'Dusk',     colors: ['#f2ecdd', '#c9c1ad', '#7f8aa6'] },
+  starling: { name: 'Starling', colors: ['#9a9aa6', '#4a4c58', '#15161c'] },
+  abyss:    { name: 'Abyss',    colors: ['#1c5fd8', '#27e0c6', '#e9fbff'] },
+  ember:    { name: 'Ember',    colors: ['#7a1e12', '#ff7a3d', '#ffe08a'] },
+  reef:     { name: 'Reef',     colors: ['#f26d5b', '#ffd166', '#6fe0bd'] },
+  aurora:   { name: 'Aurora',   colors: ['#39f2b0', '#3ac6ff', '#c7ff5e', '#ff8ad8'] },
+  rivals:   { name: 'Rivals',   colors: ['#ff5d73', '#4dd0e1', '#ffd166', '#9b5de5', '#5ef2a0', '#ff9f43'] },
+  firefly:  { name: 'Firefly',  colors: ['#ffe86b'] },
+  ink:      { name: 'Ink',      colors: ['#1b2330', '#3b4d73', '#7a8bb3'] },
+  nebula:   { name: 'Nebula',   colors: ['#5a2ea6', '#ff6fd8', '#8ad8ff'] },
+  mono:     { name: 'Mono',     colors: ['#ffffff'] },
+};
+
+const DEFAULTS = {
+  count: 700, predators: 0, maxSpeed: 3, agility: 0.08, perception: 60, separation: 22, fov: 270,
+  wSep: 1.5, wAli: 1.0, wCoh: 0.9, tribes: 1, tribeMix: 1, bounds: 'soft', flow: 0, flowScale: 320,
+  attractor: 0, swirl: 0, mouseRadius: 180, mouseForce: 1, predSpeed: 3.4, fleeRadius: 130, pulse: 0,
+  topo: 0, cruise: 0, jitter: 0, startle: 0, initiative: 0, roost: 0, level: 0, sky: null, arena: 1,
+  trail: 0.35, size: 4, glow: 0.25, colorMode: 'tribe', palette: 'abyss', bg: '#0f1626',
+};
+
+const PRESETS = [
+  { key: 'murmuration', name: 'Murmuration', tag: 'Starlings at dusk',
+    p: { count: 2200, predators: 1, predSpeed: 3.6, fleeRadius: 170, maxSpeed: 4, agility: 0.12, perception: 50, separation: 18, fov: 300, topo: 7, wSep: 2.15, wAli: 2.2, wCoh: 0.8, cruise: 0.7, jitter: 0.8, startle: 0.8, initiative: 1, attractor: 0.2, swirl: 0, roost: 0.3, trail: 0.1, size: 1.9, glow: 0, arena: 0.9, colorMode: 'starling', palette: 'starling', bg: '#d0c7c4', sky: 'linear-gradient(180deg,#aab3cb 0%,#d3c6c2 55%,#e8cfba 100%)' },
+    three: { count: 1200, size: 2.2, perception: 100, separation: 28, cruise: 0, level: 1, attractor: 0.3, roost: 0.15, world: [1100, 900, 1100], cam: { theta: 0.8, phi: 1.2, r: 1400 } } },
+  { key: 'bioluminescence', name: 'Bioluminescence', tag: 'A shoal lights the deep',
+    p: { count: 600, maxSpeed: 2.2, agility: 0.05, perception: 70, separation: 24, fov: 240, wSep: 1.4, wAli: 0.9, wCoh: 0.7, flow: 0.3, flowScale: 420, trail: 0.9, size: 2.6, glow: 0.55, colorMode: 'speed', palette: 'abyss', bg: '#040c19' } },
+  { key: 'vortex', name: 'Vortex', tag: 'One swirl, a thousand wings',
+    p: { count: 1200, maxSpeed: 3.2, agility: 0.07, perception: 60, separation: 18, wSep: 1.2, wAli: 1.6, wCoh: 0.4, attractor: 0.35, swirl: 0.9, trail: 0.8, size: 2.4, glow: 0.35, colorMode: 'speed', palette: 'ember', bg: '#120908' },
+    three: { count: 900, attractor: 0.45 } },
+  { key: 'hunt', name: 'Hunt', tag: 'Predators split the flock',
+    p: { count: 900, predators: 3, maxSpeed: 3.4, predSpeed: 3.9, fleeRadius: 150, perception: 60, separation: 20, wSep: 1.4, wAli: 1.1, wCoh: 1.0, trail: 0.4, size: 3.2, glow: 0.2, colorMode: 'density', palette: 'reef', bg: '#0a1418' } },
+  { key: 'currents', name: 'Currents', tag: 'Riding a hidden river',
+    p: { count: 1600, maxSpeed: 2.8, agility: 0.06, perception: 40, separation: 14, wSep: 1.0, wAli: 0.6, wCoh: 0.3, flow: 1.4, flowScale: 360, bounds: 'wrap', trail: 0.9, size: 1.8, glow: 0.2, colorMode: 'heading', palette: 'aurora', bg: '#07101a' },
+    three: { count: 1200, size: 2.2 } },
+  { key: 'rivals', name: 'Rivals', tag: 'Four flocks that never mix',
+    p: { count: 1200, tribes: 4, tribeMix: 0, maxSpeed: 3.2, perception: 60, separation: 20, wSep: 1.6, wAli: 1.1, wCoh: 1.0, trail: 0.5, size: 3, glow: 0.3, colorMode: 'tribe', palette: 'rivals', bg: '#0f1626' } },
+  { key: 'fireflies', name: 'Fireflies', tag: 'Flashing into sync',
+    p: { count: 220, maxSpeed: 1.2, agility: 0.03, perception: 110, separation: 40, fov: 360, wSep: 1.2, wAli: 0.3, wCoh: 0.5, pulse: 0.8, trail: 0.3, size: 2.5, glow: 0.9, colorMode: 'tribe', palette: 'firefly', bg: '#050905' },
+    three: { count: 320 } },
+  { key: 'ink', name: 'Ink', tag: 'Slow streams on paper',
+    p: { count: 2200, maxSpeed: 1.8, agility: 0.04, perception: 35, separation: 12, wSep: 0.9, wAli: 0.7, wCoh: 0.5, flow: 0.9, flowScale: 520, bounds: 'wrap', trail: 0.93, size: 1.4, glow: 0.15, colorMode: 'tribe', palette: 'ink', bg: '#f1ece1' },
+    three: { count: 1500, size: 2 } },
+  { key: 'nebula', name: 'Nebula', tag: 'Best seen in 3D',
+    p: { count: 1000, maxSpeed: 2.4, agility: 0.05, perception: 70, separation: 26, wSep: 1.2, wAli: 0.8, wCoh: 0.5, flow: 0.7, flowScale: 300, attractor: 0.15, swirl: 0.4, trail: 0.85, size: 2.2, glow: 0.6, colorMode: 'speed', palette: 'nebula', bg: '#0a0616' } },
+  { key: 'comets', name: 'Comets', tag: 'Fast, loose, streaking',
+    p: { count: 500, maxSpeed: 6, agility: 0.12, perception: 80, separation: 30, wSep: 1.5, wAli: 1.4, wCoh: 0.6, bounds: 'wrap', trail: 0.94, size: 2, glow: 0.4, colorMode: 'heading', palette: 'aurora', bg: '#05070d' } },
+];
+
+const TIPS = {
+  count: 'How many boids are in the sky. More boids make denser, richer flocks but ask more of your device.',
+  predators: 'Hunters that chase the nearest boid. Prey flee from them, which splits and reshapes the flock.',
+  maxSpeed: 'The fastest a boid can fly. Boids never drop below about a third of this.',
+  agility: 'How sharply a boid can turn each frame. High values react instantly; low values glide.',
+  perception: 'How far a boid can see. Only neighbours inside this distance influence it.',
+  separation: 'The personal bubble. Neighbours closer than this push the boid away.',
+  fov: 'The angle a boid can see. 360° sees all around; smaller angles ignore what is behind.',
+  topo: 'Attend only to the few closest boids, however far away they are, instead of everyone within perception. Real starlings do this and it keeps a flock together.',
+  wSep: 'How strongly boids avoid crowding. Zero lets them pile onto each other.',
+  wAli: 'How strongly boids match their neighbours\' direction. High values give streams and sheets.',
+  wCoh: 'How strongly boids drift toward the middle of their neighbours. High values give tight clumps.',
+  cruise: 'Nudges every boid back toward a comfortable speed so the flock moves as one mass.',
+  jitter: 'Random wobble in each boid\'s steering. A little makes the flock breathe and ripple.',
+  startle: 'How much a boid copies neighbours that are turning sharply. This is how an escape wave races through a flock faster than any bird flies.',
+  initiative: 'How often a bird on the edge of the flock spontaneously makes a sharp turn. Field studies found flock-wide turns start this way, with one bird on the border.',
+  roost: 'A free zone in the middle of the sky. Inside it there is no pull; past it the flock is drawn back, so it circles a roost instead of hitting the edges.',
+  tribes: 'Split the flock into coloured groups.',
+  tribeMix: 'How much different tribes flock with each other. Zero keeps them apart.',
+  bounds: 'What happens at the edge of the world: turn back, or reappear on the far side.',
+  flow: 'Strength of a hidden, slowly shifting current that carries the boids along.',
+  flowScale: 'Size of the eddies in the current. Larger gives broad, slow bends.',
+  attractor: 'A gentle pull toward the centre of the world, like starlings circling their roost.',
+  swirl: 'A sideways push around the centre that spins the flock into a vortex.',
+  pulse: 'Lets boids flash and gradually fall into sync with their neighbours, like fireflies.',
+  fleeRadius: 'How close a predator gets before prey panic and flee.',
+  predSpeed: 'Top speed of predators. Faster than the prey means more catches.',
+  mouseRadius: 'How far the Attract and Repel tools reach from the pointer.',
+  trail: 'How long each boid\'s path lingers before it fades.',
+  size: 'How big each boid is drawn.',
+  glow: 'A soft halo around each boid. Looks best on dark backgrounds with trails.',
+  colorMode: 'What the colour of a boid encodes: its tribe, direction, speed, how crowded it is, or how hard it is turning.',
+  palette: 'The set of colours used by the current colour mode.',
+  bg: 'Background colour. Light backgrounds switch the interface to a light theme.',
+};
+
+const CONTROLS = {
+  flock: [
+    { key: 'count', label: 'Boids', min: 10, max: 3000, step: 10 },
+    { key: 'predators', label: 'Predators', min: 0, max: 12, step: 1 },
+    { key: 'maxSpeed', label: 'Top speed', min: 0.5, max: 8, step: 0.1, fmt: v => v.toFixed(1) },
+    { key: 'agility', label: 'Agility', min: 0.01, max: 0.3, step: 0.01, fmt: v => v.toFixed(2) },
+    { key: 'perception', label: 'Perception', min: 10, max: 200, step: 1, fmt: v => v + ' px' },
+    { key: 'separation', label: 'Personal space', min: 4, max: 100, step: 1, fmt: v => v + ' px' },
+    { key: 'fov', label: 'Field of view', min: 30, max: 360, step: 5, fmt: v => v + '°' },
+    { key: 'topo', label: 'Nearest neighbours', min: 0, max: 16, step: 1, fmt: v => v === 0 ? 'everyone in range' : v + ' closest' },
+  ],
+  behaviour: [
+    { key: 'wSep', label: 'Separation', min: 0, max: 3, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'wAli', label: 'Alignment', min: 0, max: 3, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'wCoh', label: 'Cohesion', min: 0, max: 3, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'cruise', label: 'Steady speed', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'jitter', label: 'Restlessness', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'startle', label: 'Startle', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'initiative', label: 'Initiative', min: 0, max: 2, step: 0.1, fmt: v => v.toFixed(1) },
+    { key: 'tribes', label: 'Tribes', min: 1, max: 6, step: 1 },
+    { key: 'tribeMix', label: 'Mixing between tribes', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'bounds', label: 'Edges', type: 'select', options: [['soft', 'Turn back at the edge'], ['wrap', 'Wrap around']] },
+    { key: 'flow', label: 'Current', min: 0, max: 2, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'flowScale', label: 'Current scale', min: 120, max: 800, step: 10, fmt: v => v + ' px' },
+    { key: 'attractor', label: 'Pull to centre', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'roost', label: 'Roost zone', min: 0, max: 0.5, step: 0.05, fmt: v => v === 0 ? 'off' : Math.round(v * 100) + '% of the sky' },
+    { key: 'swirl', label: 'Swirl', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'pulse', label: 'Sync flashing', min: 0, max: 1, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: 'fleeRadius', label: 'Fear radius', min: 40, max: 300, step: 5, fmt: v => v + ' px' },
+    { key: 'predSpeed', label: 'Predator speed', min: 1, max: 8, step: 0.1, fmt: v => v.toFixed(1) },
+    { key: 'mouseRadius', label: 'Pointer reach', min: 40, max: 400, step: 10, fmt: v => v + ' px' },
+  ],
+  look: [
+    { key: 'trail', label: 'Trails', min: 0, max: 0.97, step: 0.01, fmt: v => Math.round(v / 0.97 * 100) + '%' },
+    { key: 'size', label: 'Size', min: 1, max: 12, step: 0.2, fmt: v => v.toFixed(1) },
+    { key: 'glow', label: 'Glow', min: 0, max: 1, step: 0.05, fmt: v => Math.round(v * 100) + '%' },
+    { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning']] },
+    { key: 'palette', label: 'Palette', type: 'select', options: Object.keys(PALETTES).map(k => [k, PALETTES[k].name]) },
+    { key: 'bg', label: 'Background', type: 'color' },
+  ],
+};
+
+/* ---------------- state ---------------- */
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+let P = Object.assign({}, DEFAULTS);
+let mode = '2d';
+let paused = false;
+let activePreset = null;
+const W2 = { lo: [0, 0, 0], size: [1, 1, 0] };
+const W3 = { lo: [-460, -280, -460], size: [920, 560, 920] };
+const WORLD3_DEFAULT = [920, 560, 920];
+function setWorld3(size) {
+  size = size || WORLD3_DEFAULT;
+  if (W3.size[0] === size[0] && W3.size[1] === size[1] && W3.size[2] === size[2]) return;
+  W3.size[0] = size[0]; W3.size[1] = size[1]; W3.size[2] = size[2];
+  W3.lo[0] = -size[0] / 2; W3.lo[1] = -size[1] / 2; W3.lo[2] = -size[2] / 2;
+  if (view3d) view3d.setWorld(size);
+}
+let flock = new Flock(2, W2);
+const view2d = new View2D();
+let view3d = null;
+let threePromise = null;
+const ctx = { mouse: { x: 0, y: 0, z: 0, active: false, mode: 'attract' }, tool: 'attract', dark: true, palette: PALETTES.abyss.colors, inspect: false, grid: false, draft: null };
+const inputs = {};
+let dprCap = Math.min(window.devicePixelRatio || 1, 2);
+let dpr = dprCap;
+let width = 0, height = 0;
+let slowFor = 0, quality = 2;   // 2 full, 1 no backdrop blur, 0 also lower resolution
+const PIXEL_BUDGET = 2600000;   // roughly 1920x1350; beyond this, resolution is scaled down
+function downgrade() {
+  if (quality === 2) { quality = 1; document.body.classList.add('cheap'); }
+  else if (quality === 1) { quality = 0; dprCap = Math.max(0.75, dprCap * 0.7); resize(); }
+}
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- panel construction ---------------- */
+function buildControls() {
+  const make = (spec) => {
+    const wrap = document.createElement('label'); wrap.className = 'ctl';
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = spec.label; wrap.appendChild(name);
+    if (TIPS[spec.key]) {
+      // a span, not a button: a button would become the label's activation target and open on any click in the row
+      const tip = document.createElement('span'); tip.className = 'tip'; tip.textContent = '?'; tip.tabIndex = 0; tip.setAttribute('role', 'button');
+      tip.setAttribute('aria-label', 'What ' + spec.label + ' does'); tip.dataset.tip = TIPS[spec.key];
+      tip.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const on = tip.classList.contains('show'); closeTips(); if (!on) tip.classList.add('show'); });
+      tip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tip.click(); } });
+      name.appendChild(tip);
+    }
+    const out = document.createElement('output'); wrap.appendChild(out);
+    let input;
+    if (spec.type === 'select') {
+      input = document.createElement('select');
+      for (const [v, t] of spec.options) { const o = document.createElement('option'); o.value = v; o.textContent = t; input.appendChild(o); }
+      out.remove();
+      input.addEventListener('change', () => setParam(spec.key, input.value));
+    } else if (spec.type === 'color') {
+      input = document.createElement('input'); input.type = 'color';
+      out.remove();
+      input.addEventListener('input', () => setParam(spec.key, input.value));
+    } else {
+      input = document.createElement('input'); input.type = 'range';
+      input.min = spec.min; input.max = spec.max; input.step = spec.step;
+      input.addEventListener('input', () => setParam(spec.key, parseFloat(input.value)));
+    }
+    input.setAttribute('aria-label', spec.label);
+    wrap.appendChild(input);
+    inputs[spec.key] = { input, out, spec };
+    return wrap;
+  };
+  for (const [sec, specs] of Object.entries(CONTROLS)) {
+    const host = $('sec' + sec[0].toUpperCase() + sec.slice(1));
+    for (const s of specs) host.appendChild(make(s));
+  }
+  const host = $('presets');
+  PRESETS.forEach((pr, i) => {
+    const b = document.createElement('button'); b.className = 'preset'; b.dataset.key = pr.key; b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = `<b>${pr.name}</b><small>${pr.tag}</small>`;
+    b.title = `Preset ${i + 1}`;
+    b.addEventListener('click', () => applyPreset(pr.key));
+    host.appendChild(b);
+  });
+}
+function closeTips() { document.querySelectorAll('.tip.show').forEach(t => t.classList.remove('show')); }
+document.addEventListener('pointerdown', e => { if (!e.target.closest('.tip')) closeTips(); });
+function reflect(key) {
+  const c = inputs[key]; if (!c) return;
+  const v = P[key];
+  if (c.spec.type === 'select' || c.spec.type === 'color') { c.input.value = v; return; }
+  c.input.value = v;
+  c.out.textContent = c.spec.fmt ? c.spec.fmt(v) : v;
+  c.input.style.setProperty('--p', ((v - c.spec.min) / (c.spec.max - c.spec.min) * 100) + '%');
+}
+function syncUI() {
+  for (const k in inputs) reflect(k);
+  document.querySelectorAll('.preset').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === activePreset)));
+  applyLook();
+}
+
+/* ---------------- param changes ---------------- */
+function setParam(key, value) {
+  P[key] = value;
+  reflect(key);
+  if (key !== 'bg') { activePreset = null; document.querySelectorAll('.preset').forEach(b => b.setAttribute('aria-pressed', 'false')); }
+  switch (key) {
+    case 'count': case 'predators': flock.setCounts(P.count, P.predators, P.tribes); break;
+    case 'tribes': flock.assignTribes(P.tribes); break;
+    case 'colorMode': case 'palette': case 'bg': applyLook(); break;
+    case 'trail': if (P.trail === 0) view2d.clear(); break;
+  }
+}
+function applyLook() {
+  ctx.palette = PALETTES[P.palette].colors;
+  ctx.dark = luminance(P.bg) < 0.5;
+  const table = buildColorTable(P.colorMode, ctx.palette);
+  view2d.setTable(table);
+  if (view3d) { view3d.setTable(table); view3d.setBackground(P.bg, ctx.dark); }
+  stage.style.background = P.sky || P.bg;
+  stage.classList.toggle('light', !ctx.dark);
+  document.body.classList.toggle('light', !ctx.dark);
+}
+function applyPreset(key) {
+  const pr = PRESETS.find(p => p.key === key); if (!pr) return;
+  P = Object.assign({}, DEFAULTS, pr.p, mode === '3d' && pr.three ? pr.three : {});
+  if (P.cam) { if (view3d && mode === '3d') Object.assign(view3d.cam, { theta: P.cam.theta, phi: P.cam.phi, rTarget: P.cam.r }); delete P.cam; }
+  if (mode === '3d') setWorld3(P.world); delete P.world;
+  if (mode === '2d') { updateArena(); P.count = Math.max(10, Math.round(P.count * clamp(width * height / (1300 * 800), 0.3, 1) / 10) * 10); }
+  activePreset = key;
+  flock.obstacles.length = 0; flock.obstaclesVersion++;
+  flock.reset(P);
+  view2d.clear();
+  if (view3d) view3d.resetTrails();
+  syncUI();
+  setHint();
+}
+
+/* ---------------- resize ---------------- */
+function updateArena() {
+  const a = clamp(P.arena || 1, 0.3, 1);
+  W2.lo[0] = (1 - a) / 2 * width; W2.lo[1] = (1 - a) / 2 * height;
+  W2.size[0] = a * width; W2.size[1] = a * height;
+}
+function resize() {
+  width = window.innerWidth; height = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+  const px = width * height * dpr * dpr;
+  if (px > PIXEL_BUDGET) dpr = Math.max(0.6, dpr * Math.sqrt(PIXEL_BUDGET / px));   // a huge canvas costs fill rate, not maths
+  updateArena();
+  view2d.resize(width, height, dpr);
+  if (view3d) { view3d.renderer.setPixelRatio(dpr); view3d.resize(width, height); }
+}
+window.addEventListener('resize', resize);
+
+/* ---------------- mode switching ---------------- */
+function loadThree() {
+  if (threePromise) return threePromise;
+  threePromise = new Promise((res, rej) => {
+    if (window.THREE) return res();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s.onload = res; s.onerror = () => rej(new Error('three.js failed to load'));
+    document.head.appendChild(s);
+  });
+  return threePromise;
+}
+async function setMode(m) {
+  if (m === mode) return;
+  if (m === '3d') {
+    setHint('Loading the 3D engine…');
+    try { await loadThree(); } catch (e) { setHint('The 3D engine could not load. Check your connection and try again.'); return; }
+    if (!view3d) { view3d = new View3D($('c3d'), W3); view3d.autoRotate = $('tgRotate').checked && !reduceMotion; view3d.resize(width, height); }
+  }
+  mode = m;
+  const dims = m === '3d' ? 3 : 2;
+  const pr = activePreset && PRESETS.find(p => p.key === activePreset);
+  if (pr && pr.three) P = Object.assign({}, DEFAULTS, pr.p, dims === 3 ? pr.three : {});
+  flock = new Flock(dims, dims === 3 ? W3 : W2);
+  if (P.cam) { if (view3d && dims === 3) Object.assign(view3d.cam, { theta: P.cam.theta, phi: P.cam.phi, rTarget: P.cam.r }); delete P.cam; }
+  if (dims === 3) setWorld3(P.world); delete P.world;
+  if (dims === 2) updateArena();
+  flock.reset(P);
+  $('c2d').style.display = $('c2o').style.display = dims === 2 ? 'block' : 'none';
+  $('c3d').style.display = dims === 3 ? 'block' : 'none';
+  $('mode2d').setAttribute('aria-pressed', String(dims === 2));
+  $('mode3d').setAttribute('aria-pressed', String(dims === 3));
+  document.querySelector('[data-tool="orbit"]').hidden = dims === 2;
+  $('rowRotate').style.display = dims === 3 ? '' : 'none';
+  $('tgGrid').closest('.toggle').style.display = dims === 3 ? 'none' : '';
+  if (dims === 3 && ctx.tool !== 'orbit') selectTool('orbit');
+  if (dims === 2 && ctx.tool === 'orbit') selectTool('attract');
+  view2d.clear();
+  if (view3d) view3d.resetTrails();
+  syncUI();
+  setHint();
+}
+$('mode2d').addEventListener('click', () => setMode('2d'));
+$('mode3d').addEventListener('click', () => setMode('3d'));
+
+/* ---------------- tools & pointer ---------------- */
+const HINTS = {
+  orbit: 'Drag to look around, scroll to zoom. Pick a tool to touch the flock.',
+  attract: mode => mode === '3d' ? 'Hold on the box to pull the flock toward the pointer. Right-drag to orbit.' : 'Hold anywhere to pull the flock toward the pointer. Scroll to zoom, right-drag to move.',
+  repel: mode => mode === '3d' ? 'Hold to push the flock away. Right-drag to orbit.' : 'Hold to push the flock away from the pointer. Scroll to zoom, right-drag to move.',
+  obstacle: 'Press and drag to size a new obstacle.',
+  predator: 'Click to release a predator where you point.',
+  erase: 'Click an obstacle or predator to remove it.',
+};
+function setHint(text) {
+  if (text === undefined) { const h = HINTS[ctx.tool]; text = typeof h === 'function' ? h(mode) : h; }
+  $('hint').textContent = text;
+}
+function selectTool(t) {
+  ctx.tool = t;
+  ctx.mouse.mode = t;
+  document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+  setHint();
+}
+document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => selectTool(b.dataset.tool)));
+
+const pointers = new Map();
+let orbiting = false, panning = false, pinchDist = 0, pinchMid = null, lastX = 0, lastY = 0, interacting = 0;
+function worldFromEvent(e) {
+  if (mode === '2d') return view2d.toWorld(e.clientX, e.clientY);
+  const p = view3d.screenToWorld((e.clientX / width) * 2 - 1, -(e.clientY / height) * 2 + 1);
+  return p ? { x: p.x, y: p.y, z: p.z } : null;
+}
+stage.addEventListener('contextmenu', e => e.preventDefault());
+stage.addEventListener('pointerdown', e => {
+  stage.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  interacting = 20;
+  lastX = e.clientX; lastY = e.clientY;
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()]; pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    pinchMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    orbiting = false; panning = false; ctx.mouse.active = false; ctx.draft = null; return;
+  }
+  const rightButton = e.button === 2 || e.button === 1;
+  if (mode === '3d' && (ctx.tool === 'orbit' || rightButton)) { orbiting = true; return; }
+  if (mode === '2d' && rightButton) { panning = true; return; }
+  const p = worldFromEvent(e); if (!p) return;
+  const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
+  switch (ctx.tool) {
+    case 'attract': case 'repel': m.active = true; break;
+    case 'obstacle': ctx.draft = { x: p.x, y: p.y, z: p.z, r: 12 }; break;
+    case 'predator': if (flock.countSpecies(1) < 40) { flock.addPredator(p.x, p.y, p.z); P.predators = flock.countSpecies(1); reflect('predators'); } break;
+    case 'erase': erase(p, e); break;
+  }
+});
+stage.addEventListener('pointermove', e => {
+  const rec = pointers.get(e.pointerId);
+  if (rec) { rec.x = e.clientX; rec.y = e.clientY; interacting = 20; }
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    if (pinchDist > 0) {
+      if (mode === '3d' && view3d) view3d.cam.rTarget *= pinchDist / d;
+      else if (mode === '2d') { view2d.zoomAt(mid.x, mid.y, d / pinchDist); if (pinchMid) view2d.pan(mid.x - pinchMid.x, mid.y - pinchMid.y); }
+    }
+    pinchDist = d; pinchMid = mid; return;
+  }
+  if (panning) { view2d.pan(e.clientX - lastX, e.clientY - lastY); lastX = e.clientX; lastY = e.clientY; return; }
+  if (orbiting && view3d) {
+    view3d.cam.theta += (e.clientX - lastX) * 0.006;
+    view3d.cam.phi -= (e.clientY - lastY) * 0.006;
+    lastX = e.clientX; lastY = e.clientY; return;
+  }
+  lastX = e.clientX; lastY = e.clientY;
+  if (mode === '3d' && !view3d) return;
+  const p = worldFromEvent(e); if (!p) return;
+  const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
+  if (ctx.draft) ctx.draft.r = Math.max(12, Math.hypot(p.x - ctx.draft.x, p.y - ctx.draft.y, p.z - ctx.draft.z));
+  else if (rec && ctx.tool === 'erase' && mode === '2d') erase(p);
+});
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) { pinchDist = 0; pinchMid = null; }
+  if (pointers.size === 0) {
+    orbiting = false; panning = false; ctx.mouse.active = false;
+    if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push({ x: d.x, y: d.y, z: d.z, r: Math.max(15, d.r) }); flock.obstaclesVersion++; }
+  }
+}
+stage.addEventListener('pointerup', endPointer);
+stage.addEventListener('pointercancel', endPointer);
+stage.addEventListener('wheel', e => {
+  e.preventDefault(); interacting = 20;
+  const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 120 : 1;
+  const d = clamp(e.deltaY * unit, -60, 60);
+  if (mode === '3d') { if (view3d) view3d.cam.rTarget *= Math.exp(d * 0.0007); }
+  else view2d.zoomAt(e.clientX, e.clientY, Math.exp(-d * 0.0015));
+}, { passive: false });
+stage.addEventListener('dblclick', e => {
+  if (e.target.closest('.tip')) return;
+  if (mode === '2d') view2d.resetView(); else if (view3d) view3d.resetCamera();
+});
+function erase(p, e) {
+  if (mode === '3d' && view3d && e) {
+    const hit = view3d.pick((e.clientX / width) * 2 - 1, -(e.clientY / height) * 2 + 1, flock);
+    if (hit && hit.type === 'obstacle') { flock.obstacles.splice(hit.index, 1); flock.obstaclesVersion++; }
+    else if (hit && hit.type === 'predator') flock.removeIndex(hit.index);
+    P.predators = flock.countSpecies(1); reflect('predators');
+    return;
+  }
+  const before = flock.obstacles.length;
+  flock.obstacles = flock.obstacles.filter(o => Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z) > o.r);
+  if (flock.obstacles.length !== before) flock.obstaclesVersion++;
+  for (let i = flock.n - 1; i >= 0; i--) {
+    if (flock.species[i] === 1 && Math.hypot(flock.px[i] - p.x, flock.py[i] - p.y, flock.pz[i] - p.z) < 40) flock.removeIndex(i);
+  }
+  P.predators = flock.countSpecies(1); reflect('predators');
+}
+
+/* ---------------- buttons & keys ---------------- */
+function togglePause() { paused = !paused; $('btnPause').dataset.on = String(paused); $('btnPause').title = paused ? 'Play (space)' : 'Pause (space)'; }
+function scatter() { flock.scatter(); flock.events.length = 0; view2d.clear(); if (view3d) view3d.resetTrails(); }
+function toggleClean() { const on = document.body.classList.toggle('clean'); $('btnClean').dataset.on = String(on); }
+function toggleFull() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); }
+$('btnPause').addEventListener('click', togglePause);
+$('btnRestart').addEventListener('click', scatter);
+$('btnClean').addEventListener('click', toggleClean);
+$('btnFull').addEventListener('click', toggleFull);
+$('btnPanel').addEventListener('click', () => $('panel').classList.toggle('open'));
+$('btnAbout').addEventListener('click', () => { const d = $('about'); d.showModal ? d.showModal() : d.setAttribute('open', ''); });
+$('btnAboutClose').addEventListener('click', () => $('about').close());
+$('about').addEventListener('click', e => { if (e.target === $('about')) $('about').close(); });
+$('tgInspect').addEventListener('change', e => { ctx.inspect = e.target.checked; });
+$('tgGrid').addEventListener('change', e => { ctx.grid = e.target.checked; });
+$('tgRotate').addEventListener('change', e => { if (view3d) view3d.autoRotate = e.target.checked && !reduceMotion; });
+if (reduceMotion) { $('tgRotate').checked = false; }
+window.addEventListener('keydown', e => {
+  if (e.target.matches('input,select,textarea') || $('about').open) return;
+  if (e.key === ' ') { e.preventDefault(); togglePause(); }
+  else if (e.key === 'r' || e.key === 'R') scatter();
+  else if (e.key === 'h' || e.key === 'H') toggleClean();
+  else if (e.key === 'f' || e.key === 'F') toggleFull();
+  else if (e.key === 'Escape' && document.body.classList.contains('clean')) toggleClean();
+  else if (e.key >= '1' && e.key <= '9') { const pr = PRESETS[parseInt(e.key) - 1]; if (pr) applyPreset(pr.key); }
+  else if (e.key === '0' && PRESETS[9]) applyPreset(PRESETS[9].key);
+  else if (e.key === 'd' || e.key === 'D') document.body.classList.toggle('diag');
+});
+// close mobile sheet when tapping the stage
+stage.addEventListener('pointerdown', () => { if (window.innerWidth <= 820) $('panel').classList.remove('open'); });
+
+/* ---------------- HUD ---------------- */
+const spark = $('spark').getContext('2d');
+const orderHist = new Float32Array(84); let orderPtr = 0;
+let fpsAcc = 0, fpsN = 0, fps = 60, lastHud = 0, fpsPrev = 0;
+function drawSpark() {
+  const c = spark, W = 168, H = 44;
+  c.clearRect(0, 0, W, H);
+  c.beginPath();
+  for (let k = 0; k < 84; k++) {
+    const v = orderHist[(orderPtr + k) % 84];
+    const x = k * 2, y = H - 3 - v * (H - 6);
+    k === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+  }
+  c.strokeStyle = '#f2c46d'; c.lineWidth = 2; c.stroke();
+}
+function updateHud(now) {
+  if (now - lastHud < 250) return;
+  lastHud = now;
+  $('stBoids').textContent = flock.n.toLocaleString();
+  $('stFps').textContent = Math.round(fps);
+  $('stOrder').textContent = flock.order.toFixed(2);
+  orderHist[orderPtr] = flock.order; orderPtr = (orderPtr + 1) % 84;
+  drawSpark();
+}
+
+/* ---------------- main loop ----------------
+   The flock is simulated at a fixed 60 steps per second and drawn once per animation
+   frame. On a 144 Hz display that is 60 steps rather than 144, and the motion runs at
+   the same speed either way. */
+let simHz = 60, simMs_ = 1000 / 60;
+let last = performance.now(), acc = 0;
+let simMs = 0, drawMs = 0, steps = 0, stepMs = 0;
+/* If a single step costs more than about a fifth of its own budget the machine cannot
+   sustain 60 steps a second, so halve the rate and double the time step. The flock
+   moves at exactly the same speed either way. */
+function tuneSimRate() {
+  if (simHz === 60 && stepMs > 5.5) { simHz = 30; }
+  else if (simHz === 30 && stepMs < 2.2) { simHz = 60; }
+  simMs_ = 1000 / simHz;
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  const elapsed = Math.min(now - last, 250); last = now;
+  fpsAcc += now - (fpsPrev || now); fpsPrev = now; fpsN++;
+  if (fpsAcc > 500) {
+    fps = 1000 * fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
+    if (!paused && fps < 40 && quality > 0) { slowFor += 0.5; if (slowFor >= 2) { downgrade(); slowFor = 0; } }
+    else slowFor = 0;
+  }
+  let t0 = performance.now();
+  if (!paused) {
+    acc = Math.min(acc + elapsed, simMs_ * 2);   // never try to catch up more than a step or two
+    const dtStep = 60 / simHz;
+    let n = 0;
+    while (acc >= simMs_ && n < 2) {
+      const s0 = performance.now();
+      flock.step(dtStep, P, ctx);
+      stepMs += (performance.now() - s0 - stepMs) * 0.05;
+      acc -= simMs_; n++;
+    }
+    steps = n;
+    if (n) tuneSimRate();
+    if (interacting > 0) interacting -= n * dtStep;
+  } else steps = 0;
+  simMs += (performance.now() - t0 - simMs) * 0.1;
+  t0 = performance.now();
+  if (mode === '2d') view2d.render(flock, P, ctx, steps);
+  else if (view3d) view3d.render(flock, P, ctx, paused ? 0 : steps, interacting > 0 || ctx.mouse.active);
+  drawMs += (performance.now() - t0 - drawMs) * 0.1;
+  updateHud(now);
+  if (document.body.classList.contains('diag')) updateDiag();
+}
+
+/* ---------------- diagnostics (?debug=1 or D) ---------------- */
+function gpuInfo() {
+  try {
+    const cv = document.createElement('canvas');
+    const gl = cv.getContext('webgl') || cv.getContext('experimental-webgl');
+    if (!gl) return 'WebGL unavailable';
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'renderer hidden';
+  } catch (e) { return 'WebGL error'; }
+}
+let gpuName = null;
+function updateDiag() {
+  if (gpuName === null) gpuName = gpuInfo();
+  const cv = mode === '2d' ? view2d.canvas : $('c3d');
+  const soft = /swiftshader|llvmpipe|software|basic render/i.test(gpuName);
+  $('diag').innerHTML =
+    `fps <b>${fps.toFixed(0)}</b>   sim <b>${simMs.toFixed(1)}ms</b>   draw <b>${drawMs.toFixed(1)}ms</b>\n` +
+    `boids ${flock.n}   sim ${simHz}Hz   step ${stepMs.toFixed(1)}ms   steps/frame ${steps}   mode ${mode}\n` +
+    `css ${width}\u00d7${height}   canvas ${cv.width}\u00d7${cv.height}   dpr ${dpr.toFixed(2)} (device ${(window.devicePixelRatio || 1).toFixed(2)})\n` +
+    `pixels ${(cv.width * cv.height / 1e6).toFixed(2)}M   quality ${quality}\n` +
+    `in iframe ${window.top !== window.self ? 'yes' : 'no'}\n` +
+    `gpu ${gpuName}${soft ? '  <b>SOFTWARE RENDERING</b>' : ''}`;
+}
+
+/* ---------------- boot ---------------- */
+buildControls();
+resize();
+const url = new URLSearchParams(location.search);
+const startPreset = PRESETS.find(p => p.key === url.get('preset')) ? url.get('preset') : 'murmuration';
+applyPreset(startPreset);
+selectTool('attract');
+if (url.get('ui') === 'min') toggleClean();
+if (url.get('debug')) document.body.classList.add('diag');
+if (url.get('mode') === '3d') setMode('3d');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
