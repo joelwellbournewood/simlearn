@@ -7,7 +7,7 @@
 <meta name="description" content="An interactive Newtonian gravity sandbox. Build a star system, run the figure-eight, watch three bodies go chaotic, park a probe at a Lagrange point, or collide two galaxies. Every body pulls on every other; nothing is scripted.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Karla:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0a1512; --field:#07120f;
@@ -16,9 +16,9 @@
   --ink:#e3efe9; --muted:#88a397;
   --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
   --danger:#ff7d5c; --gold:#e6c34f;
-  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --display:"Fraunces",ui-sans-serif,system-ui,sans-serif;
   --mono:"Space Mono",ui-monospace,Menlo,monospace;
-  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --body:"Karla",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
@@ -29,7 +29,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 #stage canvas.panning{cursor:grabbing}
 #stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
 .brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
-.brand .kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
 .brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
 .brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
 .actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
@@ -46,13 +46,13 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
   font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
   border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
 .about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
-.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
 .label:first-of-type{margin-top:0}
-.presets{display:grid;gap:6px}
-.preset{display:flex;flex-direction:column;gap:1px;padding:7px 11px;border:1px solid var(--line);border-radius:10px;
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
   background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
-.preset b{font-family:var(--display);font-weight:600;font-size:13px}
-.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
+.preset small{color:var(--muted);font-size:11px;line-height:1.25}
 .preset:hover{border-color:var(--line-strong)}
 .preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
 .row{position:relative;margin:10px 0}
@@ -85,7 +85,7 @@ input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;bac
 .tg:disabled{opacity:.35;cursor:default}
 .hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
 .stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
-.stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
 .hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:calc(100% - 360px)}
@@ -224,7 +224,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
 </div>
 
-<div class="hint">Drag on empty space to sling a body. Click a body to inspect it. Scroll to zoom, right-drag to pan. 1-8 presets, space pause, R for a clean restart.</div>
+<div class="hint">Drag on empty space to sling a body. Click a body to inspect it. Scroll to zoom, right-drag to pan. Space pauses, R restarts.</div>
 
 <div class="sel" id="sel">
   <h4><i id="sel-dot"></i><span id="sel-name">Body</span></h4>
@@ -255,7 +255,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p>Click any body. The dashed curve is the path it would follow if only its main attractor existed: an ellipse if it is bound to that body, a hyperbola if it is passing through. The card gives you its eccentricity, its semi-major axis and its period. Watch the comet in <b class="hl">Star and planets</b>. It crawls at the far end of its ellipse and whips around the near end, sweeping out equal areas in equal times, which is Kepler's second law. Compare any two planets and you will find the period grows as the semi-major axis to the power of one and a half, which is his third. Kepler spent years extracting those rules from Tycho Brahe's observations. Here they arrive free with the inverse square law.</p>
 
     <h3>Why two bodies are easy and three are not</h3>
-    <p>Two bodies have an exact solution. Add a third and no such formula exists. Henri Poincare showed in the 1890s that the general three-body problem is chaotic: two starts a hair apart end up in completely different places. <b class="hl">Pythagorean three</b> is the classic demonstration, posed by Burrau in 1913 and only followed through to the end numerically by Szebehely and Peters in 1967. Masses of 3, 4 and 5 start at rest on the corners of a 3-4-5 triangle. After a run of close passes one body is flung out and the other two settle into a binary. That is the usual ending. A three-body system resolves its own chaos by throwing a member away.</p>
+    <p>Two bodies have an exact solution. Add a third and no such formula exists. Henri Poincare showed in the 1890s that the general three-body problem is chaotic: two starts a hair apart end up in completely different places. <b class="hl">Pythagorean three</b> is the classic demonstration, posed by Burrau in 1913 and only followed through to the end numerically by Szebehely and Peters in 1967. Masses of 3, 4 and 5 start at rest on the corners of a 3-4-5 triangle, and each one carries its number on screen so you can follow which is which. The view tracks the survivors, so when a body is thrown clear the camera stays with the pair it left behind. After a run of close passes one body is flung out and the other two settle into a binary. That is the usual ending. A three-body system resolves its own chaos by throwing a member away.</p>
 
     <h3>The figure-eight</h3>
     <p><b class="hl">Figure-eight</b> is one of the few periodic solutions known for three equal masses. Cristopher Moore found it numerically in 1993, and Chenciner and Montgomery proved in 2000 that it genuinely exists. All three bodies chase each other around the same lemniscate, each a third of a period behind the one in front. It survives small nudges, which is why it holds together here. No real system has ever been seen doing it. Add a few small bodies with the slider, or sling one through the middle, and see how long the choreography lasts.</p>
@@ -690,14 +690,15 @@ function ringOf(out,cx,cy,vx,vy,N,a,m){
 }
 /* every build gets (nSmall, nLarge) and creates exactly that many bodies */
 const PRESETS={
-  star:{name:'Star and planets',tag:'One heavy centre, near-circular orbits and a comet',n:12,lmin:1,lmax:5,ldef:1,frame:'fixed',merge:true,build(n,nL){
+  star:{name:'Star and planets',tag:'Planets and a comet round one star',n:12,lmin:1,lmax:5,ldef:1,frame:'fixed',merge:true,build(n,nL){
     const S=Math.min(W,H), R=S*0.44, M=4200, out=[];
-    const a=S*0.045;
+    const a=nL<=1?S*0.045:S*(0.085+0.030*nL);   /* several stars sit well apart, not in a knot */
     ringOf(out,0,0,0,0,nL,a,M/nL);
+    const r0=Math.max(0.24,(a*2.6)/R);
     if(n>0){
       const np=n-1;
       for(let i=0;i<np;i++){
-        const r=R*(0.24+0.76*Math.pow((i+1)/(np+0.5),0.8)), an=Math.random()*TAU, e=Math.random()*0.12;
+        const r=R*(r0+(1-r0)*Math.pow((i+1)/(np+0.5),0.8)), an=Math.random()*TAU, e=Math.random()*0.12;
         const v=Math.sqrt(G*M*(1+e)/r);   /* start at periapsis */
         out.push(mk(Math.cos(an)*r,Math.sin(an)*r,-Math.sin(an)*v,Math.cos(an)*v,3+Math.random()*9));
       }
@@ -705,8 +706,8 @@ const PRESETS={
       out.push(mk(Math.cos(aa)*ra,Math.sin(aa)*ra,-Math.sin(aa)*va,Math.cos(aa)*va,1));
     }
     return out;}},
-  binary:{name:'Binary pair',tag:'Heavy partners with a disc around the outside',n:16,lmin:2,lmax:5,ldef:2,frame:'com',merge:true,build(n,nL){
-    const S=Math.min(W,H), sep=S*0.16, M=1700, out=[];
+  binary:{name:'Binary pair',tag:'Two stars, one shared disc',n:16,lmin:2,lmax:5,ldef:2,frame:'com',merge:true,build(n,nL){
+    const S=Math.min(W,H), sep=S*(0.16+0.035*Math.max(0,nL-2)), M=1700, out=[];
     ringOf(out,0,0,0,0,nL,sep,M);
     const R=S*0.47, inner=sep*2.6;
     for(let i=0;i<n;i++){
@@ -715,7 +716,7 @@ const PRESETS={
       out.push(mk(q.x,q.y,q.vx,q.vy,2+Math.random()*7));
     }
     return out;}},
-  eight:{name:'Figure-eight',tag:'Three equal masses on one shared loop (Moore 1993)',n:0,lmin:3,lmax:3,ldef:3,frame:'fixed',merge:false,soft:0.35,build(n){
+  eight:{name:'Figure-eight',tag:'Three masses, one shared loop',n:0,lmin:3,lmax:3,ldef:3,frame:'fixed',merge:false,soft:0.35,build(n){
     const S=Math.min(W,H), L=S*0.27, M=700, vs=Math.sqrt(G*M/L);
     const x1=0.97000436, y1=-0.24308753, vx3=-0.93240737, vy3=-0.86473146;
     const out=[mk( x1*L, y1*L, -vx3/2*vs, -vy3/2*vs, M),
@@ -727,16 +728,17 @@ const PRESETS={
       out.push(mk(q.x,q.y,q.vx,q.vy,0.3));
     }
     return out;}},
-  burrau:{name:'Pythagorean three',tag:'Masses 3, 4, 5 released from rest (Burrau 1913)',n:0,lmin:3,lmax:3,ldef:3,frame:'com',merge:false,soft:0.35,build(n){
+  burrau:{name:'Pythagorean three',tag:'Masses 3, 4, 5 dropped from rest',n:0,lmin:3,lmax:3,ldef:3,frame:'com',merge:false,soft:0.35,fit:true,build(n){
     const S=Math.min(W,H), u=S*0.085, k=110;
     const out=[mk(1*u,3*u,0,0,3*k), mk(-2*u,-1*u,0,0,4*k), mk(1*u,-1*u,0,0,5*k)];
+    out[0].lab='3'; out[1].lab='4'; out[2].lab='5';
     for(let i=0;i<n;i++){
       const r=S*(0.45+0.5*Math.random()), an=Math.random()*TAU;
       const q=circ(0,0,r,an,12*k,0.9+Math.random()*0.2);
       out.push(mk(q.x,q.y,q.vx,q.vy,0.3));
     }
     return out;}},
-  lagrange:{name:'Lagrange points',tag:'A planet, its Trojans, and horseshoe companions',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:true,lag:true,build(n){
+  lagrange:{name:'Lagrange points',tag:'Trojans and horseshoe orbits',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:true,lag:true,build(n){
     const S=Math.min(W,H), d=S*0.30, M1=4000, M2=40, M=M1+M2, w=Math.sqrt(G*M/(d*d*d));
     const x1=-d*M2/M, x2=d*M1/M;
     const out=[mk(x1,0,0,w*x1,M1), mk(x2,0,0,w*x2,M2)];
@@ -761,10 +763,10 @@ const PRESETS={
     }
     small.length=n;
     return out.concat(small);}},
-  collapse:{name:'Cold collapse',tag:'A cloud with almost no spin falls together',n:40,lmin:0,lmax:5,ldef:0,frame:'com',merge:true,build(n,nL){
+  collapse:{name:'Cold collapse',tag:'A cloud falls in on itself',n:40,lmin:0,lmax:5,ldef:0,frame:'com',merge:true,build(n,nL){
     const S=Math.min(W,H), R=S*0.40, out=[];
     for(let i=0;i<nL;i++){
-      const an=Math.random()*TAU, r=R*0.5*Math.sqrt(Math.random());
+      const an=TAU*(i+0.5)/Math.max(1,nL)+0.4*Math.random(), r=R*(nL===1?0:0.35+0.45*Math.random());
       out.push(mk(Math.cos(an)*r,Math.sin(an)*r,0,0,900));
     }
     for(let i=0;i<n;i++){
@@ -772,13 +774,13 @@ const PRESETS={
       out.push(mk(Math.cos(an)*r,Math.sin(an)*r,(Math.random()-0.5)*0.5,(Math.random()-0.5)*0.5,20+Math.random()*60));
     }
     return out;}},
-  intruder:{name:'Galaxy and intruder',tag:'A compact mass grazes a disc and raises a tidal tail',n:900,lmin:2,lmax:2,ldef:2,frame:'com',merge:false,fit:true,trail:20,build(n){
+  intruder:{name:'Galaxy and intruder',tag:'A close pass raises a tidal tail',n:900,lmin:2,lmax:2,ldef:2,frame:'com',merge:false,fit:true,trail:20,build(n){
     const S=Math.min(W,H), out=[], Mn=6000, Mi=2200, R=S*0.30;
     const D=S*0.95, bImp=S*0.42, vp=Math.sqrt(2*G*(Mn+Mi)/D)*0.92;
     disc(out,S*0.05,-S*0.02,0,0,n,R,Mn,0.6,1);
     out.push(mk(S*0.05-D*0.85,-S*0.02-bImp,vp,0,Mi));
     return out;}},
-  galaxies:{name:'Galaxy collision',tag:'Discs on a bound encounter, one nucleus each',n:1200,lmin:2,lmax:4,ldef:2,frame:'com',merge:false,fit:true,trail:20,build(n,nL){
+  galaxies:{name:'Galaxy collision',tag:'Two discs on a bound encounter',n:1200,lmin:2,lmax:4,ldef:2,frame:'com',merge:false,fit:true,trail:20,build(n,nL){
     const S=Math.min(W,H), out=[], Mn=5000, R=S*0.24, Rc=S*0.415;
     const per=Math.floor(n/nL), extra=n-per*nL;
     const vc=ringSpeed(nL,Rc,Mn)*0.72;          /* under circular, so the discs fall together */
@@ -1004,6 +1006,21 @@ function draw(){
     if(sx<-R||sx>W+R||sy<-R||sy>H+R) continue;
     ctx.drawImage(coreSprites[bucketOf(b.m)],sx-D/2,sy-D/2,D,D);
   }
+  /* mass labels, used by arrangements where the ratio of the masses is the point */
+  if(n<=12){
+    ctx.font='600 13px "Karla", ui-sans-serif, system-ui, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let i=0;i<n;i++){
+      const b=bodies[i]; if(!b.lab) continue;
+      w2f(b.x,b.y,tmp);
+      const R=Math.max(1.2,b.r*z), sx=tmp.x*z+ox, sy=tmp.y*z+oy-R-11;
+      if(sx<-40||sx>W+40||sy<-40||sy>H+40) continue;
+      ctx.fillStyle='rgba(7,18,15,.72)';
+      ctx.beginPath(); ctx.arc(sx,sy,9,0,TAU); ctx.fill();
+      ctx.fillStyle='rgba(241,252,247,.92)'; ctx.fillText(b.lab,sx,sy+0.5);
+    }
+    ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+  }
   /* velocity arrows */
   if(showArrows&&n<=400){
     ctx.strokeStyle='rgba(227,239,233,.7)'; ctx.lineWidth=1.2;
@@ -1149,7 +1166,7 @@ const pbox=el('presets');
 Object.keys(PRESETS).forEach((k,i)=>{
   const p=PRESETS[k], b=document.createElement('button');
   b.className='preset'; b.dataset.k=k; b.setAttribute('aria-pressed','false');
-  b.innerHTML='<b>'+(i+1)+'. '+p.name+'</b><small>'+p.tag+'</small>';
+  b.innerHTML='<b>'+p.name+'</b><small>'+p.tag+'</small>';
   b.addEventListener('click',()=>restart(k));
   pbox.appendChild(b);
 });

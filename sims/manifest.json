@@ -1,7 +1,7 @@
 [
   {
     "id": "boids",
-    "title": "Boids: Three Rules, One Flock",
+    "title": "Flocking Boids",
     "category": "Emergent Systems",
     "tags": [
       "agent-based",
@@ -17,7 +17,7 @@
   },
   {
     "id": "predator-prey",
-    "title": "Hare & Lynx: Predator and Prey Cycles",
+    "title": "Predator and Prey",
     "category": "Population Dynamics",
     "tags": [
       "ecology",
@@ -27,7 +27,7 @@
     "difficulty": "Intermediate",
     "description": "Every dot is one animal with its own energy budget, grazing, hunting and breeding. The boom and bust population cycles come out of those individual decisions.",
     "status": "live",
-    "hook": "Booms, busts and extinction",
+    "hook": "Booms, busts, and extinction",
     "visible": true
   },
   {
@@ -42,7 +42,7 @@
     "difficulty": "Intermediate",
     "description": "Release a hundred pendulums that differ by a tenth of a degree and watch them tear apart. The clearest demonstration that deterministic and predictable are not the same thing.",
     "status": "live",
-    "hook": "Deterministic, still unpredictable",
+    "hook": "Deterministic but unpredictable",
     "visible": true
   },
   {

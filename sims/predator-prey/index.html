@@ -6,7 +6,7 @@
 <title>Hare &amp; Lynx — a living model of predator–prey cycles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Karla:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0a1512;
@@ -22,9 +22,9 @@
     --lynx:#ff7d5c;
     --lynx-dim:rgba(255,125,92,.14);
     --grass:#34905c;
-    --display:"Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --display:"Fraunces", ui-sans-serif, system-ui, -apple-system, sans-serif;
     --mono:"Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
-    --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --body:"Karla",ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
@@ -41,7 +41,7 @@
   /* ---------- header ---------- */
   header{margin-bottom:14px}
   .eyebrow{
-    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    font-family:var(--mono);font-size:11px;letter-spacing:.01em;text-transform:none;
     color:var(--muted);margin:0 0 6px
   }
   h1{
@@ -61,7 +61,7 @@
   #field{display:block;width:100%;height:auto}
   .field-tag{
     position:absolute;top:10px;left:12px;font-family:var(--mono);font-size:10px;
-    letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    letter-spacing:.01em;text-transform:none;color:var(--muted);
     background:rgba(7,18,15,.55);padding:3px 7px;border-radius:6px;backdrop-filter:blur(3px)
   }
   .extinct{
@@ -80,8 +80,7 @@
     flex:1;min-width:72px;background:var(--panel);border:1px solid var(--line);
     border-radius:11px;padding:8px 10px
   }
-  .stat .k{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
+  .stat .k{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.01em;color:var(--muted);font-family:var(--body)}
   .stat .v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
   .dot.h{background:var(--hare)} .dot.l{background:var(--lynx);width:10px;height:10px;border-radius:1px;clip-path:polygon(100% 50%,18% 100%,36% 50%,18% 0)} .dot.g{background:var(--grass)}
@@ -113,7 +112,7 @@
     padding:13px;margin-top:14px
   }
   .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
   .gtoggle{display:flex;gap:2px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:3px}
   .gtoggle button{font-family:var(--mono);font-size:11px;color:var(--muted);background:transparent;border:0;padding:5px 9px;border-radius:6px;cursor:pointer;touch-action:manipulation}
   .gtoggle button.on{background:var(--line);color:var(--ink)}
@@ -170,9 +169,9 @@
   .group{margin-top:12px}
   .group-title{
     display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;
-    font-size:13px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 4px
+    font-size:13px;letter-spacing:.01em;text-transform:none;margin:0 0 4px
   }
-  .group-title .tag{font-family:var(--mono);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em;text-transform:none}
+  .group-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em;text-transform:none}
   .row{margin:13px 0}
   .row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;color:var(--ink);margin-bottom:6px}
   .row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
