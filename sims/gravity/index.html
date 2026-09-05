@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=1200">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
 <title>N-Body Gravity: orbits, chaos, Lagrange points and galaxies | SimLearn</title>
 <meta name="description" content="An interactive Newtonian gravity sandbox. Build a star system, run the figure-eight, watch three bodies go chaotic, park a probe at a Lagrange point, or collide two galaxies. Every body pulls on every other; nothing is scripted.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,6 +139,9 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 }
 @media (prefers-reduced-motion:reduce){ .panel{transition:none} }
 </style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
 </head>
 <body>
 <div id="stage"><canvas id="c"></canvas></div>

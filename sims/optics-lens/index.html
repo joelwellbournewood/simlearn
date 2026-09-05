@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=1200">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
 <title>Lens and Image Formation | SimLearn</title>
 <meta name="description" content="An interactive optical bench. Trace real rays through a lens, watch a real image form on a sensor, and see how focal length, aperture and spherical aberration change the picture.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,6 +99,9 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 .row label.chk input{accent-color:var(--accent);width:15px;height:15px;flex:none}
 .row label.chk .nm{font-size:13px}
 </style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
 </head>
 <body>
 <div id="stage"><canvas id="c"></canvas></div>
