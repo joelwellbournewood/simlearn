@@ -8,9 +8,9 @@
   --ink:#f1fcf7; --ink-2:#cfe5db; --muted:#7f9d91; --faint:#5b7a6d;
   --accent:#56e0c2; --accent-dim:rgba(86,224,194,.13); --accent-2:#ff7d5c; --gold:#e6c34f;
   --radius:16px;
-  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,sans-serif;
   --mono:"Space Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  --body:"Karla",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --text:#f1fcf7; --text-dim:#7f9d91; --border:rgba(120,190,165,.13); --bg-panel:#0a1714;
   font-size:16px;
 }
@@ -68,7 +68,7 @@ html,body{overflow-x:clip}
 .hero{position:relative; padding:3.2rem 0 2.1rem; overflow:visible}
 .hero h1{
   font-family:var(--display); font-weight:600; margin:0;
-  font-size:clamp(2.5rem,6.1vw,4.2rem); line-height:1.04; letter-spacing:-.015em; color:var(--ink);
+  font-size:clamp(2.6rem,6.4vw,4.4rem); line-height:1.02; letter-spacing:-.03em; color:var(--ink);
 }
 .hero h1 .w{display:inline-block; opacity:0; transform:translateY(.36em); animation:rise .62s cubic-bezier(.2,.7,.25,1) forwards}
 .hero h1 .w:nth-child(2){animation-delay:.09s}

@@ -7,7 +7,7 @@
 <meta name="description" content="An interactive Newtonian gravity sandbox. Build a star system, run the figure-eight, watch three bodies go chaotic, park a probe at a Lagrange point, or collide two galaxies. Every body pulls on every other; nothing is scripted.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Karla:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0a1512; --field:#07120f;
@@ -16,9 +16,9 @@
   --ink:#e3efe9; --muted:#88a397;
   --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
   --danger:#ff7d5c; --gold:#e6c34f;
-  --display:"Fraunces",ui-sans-serif,system-ui,sans-serif;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
   --mono:"Space Mono",ui-monospace,Menlo,monospace;
-  --body:"Karla",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
@@ -42,7 +42,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
   background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
 .panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .p-toggle{display:none}
-.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--body);
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
   font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
   border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
 .about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
@@ -51,7 +51,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
   background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
-.preset b{font-family:var(--body);font-weight:600;font-size:13px;line-height:1.2}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
 .preset small{color:var(--muted);font-size:11px;line-height:1.25}
 .preset:hover{border-color:var(--line-strong)}
 .preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
@@ -1008,7 +1008,7 @@ function draw(){
   }
   /* mass labels, used by arrangements where the ratio of the masses is the point */
   if(n<=12){
-    ctx.font='600 13px "Karla", ui-sans-serif, system-ui, sans-serif';
+    ctx.font='600 13px ui-sans-serif, system-ui, -apple-system, sans-serif';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     for(let i=0;i<n;i++){
       const b=bodies[i]; if(!b.lab) continue;
