@@ -70,8 +70,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
   background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
 input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
 input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
-.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
-.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
 .stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
 .hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
@@ -154,8 +154,6 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <div class="hud">
   <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
   <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
-  <div class="stat"><div class="k">Spread now</div><div class="v" id="s-div" style="color:var(--danger)">-</div></div>
-  <div class="stat"><div class="k">Energy drift</div><div class="v" id="s-e">-</div></div>
 </div>
 <div class="hint">Click the field to re-release from that angle. 1-5 presets, space pause, R restart, H hide.</div>
 
@@ -174,7 +172,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the system behaves like two coupled linear oscillators and is perfectly well behaved. Chaos here is a property of the energy, not of the machine.</p>
     <h3>The honest caveats</h3>
     <ul>
-      <li>Integration is fourth-order Runge-Kutta with substeps. The <b>energy drift</b> readout shows how far total energy has moved from its starting value. While that stays small, the divergence on screen is physics rather than arithmetic.</li>
+      <li>Integration is fourth-order Runge-Kutta with small substeps, and total energy is held to a fraction of a percent over a run. The copies separate because the motion really is chaotic, not because the arithmetic is drifting.</li>
       <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
       <li>The rods are massless and the bobs are points. Real hardware has friction, and eventually stops.</li>
     </ul>
@@ -205,7 +203,7 @@ function resize(){
 /* ---------- model ---------- */
 const M1=1, M2=1;
 let g=1.0, L1=140, L2=140, l2r=1, copies=1, spreadDeg=0.1, angleDeg=120,
-    trailPct=60, speed=1, paused=false, arr=[], E0=null, tsec=0, activePreset='single';
+    trailPct=60, speed=1, paused=false, arr=[], E0=null, tsec=0, activePreset='twins';
 function deriv(s){
   const a1=s[0],a2=s[1],w1=s[2],w2=s[3], d=a1-a2;
   const den=2*M1+M2-M2*Math.cos(2*d);
@@ -254,9 +252,9 @@ function release(a1seed){
 }
 /* ---------- presets ---------- */
 const PRESETS={
+  twins:{name:'The twin test',tag:'Two starts half a degree apart',set:{copies:2,spread:-0.3,angle:120,l2:1,trail:70}},
   fan:{name:'Fan of a hundred',tag:'A hundred starts inside a tenth of a degree',set:{copies:110,spread:-1,angle:130,l2:1,trail:35}},
   single:{name:'One pendulum',tag:'Just watch the shape the tip traces',set:{copies:1,spread:-1,angle:120,l2:1,trail:75}},
-  twins:{name:'The twin test',tag:'Two starts half a degree apart',set:{copies:2,spread:-0.3,angle:120,l2:1,trail:70}},
   gentle:{name:'Gentle swing',tag:'Small angles stay regular and predictable',set:{copies:60,spread:-1,angle:15,l2:1,trail:80}},
   whip:{name:'Long whip',tag:'A long lower arm carries most of the energy',set:{copies:40,spread:-1.5,angle:180,l2:1.55,trail:45}}
 };
@@ -275,7 +273,7 @@ function trailCap(){
 }
 function draw(){
   ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
-  const ox=W/2, oy=H*0.34;
+  const ox=W/2, oy=H*0.43;
   ctx.lineCap='round'; ctx.lineJoin='round';
   // reach circle, so you can see the space the tip can explore
   ctx.strokeStyle='rgba(130,170,150,.10)'; ctx.lineWidth=1;
@@ -337,7 +335,7 @@ function step(){
   const h=0.09*speed/sub;
   for(const b of arr) for(let k=0;k<sub;k++) rk4(b.s,h);
   tsec+=speed/60; // wall-clock seconds of simulated motion at 1x on a 60Hz display
-  const cap=trailCap(), ox=W/2, oy=H*0.34;
+  const cap=trailCap(), ox=W/2, oy=H*0.43;
   for(const b of arr){
     if(cap===0){ if(b.trail.length) b.trail.length=0; continue; }
     const a1=b.s[0],a2=b.s[1];
@@ -351,19 +349,6 @@ function hud(now){
   if(now-hudT<180) return; hudT=now;
   el('s-n').textContent=arr.length;
   el('s-t').textContent=tsec.toFixed(1)+'s';
-  if(arr.length<2) el('s-div').textContent='n/a';
-  else{
-    let mn=Infinity,mx=-Infinity;
-    for(const b of arr){ const a=b.s[0]; if(a<mn)mn=a; if(a>mx)mx=a; }
-    const dg=(mx-mn)/DEG;
-    el('s-div').textContent = dg<0.01 ? dg.toExponential(1)+'\u00b0' : dg.toFixed(dg<10?2:0)+'\u00b0';
-  }
-  if(E0===null||!isFinite(E0)) el('s-e').textContent='-';
-  else{
-    const d=Math.abs((energyOf(arr[0].s)-E0)/(Math.abs(E0)||1))*100;
-    el('s-e').textContent=(d<0.05?'<0.1':d.toFixed(d<10?1:0))+'%';
-    el('s-e').style.color=d<1?'var(--accent)':d<10?'#e6c34f':'var(--danger)';
-  }
 }
 /* ---------- ui ---------- */
 const pbox=el('presets');
@@ -406,7 +391,7 @@ document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',e=>{
   t.classList.toggle('show');
 }));
 cv.addEventListener('click',e=>{
-  const r=cv.getBoundingClientRect(), ox=W/2, oy=H*0.34;
+  const r=cv.getBoundingClientRect(), ox=W/2, oy=H*0.43;
   const a=Math.atan2(e.clientX-r.left-ox, e.clientY-r.top-oy);
   release(a);
 });
@@ -423,7 +408,7 @@ window.addEventListener('keydown',e=>{
 let rt=null;
 window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(); geom(); },150); });
 function loop(now){ if(!paused) step(); draw(); hud(now); requestAnimationFrame(loop); }
-resize(); applyPreset('fan');
+resize(); applyPreset('twins');
 requestAnimationFrame(loop);
 })();
 </script>
