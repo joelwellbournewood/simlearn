@@ -12,8 +12,8 @@
 </head>
 <body>
 <header class="site-header">
-  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.4"/><g class="o"><ellipse cx="10" cy="10" rx="9" ry="4" transform="rotate(-28 10 10)"/><circle cx="17.2" cy="6.2" r="1.5" fill="#56e0c2" stroke="none"/></g></svg>Sim<span>Learn</span></a>
-  <span class="chrome-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6H21M8.9 13.7 4.4 21M15.1 13.7 10.6 21"/></svg>Runs best on <em>Google Chrome</em></span>
+  <a href="index.html" class="logo">Sim<span>Learn</span></a>
+  <span class="chrome-note">Runs best on Google Chrome</span>
   <nav>
     <a href="index.html" class="is-active">Simulations</a>
     <a href="about.html">About</a>
@@ -22,12 +22,7 @@
 
 <main>
   <section class="hero">
-    <div class="hero-orbit" aria-hidden="true"><svg viewBox="0 0 200 200">
-      <circle class="soft" cx="100" cy="100" r="88"/>
-      <g class="r1"><ellipse cx="100" cy="100" rx="88" ry="33" transform="rotate(-18 100 100)"/><circle cx="184" cy="73" r="3.4" fill="#56e0c2" stroke="none"/></g>
-      <g class="r2"><ellipse cx="100" cy="100" rx="57" ry="57"/><circle cx="43" cy="100" r="2.6" fill="#ff7d5c" stroke="none"/></g>
-      <circle class="soft" cx="100" cy="100" r="26"/>
-    </svg></div>
+    <canvas class="hero-flock" aria-hidden="true"></canvas>
     <h1><span class="w">Simulate.</span> <span class="w">Play.</span> <span class="w"><em>Learn.</em></span></h1>
     <p class="hero-sub">Interactive Models</p>
   </section>
@@ -44,5 +39,6 @@
 </footer>
 
 <script src="assets/js/main.js"></script>
+<script src="assets/js/flock.js" defer></script>
 </body>
 </html>
