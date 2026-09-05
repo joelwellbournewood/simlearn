@@ -578,7 +578,7 @@ class Flock {
     }
     for (let c = 0; c < cells; c++) cellStart[c + 1] += cellStart[c];
     const cursor = this.cursor && this.cursor.length >= cells ? this.cursor : (this.cursor = new Int32Array(cells));
-    cursor.set(cellStart.subarray(0, cells));
+    for (let c = 0; c < cells; c++) cursor[c] = cellStart[c];   // set(subarray) would allocate a view every step
     const qx = this.qx, qy = this.qy, qz = this.qz, qvx = this.qvx, qvy = this.qvy, qvz = this.qvz;
     const qsp = this.qsp, qtr = this.qtr, qbank = this.qbank, qphase = this.qphase;
     const vx = this.vx, vy = this.vy, vz = this.vz, species = this.species, tribe = this.tribe, bank = this.bank, phase = this.phase;
@@ -589,6 +589,18 @@ class Flock {
       qvx[s] = vx[i]; qvy[s] = vy[i]; qvz[s] = vz[i];
       qsp[s] = species[i]; qtr[s] = tribe[i]; qbank[s] = bank[i]; qphase[s] = phase[i];
     }
+  }
+
+  /* a point on the edge of the world, so a predator's next attack comes from outside the flock */
+  pickPerch(i) {
+    const W = this.W, is3 = this.dims === 3;
+    const lo0 = W.lo[0], lo1 = W.lo[1], lo2 = W.lo[2], s0 = W.size[0], s1 = W.size[1], s2 = W.size[2];
+    const axis = (this.rand() * (is3 ? 3 : 2)) | 0, side = this.rand() < 0.5 ? 0 : 1;
+    let x = lo0 + this.rand() * s0, y = lo1 + this.rand() * s1, z = is3 ? lo2 + this.rand() * s2 : 0;
+    if (axis === 0) x = side ? lo0 + s0 - 10 : lo0 + 10;
+    else if (axis === 1) y = side ? lo1 + s1 - 10 : lo1 + 10;
+    else z = side ? lo2 + s2 - 10 : lo2 + 10;
+    this.perch[i] = x; this.perchY[i] = y; this.perchZ[i] = z;
   }
 
   step(dt, P, ctx) {
@@ -859,12 +871,6 @@ class Flock {
     const pTop = P.predSpeed, pForce = maxForce * 0.9, catch2 = Math.pow(P.size * 1.5 + 5, 2);
     const predTarget = this.predTarget, predTimer = this.predTimer, predChase = this.predChase;
     const perchX = this.perch, perchY = this.perchY, perchZ = this.perchZ;
-    const pickPerch = (i) => {   // a point on the edge of the world, so the next attack comes from outside the flock
-      const axis = (this.rand() * (is3 ? 3 : 2)) | 0, side = this.rand() < 0.5 ? 0 : 1;
-      let x = lo0 + this.rand() * s0, y = lo1 + this.rand() * s1, z = is3 ? lo2 + this.rand() * s2 : 0;
-      if (axis === 0) x = side ? hi0 - 10 : lo0 + 10; else if (axis === 1) y = side ? hi1 - 10 : lo1 + 10; else z = side ? hi2 - 10 : lo2 + 10;
-      perchX[i] = x; perchY[i] = y; perchZ[i] = z;
-    };
     for (let k = 0; k < preds.length; k++) {
       const i = preds[k];
       const x = px[i], y = py[i], z = pz[i];
@@ -897,7 +903,7 @@ class Flock {
       if (best >= 0) {
         // a hunt that drags on (usually a bird pinned in a corner) is abandoned; a catch is followed by a rest
         if (best === predTarget[i]) predChase[i] += dt; else { predTarget[i] = best; predChase[i] = 0; }
-        if (predChase[i] > 360) { predTimer[i] = 150; predTarget[i] = -1; predChase[i] = 0; best = -1; pickPerch(i); }
+        if (predChase[i] > 360) { predTimer[i] = 150; predTarget[i] = -1; predChase[i] = 0; best = -1; this.pickPerch(i); }
       }
       if (best >= 0) {
         const lead = 6;
@@ -905,7 +911,7 @@ class Flock {
         if (bd2 < catch2) {
           this.events.push({ x: px[best], y: py[best], z: pz[best], age: 0 });
           this.respawn(best); flash[best] = 1; this.caught++;
-          predTimer[i] = 130; predTarget[i] = -1; predChase[i] = 0; pickPerch(i);
+          predTimer[i] = 130; predTarget[i] = -1; predChase[i] = 0; this.pickPerch(i);
         }
       } else if (resting) {
         // pull out to the edge of the world before the next attack
@@ -1734,6 +1740,7 @@ function syncUI() {
 function setParam(key, value) {
   P[key] = value;
   reflect(key);
+  needsDraw = true;
   if (key !== 'bg') { activePreset = null; document.querySelectorAll('.preset').forEach(b => b.setAttribute('aria-pressed', 'false')); }
   switch (key) {
     case 'count': case 'predators': flock.setCounts(P.count, P.predators, P.tribes); break;
@@ -1742,6 +1749,7 @@ function setParam(key, value) {
     case 'trail': if (P.trail === 0) view2d.clear(); break;
   }
 }
+function requestDraw() { needsDraw = true; }
 function applyLook() {
   ctx.palette = PALETTES[P.palette].colors;
   ctx.dark = luminance(P.bg) < 0.5;
@@ -1749,6 +1757,7 @@ function applyLook() {
   view2d.setTable(table);
   if (view3d) { view3d.setTable(table); view3d.setBackground(P.bg, ctx.dark); }
   stage.style.background = P.sky || P.bg;
+  requestDraw();
   stage.classList.toggle('light', !ctx.dark);
   document.body.classList.toggle('light', !ctx.dark);
 }
@@ -1765,6 +1774,7 @@ function applyPreset(key) {
   if (view3d) view3d.resetTrails();
   syncUI();
   setHint();
+  requestDraw();
 }
 
 /* ---------------- resize ---------------- */
@@ -1780,6 +1790,7 @@ function resize() {
   if (px > PIXEL_BUDGET) dpr = Math.max(0.6, dpr * Math.sqrt(PIXEL_BUDGET / px));   // a huge canvas costs fill rate, not maths
   updateArena();
   view2d.resize(width, height, dpr);
+  needsDraw = true;
   if (view3d) { view3d.renderer.setPixelRatio(dpr); view3d.resize(width, height); }
 }
 window.addEventListener('resize', resize);
@@ -1944,7 +1955,7 @@ function erase(p, e) {
 }
 
 /* ---------------- buttons & keys ---------------- */
-function togglePause() { paused = !paused; $('btnPause').dataset.on = String(paused); $('btnPause').title = paused ? 'Play (space)' : 'Pause (space)'; }
+function togglePause() { paused = !paused; needsDraw = true; $('btnPause').dataset.on = String(paused); $('btnPause').title = paused ? 'Play (space)' : 'Pause (space)'; }
 function scatter() { flock.scatter(); flock.events.length = 0; view2d.clear(); if (view3d) view3d.resetTrails(); }
 function toggleClean() { const on = document.body.classList.toggle('clean'); $('btnClean').dataset.on = String(on); }
 function toggleFull() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); }
@@ -1956,8 +1967,8 @@ $('btnPanel').addEventListener('click', () => $('panel').classList.toggle('open'
 $('btnAbout').addEventListener('click', () => { const d = $('about'); d.showModal ? d.showModal() : d.setAttribute('open', ''); });
 $('btnAboutClose').addEventListener('click', () => $('about').close());
 $('about').addEventListener('click', e => { if (e.target === $('about')) $('about').close(); });
-$('tgInspect').addEventListener('change', e => { ctx.inspect = e.target.checked; });
-$('tgGrid').addEventListener('change', e => { ctx.grid = e.target.checked; });
+$('tgInspect').addEventListener('change', e => { ctx.inspect = e.target.checked; needsDraw = true; });
+$('tgGrid').addEventListener('change', e => { ctx.grid = e.target.checked; needsDraw = true; });
 $('tgRotate').addEventListener('change', e => { if (view3d) view3d.autoRotate = e.target.checked && !reduceMotion; });
 if (reduceMotion) { $('tgRotate').checked = false; }
 window.addEventListener('keydown', e => {
@@ -1969,7 +1980,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'Escape' && document.body.classList.contains('clean')) toggleClean();
   else if (e.key >= '1' && e.key <= '9') { const pr = PRESETS[parseInt(e.key) - 1]; if (pr) applyPreset(pr.key); }
   else if (e.key === '0' && PRESETS[9]) applyPreset(PRESETS[9].key);
-  else if (e.key === 'd' || e.key === 'D') document.body.classList.toggle('diag');
+  else if (e.key === 'd' || e.key === 'D') diagOn = document.body.classList.toggle('diag');
 });
 // close mobile sheet when tapping the stage
 stage.addEventListener('pointerdown', () => { if (window.innerWidth <= 820) $('panel').classList.remove('open'); });
@@ -2005,7 +2016,7 @@ function updateHud(now) {
    the same speed either way. */
 let simHz = 60, simMs_ = 1000 / 60;
 let last = performance.now(), acc = 0;
-let simMs = 0, drawMs = 0, steps = 0, stepMs = 0;
+let simMs = 0, drawMs = 0, steps = 0, stepMs = 0, drawn = 0, needsDraw = true, lastDiag = 0, diagOn = false;
 /* If a single step costs more than about a fifth of its own budget the machine cannot
    sustain 60 steps a second, so halve the rate and double the time step. The flock
    moves at exactly the same speed either way. */
@@ -2040,12 +2051,19 @@ function frame(now) {
     if (interacting > 0) interacting -= n * dtStep;
   } else steps = 0;
   simMs += (performance.now() - t0 - simMs) * 0.1;
-  t0 = performance.now();
-  if (mode === '2d') view2d.render(flock, P, ctx, steps);
-  else if (view3d) view3d.render(flock, P, ctx, paused ? 0 : steps, interacting > 0 || ctx.mouse.active);
-  drawMs += (performance.now() - t0 - drawMs) * 0.1;
+  // Drawing a frame the flock has not moved through costs fill rate and compositing for
+  // no visible gain, so on a display faster than the sim rate we simply skip it.
+  const moving = interacting > 0 || ctx.mouse.active || ctx.draft || (mode === '3d' && view3d && view3d.autoRotate);
+  if (steps > 0 || moving || needsDraw) {
+    needsDraw = false;
+    t0 = performance.now();
+    if (mode === '2d') view2d.render(flock, P, ctx, steps);
+    else if (view3d) view3d.render(flock, P, ctx, paused ? 0 : steps, interacting > 0 || ctx.mouse.active);
+    drawMs += (performance.now() - t0 - drawMs) * 0.1;
+    drawn++;
+  }
   updateHud(now);
-  if (document.body.classList.contains('diag')) updateDiag();
+  if (diagOn && now - lastDiag > 250) { lastDiag = now; updateDiag(); }
 }
 
 /* ---------------- diagnostics (?debug=1 or D) ---------------- */
@@ -2059,12 +2077,16 @@ function gpuInfo() {
   } catch (e) { return 'WebGL error'; }
 }
 let gpuName = null;
+let drawFps = 0, drawnPrev = 0, drawT = 0;
 function updateDiag() {
   if (gpuName === null) gpuName = gpuInfo();
+  const t = performance.now();
+  if (drawT) drawFps = 1000 * (drawn - drawnPrev) / (t - drawT);
+  drawT = t; drawnPrev = drawn;
   const cv = mode === '2d' ? view2d.canvas : $('c3d');
   const soft = /swiftshader|llvmpipe|software|basic render/i.test(gpuName);
   $('diag').innerHTML =
-    `fps <b>${fps.toFixed(0)}</b>   sim <b>${simMs.toFixed(1)}ms</b>   draw <b>${drawMs.toFixed(1)}ms</b>\n` +
+    `rAF <b>${fps.toFixed(0)}</b>/s   drawn <b>${drawFps.toFixed(0)}</b>/s   sim <b>${simMs.toFixed(1)}ms</b>   draw <b>${drawMs.toFixed(1)}ms</b>\n` +
     `boids ${flock.n}   sim ${simHz}Hz   step ${stepMs.toFixed(1)}ms   steps/frame ${steps}   mode ${mode}\n` +
     `css ${width}\u00d7${height}   canvas ${cv.width}\u00d7${cv.height}   dpr ${dpr.toFixed(2)} (device ${(window.devicePixelRatio || 1).toFixed(2)})\n` +
     `pixels ${(cv.width * cv.height / 1e6).toFixed(2)}M   quality ${quality}\n` +
@@ -2080,7 +2102,7 @@ const startPreset = PRESETS.find(p => p.key === url.get('preset')) ? url.get('pr
 applyPreset(startPreset);
 selectTool('attract');
 if (url.get('ui') === 'min') toggleClean();
-if (url.get('debug')) document.body.classList.add('diag');
+if (url.get('debug')) { document.body.classList.add('diag'); diagOn = true; }
 if (url.get('mode') === '3d') setMode('3d');
 requestAnimationFrame(frame);
 </script>
