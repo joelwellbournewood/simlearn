@@ -432,7 +432,7 @@ class Flock {
     this.head = new Int32Array(1);
     this.preds = [];
     this.kd2 = new Float32Array(32); this.kj = new Int32Array(32);
-    this.nbMean = 8; this.nbLast = 0; this.nbFast = 0; this.reff = 0; this.meanY = 0;
+    this.nbMean = 8; this.nbLast = 0; this.nbFast = 0; this.candFast = 0; this.reff = 0; this.meanY = 0;
   }
   alloc(cap) {
     const grow = (old, T) => { const a = new T(cap); if (old) a.set(old.subarray(0, Math.min(old.length, cap))); return a; };
@@ -545,23 +545,49 @@ class Flock {
   }
   scatter() { for (let i = 0; i < this.n; i++) this.respawn(i); }
 
+  /* Bucket the flock into grid cells with a counting sort, then copy the fields the
+     neighbour search reads into cell order. Scanning a cell then walks a contiguous
+     run of memory instead of chasing a linked list all over the heap, which is most
+     of the cost of a step. */
   buildGrid(cell) {
     const W = this.W;
     this.cell = cell;
     this.nx = Math.max(1, Math.ceil(W.size[0] / cell));
     this.ny = Math.max(1, Math.ceil(W.size[1] / cell));
     this.nz = this.dims === 3 ? Math.max(1, Math.ceil(W.size[2] / cell)) : 1;
-    const cells = this.nx * this.ny * this.nz;
-    if (this.head.length < cells) this.head = new Int32Array(cells);
-    this.head.fill(-1, 0, cells);
-    const { px, py, pz, head, next, n, nx, ny, nz } = this;
+    const n = this.n, nx = this.nx, ny = this.ny, nz = this.nz, cells = nx * ny * nz;
+    if (!this.cellStart || this.cellStart.length < cells + 1) this.cellStart = new Int32Array(cells + 1);
+    if (!this.ci || this.ci.length < n) {
+      this.ci = new Int32Array(n * 2); this.sorted = new Int32Array(n * 2);
+      const q = k => new Float32Array(n * 2);
+      this.qx = q(); this.qy = q(); this.qz = q(); this.qvx = q(); this.qvy = q(); this.qvz = q();
+      this.qbank = q(); this.qphase = q();
+      this.qsp = new Uint8Array(n * 2); this.qtr = new Uint8Array(n * 2);
+    }
+    const cellStart = this.cellStart, ci = this.ci, sorted = this.sorted;
+    cellStart.fill(0, 0, cells + 1);
+    const px = this.px, py = this.py, pz = this.pz;
     const lo0 = W.lo[0], lo1 = W.lo[1], lo2 = W.lo[2], inv = 1 / cell;
+    const is3 = this.dims === 3;
     for (let i = 0; i < n; i++) {
       const cx = clamp(((px[i] - lo0) * inv) | 0, 0, nx - 1);
       const cy = clamp(((py[i] - lo1) * inv) | 0, 0, ny - 1);
-      const cz = this.dims === 3 ? clamp(((pz[i] - lo2) * inv) | 0, 0, nz - 1) : 0;
-      const idx = (cz * ny + cy) * nx + cx;
-      next[i] = head[idx]; head[idx] = i;
+      const cz = is3 ? clamp(((pz[i] - lo2) * inv) | 0, 0, nz - 1) : 0;
+      const c = (cz * ny + cy) * nx + cx;
+      ci[i] = c; cellStart[c + 1]++;
+    }
+    for (let c = 0; c < cells; c++) cellStart[c + 1] += cellStart[c];
+    const cursor = this.cursor && this.cursor.length >= cells ? this.cursor : (this.cursor = new Int32Array(cells));
+    cursor.set(cellStart.subarray(0, cells));
+    const qx = this.qx, qy = this.qy, qz = this.qz, qvx = this.qvx, qvy = this.qvy, qvz = this.qvz;
+    const qsp = this.qsp, qtr = this.qtr, qbank = this.qbank, qphase = this.qphase;
+    const vx = this.vx, vy = this.vy, vz = this.vz, species = this.species, tribe = this.tribe, bank = this.bank, phase = this.phase;
+    for (let i = 0; i < n; i++) {
+      const s = cursor[ci[i]]++;
+      sorted[s] = i;
+      qx[s] = px[i]; qy[s] = py[i]; qz[s] = pz[i];
+      qvx[s] = vx[i]; qvy[s] = vy[i]; qvz[s] = vz[i];
+      qsp[s] = species[i]; qtr[s] = tribe[i]; qbank[s] = bank[i]; qphase[s] = phase[i];
     }
   }
 
@@ -573,8 +599,11 @@ class Flock {
     const hi0 = lo0 + s0, hi1 = lo1 + s1, hi2 = lo2 + s2;
     const K = Math.min(32, P.topo | 0), topo = K > 0;
     // Perception shrinks in a crowd (you can't see through a dense flock). This bounds the work per boid.
-    const crowdTarget = 70, floor = topo ? 0.5 : 0.35, maxCand = 160;   // hard ceiling on neighbours examined per boid
-    const rf = this.nbFast > crowdTarget ? Math.max(floor, Math.sqrt(crowdTarget / this.nbFast)) : 1;
+    // A bird cannot see through a dense flock, and scanning a dense neighbourhood is
+    // what costs time, so the effective radius shrinks until roughly candTarget birds
+    // fall inside it. Cost per step then stays flat however tightly the flock packs.
+    const candTarget = topo ? 90 : 140, floor = 0.3, maxCand = candTarget * 2;
+    const rf = this.candFast > candTarget ? Math.max(floor, Math.sqrt(candTarget / this.candFast)) : 1;
     const R = P.perception * rf, R2 = R * R;
     this.reff = R;
     const sepR = Math.min(P.separation, R), sepR2 = sepR * sepR;
@@ -603,7 +632,10 @@ class Flock {
 
     const cell = Math.max(R, 12);
     this.buildGrid(cell);
-    const head = this.head, next = this.next, nx = this.nx, ny = this.ny, nz = this.nz, inv = 1 / cell;
+    const nx = this.nx, ny = this.ny, nz = this.nz, inv = 1 / cell;
+    const cellStart = this.cellStart, sorted = this.sorted;
+    const qx = this.qx, qy = this.qy, qz = this.qz, qvx = this.qvx, qvy = this.qvy, qvz = this.qvz;
+    const qsp = this.qsp, qtr = this.qtr, qbank = this.qbank, qphase = this.qphase;
 
     const preds = this.preds; preds.length = 0;
     for (let i = 0; i < n; i++) if (species[i] === 1) preds.push(i);
@@ -690,18 +722,19 @@ class Flock {
       }
     }
     const level = is3 ? P.level : 0, meanY = this.meanY, roostR = P.roost * Math.min(s0, s1, is3 ? s2 : 1e9);
-    let ordX = 0, ordY = 0, ordZ = 0, preyCount = 0, ySum = 0;
+    let ordX = 0, ordY = 0, ordZ = 0, preyCount = 0, ySum = 0, candSum = 0;
     const zlo = is3 ? -1 : 0, zhi = is3 ? 1 : 0;
 
     /* ---------------- prey ---------------- */
-    for (let i = 0; i < n; i++) {
-      if (species[i] !== 0) continue;
-      const x = px[i], y = py[i], z = pz[i];
-      const vx0 = vx[i], vy0 = vy[i], vz0 = vz[i];
+    for (let si = 0; si < n; si++) {
+      if (qsp[si] !== 0) continue;
+      const i = sorted[si];
+      const x = qx[si], y = qy[si], z = qz[si];
+      const vx0 = qvx[si], vy0 = qvy[si], vz0 = qvz[si];
       const sp = Math.sqrt(vx0 * vx0 + vy0 * vy0 + vz0 * vz0) || 1e-6;
       const ux = vx0 / sp, uy = vy0 / sp, uz = vz0 / sp;
-      let sx = 0, sy = 0, sz = 0, alx = 0, aly = 0, alz = 0, cxs = 0, cys = 0, czs = 0, wsum = 0, wsumC = 0, nbc = 0, ph = 0, kn = 0;
-      const ti = tribe[i];
+      let sx = 0, sy = 0, sz = 0, alx = 0, aly = 0, alz = 0, cxs = 0, cys = 0, czs = 0, wsum = 0, wsumC = 0, nbc = 0, ph = 0, kn = 0, cand = 0;
+      const ti = qtr[si], phi = qphase[si];
       const gx = clamp(((x - lo0) * inv) | 0, 0, nx - 1);
       const gy = clamp(((y - lo1) * inv) | 0, 0, ny - 1);
       const gz = is3 ? clamp(((z - lo2) * inv) | 0, 0, nz - 1) : 0;
@@ -709,60 +742,54 @@ class Flock {
         const cz = gz + dz; if (cz < 0 || cz >= nz) continue;
         for (let dy = -1; dy <= 1; dy++) {
           const cy = gy + dy; if (cy < 0 || cy >= ny) continue;
-          for (let dx = -1; dx <= 1; dx++) {
-            const cx = gx + dx; if (cx < 0 || cx >= nx) continue;
-            let j = head[(cz * ny + cy) * nx + cx];
-            while (j >= 0) {
-              if (nbc >= maxCand) break scan;
-              if (j !== i && species[j] === 0) {
-                const ddx = px[j] - x, ddy = py[j] - y, ddz = pz[j] - z;
-                const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
-                if (d2 < R2 && d2 > 1e-6) {
-                  let ok = true;
-                  if (cosFov > -2) {   // dot/|d| < cosFov, tested without the square root
-                    const dot = ddx * ux + ddy * uy + ddz * uz;
-                    ok = cosFov <= 0 ? (dot >= 0 || dot * dot <= cf2 * d2) : (dot > 0 && dot * dot >= cf2 * d2);
-                  }
-                  if (ok) {
-                    nbc++;
-                    const tw = tribe[j] === ti ? 1 : tribeMix;
-                    if (d2 < sepR2) { const q = (1 + (1 - tw)) / d2; sx -= ddx * q; sy -= ddy * q; sz -= ddz * q; }
-                    if (pulse > 0) ph += Math.sin(phase[j] - phase[i]);
-                    if (topo) {
-                      // weak long-range cohesion so separate groups still merge
-                      cxs += px[j] * tw * 0.3; cys += py[j] * tw * 0.3; czs += pz[j] * tw * 0.3; wsumC += tw * 0.3;
-                      // keep the K nearest, sorted by distance
-                      if (kn < K || d2 < kd2[kn - 1]) {
-                        let m = kn < K ? kn : K - 1;
-                        while (m > 0 && kd2[m - 1] > d2) { kd2[m] = kd2[m - 1]; kj[m] = kj[m - 1]; m--; }
-                        kd2[m] = d2; kj[m] = j; if (kn < K) kn++;
-                      }
-                    } else {
-                      const ta = tw * (1 + startle * bank[j]);
-                      alx += vx[j] * ta; aly += vy[j] * ta; alz += vz[j] * ta;
-                      cxs += px[j] * tw; cys += py[j] * tw; czs += pz[j] * tw;
-                      wsum += ta; wsumC += tw;
-                      if (i === insp && this.inspectN < 512) this.inspectList[this.inspectN++] = j;
-                    }
-                  }
-                }
+          const rowBase = (cz * ny + cy) * nx;
+          const xa = gx > 0 ? gx - 1 : 0, xb = gx + 1 < nx ? gx + 1 : nx - 1;
+          const from = cellStart[rowBase + xa]; let to = cellStart[rowBase + xb + 1];   // the three cells in a row are contiguous
+          if (to - from > maxCand - cand) to = from + Math.max(0, maxCand - cand);   // bound the work in a dense clump
+          cand += to - from;
+          for (let sj = from; sj < to; sj++) {
+            if (sj === si || qsp[sj] !== 0) continue;
+            const ddx = qx[sj] - x, ddy = qy[sj] - y, ddz = qz[sj] - z;
+            const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+            if (d2 >= R2 || d2 <= 1e-6) continue;
+            if (cosFov > -2) {   // dot/|d| < cosFov, tested without the square root
+              const dot = ddx * ux + ddy * uy + ddz * uz;
+              if (!(cosFov <= 0 ? (dot >= 0 || dot * dot <= cf2 * d2) : (dot > 0 && dot * dot >= cf2 * d2))) continue;
+            }
+            nbc++;
+            const tw = qtr[sj] === ti ? 1 : tribeMix;
+            if (d2 < sepR2) { const q = (1 + (1 - tw)) / d2; sx -= ddx * q; sy -= ddy * q; sz -= ddz * q; }
+            if (pulse > 0) ph += Math.sin(qphase[sj] - phi);
+            if (topo) {
+              // weak long-range cohesion so separate groups still merge
+              cxs += qx[sj] * tw * 0.3; cys += qy[sj] * tw * 0.3; czs += qz[sj] * tw * 0.3; wsumC += tw * 0.3;
+              // keep the K nearest, sorted by distance
+              if (kn < K || d2 < kd2[kn - 1]) {
+                let m = kn < K ? kn : K - 1;
+                while (m > 0 && kd2[m - 1] > d2) { kd2[m] = kd2[m - 1]; kj[m] = kj[m - 1]; m--; }
+                kd2[m] = d2; kj[m] = sj; if (kn < K) kn++;
               }
-              j = next[j];
+            } else {
+              const ta = tw * (1 + startle * qbank[sj]);
+              alx += qvx[sj] * ta; aly += qvy[sj] * ta; alz += qvz[sj] * ta;
+              cxs += qx[sj] * tw; cys += qy[sj] * tw; czs += qz[sj] * tw;
+              wsum += ta; wsumC += tw;
+              if (i === insp && this.inspectN < 512) this.inspectList[this.inspectN++] = sorted[sj];
             }
           }
         }
       }
       if (topo) {
         for (let m = 0; m < kn; m++) {
-          const j = kj[m], tw = tribe[j] === ti ? 1 : tribeMix;
-          const ta = tw * (1 + startle * bank[j]);
-          alx += vx[j] * ta; aly += vy[j] * ta; alz += vz[j] * ta;
-          cxs += px[j] * tw; cys += py[j] * tw; czs += pz[j] * tw;
+          const sj = kj[m], tw = qtr[sj] === ti ? 1 : tribeMix;
+          const ta = tw * (1 + startle * qbank[sj]);
+          alx += qvx[sj] * ta; aly += qvy[sj] * ta; alz += qvz[sj] * ta;
+          cxs += qx[sj] * tw; cys += qy[sj] * tw; czs += qz[sj] * tw;
           wsum += ta; wsumC += tw;
-          if (i === insp) this.inspectList[this.inspectN++] = j;
+          if (i === insp) this.inspectList[this.inspectN++] = sorted[sj];
         }
       }
-      nb[i] = nbc; nbSum += nbc;
+      nb[i] = nbc; nbSum += nbc; candSum += cand;
       S[0] = 0; S[1] = 0; S[2] = 0;
       if (sx !== 0 || sy !== 0 || sz !== 0) steer(sx, sy, sz, vx0, vy0, vz0, maxSpeed, maxForce, P.wSep);
       if (wsum > 0) steer(alx, aly, alz, vx0, vy0, vz0, maxSpeed, maxForce, P.wAli);
@@ -821,7 +848,11 @@ class Flock {
       ordX += vx[i] / nsp; ordY += vy[i] / nsp; ordZ += vz[i] / nsp; ySum += py[i]; preyCount++;
     }
     this.order = preyCount ? Math.sqrt(ordX * ordX + ordY * ordY + ordZ * ordZ) / preyCount : 0;
-    if (preyCount) { this.meanY = ySum / preyCount; this.nbLast = nbSum / preyCount; this.nbFast += (this.nbLast - this.nbFast) * 0.15; this.nbMean += (this.nbLast - this.nbMean) * 0.05; }
+    if (preyCount) {
+      this.meanY = ySum / preyCount; this.nbLast = nbSum / preyCount;
+      this.candFast += (candSum / preyCount - this.candFast) * 0.15;
+      this.nbFast += (this.nbLast - this.nbFast) * 0.15; this.nbMean += (this.nbLast - this.nbMean) * 0.05;
+    }
 
     /* ---------------- predators ---------------- */
     const huntR = P.perception * 3, hunt2 = huntR * huntR, rr = Math.min(6, Math.ceil(huntR / cell));
@@ -851,17 +882,14 @@ class Flock {
         const cz = gz + dz; if (cz < 0 || cz >= nz) continue;
         for (let dy = -rr; dy <= rr; dy++) {
           const cy = gy + dy; if (cy < 0 || cy >= ny) continue;
-          for (let dx = -rr; dx <= rr; dx++) {
-            const cx = gx + dx; if (cx < 0 || cx >= nx) continue;
-            let j = head[(cz * ny + cy) * nx + cx];
-            while (j >= 0) {
-              if (species[j] === 0) {
-                const ddx = px[j] - x, ddy = py[j] - y, ddz = pz[j] - z;
-                const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
-                if (d2 < bd2) { bd2 = d2; best = j; }
-              }
-              j = next[j];
-            }
+          const rowBase = (cz * ny + cy) * nx;
+          const xa = clamp(gx - rr, 0, nx - 1), xb = clamp(gx + rr, 0, nx - 1);
+          const from = cellStart[rowBase + xa], to = cellStart[rowBase + xb + 1];
+          for (let sj = from; sj < to; sj++) {
+            if (qsp[sj] !== 0) continue;
+            const ddx = qx[sj] - x, ddy = qy[sj] - y, ddz = qz[sj] - z;
+            const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+            if (d2 < bd2) { bd2 = d2; best = sorted[sj]; }
           }
         }
       }
@@ -1975,9 +2003,17 @@ function updateHud(now) {
    The flock is simulated at a fixed 60 steps per second and drawn once per animation
    frame. On a 144 Hz display that is 60 steps rather than 144, and the motion runs at
    the same speed either way. */
-const SIM_HZ = 60, SIM_MS = 1000 / SIM_HZ;
+let simHz = 60, simMs_ = 1000 / 60;
 let last = performance.now(), acc = 0;
-let simMs = 0, drawMs = 0, steps = 0;
+let simMs = 0, drawMs = 0, steps = 0, stepMs = 0;
+/* If a single step costs more than about a fifth of its own budget the machine cannot
+   sustain 60 steps a second, so halve the rate and double the time step. The flock
+   moves at exactly the same speed either way. */
+function tuneSimRate() {
+  if (simHz === 60 && stepMs > 5.5) { simHz = 30; }
+  else if (simHz === 30 && stepMs < 2.2) { simHz = 60; }
+  simMs_ = 1000 / simHz;
+}
 function frame(now) {
   requestAnimationFrame(frame);
   const elapsed = Math.min(now - last, 250); last = now;
@@ -1990,11 +2026,18 @@ function frame(now) {
   }
   let t0 = performance.now();
   if (!paused) {
-    acc = Math.min(acc + elapsed, SIM_MS * 4);   // never try to catch up more than a few steps
+    acc = Math.min(acc + elapsed, simMs_ * 2);   // never try to catch up more than a step or two
+    const dtStep = 60 / simHz;
     let n = 0;
-    while (acc >= SIM_MS && n < 4) { flock.step(1, P, ctx); acc -= SIM_MS; n++; }
+    while (acc >= simMs_ && n < 2) {
+      const s0 = performance.now();
+      flock.step(dtStep, P, ctx);
+      stepMs += (performance.now() - s0 - stepMs) * 0.05;
+      acc -= simMs_; n++;
+    }
     steps = n;
-    if (interacting > 0) interacting -= n;
+    if (n) tuneSimRate();
+    if (interacting > 0) interacting -= n * dtStep;
   } else steps = 0;
   simMs += (performance.now() - t0 - simMs) * 0.1;
   t0 = performance.now();
@@ -2022,7 +2065,7 @@ function updateDiag() {
   const soft = /swiftshader|llvmpipe|software|basic render/i.test(gpuName);
   $('diag').innerHTML =
     `fps <b>${fps.toFixed(0)}</b>   sim <b>${simMs.toFixed(1)}ms</b>   draw <b>${drawMs.toFixed(1)}ms</b>\n` +
-    `boids ${flock.n}   steps/frame ${steps}   mode ${mode}\n` +
+    `boids ${flock.n}   sim ${simHz}Hz   step ${stepMs.toFixed(1)}ms   steps/frame ${steps}   mode ${mode}\n` +
     `css ${width}\u00d7${height}   canvas ${cv.width}\u00d7${cv.height}   dpr ${dpr.toFixed(2)} (device ${(window.devicePixelRatio || 1).toFixed(2)})\n` +
     `pixels ${(cv.width * cv.height / 1e6).toFixed(2)}M   quality ${quality}\n` +
     `in iframe ${window.top !== window.self ? 'yes' : 'no'}\n` +
