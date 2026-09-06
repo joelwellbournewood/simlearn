@@ -88,23 +88,41 @@ const GLYPH = {
       ${dot(150, 34, 5.4, 'fill2')}`;
   },
   traffic() {
-    const R = 72;
-    const car = (a, jam) => {
-      const x = (R * Math.cos(a)).toFixed(1), y = (R * Math.sin(a)).toFixed(1);
-      return `<rect class="${jam ? 'fill2' : 'fillA'}" x="-3.5" y="-3" width="7" height="6" rx="1.6"
-        transform="translate(${x},${y}) rotate(${(a * 57.3 + 90).toFixed(0)})"/>`;
-    };
-    let jam = '', free = '';
-    for (let i = 0; i < 7; i++) jam += car(-1.5 + i * .13, true);
-    for (let i = 0; i < 15; i++) free += car(-0.6 + i * .34, false);
-    addAnim(`@keyframes trFwd{from{transform:rotate(0)}to{transform:rotate(360deg)}}` +
-      `@keyframes trBack{from{transform:rotate(0)}to{transform:rotate(-360deg)}}` +
-      `.tr-free{animation:trFwd 17s linear infinite;transform-origin:0 0}` +
-      `.tr-jam{animation:trBack 48s linear infinite;transform-origin:0 0}`);
-    return `<ellipse class="soft" cx="${CX}" cy="${CY}" rx="${R + 9}" ry="${R * .5 + 9}"/>
-      <ellipse class="soft" cx="${CX}" cy="${CY}" rx="${R - 9}" ry="${R * .5 - 9}"/>
-      <g transform="translate(${CX},${CY}) scale(1,.5)">
-        <g class="tr-free">${free}</g><g class="tr-jam">${jam}</g></g>`;
+    // A stop-and-go wave, built the way one really works: every car drives the same loop and
+    // carries the same small speed oscillation, each car a fixed phase behind the one ahead.
+    // That phase lag makes the cars bunch, and the bunch drifts BACKWARDS while the cars all
+    // move forwards through it. Cars redden as they slow, so the jam is visible as a shape.
+    const R = 74, N = 14, AMP = 40;      // ring radius, cars, speed-wobble amplitude in degrees
+    const LAP = 8, OSC = 6.2;            // seconds per lap; seconds between two jam encounters
+    // jam drift = 360/LAP - 360/OSC = -13 deg/s, i.e. one backward lap every 28s.
+    const FREE = [86, 224, 194], SLOW = [255, 125, 92];
+    const hex = w => '#' + FREE.map((c, i) => Math.round(c + (SLOW[i] - c) * w)
+      .toString(16).padStart(2, '0')).join('');
+    let wob = '', heat = '';
+    const S = 24;
+    for (let i = 0; i <= S; i++) {
+      const u = i / S, p = 2 * Math.PI * u, pc = (100 * u).toFixed(2);
+      wob += `${pc}%{transform:rotate(${(AMP * Math.sin(p)).toFixed(2)}deg)}`;
+      const slow = Math.max(0, -Math.cos(p));            // 0 at full speed, 1 at a standstill
+      heat += `${pc}%{fill:${hex(Math.min(1, Math.max(0, (slow - .18) / .82) ** .85))}}`;
+    }
+    addAnim(`@keyframes trWob{${wob}}@keyframes trHeat{${heat}}` +
+      `@keyframes trSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}` +
+      `.tr-spin{animation:trSpin ${LAP}s linear infinite;transform-origin:0 0}` +
+      `.tr-wob{animation:trWob ${OSC}s linear infinite;transform-origin:0 0}` +
+      `.tr-car{animation:trHeat ${OSC}s linear infinite}`);
+    let cars = '';
+    for (let i = 0; i < N; i++) {
+      const slot = i * 360 / N, ph = i / N, d = (-ph * OSC).toFixed(3);
+      const rest = (AMP * Math.sin(2 * Math.PI * ph)).toFixed(2);   // phase-0 frame, kept as the
+      const w0 = Math.min(1, Math.max(0, (Math.max(0, -Math.cos(2 * Math.PI * ph)) - .18) / .82) ** .85);
+      cars += `<g transform="rotate(${slot.toFixed(2)})"><g class="tr-wob" transform="rotate(${rest})"
+        style="animation-delay:${d}s"><rect class="tr-car" style="animation-delay:${d}s"
+        x="${R - 3.1}" y="-4" width="6.2" height="8" rx="1.8" stroke="none" fill="${hex(w0)}"/></g></g>`;
+    }
+    return `<g transform="translate(${CX},${CY}) scale(1,.5)">
+      <circle class="soft" cx="0" cy="0" r="${R + 11}"/><circle class="soft" cx="0" cy="0" r="${R - 11}"/>
+      <g class="tr-spin">${cars}</g></g>`;
   },
   gravity() {
     const orb = (a, b, rotDeg, ph) => t => {
