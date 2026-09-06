@@ -75,6 +75,24 @@ html,body{overflow-x:clip}
 .hero h1 .w:nth-child(3){animation-delay:.18s}
 .hero h1 em{font-style:normal; color:var(--accent); text-shadow:0 0 34px rgba(86,224,194,.34)}
 @keyframes rise{to{opacity:1;transform:none}}
+/* Slogan: hovering runs a small wave across the letters, one lift and glow each, and the
+   full stops bounce on the same beat. --i is the letter's index along the whole line. */
+.hero h1 .l,.hero h1 .dot{display:inline-block; will-change:transform}
+.hero h1:hover .l,.hero h1:active .l{animation:ltrPulse 2.6s ease-in-out infinite; animation-delay:calc(var(--i) * .052s)}
+.hero h1:hover .dot,.hero h1:active .dot{animation:dotHop 2.6s cubic-bezier(.3,.75,.35,1) infinite; animation-delay:calc(var(--i) * .052s)}
+@keyframes ltrPulse{
+  0%{transform:none; filter:drop-shadow(0 0 0 rgba(86,224,194,0))}
+  7%{transform:translateY(-2px) scale(1.045); filter:drop-shadow(0 0 8px rgba(86,224,194,.8))}
+  24%,100%{transform:none; filter:drop-shadow(0 0 0 rgba(86,224,194,0))}
+}
+@keyframes dotHop{
+  0%{transform:none}
+  6%{transform:translateY(-10px) scale(1.15)}
+  13%{transform:translateY(0) scaleY(.86) scaleX(1.14)}
+  18%{transform:translateY(-3px) scale(1)}
+  26%,100%{transform:none}
+}
+
 .hero-sub{
   display:flex; align-items:center; gap:12px; margin:1.15rem 0 0;
   font-family:var(--body); font-size:14px; letter-spacing:.02em; color:var(--muted);
@@ -148,6 +166,14 @@ html,body{overflow-x:clip}
 @keyframes chase{to{transform:translateX(14px)}}
 .card:hover .g-draw{animation:draw 1.5s cubic-bezier(.4,0,.2,1) forwards}
 @keyframes draw{from{stroke-dashoffset:var(--len,240)}to{stroke-dashoffset:0}}
+/* The idle motion is a hover reward. Every glyph holds its published still frame until the
+   card is hovered or keyboard-focused. animation-play-state pauses at frame 0 instead of
+   cancelling, so the art never jumps. The extra .card in the selector is deliberate: it has to
+   outrank the per-glyph animation shorthands, which would otherwise reset play-state to running. */
+.card .card-art svg *{animation-play-state:paused}
+.card:hover .card-art svg *,
+.card:focus-visible .card-art svg *,
+.card:active .card-art svg *{animation-play-state:running}
 .card-body{padding:14px 16px 16px}
 .card-tag{font-family:var(--body); font-size:11.5px; letter-spacing:.01em; color:var(--accent); opacity:.9}
 .card h3{margin:6px 0 0; font-family:var(--display); font-weight:600; font-size:1.05rem; letter-spacing:-.01em; line-height:1.25}

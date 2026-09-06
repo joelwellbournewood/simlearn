@@ -103,10 +103,10 @@
       "transportation"
     ],
     "difficulty": "Intermediate",
-    "description": "A ring road with no junction, no obstacle and nowhere to turn off. Every driver follows the Intelligent Driver Model, and above a critical density the traffic jams itself. Space-time diagram, fundamental diagram, a brake tap you can fire yourself, and adaptive cruise control to try to fix it.",
+    "description": "A ring road with no junction, no obstacle and nowhere to turn off. Every driver follows the Intelligent Driver Model. Tap the brakes on one car and watch the wave outlive it, or pack the road until it jams with no cause at all. Live space-time diagram, and self-driving cars to try to fix it.",
     "status": "live",
     "hook": "Jams from nothing at all",
-    "visible": false
+    "visible": true
   },
   {
     "id": "lorenz",
