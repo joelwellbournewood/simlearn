@@ -114,8 +114,8 @@ const GLYPH = {
     };
     const out = orb(86, 34, -16, 0), inn = orb(52, 21, 22, Math.PI * 160 / 180);
     addAnim(orbitKF('gvOut', out, 60) + orbitKF('gvIn', inn, 60) +
-      `.gv-out{animation:gvOut 19s linear infinite both}` +
-      `.gv-in{animation:gvIn 11s linear infinite both}`);
+      `.gv-out{animation:gvOut 12s linear infinite both}` +
+      `.gv-in{animation:gvIn 7s linear infinite both}`);
     const a = out(0), b = inn(0);
     return `<ellipse class="soft" cx="${CX}" cy="${CY}" rx="86" ry="34" transform="rotate(-16 ${CX} ${CY})"/>
       <ellipse class="soft" cx="${CX}" cy="${CY}" rx="52" ry="21" transform="rotate(22 ${CX} ${CY})"/>
