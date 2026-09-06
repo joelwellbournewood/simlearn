@@ -89,7 +89,7 @@ input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;bac
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
-.hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:calc(100% - 360px)}
+.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:min(46ch,calc(100% - 700px));line-height:1.5}
 .sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
 .sel.on{display:block}
 .sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
@@ -121,7 +121,7 @@ dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
 .about-close:hover{color:var(--ink);border-color:var(--line-strong)}
 body.in-frame .brand{display:none}
 body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
-@media (max-width:760px){
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
   .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
   .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
   .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
@@ -265,7 +265,17 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p><b class="hl">Figure-eight</b> is one of the few periodic solutions known for three equal masses. Cristopher Moore found it numerically in 1993, and Chenciner and Montgomery proved in 2000 that it genuinely exists. All three bodies chase each other around the same lemniscate, each a third of a period behind the one in front. It survives small nudges, which is why it holds together here. No real system has ever been seen doing it. Add a few small bodies with the slider, or sling one through the middle, and see how long the choreography lasts.</p>
 
     <h3>Lagrange points</h3>
-    <p>Around a star and a planet in a circular orbit there are five places where a small body can sit still relative to the pair. Euler found the three that lie on the line through them in the 1760s, and Lagrange found the two at the corners of equilateral triangles in 1772. Switch the view to <b>co-rotating</b> and they stop moving. L4 and L5 are stable when the planet is lighter than about a twenty-fifth of the star, which is why Jupiter's Trojan asteroids have held their positions for billions of years. L1, L2 and L3 are saddle points, so anything left there slides away within a few orbits. The James Webb telescope sits at Sun-Earth L2 and fires thrusters every few weeks for exactly that reason. Bodies sharing almost the same orbit as the planet trace horseshoes in the rotating view. Saturn's moons Janus and Epimetheus do this for real, trading orbits every four years.</p>
+    <p>Put a star and a planet on a circular orbit and there are exactly five places where a third, much lighter body can sit and keep station with them: it goes round once per planet year and so never moves relative to the pair. They are the points where the star's pull, the planet's pull and the centrifugal effect of going round together cancel out. Euler found the three on the line through the two bodies in the 1760s. Lagrange found the other two in 1772.</p>
+    <p><b>Where they are.</b> Switch the view to <b>co-rotating</b> (this arrangement starts that way) and the star, the planet and all five points stand still, which is the only frame in which they make sense. The dashed circle is the planet's orbit.</p>
+    <ul>
+      <li><b>L1</b> sits between the star and the planet, about 15% of the way back toward the star. It is where the planet's pull cancels part of the star's.</li>
+      <li><b>L2</b> sits the same sort of distance directly beyond the planet, away from the star.</li>
+      <li><b>L3</b> sits on the far side of the star, almost exactly as far from it as the planet is (0.994 of the separation, from the numbers this arrangement runs on), so it lands within a hair of the dashed orbit circle, permanently hidden from the planet behind the star.</li>
+      <li><b>L4</b> and <b>L5</b> sit on the planet's own orbit, 60 degrees ahead of it and 60 degrees behind. Each one makes an equilateral triangle with the star and the planet, which is why the faint triangle is drawn to them. They are the two furthest from the pair, and the only two that are not on the line.</li>
+    </ul>
+    <p><b>Stable or not.</b> L4 and L5 (marked teal) are genuinely stable when the planet is lighter than about a twenty-fifth of the star: nudge a body off them and the Coriolis effect curls it back into a slow loop around the point. That is why Jupiter's Trojan asteroids have held those two spots for billions of years, and the six small bodies drawn there in this arrangement librate rather than escape. L1, L2 and L3 (marked gold) are saddle points, balanced on a ridge, so anything left there slides away within an orbit or two. The James Webb telescope sits at Sun-Earth L2 and fires thrusters every few weeks to stay there.</p>
+    <p>The four bodies started on the planet's orbit a hair inside and outside it trace <b>horseshoes</b> in the rotating view: the inner one runs slightly faster, catches up with the planet, is pushed outward by it, then falls behind and comes back. Saturn's moons Janus and Epimetheus do exactly this, swapping orbits every four years.</p>
+    <p>The star here is 100 times the mass of the planet, which is a heavier planet than any in the solar system. That is deliberate: it puts L1 and L2 far enough from the planet to see. The point positions are computed from the current separation of the two heaviest bodies, so if you sling a new heavy body in, the crosses move to where they now belong.</p>
 
     <h3>The slingshot</h3>
     <p>Send a light body past a heavy one that is itself moving and it can leave far faster than it arrived. Nothing is created. The speed is borrowed from the heavy body's orbital motion, which slows by an amount far too small to measure. Voyager 2 reached Neptune on a chain of these assists. Drag on empty space to line one up: the dotted line previews where your body will go.</p>
@@ -291,7 +301,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <ul>
       <li>Start <b class="hl">Star and planets</b>, click the comet, and watch its speed as it swings past the star.</li>
       <li>Raise <b>Large bodies</b> on the same arrangement. Two or three stars at the centre still hold the planets, until they do not.</li>
-      <li>On <b class="hl">Lagrange points</b>, drop a body at rest on L4 and another on L1. One stays put for the whole run, the other leaves within an orbit or two.</li>
+      <li>On <b class="hl">Lagrange points</b>, drag a body to rest on L4 and another on L1. The teal one stays put for the whole run; the gold one leaves within an orbit or two. In the co-rotating view a body "at rest" means at rest with the pair, which is what the drag arrow measures there.</li>
       <li>Run <b class="hl">Pythagorean three</b> twice and compare. Then change the softening a little and run it again.</li>
       <li>On <b class="hl">Galaxy and intruder</b>, watch in the centre-of-mass view. The long tail is thrown from the far side of the disc, not the side that was hit.</li>
       <li>Set gravity to 0.3 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge on the way.</li>
@@ -742,7 +752,7 @@ const PRESETS={
       out.push(mk(q.x,q.y,q.vx,q.vy,0.3));
     }
     return out;}},
-  lagrange:{name:'Lagrange points',tag:'Trojans and horseshoe orbits',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:true,lag:true,build(n){
+  lagrange:{name:'Lagrange points',tag:'Five places that keep station',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:true,lag:true,build(n){
     const S=Math.min(W,H), d=S*0.30, M1=4000, M2=40, M=M1+M2, w=Math.sqrt(G*M/(d*d*d));
     const x1=-d*M2/M, x2=d*M1/M;
     const out=[mk(x1,0,0,w*x1,M1), mk(x2,0,0,w*x2,M2)];
@@ -1074,17 +1084,47 @@ function draw(){
 }
 function drawLagrange(z,ox,oy){
   const [A,B]=twoHeaviest(); const L=NBCore.lagrange(A,B); if(!L) return;
+  const P=(x,y)=>{ w2f(x,y,tmp); return {x:tmp.x*z+ox, y:tmp.y*z+oy}; };
+  /* which way round does the pair turn? the point on the leading side is the "ahead" one */
+  const rx=B.x-A.x, ry=B.y-A.y;
+  const ccw = (rx*(B.vy-A.vy)-ry*(B.vx-A.vx))>=0;
+  const NOTE={L1:'between the two',L2:'behind the planet',L3:'other side of the star',
+              L4:ccw?'60 deg ahead':'60 deg behind', L5:ccw?'60 deg behind':'60 deg ahead'};
+  const d=Math.hypot(rx,ry);
+  const a=P(A.x,A.y), b=P(B.x,B.y);
+  /* the planet's orbit, and the two equilateral triangles that fix L4 and L5 */
+  ctx.save();
+  ctx.setLineDash([3,5]); ctx.lineWidth=1; ctx.strokeStyle='rgba(227,239,233,.16)';
+  ctx.beginPath(); ctx.arc(a.x,a.y,d*z,0,TAU); ctx.stroke();
+  ctx.setLineDash([2,4]); ctx.strokeStyle='rgba(86,224,194,.22)';
+  for(const p of L) if(p.label==='L4'||p.label==='L5'){
+    const q=P(p.x,p.y);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(q.x,q.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  ctx.restore();
   ctx.font='10px "Space Mono",monospace'; ctx.textAlign='center';
   for(const p of L){
-    w2f(p.x,p.y,tmp); const sx=tmp.x*z+ox, sy=tmp.y*z+oy;
-    if(sx<-20||sx>W+20||sy<-20||sy>H+20) continue;
+    const q=P(p.x,p.y); const sx=q.x, sy=q.y;
+    if(sx<-40||sx>W+40||sy<-40||sy>H+40) continue;
     const stable=p.label==='L4'||p.label==='L5';
     ctx.strokeStyle=stable?'rgba(86,224,194,.85)':'rgba(230,195,79,.85)'; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(sx-6,sy); ctx.lineTo(sx+6,sy); ctx.moveTo(sx,sy-6); ctx.lineTo(sx,sy+6); ctx.stroke();
     ctx.beginPath(); ctx.arc(sx,sy,4,0,TAU); ctx.stroke();
-    ctx.fillStyle=stable?'rgba(86,224,194,.9)':'rgba(230,195,79,.9)';
+    ctx.fillStyle=stable?'rgba(86,224,194,.95)':'rgba(230,195,79,.95)';
     ctx.fillText(p.label,sx,sy-10);
+    if(d*z>150){
+      ctx.fillStyle='rgba(227,239,233,.55)'; ctx.font='9.5px "Space Mono",monospace';
+      ctx.fillText(NOTE[p.label],sx,sy+19);
+      ctx.font='10px "Space Mono",monospace';
+    }
   }
+  /* name the pair the points belong to */
+  ctx.font='10px "Space Mono",monospace'; ctx.fillStyle='rgba(227,239,233,.5)';
+  if(A.m>3*B.m){ ctx.fillText('star',a.x,a.y-A.r*z-9); ctx.fillText('planet',b.x,b.y-B.r*z-9); }
+  /* key, right-aligned above the readouts */
+  ctx.textAlign='end'; ctx.font='10.5px "Space Mono",monospace';
+  ctx.fillStyle='rgba(86,224,194,.9)'; ctx.fillText('teal  L4 L5  stable: a body left here stays', W-20, H-86);
+  ctx.fillStyle='rgba(230,195,79,.9)'; ctx.fillText('gold  L1 L2 L3  unstable: it slides away', W-20, H-70);
   ctx.textAlign='start';
 }
 function drawOrbit(b,z,ox,oy){
