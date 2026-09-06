@@ -69,7 +69,8 @@ const GLYPH = {
   gravity() {
     return `<ellipse class="soft" cx="${CX}" cy="${CY}" rx="86" ry="34" transform="rotate(-16 ${CX} ${CY})"/>
       <ellipse class="soft" cx="${CX}" cy="${CY}" rx="52" ry="21" transform="rotate(22 ${CX} ${CY})"/>
-      <g class="g-spin" style="transform-origin:${CX}px ${CY}px">${dot(226, 40, 3.6)}${dot(58, 82, 2.6)}</g>
+      <g class="g-spin" style="transform-origin:${CX}px ${CY}px">${dot(222.7, 40.3, 3.6)}</g>
+      <g class="g-spin g-spin-in" style="transform-origin:${CX}px ${CY}px">${dot(92.0, 52.4, 2.6)}</g>
       <circle class="fill2" cx="${CX}" cy="${CY}" r="7"/>
       <circle class="soft accent2" cx="${CX}" cy="${CY}" r="13"/>`;
   },

@@ -141,6 +141,7 @@ html,body{overflow-x:clip}
 .card-art .fillA{fill:var(--accent);stroke:none}
 .card-art .fill2{fill:var(--accent-2);stroke:none}
 .card:hover .g-spin{animation:orbit 14s linear infinite}
+.card:hover .g-spin-in{animation:orbit 8s linear infinite}
 .card:hover .g-draw{animation:draw 1.5s cubic-bezier(.4,0,.2,1) forwards}
 @keyframes draw{from{stroke-dashoffset:var(--len,240)}to{stroke-dashoffset:0}}
 .card:hover .g-drift{animation:drift 2.6s ease-in-out infinite alternate}

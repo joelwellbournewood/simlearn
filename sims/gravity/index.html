@@ -157,7 +157,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
     <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
   </button>
-  <button class="icon-btn" id="b-reset" title="Reset this arrangement to its original settings (R)" aria-label="Reset the arrangement">
+  <button class="icon-btn" id="b-reset" title="Rebuild the arrangement with the sliders where they are now (R). Click the arrangement card again to go back to its original settings." aria-label="Rebuild the arrangement with the current settings">
     <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
   </button>
   <button class="icon-btn" id="b-fit" title="Fit everything in view (0)" aria-label="Fit everything in view">
@@ -228,7 +228,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
 </div>
 
-<div class="hint">Drag on empty space to sling a body. Click a body to inspect it. Scroll to zoom, right-drag to pan. Space pauses, R restarts.</div>
+<div class="hint">Drag on empty space to sling a body. Click a body to inspect it. Scroll to zoom, right-drag to pan. Space pauses, R rebuilds with the current sliders.</div>
 
 <div class="sel" id="sel">
   <h4><i id="sel-dot"></i><span id="sel-name">Body</span></h4>
@@ -287,7 +287,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p>In the other arrangements, two bodies that touch are combined into one, conserving mass and momentum. Energy is not conserved, because a real collision turns motion into heat. It is a rough stand-in for what happens in a dust disc, and it shows the important asymmetry: the heaviest body pulls in the most material and so grows fastest. A cloud of near-equals turns into a few large winners with leftovers around them. Planets formed roughly that way.</p>
 
     <h3>Building your own arrangement</h3>
-    <p>Nothing here is locked. <b>Small bodies</b> sets how many light members are created, and the number shown is the number you get. <b>Large bodies</b> sets the heavy ones, and where an arrangement allows more than one they are placed on a ring turning at the speed that ring needs. Some arrangements are defined by their heavy bodies, so the count is held there. Beyond that, drag on empty space to sling in a new body at any time, click a body to inspect it, and delete anything you do not want. The reset button always puts the arrangement back to the settings it started with, so experiment freely.</p>
+    <p>Nothing here is locked. <b>Small bodies</b> sets how many light members are created, and the number shown is the number you get. <b>Large bodies</b> sets the heavy ones, and where an arrangement allows more than one they are placed on a ring turning at the speed that ring needs. Some arrangements are defined by their heavy bodies, so the count is held there. Beyond that, drag on empty space to sling in a new body at any time, click a body to inspect it, and delete anything you do not want. The reset button rebuilds the scene with the sliders exactly where you have left them, so you can rerun the same experiment with one thing changed. Clicking the arrangement card again is the way back to the settings it was published with.</p>
 
     <h3>Under the bonnet</h3>
     <ul>
@@ -1197,10 +1197,13 @@ function restart(key,keep){
   for(const b of bodies){ px+=b.vx*b.m; py+=b.vy*b.m; M+=b.m; }
   for(const b of bodies){ b.vx-=px/M; b.vy-=py/M; }
   merges=0; ejected=0; PV.pts=[];
-  setMerge(P.merge!==false); setLag(!!P.lag);
-  frame.mode='fixed'; setFrame(P.frame||'fixed'); updateFrame(); clearTrails();
-  cam.x=0; cam.y=0; cam.zoom=1;
-  setAutoFit(!!P.fit); if(P.fit) fitView(true);
+  /* keep=true keeps the view and the toggles the way the user has them */
+  const keepFrame=keep?frame.mode:(P.frame||'fixed');
+  setMerge(keep?mergeOn:(P.merge!==false)); setLag(keep?showLag:!!P.lag);
+  frame.mode='fixed'; setFrame(keepFrame); updateFrame(); clearTrails();
+  if(!keep){ cam.x=0; cam.y=0; cam.zoom=1; }
+  const wantFit=keep?autoFit:!!P.fit;
+  setAutoFit(wantFit); if(wantFit) fitView(true);
   resetEnergy();
   [...document.querySelectorAll('.preset')].forEach(p=>p.setAttribute('aria-pressed',String(p.dataset.k===activePreset)));
 }
@@ -1234,7 +1237,7 @@ lSlider.addEventListener('change',()=>restart(null,true));
 const bp=el('b-pause');
 function setPaused(p){ paused=p; bp.dataset.on=String(p); }
 bp.addEventListener('click',()=>setPaused(!paused));
-el('b-reset').addEventListener('click',()=>restart(activePreset,false));
+el('b-reset').addEventListener('click',()=>restart(null,true));
 el('b-fit').addEventListener('click',()=>{ fitView(true); });
 const bc=el('b-clean');
 bc.addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); });
@@ -1324,7 +1327,7 @@ window.addEventListener('keydown',e=>{
   if(e.target.matches('input')) return;
   const k=e.key;
   if(k===' '){ e.preventDefault(); setPaused(!paused); }
-  else if(k==='r'||k==='R') restart(activePreset,false);
+  else if(k==='r'||k==='R') restart(null,true);
   else if(k==='h'||k==='H') bc.click();
   else if(k==='f'||k==='F') el('b-full').click();
   else if(k==='?') dlg.open?dlg.close():dlg.showModal();
