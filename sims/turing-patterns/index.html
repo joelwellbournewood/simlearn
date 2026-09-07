@@ -108,7 +108,7 @@ input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;bac
 .sel .acts{display:flex;gap:6px;margin-top:8px}
 .sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
 .sel .acts button:hover{border-color:var(--line-strong)}
-body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel,body.clean .mapcard{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
@@ -143,6 +143,16 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   .sel table{font-size:12px}
 }
 @media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+/* A landscape phone has 844 points of width and 390 of height, so the map goes on the
+   left of the sheet and everything that reads it goes in a column beside it. */
+@media (orientation:landscape) and (max-height:560px) and (pointer:coarse){
+  .mapcard.in-sheet{display:grid;grid-template-columns:min(46vw,340px) 1fr;gap:0 15px;align-items:start}
+  .mapcard.in-sheet .mc-head,.mapcard.in-sheet .mc-sub{grid-column:1/-1}
+  .mapcard.in-sheet #map{grid-column:1;grid-row:3/span 9;max-width:100%;margin:0}
+  .mapcard.in-sheet .mc-zone,.mapcard.in-sheet .legend,.mapcard.in-sheet .row,
+  .mapcard.in-sheet .mc-rule,.mapcard.in-sheet .mc-note{grid-column:2}
+  .mapcard.in-sheet .mc-zone{margin-top:0}
+}
 /* On a portrait phone the player shows the explainer next to the simulation's title,
    so the in-panel copy would be a duplicate. Landscape keeps its own. */
 @media (max-width:820px) and (orientation:portrait){ .hosted-about .about-btn{display:none} }
@@ -155,18 +165,34 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   background:rgba(7,18,15,.94);z-index:9}
 .notice h2{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 10px}
 .notice p{color:var(--muted);font-size:13.5px;margin:0 0 6px;max-width:44ch}
-/* parameter map: the sim's own navigation instrument, so it keeps its plotted colours */
-#map{width:100%;aspect-ratio:1/.86;display:block;border-radius:10px;cursor:crosshair;
+/* ---- the parameter map, in its own card beside the pattern ---- */
+.mapcard{position:absolute;right:20px;top:66px;width:336px;max-height:calc(100% - 96px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.mapcard::-webkit-scrollbar{width:8px} .mapcard::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.mc-head{display:flex;align-items:center;gap:7px;position:relative}
+/* the card's own tip has no room to open upward, so it opens downward */
+.mc-head .tip::after{bottom:auto;top:calc(100% + 5px);left:0;right:auto;width:min(300px,78vw)}
+.mc-title{font-family:var(--display);font-weight:600;font-size:14.5px;color:var(--ink)}
+.mc-sub{margin:3px 0 9px;color:var(--muted);font-size:11.5px;line-height:1.42}
+.mc-zone{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink);min-height:2.9em}
+.mc-rule{height:1px;background:var(--line);margin:13px 0 2px}
+.mc-note{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.45;min-height:1.4em}
+.mapcard .row label .nm i{font-style:italic;font-family:var(--mono);color:var(--gold)}
+/* the map keeps its own plotted colours: they carry meaning, not decoration */
+#map{width:100%;aspect-ratio:1/.9;display:block;border-radius:10px;cursor:crosshair;
   touch-action:none;background:#07120f;border:1px solid var(--line)}
-.mapfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:7px;
-  font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-.mapfoot b{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
-#mapname{color:var(--muted);font-size:12px;min-height:1.35em;margin-top:2px}
-.legend{list-style:none;margin:8px 0 0;padding:0;font-size:11px;color:var(--muted);line-height:1.7}
+.legend{list-style:none;margin:9px 0 0;padding:0;font-size:11px;color:var(--muted);line-height:1.65}
 .legend li{display:flex;align-items:center;gap:9px}
-.legend .sw{width:13px;height:9px;border-radius:2px;background:#37391d;border:1px solid #5b5d2e;flex:none}
-.legend .ln{width:13px;height:0;border-top:1.5px solid #93b9ae;flex:none}
-.legend .ln.dash{border-top-style:dashed;border-top-color:#6f9fc4}
+.legend .sw{width:13px;height:9px;border-radius:2px;background:#41451f;border:1px solid #b9c25f;flex:none}
+.legend .ln{width:13px;height:0;border-top:1.5px solid #a8ccbe;flex:none}
+.legend .ln.dash{border-top-style:dashed;border-top-color:#79b0d6}
+/* inside the controls sheet on a small screen it is just another section */
+.mapcard.in-sheet{position:static;width:auto;max-height:none;overflow:visible;background:none;
+  backdrop-filter:none;border:0;border-radius:0;padding:0;margin:0 0 4px}
+.mapcard.in-sheet .mc-title{font-family:var(--body);font-size:12px;font-weight:400;color:var(--muted)}
+.mapcard.in-sheet #map{aspect-ratio:1/.9;max-width:340px;margin:0 auto}
+body.clean .mapcard{display:none}
+body.in-frame .mapcard{top:18px;max-height:calc(100% - 48px)}
 .presets{grid-template-columns:1fr 1fr}
 .seg.two{grid-template-columns:1fr 1fr}
 .btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px}
@@ -193,11 +219,12 @@ details.more>summary:hover{color:var(--ink)}
 .eq{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--panel-2);
   border-left:2px solid var(--accent);padding:11px 14px;margin:10px 0 14px;white-space:pre-wrap;line-height:1.9}
 .about-inner em{color:var(--ink);font-style:normal}
-.hud{max-width:calc(100% - 380px)}
+.hud{max-width:calc(100% - 740px)}
 @media (max-width:820px), (max-height:560px) and (pointer:coarse){
   .panel{width:100%}
-  #map{aspect-ratio:1/.7}
   .hud{max-width:none}
+  .mc-zone{min-height:0}
+  .legend{font-size:11.5px;line-height:1.75}
 }
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
@@ -251,25 +278,7 @@ details.more>summary:hover{color:var(--ink)}
   <p class="label">Try one</p>
   <div class="presets" id="presets"></div>
 
-  <p class="label">Steer it yourself</p>
-  <canvas id="map" width="300" height="258" aria-label="Parameter map of feed rate against kill rate. Click to move the chemistry."></canvas>
-  <div class="mapfoot"><span>feed <b id="fVal">0.030</b></span><span>kill <b id="kVal">0.062</b></span></div>
-  <div id="mapname">&nbsp;</div>
-  <ul class="legend">
-    <li><span class="ln"></span>uniform states collide and vanish</li>
-    <li><span class="ln dash"></span>steady state starts to oscillate</li>
-    <li><span class="sw"></span>true Turing instability lives here</li>
-  </ul>
-  <div class="row">
-    <label for="fSl"><span class="nm">Feed rate
-      <span class="tip" tabindex="0" data-tip="How fast fresh substrate is topped up. Raise it and the pattern fills the field; drop it and structures starve.">i</span></span><span class="val" id="fOut">0.0300</span></label>
-    <input type="range" id="fSl" min="0.005" max="0.09" step="0.0002">
-  </div>
-  <div class="row">
-    <label for="kSl"><span class="nm">Kill rate
-      <span class="tip" tabindex="0" data-tip="How fast the activator is removed. It sets whether a blob holds its size, splits in two, or dies out.">i</span></span><span class="val" id="kOut">0.0620</span></label>
-    <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
-  </div>
+  <div id="mapslot"></div>
 
   <p class="label">Paint into the field</p>
   <div class="seg two" id="toolSeg" role="group" aria-label="Pointer tool">
@@ -281,12 +290,7 @@ details.more>summary:hover{color:var(--ink)}
     <input type="range" id="brushSl" min="4" max="120" step="1" value="28">
   </div>
 
-  <p class="label">Change the chemistry</p>
-  <div class="row">
-    <label for="ratioSl"><span class="nm">Diffusion ratio
-      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator. This is the number Turing's argument turns on: push it past about 3 and the olive patch on the map opens out.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
-    <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
-  </div>
+  <p class="label">Run it</p>
   <div class="row">
     <label for="stepsSl"><span class="nm">Speed</span><span class="val" id="stepsVal">12</span></label>
     <input type="range" id="stepsSl" min="1" max="40" step="1" value="12">
@@ -349,6 +353,38 @@ details.more>summary:hover{color:var(--ink)}
   </details>
 </div>
 
+<aside class="mapcard" id="mapcard">
+  <div class="mc-head">
+    <span class="mc-title">Steer it yourself</span>
+    <span class="tip" tabindex="0" data-tip="Two numbers decide everything: how fast substrate is fed in, and how fast the activator is removed. Each preset is one dot on this map. Click or drag anywhere to move the chemistry there.">i</span>
+  </div>
+  <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own.</p>
+  <canvas id="map" width="320" height="300" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry."></canvas>
+  <p class="mc-zone" id="mapzone">&nbsp;</p>
+  <ul class="legend">
+    <li><span class="ln"></span>above this line no uniform mixture exists</li>
+    <li><span class="ln dash"></span>left of this the mixture oscillates</li>
+    <li><span class="sw"></span>a uniform mixture breaks up by itself</li>
+  </ul>
+  <div class="row">
+    <label for="fSl"><span class="nm">Feed rate <i>F</i>
+      <span class="tip" tabindex="0" data-tip="How fast fresh substrate is topped up. Raise it and the pattern fills the field; drop it and structures starve. This is the horizontal axis.">i</span></span><span class="val" id="fOut">0.0300</span></label>
+    <input type="range" id="fSl" min="0.005" max="0.09" step="0.0002">
+  </div>
+  <div class="row">
+    <label for="kSl"><span class="nm">Kill rate <i>k</i>
+      <span class="tip" tabindex="0" data-tip="How fast the activator is removed. It sets whether a blob holds its size, splits in two, or dies out. This is the vertical axis.">i</span></span><span class="val" id="kOut">0.0620</span></label>
+    <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
+  </div>
+  <div class="mc-rule"></div>
+  <div class="row">
+    <label for="ratioSl"><span class="nm">Diffusion ratio
+      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator. Turing's argument turns on this number: the olive region is where his condition actually holds, and it grows as you raise the ratio.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
+    <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
+  </div>
+  <p class="mc-note" id="mapnote">&nbsp;</p>
+</aside>
+
 <div class="hud" id="hud"></div>
 
 <dialog id="about" class="about">
@@ -406,19 +442,19 @@ var $ = function(id){ return document.getElementById(id); };
  * Presets. F and k only; everything else is left as the user set it.
  * ------------------------------------------------------------------ */
 var PRESETS = [
-  {n:'Spots',          d:'holds its spacing',      F:0.030,  k:0.062,   seed:2},
+  {n:'Spots',          d:'holds its spacing',      F:0.030,  k:0.062,   seed:2, sp:32, sr:4},
   {n:'Stripes',        d:'lined up, not a maze',   F:0.029,  k:0.057,   seed:4, aniso:[90,1.6]},
   {n:'Labyrinth',      d:'dense maze, spreads slowly', F:0.029, k:0.057, seed:2, DA:0.18},
   {n:'Mitosis',        d:'spots that divide',      F:0.0367, k:0.0649,  seed:1},
   {n:'Coral',          d:'branching fronts',       F:0.0545, k:0.062,   seed:1},
   {n:'Worms',          d:'wandering filaments',    F:0.078,  k:0.061,   seed:2, steps:26, draw:1},
-  {n:'Holes',          d:'spots, inverted',        F:0.039,  k:0.058,   seed:2},
+  {n:'Holes',          d:'spots, inverted',        F:0.039,  k:0.058,   seed:2, sp:32, sr:4},
   {n:'Waves',          d:'travelling fronts',      F:0.014,  k:0.045,   seed:1, draw:1},
   {n:'Chaos',          d:'never settles',          F:0.026,  k:0.051,   seed:2},
-  {n:'Drifting spots', d:'spots that wander',      F:0.014,  k:0.054,   seed:2},
-  {n:'Pulses',         d:'blobs that breathe',     F:0.025,  k:0.060,   seed:2}
+  {n:'Drifting spots', d:'spots that wander',      F:0.014,  k:0.054,   seed:2, sp:32, sr:4},
+  {n:'Pulses',         d:'blobs that breathe',     F:0.025,  k:0.060,   seed:2, sp:32, sr:4}
 ];
-var DA_DEFAULT = 0.30, STEPS_DEFAULT = 12;
+var DA_DEFAULT = 0.30, STEPS_DEFAULT = 12, SP_DEFAULT = 64, SR_DEFAULT = 14;
 /* ------------------------------------------------------------------ *
  * Shaders
  * ------------------------------------------------------------------ */
@@ -468,13 +504,23 @@ var FS_SPLAT = [
 'precision highp float;',
 'in vec2 vUv; out vec4 outColor;',
 'uniform sampler2D uState;',
-'uniform vec2 uP; uniform vec2 uR; uniform float uMode;',
+'uniform vec2 uP; uniform vec2 uR; uniform float uMode; uniform float uN;',
+'float hs(vec2 p){ p = fract(p*vec2(127.1, 311.7)); p += dot(p, p + 41.7); return fract(p.x*p.y*97.31); }',
 'void main(){',
 '  vec2 st = texture(uState, vUv).rg;',
 '  vec2 d = vUv - uP;',
 '  d = fract(d + 0.5) - 0.5;',
 '  d /= uR;',
 '  float f = smoothstep(0.0, 0.55, 1.0 - dot(d,d));',
+/* Seeding stipples: about half the cells under the brush get activator, the rest are
+   left as substrate. A solid disc of activator starves in its own middle and dies in
+   exactly the regimes people most want to draw into. Measured at Spots, Drifting spots
+   and Pulses, a solid 13-cell disc and a solid 26-cell disc both die within 3000 steps
+   and the same discs stippled take hold every time. Patch size matters as much as the
+   dither: stippling cell by cell still loses Drifting spots and Mitosis, because the
+   surviving specks are thinner than a nucleus, so the patches are six cells across.
+   Erasing stays solid, because a half-erased hole is not what anyone means by erase. */
+'  if(uMode > 0.0) f *= step(0.5, hs(floor(vUv*uN/6.0) + 0.5));',
 '  if(uMode > 0.0){',
 '    st.g = max(st.g, f*0.92);',
 '    st.r = min(st.r, mix(1.0, 0.12, f));',
@@ -489,7 +535,7 @@ var FS_SEED = [
 '#version 300 es',
 'precision highp float;',
 'in vec2 vUv; out vec4 outColor;',
-'uniform float uSeed; uniform int uMode; uniform vec2 uTexel;',
+'uniform float uSeed; uniform int uMode; uniform vec2 uTexel; uniform vec2 uDots;',
 'float hash(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x*p.y); }',
 'void main(){',
 '  float a = 1.0, b = 0.0;',
@@ -503,12 +549,28 @@ var FS_SEED = [
 '    vec2 d = (uv - 0.5)/cell;',
 '    if(abs(d.x) < 14.3 && abs(d.y) < 14.3){ a = 0.5; b = 0.25; }',
 '  } else if(uMode == 2){',
-'    for(int i = 0; i < 16; i++){',
-'      float fi = float(i);',
-'      vec2 cc = vec2(hash(vec2(fi + uSeed, 7.13)), hash(vec2(fi*3.7 + uSeed, 19.31)));',
-'      vec2 d = uv - cc; d = (fract(d + 0.5) - 0.5)/cell;',
-'      float r = 8.2 + 14.3*hash(vec2(fi + uSeed, 51.7));',
-'      if(dot(d,d) < r*r){ a = 0.5; b = 0.25; }',
+/* A lattice of nuclei laid out in CELLS, so the same number of nuclei per unit of
+   pattern lands on a 256 grid as on a 768 one, and the field never depends on the
+   screen it is drawn to. uDots.x is the lattice spacing in cells, uDots.y the nucleus
+   radius in cells. Sixteen nuclei of random size, which is what used to be here, threw
+   away a working field about a third of the time: measured over 4000 steps, Drifting
+   spots and Pulses die outright for most draws because a wide nucleus starves in the
+   middle before it can split. Four-cell nuclei on a 32-cell lattice took on every draw
+   tested; fourteen-cell nuclei on a 64-cell lattice spread more slowly and give the
+   maze presets their character. */
+'    vec2 cp = uv/cell;',
+'    float sp = uDots.x, rr = uDots.y;',
+'    float per = floor(1.0/cell/sp + 0.5);',
+'    vec2 gi = floor(cp/sp);',
+'    for(int oy = -1; oy <= 1; oy++){',
+'      for(int ox = -1; ox <= 1; ox++){',
+'        vec2 g = gi + vec2(float(ox), float(oy));',
+'        vec2 gw = mod(g, vec2(per));',
+'        vec2 jt = vec2(hash(gw + uSeed), hash(gw*1.73 + uSeed + 3.1)) - 0.5;',
+'        vec2 cc = (g + 0.5 + 0.66*jt)*sp;',
+'        vec2 d = cp - cc;',
+'        if(dot(d,d) < rr*rr){ a = 0.5; b = 0.25; }',
+'      }',
 '    }',
 '  } else if(uMode == 3){',
 '    if(hash(uv/cell*0.51 + uSeed) > 0.5){ a = 0.5; b = 0.25; }',
@@ -527,7 +589,7 @@ var FS_DRAW = [
 'uniform sampler2D uState;',
 'uniform vec2 uTexel;',
 'uniform float uLo, uHi, uRelief;',
-'uniform int uPal;',
+'uniform int uPal; uniform float uBilin;',
 'vec3 inferno(float t){',
 '  const vec3 c0 = vec3(0.00021894, 0.00165100, -0.01948090);',
 '  const vec3 c1 = vec3(0.10651342, 0.56395644, 3.93271239);',
@@ -558,7 +620,22 @@ var FS_DRAW = [
 '  if(uPal == 3) return viridis(t);',
 '  return vec3(0.07 + 0.87*t);',
 '}',
-'float hgt(vec2 uv){ return smoothstep(uLo, uHi, texture(uState, uv).g); }',
+/* Plenty of phones expose WebGL 2 without OES_texture_float_linear, so the driver
+   refuses to interpolate a float texture and the field arrives as hard cells with
+   staircased relief shading: the same physics as the desktop, drawn badly. When the
+   extension is missing the interpolation happens here instead. */
+'float samp(vec2 uv){',
+'  if(uBilin < 0.5) return texture(uState, uv).g;',
+'  vec2 p = uv/uTexel - 0.5;',
+'  vec2 fp = fract(p);',
+'  vec2 b0 = (floor(p) + 0.5)*uTexel;',
+'  float s00 = texture(uState, b0).g;',
+'  float s10 = texture(uState, b0 + vec2(uTexel.x, 0.0)).g;',
+'  float s01 = texture(uState, b0 + vec2(0.0, uTexel.y)).g;',
+'  float s11 = texture(uState, b0 + uTexel).g;',
+'  return mix(mix(s00, s10, fp.x), mix(s01, s11, fp.x), fp.y);',
+'}',
+'float hgt(vec2 uv){ return smoothstep(uLo, uHi, samp(uv)); }',
 'void main(){',
 '  float h = hgt(vUv);',
 '  vec3 col = pal(h);',
@@ -602,7 +679,7 @@ var S = {
   growOn: false, gRate: 1.55e-4, gMax: 4, g: 1, dil: 0,
   pal: 1, relief: true, level: 0.18, contrast: 1.6,
   brush: 28, tool: 'seed',
-  seedMode: 2, total: 0, preset: -1
+  seedMode: 2, seedSp: 64, seedR: 14, total: 0, preset: -1
 };
 var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
 
@@ -758,6 +835,7 @@ function seedField(mode){
   gl.uniform1f(P.seed.u.uSeed, Math.random()*97.0);
   gl.uniform1i(P.seed.u.uMode, mode);
   gl.uniform2f(P.seed.u.uTexel, 1/S.N, 1/S.N);
+  gl.uniform2f(P.seed.u.uDots, S.seedSp, S.seedR);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   ST.cur = d;
   S.total = 0;
@@ -795,6 +873,7 @@ function splat(u, v, ru, rv, mode){
   gl.uniform2f(P.splat.u.uP, u, v);
   gl.uniform2f(P.splat.u.uR, ru, rv);
   gl.uniform1f(P.splat.u.uMode, mode);
+  gl.uniform1f(P.splat.u.uN, S.N);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   ST.cur = d;
 }
@@ -826,6 +905,7 @@ function drawField(){
   gl.uniform1f(P.draw.u.uHi, S.level + span);
   gl.uniform1f(P.draw.u.uRelief, S.relief ? 2.0 : 0.0);
   gl.uniform1i(P.draw.u.uPal, S.pal);
+  gl.uniform1f(P.draw.u.uBilin, smoothOK ? 0.0 : 1.0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindSampler(0, null);
 }
@@ -864,11 +944,15 @@ var mapCv = $('map'), mx = mapCv.getContext('2d');
 var MAPR = {F0:0.005, F1:0.09, K0:0.035, K1:0.072};
 var base = document.createElement('canvas'), bx = base.getContext('2d');
 var baseKey = '';
+/* The plot now sits inside a margin so the axes can be labelled, so every conversion
+   goes through the plot rectangle rather than the whole canvas. */
+var PR = {x:0, y:0, w:1, h:1};
+var MPAD = {l:38, r:10, t:10, b:31};
 
-function mX(F,w){ return (F-MAPR.F0)/(MAPR.F1-MAPR.F0)*w; }
-function mY(k,h){ return h - (k-MAPR.K0)/(MAPR.K1-MAPR.K0)*h; }
-function iF(x,w){ return MAPR.F0 + x/w*(MAPR.F1-MAPR.F0); }
-function iK(y,h){ return MAPR.K0 + (h-y)/h*(MAPR.K1-MAPR.K0); }
+function mX(F){ return PR.x + (F - MAPR.F0)/(MAPR.F1 - MAPR.F0)*PR.w; }
+function mY(k){ return PR.y + PR.h - (k - MAPR.K0)/(MAPR.K1 - MAPR.K0)*PR.h; }
+function iF(x){ return MAPR.F0 + (x - PR.x)/PR.w*(MAPR.F1 - MAPR.F0); }
+function iK(y){ return MAPR.K0 + (PR.y + PR.h - y)/PR.h*(MAPR.K1 - MAPR.K0); }
 
 function classify(F,k,Du,Dv){
   var s = F+k, disc = F*F - 4*F*s*s;
@@ -881,28 +965,69 @@ function classify(F,k,Du,Dv){
   if(H > 0 && H*H > 4*Du*Dv*det) return 4;
   return 3;
 }
-var ZONE = ['#0a1214','#0d181a','#132532','#15292b','#37391d'];
+var ZONE = ['#0b1618','#101f21','#123040','#16292b','#41451f'];
+/* What standing at that point on the map actually means, in words. */
+var ZONE_TXT = [
+  'No uniform mixture can exist here. Whatever you see is a structure feeding itself, and it has to keep dividing to survive.',
+  'A uniform mixture exists but comes apart on its own.',
+  'The mixture oscillates instead of settling, so you get travelling fronts and turbulence rather than a fixed pattern.',
+  'The uniform mixture is stable here, so nothing happens until you disturb it. Draw into the field.',
+  'A genuine Turing instability: the mixture is stable on its own and breaks into a pattern only because the two chemicals spread at different speeds.'
+];
+function turingShare(ratio){
+  var n = 0, tot = 0, Du = 0.3, Dv = 0.3/ratio, ix, iy;
+  for(ix=0;ix<48;ix++) for(iy=0;iy<48;iy++){
+    var F = MAPR.F0 + (ix+0.5)/48*(MAPR.F1-MAPR.F0);
+    var k = MAPR.K0 + (iy+0.5)/48*(MAPR.K1-MAPR.K0);
+    tot++; if(classify(F,k,Du,Dv) === 4) n++;
+  }
+  return Math.round(n/tot*100);
+}
 
-function buildBase(w,h){
+function buildBase(w,h,dpr){
   base.width = w; base.height = h;
   bx.clearRect(0,0,w,h);
-  var Du = S.DA, Dv = S.DA/S.ratio, cell = 3, x, y;
-  for(x=0;x<w;x+=cell) for(y=0;y<h;y+=cell){
-    bx.fillStyle = ZONE[classify(iF(x+cell/2,w), iK(y+cell/2,h), Du, Dv)];
-    bx.fillRect(x,y,cell,cell);
+  var Du = S.DA, Dv = S.DA/S.ratio;
+  var cell = Math.max(2, Math.round(3*dpr));
+  var nx = Math.ceil(PR.w/cell), ny = Math.ceil(PR.h/cell);
+  var zi = new Uint8Array(nx*ny), i, j, z, X, Y;
+  for(i=0;i<nx;i++) for(j=0;j<ny;j++){
+    z = classify(iF(PR.x + i*cell + cell/2), iK(PR.y + j*cell + cell/2), Du, Dv);
+    zi[i*ny+j] = z;
+    bx.fillStyle = ZONE[z];
+    bx.fillRect(PR.x + i*cell, PR.y + j*cell, cell, cell);
   }
-  // saddle-node arc: the non-trivial steady states meet and vanish
-  bx.strokeStyle = '#93b9ae'; bx.lineWidth = 1.4; bx.setLineDash([]);
+  bx.save();
+  bx.beginPath(); bx.rect(PR.x, PR.y, PR.w, PR.h); bx.clip();
+
+  /* Outline the Turing region and, when it is big enough to hold the word, name it in
+     place. That is the region that grows when the diffusion ratio goes up, so seeing it
+     labelled makes the ratio slider explain itself. */
+  var cnt = 0, sx = 0, sy = 0;
+  bx.strokeStyle = 'rgba(206,216,110,.9)'; bx.lineWidth = Math.max(1, 1.1*dpr);
   bx.beginPath();
-  var started = false;
-  for(x=0;x<=w;x++){
-    var F = iF(x,w), kk = Math.sqrt(F)/2 - F;
-    var yy = mY(kk,h);
-    if(!started){ bx.moveTo(x,yy); started = true; } else bx.lineTo(x,yy);
+  for(i=0;i<nx;i++) for(j=0;j<ny;j++){
+    if(zi[i*ny+j] !== 4) continue;
+    cnt++; sx += PR.x + i*cell + cell/2; sy += PR.y + j*cell + cell/2;
+    X = PR.x + i*cell; Y = PR.y + j*cell;
+    if(i === 0 || zi[(i-1)*ny+j] !== 4){ bx.moveTo(X, Y); bx.lineTo(X, Y+cell); }
+    if(i === nx-1 || zi[(i+1)*ny+j] !== 4){ bx.moveTo(X+cell, Y); bx.lineTo(X+cell, Y+cell); }
+    if(j === 0 || zi[i*ny+j-1] !== 4){ bx.moveTo(X, Y); bx.lineTo(X+cell, Y); }
+    if(j === ny-1 || zi[i*ny+j+1] !== 4){ bx.moveTo(X, Y+cell); bx.lineTo(X+cell, Y+cell); }
+  }
+  bx.stroke();
+
+  // saddle-node arc: the two non-trivial uniform states meet and vanish
+  bx.strokeStyle = '#a8ccbe'; bx.lineWidth = 1.5*dpr; bx.setLineDash([]);
+  bx.beginPath();
+  var started = false, x;
+  for(x=0;x<=PR.w;x++){
+    var F = iF(PR.x + x), kk = Math.sqrt(F)/2 - F, yy = mY(kk);
+    if(!started){ bx.moveTo(PR.x + x, yy); started = true; } else bx.lineTo(PR.x + x, yy);
   }
   bx.stroke();
   // Hopf curve, both branches: F*sqrt(k) = (F+k)^2
-  bx.strokeStyle = '#6f9fc4'; bx.lineWidth = 1.2; bx.setLineDash([3,3]);
+  bx.strokeStyle = '#79b0d6'; bx.lineWidth = 1.3*dpr; bx.setLineDash([3*dpr,3*dpr]);
   bx.beginPath();
   var pts = [], kk2, b2, d2;
   for(kk2 = MAPR.K0; kk2 <= 0.0625; kk2 += 0.0002){
@@ -915,58 +1040,117 @@ function buildBase(w,h){
     if(d2 < 0) continue;
     pts.push([(b2 + Math.sqrt(d2))/2, kk2]);
   }
-  for(var i=0;i<pts.length;i++){
-    var px = mX(pts[i][0], w), py = mY(pts[i][1], h);
+  for(i=0;i<pts.length;i++){
+    var px = mX(pts[i][0]), py = mY(pts[i][1]);
     if(i === 0) bx.moveTo(px,py); else bx.lineTo(px,py);
   }
   bx.stroke();
   bx.setLineDash([]);
-  // preset markers
-  for(var j=0;j<PRESETS.length;j++){
-    var p = PRESETS[j], cx = mX(p.F,w), cy = mY(p.k,h);
-    bx.beginPath(); bx.arc(cx,cy,2.6,0,6.2832);
-    bx.fillStyle = 'rgba(10,18,20,.85)'; bx.fill();
-    bx.strokeStyle = 'rgba(210,228,222,.55)'; bx.lineWidth = 1; bx.stroke();
+
+  if(cnt*cell*cell > 0.055*PR.w*PR.h){
+    bx.font = '600 ' + Math.round(9.5*dpr) + 'px ' + 'var(--display)'.replace('var(--display)','"Space Grotesk",sans-serif');
+    bx.fillStyle = 'rgba(226,233,150,.92)';
+    bx.textAlign = 'center'; bx.textBaseline = 'middle';
+    bx.fillText('TURING', sx/cnt, sy/cnt);
   }
-  baseKey = w+'x'+h+':'+S.ratio.toFixed(2);
+
+  // preset markers
+  for(j=0;j<PRESETS.length;j++){
+    var pcx = mX(PRESETS[j].F), pcy = mY(PRESETS[j].k);
+    bx.beginPath(); bx.arc(pcx,pcy,2.7*dpr,0,6.2832);
+    bx.fillStyle = 'rgba(9,17,19,.8)'; bx.fill();
+    bx.strokeStyle = 'rgba(214,232,226,.62)'; bx.lineWidth = 1*dpr; bx.stroke();
+  }
+  bx.restore();
+
+  /* axes */
+  var mono = Math.round(9.5*dpr) + 'px "Space Mono",monospace';
+  bx.strokeStyle = 'rgba(130,170,150,.34)'; bx.lineWidth = 1;
+  bx.strokeRect(PR.x + 0.5, PR.y + 0.5, PR.w - 1, PR.h - 1);
+  bx.fillStyle = '#88a397'; bx.font = mono;
+  bx.textAlign = 'center'; bx.textBaseline = 'top';
+  [0.01,0.03,0.05,0.07,0.09].forEach(function(v){
+    var tx = mX(v);
+    bx.beginPath(); bx.moveTo(tx, PR.y+PR.h); bx.lineTo(tx, PR.y+PR.h+3*dpr); bx.stroke();
+    bx.fillText(v.toFixed(2), tx, PR.y+PR.h+5*dpr);
+  });
+  bx.textAlign = 'right'; bx.textBaseline = 'middle';
+  [0.04,0.05,0.06,0.07].forEach(function(v){
+    var ty = mY(v);
+    bx.beginPath(); bx.moveTo(PR.x-3*dpr, ty); bx.lineTo(PR.x, ty); bx.stroke();
+    bx.fillText(v.toFixed(2), PR.x-5*dpr, ty);
+  });
+  var ts = Math.round(10*dpr);
+  bx.font = '600 ' + ts + 'px "Space Grotesk",sans-serif';
+  bx.fillStyle = '#b9d0c6';
+  bx.textAlign = 'center'; bx.textBaseline = 'bottom';
+  bx.fillText('feed rate F \u2192 more substrate', PR.x + PR.w/2, h - 1);
+  bx.save();
+  bx.translate(ts + 1, PR.y + PR.h/2); bx.rotate(-Math.PI/2);
+  bx.textAlign = 'center'; bx.textBaseline = 'top';
+  bx.fillText('kill rate k \u2192 activator dies faster', 0, 0);
+  bx.restore();
+}
+function mapDpr(){
+  return mapCv.clientWidth ? mapCv.width/mapCv.clientWidth : 1;
 }
 function drawMap(){
   var dpr = Math.min(window.devicePixelRatio||1, 2);
   var w = Math.round(mapCv.clientWidth*dpr), h = Math.round(mapCv.clientHeight*dpr);
-  if(w < 4 || h < 4) return;
+  if(w < 40 || h < 40) return;
   if(mapCv.width !== w || mapCv.height !== h){ mapCv.width = w; mapCv.height = h; }
-  if(baseKey !== w+'x'+h+':'+S.ratio.toFixed(2)) buildBase(w,h);
+  PR = {x:MPAD.l*dpr, y:MPAD.t*dpr, w:w - (MPAD.l+MPAD.r)*dpr, h:h - (MPAD.t+MPAD.b)*dpr};
+  var key = w+'x'+h+':'+S.ratio.toFixed(2);
+  if(baseKey !== key){ buildBase(w,h,dpr); baseKey = key; }
   mx.clearRect(0,0,w,h);
   mx.drawImage(base,0,0);
-  var cx = mX(S.F,w), cy = mY(S.k,h);
-  mx.strokeStyle = 'rgba(230,178,60,.45)'; mx.lineWidth = 1;
-  mx.beginPath(); mx.moveTo(0,cy); mx.lineTo(w,cy); mx.moveTo(cx,0); mx.lineTo(cx,h); mx.stroke();
-  mx.beginPath(); mx.arc(cx,cy,4.5*dpr,0,6.2832);
-  mx.fillStyle = '#e6b23c'; mx.fill();
-  mx.strokeStyle = '#0a1214'; mx.lineWidth = 1.5; mx.stroke();
+  var cx = mX(S.F), cy = mY(S.k);
+  mx.save();
+  mx.beginPath(); mx.rect(PR.x, PR.y, PR.w, PR.h); mx.clip();
+  mx.strokeStyle = 'rgba(230,195,79,.45)'; mx.lineWidth = 1*dpr;
+  mx.setLineDash([3*dpr, 3*dpr]);
+  mx.beginPath();
+  mx.moveTo(PR.x, cy); mx.lineTo(PR.x+PR.w, cy);
+  mx.moveTo(cx, PR.y); mx.lineTo(cx, PR.y+PR.h);
+  mx.stroke(); mx.setLineDash([]);
+  mx.beginPath(); mx.arc(cx, cy, 5*dpr, 0, 6.2832);
+  mx.fillStyle = '#e6c34f'; mx.fill();
+  mx.strokeStyle = '#0a1214'; mx.lineWidth = 1.6*dpr; mx.stroke();
+  mx.restore();
+}
+/* the two lines under the map: where you are, and what the olive region is doing */
+function updateMapText(hover){
+  var zn = $('mapzone');
+  if(zn){
+    if(hover >= 0) zn.innerHTML = '<b>' + PRESETS[hover].n + '</b> \u2014 ' + PRESETS[hover].d;
+    else zn.textContent = ZONE_TXT[classify(S.F, S.k, S.DA, S.DA/S.ratio)];
+  }
+  var nt = $('mapnote');
+  if(nt) nt.textContent = 'Substrate spreads ' + S.ratio.toFixed(2) + '\u00d7 faster than the activator. '
+    + 'At that ratio the olive region covers ' + turingShare(S.ratio) + '% of the map.';
 }
 function mapPick(ev, commit){
   var r = mapCv.getBoundingClientRect();
   var x = (ev.clientX - r.left)/r.width*mapCv.width;
   var y = (ev.clientY - r.top)/r.height*mapCv.height;
-  x = Math.max(0, Math.min(mapCv.width, x));
-  y = Math.max(0, Math.min(mapCv.height, y));
+  x = Math.max(PR.x, Math.min(PR.x + PR.w, x));
+  y = Math.max(PR.y, Math.min(PR.y + PR.h, y));
   if(commit){
-    S.F = Math.round(iF(x,mapCv.width)/0.0002)*0.0002;
-    S.k = Math.round(iK(y,mapCv.height)/0.0002)*0.0002;
+    S.F = Math.round(iF(x)/0.0002)*0.0002;
+    S.k = Math.round(iK(y)/0.0002)*0.0002;
     S.preset = -1;
     syncParams();
   }
   return {x:x, y:y};
 }
 function nearestPreset(x,y){
-  var best = -1, bd = 1e9;
+  var best = -1, bd = 1e9, lim = 13*mapDpr();
   for(var i=0;i<PRESETS.length;i++){
-    var dx = x - mX(PRESETS[i].F, mapCv.width), dy = y - mY(PRESETS[i].k, mapCv.height);
+    var dx = x - mX(PRESETS[i].F), dy = y - mY(PRESETS[i].k);
     var d = dx*dx + dy*dy;
     if(d < bd){ bd = d; best = i; }
   }
-  return bd < 320 ? best : -1;
+  return bd < lim*lim ? best : -1;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1020,7 +1204,11 @@ function paintAt(ev){
   var R = domainRect();
   var u = (px - R.x)/R.w, v = 1 - (py - R.y)/R.h;
   var rad = S.brush*sx*0.5;
-  var ru = rad/R.w, rv = rad/R.h;
+  /* The brush has a floor measured in CELLS, not in screen pixels. Below about a dozen
+     cells a stroke cannot nucleate in the regimes where no uniform mixture exists, and
+     the default 28 pixel brush worked out at nine cells on both a phone and a desktop,
+     which is why drawing into Spots so often did nothing at all. */
+  var ru = Math.max(rad/R.w, 16/S.N), rv = Math.max(rad/R.h, 16/S.N);
   var mode = S.tool === 'seed' ? 1 : -1;
   if(ptr.has){
     var du = u - ptr.lu, dv = v - ptr.lv;
@@ -1041,7 +1229,7 @@ function resize(){
   var h = Math.max(1, Math.round(stage.clientHeight*dpr));
   if(cvs.width !== w || cvs.height !== h){ cvs.width = w; cvs.height = h; }
   if(ov.width !== w || ov.height !== h){ ov.width = w; ov.height = h; }
-  drawMap();
+  placeMapCard();
 }
 
 /* ------------------------------------------------------------------ *
@@ -1050,10 +1238,10 @@ function resize(){
 function fmt(x,n){ return x.toFixed(n); }
 function syncParams(){
   $('fSl').value = S.F; $('kSl').value = S.k;
-  $('fVal').textContent = fmt(S.F,4); $('kVal').textContent = fmt(S.k,4);
   $('fOut').textContent = fmt(S.F,4);  $('kOut').textContent = fmt(S.k,4);
   var btns = $('presets').children;
   for(var i=0;i<btns.length;i++) btns[i].setAttribute('aria-pressed', i === S.preset ? 'true' : 'false');
+  updateMapText(-1);
   drawMap();
 }
 function growSeconds(){
@@ -1087,6 +1275,7 @@ function applyPreset(i){
   S.steps = p.steps || STEPS_DEFAULT;
   S.anisOn = !!p.aniso;
   if(p.aniso){ S.angle = p.aniso[0]; S.aniso = p.aniso[1]; }
+  S.seedSp = p.sp || SP_DEFAULT; S.seedR = p.sr || SR_DEFAULT;
   seedField(S.growOn ? 4 : p.seed);
   S.g = 1;
   syncPanel();
@@ -1130,12 +1319,34 @@ function setPlaying(on){
   pb.title = on ? 'Pause (space)' : 'Play (space)';
 }
 
+/* Beside the pattern on anything with room for it, and just another section of the
+   controls sheet on a phone, where a square field plus a card side by side would leave
+   both too small to read. Landscape phones are only 390 tall, so they use the sheet
+   too. One element, moved, so there is never a second copy to keep in sync. */
+var SIDE_MQ = matchMedia('(min-width:900px) and (min-height:620px)');
+function placeMapCard(){
+  var card = $('mapcard'), slot = $('mapslot');
+  if(!card || !slot) return;
+  if(SIDE_MQ.matches){
+    if(card.parentNode !== document.body){ document.body.appendChild(card); }
+    card.classList.remove('in-sheet');
+  } else {
+    if(card.parentNode !== slot){ slot.appendChild(card); }
+    card.classList.add('in-sheet');
+  }
+  baseKey = '';
+  drawMap();
+}
+if(SIDE_MQ.addEventListener) SIDE_MQ.addEventListener('change', placeMapCard);
+else if(SIDE_MQ.addListener) SIDE_MQ.addListener(placeMapCard);
+
 function wire(){
   buildPresets();
 
   $('fSl').addEventListener('input', function(){ S.F = parseFloat(this.value); S.preset = -1; syncParams(); });
   $('kSl').addEventListener('input', function(){ S.k = parseFloat(this.value); S.preset = -1; syncParams(); });
 
+  placeMapCard();
   var mapDown = false;
   mapCv.addEventListener('pointerdown', function(e){
     mapDown = true; mapCv.setPointerCapture(e.pointerId); mapPick(e, true);
@@ -1144,11 +1355,11 @@ function wire(){
     var p = mapPick(e, mapDown);
     if(!mapDown){
       var i = nearestPreset(p.x, p.y);
-      $('mapname').textContent = i >= 0 ? (PRESETS[i].n + ' \u2014 ' + PRESETS[i].d) : '\u00a0';
+      updateMapText(i);
     }
   });
   mapCv.addEventListener('pointerup', function(){ mapDown = false; });
-  mapCv.addEventListener('pointerleave', function(){ $('mapname').innerHTML = '&nbsp;'; });
+  mapCv.addEventListener('pointerleave', function(){ updateMapText(-1); });
 
   $('growOn').addEventListener('change', function(){
     S.growOn = this.checked;
@@ -1190,7 +1401,7 @@ function wire(){
     function(v){ S.brush = v; }, function(){ return Math.round(S.brush) + ' px'; });
 
   bindRange('ratioSl','ratioVal', function(){ return S.ratio; },
-    function(v){ S.ratio = v; drawMap(); }, function(){ return S.ratio.toFixed(2); });
+    function(v){ S.ratio = v; updateMapText(-1); drawMap(); }, function(){ return S.ratio.toFixed(2); });
   bindRange('stepsSl','stepsVal', function(){ return S.steps; },
     function(v){ S.steps = v; syncGrowth(); }, function(){ return String(S.steps); });
   bindRange('levelSl','levelVal', function(){ return S.level; },
