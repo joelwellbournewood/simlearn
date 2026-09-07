@@ -325,7 +325,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
           <button id="reset">Reset</button>
         </div>
         <div class="verdict" id="verdict" hidden></div>
-        <p class="hint">Space fires the electrode. R resets. P pauses.</p>
+        <p class="hint">Space fires the electrode, R resets it, P pauses. 1 to 9 pick an experiment, H hides the panels, F is fullscreen.</p>
       </section>
 
       <section class="block" id="axonBlock" hidden>
@@ -408,6 +408,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
           <button class="chip on" id="playing" aria-pressed="true"><i></i>Running</button>
         </div>
         <p class="hint">Point at anything in the picture to find out what it is.</p>
+        <p class="hint">Squid giant axon, Hodgkin and Huxley 1952 parameters, at 6.3 &#176;C.</p>
       </section>  </div>
 </div>
 
@@ -465,6 +466,8 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
     <h3>What this model does not do</h3>
     <p>The concentration gradients are treated as fixed; a real spike moves a vanishing fraction of the ions and the pump handles the rest over seconds. The pump drawn here runs far too fast, and the drawn channels are far too few and far too big — a square micrometre of real axon holds hundreds. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities are the right shape but only roughly the right size. And these are the 1952 squid equations at 6.3 °C, held there throughout: mammalian axons at body temperature use faster kinetics and additional channel types.</p>
 
+    <h3>Keys</h3>
+    <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>1</kbd>-<kbd>9</kbd> experiments, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
     <button class="close" id="closeExplainer">Close</button>
   </dialog>
 
@@ -2871,10 +2874,23 @@ function sizeViews(){
 }
 function relayout(){
   const host=el('views'); if(!host) return;
-  const W=host.clientWidth||900, H=host.clientHeight||600;
-  const side = W > H*1.25 && H < 620;
+  const W=host.clientWidth||900, H=host.clientHeight||600, gap=10;
+  /* Which arrangement fits best is decided by measurement, not by a width breakpoint.
+     The wide picture is 1120x560 over a 1120x470 plot, so stacked it needs 0.92 of its
+     width in height; the compact picture is 620x640 over a 620x620 plot, 2.03 stacked
+     and 1.03 side by side. The wide one carries more of the membrane and more channels,
+     so it is preferred wherever it still comes out at half size or better; below that
+     the compact pair takes over, side by side when the screen is short and wide. */
+  const wideW = Math.min(W, (H-gap)/0.9196);
+  const wide = wideW >= 560;
+  let side = false;
+  if(!wide){
+    const stacked = Math.min(W, (H-gap)/2.032);
+    const beside  = Math.min((W-gap)/2, H/1.032);
+    side = beside > stacked*1.05;
+  }
   document.body.classList.toggle('side', side);
-  narrow = side || W < 820;
+  narrow = !wide;
   layoutTheatre(narrow); assignBlocks(S.drugs);
   layoutCable();
   PL.LW = TH.LW; PL.LH = narrow ? 620 : 470;
