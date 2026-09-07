@@ -254,8 +254,6 @@ body.sim-page .logo{font-size:1.05rem}
   /* the pill must not be clipped away with the title text; only .t ellipsises */
   .sim-header h1{overflow:visible}
 }
-.sim-header p{margin:0; color:var(--muted); font-size:.8rem; flex:1 1 240px; min-width:0;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .fs-btn{font-family:var(--body); font-size:.78rem; letter-spacing:.01em;
   background:rgba(255,255,255,.025); border:1px solid var(--line); color:var(--muted); padding:6px 12px;
   border-radius:999px; cursor:pointer; transition:color .16s,border-color .16s; margin-left:auto; white-space:nowrap}
@@ -351,7 +349,6 @@ body.leaving .card:not(.launching){opacity:.25; transition:opacity .18s}
     display:flex; align-items:center; overflow:hidden; white-space:nowrap}
   .sim-header h1 .t{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .host-about{flex:0 0 auto}
-  .sim-header p{display:none}
   .sim-header a.back{font-size:.76rem; padding:6px 10px}
   .sim-header a.back span{display:none}
   .fs-btn{font-size:.76rem; padding:6px 11px}

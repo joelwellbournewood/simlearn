@@ -23,7 +23,6 @@
 <div class="sim-header">
   <a class="back" href="index.html"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>All simulations</span></a>
   <h1 id="sim-title">Loading&#8230;</h1>
-  <p id="sim-desc"></p>
 </div>
 
 <div class="sim-frame-wrap">
@@ -52,7 +51,8 @@
       var th = document.getElementById('sim-title');
       th.textContent = '';
       th.appendChild(tt);
-      document.getElementById('sim-desc').textContent = sim.description;
+      /* the banner carries the title and the explainer pill and nothing else:
+         the description belongs on the card, not over the simulation. */
       document.title = sim.title + ' \u2014 SimLearn';
       if (sim.status && sim.status !== 'live') {
         frame.remove();

@@ -75,7 +75,8 @@ input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;bac
 .stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
-.hint{position:absolute;left:340px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:min(46ch,calc(100% - 700px));line-height:1.5}
+.hint{position:absolute;left:340px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 560px)}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -159,7 +160,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
   <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
 </div>
-<div class="hint">Click the field to re-release from that angle. 1-5 presets, space pause, R restart, H hide.</div>
+<div class="hint">Drag to pan, scroll to zoom, click the field to re-release, R restarts.</div>
 
 <dialog class="about" id="about"><div class="about-inner">
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
@@ -233,6 +234,21 @@ const TAU=Math.PI*2, DEG=Math.PI/180;
 const stage=document.getElementById('stage'), cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const el=id=>document.getElementById(id);
 let W=0,H=0,DPR=1;
+/* ---------- view: pan and zoom ----------
+   The model is drawn in world units with the pivot at (0,0). The view puts that
+   origin on the canvas and scales around it, so trails recorded minutes ago stay
+   in register with the arms however far you have panned or zoomed since. */
+let zoom=1, panx=0, pany=0;
+const ZMIN=0.35, ZMAX=8;
+function baseX(){ return W/2; }
+function baseY(){ return H*0.43; }
+function resetView(){ zoom=1; panx=0; pany=0; }
+function toWorld(sx,sy){ return [(sx-baseX()-panx)/zoom, (sy-baseY()-pany)/zoom]; }
+function zoomAt(sx,sy,f){
+  const z2=Math.max(ZMIN,Math.min(ZMAX,zoom*f)); if(z2===zoom) return;
+  const [wx,wy]=toWorld(sx,sy);
+  zoom=z2; panx=sx-baseX()-wx*zoom; pany=sy-baseY()-wy*zoom;
+}
 function resize(){
   const r=stage.getBoundingClientRect();
   W=Math.max(320,r.width); H=Math.max(240,r.height);
@@ -314,10 +330,14 @@ function trailCap(){
 }
 function draw(){
   ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
-  const ox=W/2, oy=H*0.43;
+  /* everything below is drawn about the pivot at world (0,0); the view supplies the
+     placement and the scale, and stroke widths are divided by it so lines keep the
+     same weight on screen at any zoom. */
+  ctx.save(); ctx.translate(baseX()+panx, baseY()+pany); ctx.scale(zoom,zoom);
+  const ox=0, oy=0;
   ctx.lineCap='round'; ctx.lineJoin='round';
   // reach circle, so you can see the space the tip can explore
-  ctx.strokeStyle='rgba(130,170,150,.10)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(130,170,150,.10)'; ctx.lineWidth=1/zoom;
   ctx.beginPath(); ctx.arc(ox,oy,L1+L2,0,TAU); ctx.stroke();
   ctx.beginPath(); ctx.arc(ox,oy,Math.abs(L1-L2),0,TAU); ctx.stroke();
   const many=copies>12;
@@ -326,7 +346,7 @@ function draw(){
     const t=b.trail, n=t.length/2; if(n<3) continue;
     const [r,g2,bl]=b.c;
     if(many){
-      ctx.strokeStyle='rgba('+r+','+g2+','+bl+',.30)'; ctx.lineWidth=1;
+      ctx.strokeStyle='rgba('+r+','+g2+','+bl+',.30)'; ctx.lineWidth=1/zoom;
       ctx.beginPath(); ctx.moveTo(t[0],t[1]);
       for(let p=1;p<n;p++) ctx.lineTo(t[p*2],t[p*2+1]);
       ctx.stroke();
@@ -336,7 +356,7 @@ function draw(){
         const s=Math.floor(n*k/K), e=Math.floor(n*(k+1)/K); if(e-s<2) continue;
         const u=(k+1)/K;
         ctx.strokeStyle='rgba('+r+','+g2+','+bl+','+(0.05+0.55*Math.pow(u,1.7)).toFixed(3)+')';
-        ctx.lineWidth=0.5+2.1*u;
+        ctx.lineWidth=(0.5+2.1*u)/zoom;
         ctx.beginPath(); ctx.moveTo(t[s*2],t[s*2+1]);
         for(let p=s+1;p<e;p++) ctx.lineTo(t[p*2],t[p*2+1]);
         ctx.stroke();
@@ -345,7 +365,7 @@ function draw(){
   }
   // rods, batched by alpha
   ctx.strokeStyle='rgba(198,214,205,'+(many?0.16:0.62)+')';
-  ctx.lineWidth=many?1:2.4; ctx.beginPath();
+  ctx.lineWidth=(many?1:2.4)/zoom; ctx.beginPath();
   for(const b of arr){
     const a1=b.s[0],a2=b.s[1];
     const x1=ox+L1*Math.sin(a1), y1=oy+L1*Math.cos(a1);
@@ -368,7 +388,8 @@ function draw(){
     ctx.fillStyle='rgb('+r+','+g2+','+bl+')'; ctx.beginPath(); ctx.arc(b.x2,b.y2,R,0,TAU); ctx.fill();
   }
   // pivot
-  ctx.fillStyle='#88a397'; ctx.beginPath(); ctx.arc(ox,oy,4,0,TAU); ctx.fill();
+  ctx.fillStyle='#88a397'; ctx.beginPath(); ctx.arc(ox,oy,4/zoom,0,TAU); ctx.fill();
+  ctx.restore();
 }
 /* ---------- step ---------- */
 function step(){
@@ -376,7 +397,7 @@ function step(){
   const h=0.09*speed/sub;
   for(const b of arr) for(let k=0;k<sub;k++) rk4(b.s,h);
   tsec+=speed/60; // wall-clock seconds of simulated motion at 1x on a 60Hz display
-  const cap=trailCap(), ox=W/2, oy=H*0.43;
+  const cap=trailCap(), ox=0, oy=0;   /* world coordinates: the view moves, the path does not */
   for(const b of arr){
     if(cap===0){ if(b.trail.length) b.trail.length=0; continue; }
     const a1=b.s[0],a2=b.s[1];
@@ -431,16 +452,58 @@ document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',e=>{
   document.querySelectorAll('.tip.show').forEach(o=>{ if(o!==t) o.classList.remove('show'); });
   t.classList.toggle('show');
 }));
-cv.addEventListener('click',e=>{
-  const r=cv.getBoundingClientRect(), ox=W/2, oy=H*0.43;
-  const a=Math.atan2(e.clientX-r.left-ox, e.clientY-r.top-oy);
-  release(a);
+/* One pointer: a drag pans, a tap re-releases from that angle. Two pointers pinch.
+   A wheel zooms about the cursor. The drag threshold is what keeps a click from
+   being swallowed by a two-pixel wobble of the hand. */
+const PTR=new Map(); let dragged=false, pinch0=0, zoom0=1;
+function local(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+cv.style.touchAction='none';
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  const [x,y]=local(e); PTR.set(e.pointerId,{x,y,x0:x,y0:y});
+  if(PTR.size===1) dragged=false;
+  if(PTR.size===2){
+    const [a,b]=[...PTR.values()];
+    pinch0=Math.hypot(a.x-b.x,a.y-b.y)||1; zoom0=zoom; dragged=true;
+  }
 });
+cv.addEventListener('pointermove',e=>{
+  const p=PTR.get(e.pointerId); if(!p) return;
+  const [x,y]=local(e), dx=x-p.x, dy=y-p.y;
+  p.x=x; p.y=y;
+  if(PTR.size===2){
+    const [a,b]=[...PTR.values()];
+    const d=Math.hypot(a.x-b.x,a.y-b.y)||1;
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    zoomAt(mx,my,(d/pinch0)*zoom0/zoom);
+    panx+=dx/2; pany+=dy/2;
+  } else {
+    if(Math.hypot(x-p.x0,y-p.y0)>4) dragged=true;
+    if(dragged){ panx+=dx; pany+=dy; }
+  }
+});
+function endPtr(e){
+  const p=PTR.get(e.pointerId); if(!p) return;
+  PTR.delete(e.pointerId);
+  if(PTR.size===0 && !dragged){
+    const [wx,wy]=toWorld(p.x,p.y);
+    release(Math.atan2(wx,wy));
+  }
+  if(PTR.size<2) pinch0=0;
+}
+cv.addEventListener('pointerup',endPtr);
+cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const [x,y]=local(e);
+  zoomAt(x,y,Math.exp(-e.deltaY*(e.deltaMode===1?0.05:0.0016)));
+},{passive:false});
+cv.addEventListener('dblclick',e=>{ e.preventDefault(); });
 window.addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea')) return;
   const k=e.key;
   if(k===' '){ e.preventDefault(); setPaused(!paused); }
-  else if(k==='r'||k==='R') release();
+  else if(k==='r'||k==='R'){ resetView(); release(); }
   else if(k==='h'||k==='H') bc.click();
   else if(k==='f'||k==='F') el('b-full').click();
   else if(k==='?'){ dlg.open?dlg.close():dlg.showModal(); }
@@ -449,6 +512,8 @@ window.addEventListener('keydown',e=>{
 let rt=null;
 window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(); geom(); },150); });
 function loop(now){ if(!paused) step(); draw(); hud(now); requestAnimationFrame(loop); }
+/* a read-only hook so the view can be measured from outside in testing */
+window.__dbg=()=>({zoom,panx,pany,n:arr.length,t:tsec});
 resize(); applyPreset('twins');
 requestAnimationFrame(loop);
 })();

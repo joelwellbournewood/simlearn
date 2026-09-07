@@ -162,6 +162,7 @@ body.clean #views{left:14px;right:14px;bottom:14px}
   font-size:14px;line-height:1.5;color:var(--muted);pointer-events:none;
   background:linear-gradient(105deg,rgba(4,12,10,.86) 60%,rgba(4,12,10,0));text-shadow:0 1px 3px rgba(0,0,0,.9)}
 .note b{color:var(--ink);font-weight:600}
+.note .live{margin-top:5px;font-family:var(--mono);font-size:12.5px;color:var(--gold);letter-spacing:.02em}
 .legend{position:absolute;right:12px;bottom:11px;display:flex;gap:14px;flex-wrap:wrap;padding:8px 13px;border-radius:10px;
   background:var(--panel);backdrop-filter:blur(7px);border:1px solid var(--line);font-size:13px;color:var(--muted);pointer-events:none}
 .legend span{display:inline-flex;align-items:center;gap:5px}
@@ -477,7 +478,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
       <li><b>TEA</b> blocks the delayed rectifier from inside. The background potassium channels that hold the resting potential are a different, TEA-insensitive population and stay open, so the membrane still sits at −65 mV. The spike fires taller and repolarisation is left to the slow leak.</li>
       <li><b>4-AP</b> is a milder potassium block. Try it on a stripped patch in the axon view.</li>
       <li><b>Pronase</b> digests the inactivation gate off most sodium channels. Nothing shuts the sodium current off, so the spike becomes a permanent plateau near +20 mV. Wash it out to recover.</li>
-      <li><b>Ouabain</b> stops the sodium–potassium pump. Watch sodium pile up inside, spike after spike, with nothing carrying it back out.</li>
+      <li><b>Ouabain</b> stops the sodium–potassium pump. Sodium that comes in during a spike now stays in. Watch the <b>E<sub>Na</sub></b> line on the voltage plot walk down as it accumulates: the driving force on sodium is falling, so each spike is shorter than the one before, the resting potential creeps up as potassium collects outside, and after enough spikes the axon will not fire at all. Wash it out and both gradients recover over a few seconds. The run-down here is compressed by about four orders of magnitude: one real spike moves roughly one sodium ion in a hundred thousand, so a real poisoned axon takes many minutes of firing to reach the same state.</li>
     </ul>
 
     <h3>The whole axon</h3>
@@ -485,7 +486,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
     <p>Bare, the model axon runs at roughly 12 m/s. Wrap it in myelin and the internode barely stores charge, so current from one node reaches the next almost undiminished and the spike jumps node to node three times faster. Strip the sheath off a patch and two things go wrong: the bare stretch soaks up charge, and potassium channels that were sequestered under the wrap are now exposed and shunt the signal away. Past a few millimetres, conduction stops dead. Then add 4-AP or TEA — the exposed potassium channels are blocked and conduction comes back. That is the logic behind giving 4-aminopyridine to some people with multiple sclerosis.</p>
 
     <h3>What this model does not do</h3>
-    <p>The concentration gradients are treated as fixed; a real spike moves a vanishing fraction of the ions and the pump handles the rest over seconds. The pump drawn here runs far too fast, and the drawn channels are far too few and far too big — a square micrometre of real axon holds hundreds. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities are the right shape but only roughly the right size. And these are the 1952 squid equations at 6.3 °C, held there throughout: mammalian axons at body temperature use faster kinetics and additional channel types.</p>
+    <p>The concentration gradients are treated as fixed while the pump is running, and only ouabain lets them move; a real spike moves a vanishing fraction of the ions and the pump handles the rest over seconds. The pump drawn here runs far too fast, and the drawn channels are far too few and far too big — a square micrometre of real axon holds hundreds. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities are the right shape but only roughly the right size. And these are the 1952 squid equations at 6.3 °C, held there throughout: mammalian axons at body temperature use faster kinetics and additional channel types.</p>
 
     <h3>The equations</h3>
 <p>The membrane is treated as a capacitor in parallel with three conductances, giving one current-balance equation and three gating equations:</p>
@@ -525,7 +526,53 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
    V in mV, t in ms, C in uF/cm2, g in mS/cm2, I in uA/cm2.
    ============================================================ */
 const CM = 1.0, GNA = 120, GK = 36, GL = 0.3;
-const ENA = 50, EK = -77, EL = -54.387, VREST = -65;
+const EL = -54.387, VREST = -65;
+/* E_Na and E_K are constants in the 1952 equations, and for a single spike that is
+   right: a spike moves about one sodium ion in a hundred thousand, so the gradients
+   do not measurably change. Stop the pump and nothing carries them back, so over many
+   spikes sodium builds up inside and potassium builds up outside, and both reversal
+   potentials walk in. That is the whole point of ouabain, so here they are variables. */
+const ENA0 = 50, EK0 = -77;
+let ENA = ENA0, EK = EK0;
+const RTF = 24.1;              /* RT/F in mV at 6.3 degrees C, the temperature of the 1952 work */
+const IONS = { nai:1, ko:1 };  /* [Na+] inside and [K+] outside, as multiples of rest */
+const NAI_MAX = 2.4, KO_MAX = 1.75, ION_TAU = 2600;
+/* Charge to concentration. One spike carries roughly 0.7 uC/cm2 of sodium inward,
+   which in a real axon is a shift of about one part in a hundred thousand: a real
+   preparation poisoned with ouabain takes many minutes of firing to run down. These
+   gains compress that into a handful of spikes, or about ten seconds at rest. It is a
+   deliberate speed-up of some four orders of magnitude and it is stated in the
+   explainer; everything else about the run-down, including its direction and the size
+   of the shift in E_Na, is the Nernst equation doing its own work. */
+const NA_GAIN = 8e-5, K_GAIN = 6e-5;
+let naQ = 0, kQ = 0;
+function ionsReset(){ IONS.nai=1; IONS.ko=1; naQ=0; kQ=0; applyReversals(); }
+function applyReversals(){
+  ENA = ENA0 - RTF*Math.log(IONS.nai);
+  EK  = EK0  + RTF*Math.log(IONS.ko);
+}
+/* called from inside the integrator: two multiply-adds, no logarithms */
+function ionCharge(dt, iNa, iK){
+  if(iNa<0) naQ += -iNa*dt;
+  if(iK >0) kQ  +=  iK*dt;
+}
+/* called once a frame: turns the accumulated charge into concentrations. Recovery
+   after a washout is counted in wall-clock seconds rather than model milliseconds,
+   for the same reason the accumulation is accelerated: at the playback speeds people
+   actually watch this at, a pump working in model time would take ten minutes to put
+   the gradients back and nobody would ever see it happen. */
+function ionsApply(dtWallMs){
+  if(TH.pumpBlocked){
+    IONS.nai = Math.min(NAI_MAX, IONS.nai + naQ*NA_GAIN);
+    IONS.ko  = Math.min(KO_MAX,  IONS.ko  + kQ*K_GAIN);
+  } else if(IONS.nai>1.0001 || IONS.ko>1.0001){
+    const r = Math.exp(-Math.max(0,dtWallMs)/ION_TAU);
+    IONS.nai = 1+(IONS.nai-1)*r;
+    IONS.ko  = 1+(IONS.ko -1)*r;
+  }
+  naQ=0; kQ=0;
+  applyReversals();
+}
 
 /* x/(1-e^-x) with the removable singularity handled */
 function lin(x){ return Math.abs(x) < 1e-7 ? 1 - x/2 : x/(1 - Math.exp(-x)); }
@@ -552,8 +599,8 @@ const DRUGS = {
              tip:'4-aminopyridine, a milder potassium blocker. Prescribed to some people with multiple sclerosis — try it on a stripped patch in the axon view.'},
   pronase:  {short:'inactivation gate digested off most sodium channels — the spike never shuts itself off', label:'Pronase',   target:'h',    block:0.70, mouth:null,
              tip:'A protease. Digests the inactivation gate off most sodium channels, so the spike never switches itself off and the membrane locks up depolarised.'},
-  ouabain:  {short:'pump stopped — sodium entering during spikes now stays inside', label:'Ouabain',   target:'pump', block:1.00, mouth:null,
-             tip:'Stops the sodium-potassium pump. Sodium that enters during a spike is no longer carried back out, so it piles up inside.'}
+  ouabain:  {short:'pump stopped — sodium piles up inside and E_Na falls with it', label:'Ouabain',   target:'pump', block:1.00, mouth:null,
+             tip:'Stops the sodium-potassium pump. Sodium that enters during a spike is no longer carried back out, so it piles up inside, E_Na falls, the spike shrinks and eventually the axon stops firing. Wash it out and the gradients recover.'}
 };
 /* Two blockers on the same channel act independently. Potassium block is
    capped: above ~93% the model membrane latches at a depolarised steady state
@@ -709,6 +756,7 @@ function resetCable(c){
 }
 function stepCable(c, dt, stimI, stimSpan, phi, bNa, bK, hf){
   const N=c.N;
+  let qNa=0, qK=0;   /* summed over the cable, so the run-down follows the whole axon */
   for(let i=0;i<N;i++){
     const V=c.V[i];
     if(c.gNa[i]>0 || c.gK[i]>0){
@@ -723,6 +771,7 @@ function stepCable(c, dt, stimI, stimSpan, phi, bNa, bK, hf){
     const gl =c.gL[i];
     const I = (i>=stimSpan[0] && i<=stimSpan[1]) ? stimI : 0;
     c.iNa[i]=gna*(V-ENA); c.iK[i]=gk*(V-EK);
+    qNa += c.iNa[i]; qK += c.iK[i];
     const gt=gna+gk+gl;
     const Vinf=(gna*ENA + gk*EK + gl*EL + I)/gt;
     c.d[i]=Vinf + (V-Vinf)*Math.exp(-dt*gt/c.C[i]);
@@ -741,6 +790,7 @@ function stepCable(c, dt, stimI, stimSpan, phi, bNa, bK, hf){
   }
   c.V[N-1]=c.dp[N-1];
   for(let i=N-2;i>=0;i--) c.V[i]=c.dp[i]-c.cp[i]*c.V[i+1];
+  ionCharge(dt, qNa/N, qK/N);
   c.t+=dt;
 }
 
@@ -846,7 +896,10 @@ function layoutTheatre(narrow){
   TH.LH = Math.round(TH.setH || (narrow ? 640 : 560));
   const k = clamp(TH.LW/(narrow ? 620 : 1120), 0.9, 1.3);
   TH.memH = Math.round((narrow ? 80 : 92) * clamp(TH.LH/(narrow ? 640 : 560), 0.85, 1.25));
-  TH.memTop = Math.round(TH.LH*0.42);
+  /* on a phone the picture is short and the recording electrode hangs below the
+     membrane, so the whole scene sits a little higher and the electrode drops a
+     little less far: it then clears the ion key in the corner. */
+  TH.memTop = Math.round(TH.LH*(narrow ? 0.39 : 0.42));
   TH.memBot = TH.memTop + TH.memH;
   TH.chanL = Math.round((narrow ? 62 : 90)*k);
   TH.chanR = TH.LW - Math.round((narrow ? 84 : 130)*k);
@@ -1570,7 +1623,7 @@ function sealSpan(){
 /* a sharp microelectrode: a fine tip pushed through the membrane */
 function sharpElectrode(g, V){
   const {LW,memTop,memBot}=TH;
-  const tipX=LW-58, tipY=memBot+62, fromX=LW-26, fromY=-38;
+  const tipX=LW-58, tipY=memBot+(narrow?46:62), fromX=LW-26, fromY=-38;
   const t0=(memTop-fromY)/(tipY-fromY), t1=(memBot-fromY)/(tipY-fromY);
   const xa=fromX+(tipX-fromX)*t0, xb=fromX+(tipX-fromX)*t1;
   pipette(g, tipX, tipY, fromX, fromY, true, 'rgba(255,214,150,.95)');
@@ -1790,7 +1843,7 @@ const CB = {
 };
 
 function layoutCable(){
-  CB.cy = Math.round(TH.LH*0.50);
+  CB.cy = Math.round(TH.LH*(narrow ? 0.46 : 0.50));
   CB.R  = Math.round(TH.LH*0.105);
   CB.x0 = 54; CB.x1 = TH.LW - 34;
   const n = TH.LW>900 ? 150 : 90;
@@ -2122,6 +2175,12 @@ function gatesPanel(g, L, y, pw, h, tArr, mArr, hArr, nArr, X, t0){
 /* The four reference levels share a 48px gutter to the left of the plot. On a narrow
    plot the labels drop their numbers rather than hanging off the edge, and a label that
    would land on the one above it is left out instead of being drawn over it. */
+/* a reference line is labelled with the value it is actually at: block the pump and
+   E_Na and E_K move, and a label that still said +50 would be a lie. */
+function lvl(name, v){
+  const r=Math.round(v);
+  return name+' '+(r>0?'+':(r<0?'−':''))+Math.abs(r);
+}
 function levelLabel(g, lab, col, L, y, used){
   const txt = PL.LW < 560 ? lab.split(' ')[0] : lab;
   for(const u of used) if(Math.abs(u-y) < 11) return;
@@ -2184,8 +2243,8 @@ function drawCurrentClamp(g, train){
   }
   const vLo=-95, vHi=58, Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
   g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
-  for(const [v,lab,col] of [[ENA,'E_Na +50','rgba(255,154,60,.5)'],[0,'0','rgba(255,255,255,.14)'],
-                            [VREST,'rest −65','rgba(255,255,255,.16)'],[EK,'E_K −77','rgba(165,139,255,.5)']]){
+  for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.5)'],[0,'0','rgba(255,255,255,.14)'],
+                            [VREST,'rest −65','rgba(255,255,255,.16)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.5)']]){
     const y=Y1(v);
     g.strokeStyle=col; g.lineWidth=1; g.setLineDash(v===0?[2,4]:[4,5]);
     g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
@@ -2252,8 +2311,8 @@ function drawCCSweeps(g){
   gridPanel(g,L,y2,pw,h2,'membrane potential · mV');
   const vLo=-95, vHi=58, Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
   g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
-  for(const [v,lab,col] of [[ENA,'E_Na +50','rgba(255,154,60,.45)'],[0,'0','rgba(255,255,255,.13)'],
-                            [VREST,'rest −65','rgba(255,255,255,.15)'],[EK,'E_K −77','rgba(165,139,255,.45)']]){
+  for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.45)'],[0,'0','rgba(255,255,255,.13)'],
+                            [VREST,'rest −65','rgba(255,255,255,.15)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.45)']]){
     const y=Y2(v);
     g.strokeStyle=col; g.lineWidth=1; g.setLineDash([4,5]);
     g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
@@ -2503,6 +2562,7 @@ function rebuildCable(){
                      lesion:S.lesion, lesionMM:S.lesionLen});
 }
 function resetAll(){
+  ionsReset();
   if(S.mode==='patch'){
     patch=newPatch(); train=[]; clearHist(); spikeTimes=[]; spikeUp=false; clearClamp();
     layoutTheatre(narrow); assignBlocks(S.drugs);
@@ -2562,7 +2622,18 @@ function drugNote(){
   const on=Object.keys(DRUGS).filter(k=>S.drugs[k]);
   if(!on.length){ box.hidden=true; box.innerHTML=''; return; }
   box.hidden=false;
-  box.innerHTML = on.map(k=>'<div><b>'+DRUGS[k].label+'</b> — '+DRUGS[k].short+'</div>').join('');
+  box.innerHTML = on.map(k=>'<div><b>'+DRUGS[k].label+'</b> — '+DRUGS[k].short+'</div>').join('')
+    + (S.drugs.ouabain ? '<div class="live" id="ionLive"></div>' : '');
+}
+/* With the pump stopped the gradients themselves are the experiment, so the numbers
+   that are moving are put on the picture: this is the only way to see it happening
+   without waiting for the spike to visibly shrink. */
+function ionLive(){
+  const box=el('ionLive'); if(!box) return;
+  box.innerHTML = '[Na<sup>+</sup>]<sub>in</sub> &times;'+IONS.nai.toFixed(2)
+    + ' &nbsp; E<sub>Na</sub> '+(ENA>=0?'+':'−')+Math.abs(Math.round(ENA))+' mV'
+    + ' &nbsp; [K<sup>+</sup>]<sub>out</sub> &times;'+IONS.ko.toFixed(2)
+    + ' &nbsp; E<sub>K</sub> −'+Math.abs(Math.round(EK))+' mV';
 }
 
 /* ---------------- recording configurations ---------------- */
@@ -2672,6 +2743,10 @@ function buildLegend(){
     ? [['Na⁺','#ff9a3c'],['K⁺','#a58bff'],['Cl⁻','#348474'],['organic anions','#4a566a']]
     : [['Na⁺','#ff9a3c'],['K⁺','#a58bff'],['Cl⁻','#348474']];
   el('legend').innerHTML = items.map(([n,c])=>'<span><i style="background:'+c+'"></i>'+n+'</span>').join('');
+  /* the whole-axon view puts recording electrode B, its timing label and the end of
+     the ruler in the bottom right corner, which is where the key sits. On a picture
+     this small there is no room for both, and the electrodes are the point. */
+  el('legend').hidden = narrow && S.mode==='cable';
 }
 
 /* ---------------- layout + pointer ---------------- */
@@ -2694,11 +2769,13 @@ function advancePatch(dtModel, dtWall){
   const dt=dtModel/steps;
   for(let i=0;i<steps;i++){
     stepPatch(patch, dt, trainAt(train, patch.t)+S.hold, PHI, kNa, kK, kH);
+    ionCharge(dt, patch.iNa, patch.iK);
     if(!spikeUp && isSpiking(patch)){ spikeUp=true; spikeTimes.push(patch.t); }
     if(spikeUp && spikeOver(patch)) spikeUp=false;
     sampleAcc+=dt;
     if(sampleAcc>=SAMPLE_MS){ pushHist(patch); sampleAcc=0; }
   }
+  ionsApply(dtWall*1000);
   finishPatchFrame(dtModel, dtWall, null);
   updateVerdict();
 }
@@ -2713,6 +2790,7 @@ function advanceClamp(dtModel, dtWall){
     const inStep = clampRunning && clampT>=2 && clampT<2+S.dur;
     if(S.rec==='cc') stepPatch(patch, dt, inStep?S.icmd:0, PHI, kNa, kK, kH);
     else             stepClamp(patch, dt, inStep?S.vcmd:VHOLD, PHI, kNa, kK, kH);
+    ionCharge(dt, patch.iNa, patch.iK);
     if(clampRunning){
       clampT+=dt; sampleAcc+=dt;
       if(sampleAcc>=SAMPLE_MS){
@@ -2733,6 +2811,7 @@ function advanceClamp(dtModel, dtWall){
       }
     }
   }
+  ionsApply(dtWall*1000);
   /* the record is read straight off the stochastic channel states, one sample
      per kinetic sub-step, which is what a real digitiser does */
   finishPatchFrame(dtModel, dtWall,
@@ -2825,6 +2904,7 @@ function advanceCable(dtModel, dtWall){
     }
   }
   cableStim.on=on;
+  ionsApply(dtWall*1000);
   tickCableVisual(cable, dtWall, dtModel, S.ions);
 }
 
@@ -2862,6 +2942,7 @@ function frame(now){
     renderCableTheatre(gT, cable, opt);
     drawCablePlots(gP);
   }
+  if(S.drugs.ouabain && (now|0)%4===0) ionLive();
   outAcc+=dtWall;
   if(outAcc>0.12 && S.mode==='cable'){
     outAcc=0;
@@ -2988,6 +3069,7 @@ function relayout(){
   PL.LW = p.pw; PL.LH = p.ph;
   gT = fit(el('theatre'), TH.LW, TH.LH);
   gP = fit(el('plots'), PL.LW, PL.LH);
+  buildLegend();
 }
 
 /* ---- tooltip bubbles --------------------------------------------

@@ -369,6 +369,39 @@
     details{margin-top:10px}
     #graph{max-height:104px}
   }
+  /* ---------- fullscreen: the field and nothing else ----------
+     Fullscreen is for watching, so everything that is a menu goes: the two control
+     columns, the heading and the footer. The field is centred and fills the height.
+     A small bar in the corner brings the controls back, pauses, or leaves; it fades
+     out after a few seconds of stillness and comes back on the first movement, so
+     the default state really is an empty field. Escape also leaves, as always. */
+  .fsbar{position:fixed;z-index:60;display:none;gap:8px;
+    top:calc(env(safe-area-inset-top,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 16px);
+    transition:opacity .35s ease}
+  .fsbar .btn{font-size:12.5px;padding:7px 12px;background:rgba(10,24,20,.72);backdrop-filter:blur(8px)}
+  body.is-full .fsbar{display:flex}
+  body.is-full .fsbar.idle{opacity:0;pointer-events:none}
+  body.is-full{max-width:none;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column}
+  body.is-full header,body.is-full footer{display:none}
+  body.is-full:not(.menus) .side{display:none}
+  body.is-full .layout{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;gap:0}
+  body.is-full .col-c{order:0;flex:1 1 auto;min-width:0;height:100%;display:flex;align-items:center;
+    justify-content:center;padding:0;margin:0;position:static;box-shadow:none;background:transparent}
+  body.is-full .field-wrap{margin:0;width:100%;height:100%;border-radius:0;border:0;background:transparent;
+    box-shadow:none}
+  /* object-fit rather than an aspect ratio: the canvas then fits inside whatever
+     shape the screen is, in both directions, without a max-width flattening it */
+  body.is-full #field{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+  body.is-full:not(.menus) .field-tag{display:none}
+  /* with the controls called back they sit beside the field on a wide screen and
+     under it on a narrow one, and the field gives up whatever room they need */
+  body.is-full.menus .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);
+    gap:14px;padding:12px;align-items:stretch}
+  body.is-full.menus .col-c{height:auto}
+  body.is-full.menus .col-l,body.is-full.menus .col-r{max-height:100%;overflow-y:auto}
+  @media (max-width:900px){
+    body.is-full.menus .layout{grid-template-columns:1fr;overflow-y:auto}
+  }
 </style>
 <script>try{if(window.self!==window.top)document.documentElement.className+=' in-frame';}catch(e){document.documentElement.className+=' in-frame';}</script>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
@@ -381,6 +414,11 @@
   <p class="sub">A living model. Every dot is one animal moving, grazing, hunting, and breeding on its own energy budget — and the population cycles emerge from those simple rules.</p>
 </header>
 
+<div class="fsbar" id="fsbar">
+  <button class="btn ghost" id="fsMenus" aria-pressed="false">Controls</button>
+  <button class="btn ghost" id="fsPlay">Pause</button>
+  <button class="btn ghost" id="fsExit">Exit</button>
+</div>
 <div class="layout">
   <div class="col col-c">
 <div class="field-wrap">
@@ -1029,10 +1067,37 @@
 
   // ---- fullscreen state as a class, so the layout can react to it ----
   (function(){
-    const sync=()=>document.body.classList.toggle('is-full',
-      !!(document.fullscreenElement||document.webkitFullscreenElement));
+    const bar=el('fsbar'), menus=el('fsMenus'), fsPlay=el('fsPlay'), fsExit=el('fsExit');
+    let idleT=0;
+    function wake(){
+      bar.classList.remove('idle');
+      clearTimeout(idleT);
+      if(document.body.classList.contains('is-full') && !document.body.classList.contains('menus'))
+        idleT=setTimeout(()=>bar.classList.add('idle'), 2600);
+    }
+    const sync=()=>{
+      const on=!!(document.fullscreenElement||document.webkitFullscreenElement);
+      document.body.classList.toggle('is-full',on);
+      if(!on) document.body.classList.remove('menus');
+      wake();
+    };
     document.addEventListener('fullscreenchange',sync);
     document.addEventListener('webkitfullscreenchange',sync);
+    ['pointermove','pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,wake,{passive:true}));
+    menus.addEventListener('click',()=>{
+      const on=document.body.classList.toggle('menus');
+      menus.setAttribute('aria-pressed',String(on));
+      menus.textContent = on ? 'Hide controls' : 'Controls';
+      wake();
+    });
+    fsPlay.addEventListener('click',()=>{ el('play').click(); wake(); });
+    fsExit.addEventListener('click',()=>{
+      const d=document;
+      if(d.fullscreenElement||d.webkitFullscreenElement) (d.exitFullscreen||d.webkitExitFullscreen).call(d);
+    });
+    /* the corner bar mirrors the transport's own label */
+    new MutationObserver(()=>{ fsPlay.textContent=el('play').textContent; })
+      .observe(el('play'),{childList:true,characterData:true,subtree:true});
     sync();
   })();
 
