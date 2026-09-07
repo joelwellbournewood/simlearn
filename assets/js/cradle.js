@@ -22,6 +22,41 @@
   for (var i = 0; i < N; i++) { th[i] = 0; om[i] = 0; }
   th[0] = -0.85;                // start with one ball lifted so it is moving on load
 
+  var BARW = 2 * R * N + 30;          // width of the drawn top bar
+  var PAD = R + Math.ceil(L * Math.sin(MAXA)) + 2;   // swing clearance either side of it
+  var phone = function () {
+    return window.matchMedia && window.matchMedia('(max-width:820px) and (orientation:portrait)').matches;
+  };
+
+  /* Where the art sits inside the canvas. The canvas has to be wide enough for a ball
+     at full lift, so the bar is never at its edge; --cradle-shift (CSS) slides the whole
+     linkage sideways within that box. On a portrait phone the placement is measured
+     instead: the bar is dropped into the empty space to the right of the last word of
+     the slogan, level with it. */
+  function place() {
+    var shift = parseFloat(getComputedStyle(host).getPropertyValue('--cradle-shift'));
+    cx = W / 2 + (isNaN(shift) ? 0 : shift);
+    if (phone()) {
+      var word = document.querySelector('.hero h1 .w:last-child');
+      if (word) {
+        host.style.marginTop = '0px';
+        var wr = word.getBoundingClientRect(), cr = cv.getBoundingClientRect();
+        var wantBarY = wr.top + wr.height * 0.5;
+        host.style.marginTop = Math.round(wantBarY - PIVY - cr.top) + 'px';
+        cx = (wr.right + 20 - cr.left) + BARW / 2;
+      }
+    } else {
+      host.style.marginTop = '';
+    }
+    /* On a narrow portrait phone there is not enough room to keep full swing clearance
+       on the right and still clear the last word, so the right margin is allowed to be
+       tighter: a ball only reaches it when dragged to full lift. */
+    var padR = phone() ? 40 : PAD;
+    cx = Math.max(BARW / 2 + PAD, Math.min(W - BARW / 2 - padR, Math.round(cx)));
+    if (cx < BARW / 2 + PAD) cx = BARW / 2 + PAD;
+    for (var i = 0; i < N; i++) px[i] = cx + (i - (N - 1) / 2) * 2 * R;
+  }
+
   function resize() {
     W = Math.max(240, Math.round(host.clientWidth));
     H = 124;
@@ -29,9 +64,14 @@
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cx = W / 2;
-    for (var i = 0; i < N; i++) px[i] = cx + (i - (N - 1) / 2) * 2 * R;
+    place();
   }
+  window.__cradle = function () {
+    var r = cv.getBoundingClientRect();
+    return { canvas: { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width) },
+             barLeft: Math.round(r.left + cx - BARW / 2), barRight: Math.round(r.left + cx + BARW / 2),
+             barY: Math.round(r.top + PIVY), cx: cx, pad: PAD };
+  };
 
   function bx(i) { return px[i] + L * Math.sin(th[i]); }
   function by(i) { return PIVY + L * Math.cos(th[i]); }
@@ -64,7 +104,7 @@
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    var barW = 2 * R * N + 30, bx0 = cx - barW / 2;
+    var barW = BARW, bx0 = cx - barW / 2;
 
     // one horizontal bar, nothing else
     ctx.strokeStyle = 'rgba(163,188,190,.40)';
@@ -139,6 +179,13 @@
     requestAnimationFrame(frame);
   }
   window.addEventListener('resize', function () { resize(); draw(); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { resize(); draw(); }, 60); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { resize(); draw(); });
+  /* The slogan words start 0.36em low under their intro animation, so a placement
+     measured at load would be that much out. Re-measure once they have landed. */
+  var lastWord = document.querySelector('.hero h1 .w:last-child');
+  if (lastWord) lastWord.addEventListener('animationend', function () { resize(); draw(); });
+  setTimeout(function () { resize(); draw(); }, 1200);
   resize();
   if (reduced) { draw(); }
   else {

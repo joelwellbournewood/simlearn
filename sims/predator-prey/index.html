@@ -303,7 +303,57 @@
     .col-l,.col-r{max-height:none;overflow:visible}
     /* inside the SimLearn player the page already has a title bar */
     .in-frame header,.in-frame footer{display:none}
-    .in-frame .col-c{padding-top:0}
+    /* With no header above it the field is the first thing in the frame, so dropping the
+       body's top padding leaves it already at y=0: it sticks without ever moving, and
+       only the controls underneath scroll. */
+    .in-frame body{padding-top:0}
+    .in-frame .col-c{padding-top:8px;top:0}
+  }
+  /* ---------- landscape phone ----------
+     A portrait-style single column is unusable here: the field is sized from the width,
+     so on an 844x390 screen it would be twice the height of the viewport. Landscape gets
+     the desktop's shape instead, scaled down: the field fills the height on the left and
+     the two control columns sit beside it, each scrolling on its own. */
+  @media (max-width:1060px) and (orientation:landscape) and (max-height:620px){
+    html{height:100%}
+    body{max-width:none;height:100%;overflow:hidden;display:flex;flex-direction:column;
+         padding:8px 10px calc(6px + env(safe-area-inset-bottom))}
+    header,footer{display:none}
+    .layout{flex:1 1 auto;min-height:0;display:grid;
+            grid-template-columns:auto minmax(150px,1fr) minmax(150px,1fr);
+            gap:10px;align-items:stretch}
+    .col{min-width:0;min-height:0}
+    .col-c{order:-1;margin-bottom:0;position:static;padding:0;box-shadow:none;
+           display:flex;justify-content:center;align-items:center;overflow:hidden}
+    .col-l,.col-r{max-height:100%;overflow-y:auto;overscroll-behavior:contain;
+                  scrollbar-width:thin;padding-right:4px}
+    .col-l::-webkit-scrollbar,.col-r::-webkit-scrollbar{width:6px}
+    .col-l::-webkit-scrollbar-thumb,.col-r::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+    .field-wrap{margin-top:0;height:100%;display:flex;align-items:center;justify-content:center}
+    #field{width:auto;height:100%;max-width:100%;max-height:100%;display:block}
+    /* short viewport: the same trims the desktop layout makes when it runs out of height */
+    .about-btn{padding:8px 11px;font-size:13px;margin-bottom:6px}
+    .status{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:0}
+    .stat{padding:5px 8px;border-radius:9px}
+    .stat .v{font-size:15px}
+    .transport{margin-top:6px;flex-wrap:wrap}
+    .transport .seg{flex:1;justify-content:center}
+    .card{margin-top:8px;padding:11px 12px}
+    .col-l > .card:first-child,.col-r > .card:first-child{margin-top:0}
+    .card-head{margin-bottom:6px}
+    .expwrap{margin-top:6px}
+    .presets{gap:4px}
+    .preset{padding:5px 9px}
+    .preset b{font-size:12.5px}
+    .preset small{font-size:11px;line-height:1.25}
+    .group{display:block;margin-top:8px}
+    .group-title{font-size:11px;margin-bottom:2px}
+    .row{margin:4px 0}
+    .row label{font-size:11.5px}
+    .row .hint{display:none}
+    input[type=range]{margin:2px 0}
+    details{margin-top:10px}
+    #graph{max-height:104px}
   }
 </style>
 <script>try{if(window.self!==window.top)document.documentElement.className+=' in-frame';}catch(e){document.documentElement.className+=' in-frame';}</script>

@@ -59,6 +59,28 @@
       }
       frame.src = 'sims/' + sim.id + '/index.html';
     });
+
+  /* On a portrait phone the top of a simulation is crowded, so the explainer moves out
+     here next to the title. The frame is same-origin, so the pill just clicks the
+     simulation's own button; the simulation hides its copy when html.hosted-about is
+     set. If a simulation has no explainer button, no pill appears. */
+  frame.addEventListener('load', function () {
+    var pill = document.querySelector('.host-about');
+    if (pill) pill.remove();
+    var doc;
+    try { doc = frame.contentDocument; } catch (e) { return; }
+    if (!doc) return;
+    var btn = doc.querySelector('.about-btn');
+    var title = document.getElementById('sim-title');
+    if (!btn || !title) return;
+    doc.documentElement.classList.add('hosted-about');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'host-about';
+    b.textContent = (btn.textContent || '').trim() || 'What am I looking at?';
+    b.addEventListener('click', function () { btn.click(); });
+    title.appendChild(b);
+  });
 </script>
 </body>
 </html>
