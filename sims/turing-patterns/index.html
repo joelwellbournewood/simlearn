@@ -84,8 +84,13 @@ input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;bac
 .tg:hover{border-color:var(--line-strong);color:var(--ink)}
 .tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
 .tg:disabled{opacity:.35;cursor:default}
+.drawhint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;
+  font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.01em;color:var(--ink);
+  background:rgba(5,12,10,.62);backdrop-filter:blur(8px);border:1px solid var(--line);
+  border-radius:999px;padding:10px 18px;opacity:0;transition:opacity .5s}
+.drawhint.on{opacity:1}
 .hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
-.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
@@ -132,7 +137,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
   .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
   .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
-  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
+  .stat{padding:0 1px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:9.5px}
   .hint{display:none}
   .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
   .sel table{font-size:12px}
@@ -203,6 +208,7 @@ details.more>summary:hover{color:var(--ink)}
 <div id="stage">
   <canvas id="gl"></canvas>
   <canvas id="ov"></canvas>
+  <div class="drawhint" id="drawhint">Draw in the field to start it</div>
   <div class="notice" id="notice">
     <div>
       <h2>This simulation needs WebGL 2</h2>
@@ -263,11 +269,6 @@ details.more>summary:hover{color:var(--ink)}
     <label for="kSl"><span class="nm">Kill rate
       <span class="tip" tabindex="0" data-tip="How fast the activator is removed. It sets whether a blob holds its size, splits in two, or dies out.">i</span></span><span class="val" id="kOut">0.0620</span></label>
     <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
-  </div>
-  <div class="btnrow">
-    <button class="btn" id="stepBtn">One step</button>
-    <button class="btn" id="clearBtn">Wipe</button>
-    <button class="btn" id="growReset" disabled>Regrow</button>
   </div>
 
   <p class="label">Paint into the field</p>
@@ -361,7 +362,7 @@ details.more>summary:hover{color:var(--ink)}
     <p>This particular pair is the Gray&ndash;Scott model, an autocatalytic reaction in a stirred tank rewritten as a field. <em>u</em> is the substrate, <em>v</em> the activator, and the reaction is u + 2v &rarr; 3v.</p>
     <div class="eq">&part;u/&part;t = D<sub>u</sub>&nabla;&sup2;u &minus; uv&sup2; + F(1 &minus; u)
 &part;v/&part;t = D<sub>v</sub>&nabla;&sup2;v + uv&sup2; &minus; (F + k)v</div>
-    <p><em>F</em> is the feed rate, the rate at which substrate is topped up towards 1. <em>k</em> is the extra kill rate on the activator. Those two numbers are the only things the presets change.</p>
+    <p><em>F</em> is the feed rate, the rate at which substrate is topped up towards 1. <em>k</em> is the extra kill rate on the activator. Those two numbers are what the map navigates, and most presets change nothing else. Three of them go further: Labyrinth lowers both diffusion constants together, which shrinks the spacing without moving on the map; Stripes switches on the fast axis, because an isotropic field gives a maze and never parallel stripes; Worms runs more steps per frame, because its filaments crawl slowly.</p>
 
     <h3>Why the map has that shape</h3>
     <p>The two curves on the parameter map are not decoration; they are solved from the equations with the diffusion switched off.</p>
@@ -377,10 +378,10 @@ details.more>summary:hover{color:var(--ink)}
     <p>The field is drawn in material coordinates, so what you see is the tissue itself elongating. Watch the stripe count in the readout climb while the visible spacing stays put.</p>
 
     <h3>Directional diffusion</h3>
-    <p>Diffusion in tissue is often faster along one axis than another, because cells are elongated, or aligned, or the extracellular matrix is fibrous. Turning on directional diffusion replaces the single diffusion constant with a tensor. Structures then line up: the pattern's wavelength is longer along the fast axis, so stripes tend to run across it. The strength is capped at 3&times; because beyond that the explicit solver used here stops being stable.</p>
+    <p>Diffusion in tissue is often faster along one axis than another, because cells are elongated, or aligned, or the extracellular matrix is fibrous. Turning on directional diffusion replaces the single diffusion constant with a tensor. Structures then line up: the pattern's wavelength is longer along the fast axis, so stripes tend to run across it. This is the difference between the Stripes preset and the Labyrinth one, and it is not cosmetic. With diffusion equal in every direction the model has no reason to prefer any direction, so it always produces a maze; parallel stripes need either an anisotropic tissue or a boundary telling it which way to line up. The strength is capped at 3&times; because beyond that the explicit solver used here stops being stable.</p>
 
     <h3>Are these actually Turing patterns?</h3>
-    <p>Partly, and it is worth being precise about it. Turing's own argument is a linear one: take a uniform steady state that is stable on its own, add diffusion, show that a perturbation now grows. That condition is the olive patch on the map, and at the standard diffusion ratio of 2 not one of the twelve presets falls inside it. Most of them sit where no non-trivial uniform state exists at all, or where the state oscillates. What you are watching in those cases is not a uniform mixture going unstable; it is a self-sustaining localized structure, a pulse of activator that eats outward, splits when it gets too broad, and starves where the substrate has run out.</p>
+    <p>Partly, and it is worth being precise about it. Turing's own argument is a linear one: take a uniform steady state that is stable on its own, add diffusion, show that a perturbation now grows. That condition is the olive patch on the map, and at the standard diffusion ratio of 2 not one of the presets falls inside it. Most of them sit where no non-trivial uniform state exists at all, or where the state oscillates. What you are watching in those cases is not a uniform mixture going unstable; it is a self-sustaining localized structure, a pulse of activator that eats outward, splits when it gets too broad, and starves where the substrate has run out.</p>
     <p>That gap is why Pearson's 1993 paper on this model is called <em>Complex patterns in a simple system</em>. The ingredients are Turing's and so is the characteristic spacing, but the linear analysis Turing wrote down does not by itself explain a spot that divides. Push the diffusion ratio above about 3 and the olive region swells to cover the right-hand presets, which is the regime where the textbook version does hold.</p>
 
     <h3>What this is not</h3>
@@ -405,20 +406,19 @@ var $ = function(id){ return document.getElementById(id); };
  * Presets. F and k only; everything else is left as the user set it.
  * ------------------------------------------------------------------ */
 var PRESETS = [
-  {n:'Spots',          d:'holds its spacing',    F:0.030,  k:0.062,   seed:2},
-  {n:'Stripes',        d:'labyrinth',            F:0.029,  k:0.057,   seed:2},
-  {n:'Mitosis',        d:'spots that divide',    F:0.0367, k:0.0649,  seed:1},
-  {n:'Coral',          d:'branching fronts',     F:0.0545, k:0.062,   seed:1},
-  {n:'Worms',          d:'wandering filaments',  F:0.078,  k:0.061,   seed:2},
-  {n:'Holes',          d:'spots, inverted',      F:0.039,  k:0.058,   seed:2},
-  {n:'Waves',          d:'travelling fronts',    F:0.014,  k:0.045,   seed:1},
-  {n:'Chaos',          d:'never settles',        F:0.026,  k:0.051,   seed:2},
-  {n:'Drifting spots', d:'spots that wander',    F:0.014,  k:0.054,   seed:2},
-  {n:'Fingerprint',    d:'dense ridges',         F:0.037,  k:0.060,   seed:3},
-  {n:'Pulses',         d:'blobs that breathe',   F:0.025,  k:0.060,   seed:2},
-  {n:'Gliders',        d:'fragile, be patient',  F:0.062,  k:0.06093, seed:1}
+  {n:'Spots',          d:'holds its spacing',      F:0.030,  k:0.062,   seed:2},
+  {n:'Stripes',        d:'lined up, not a maze',   F:0.029,  k:0.057,   seed:4, aniso:[90,1.6]},
+  {n:'Labyrinth',      d:'dense maze, spreads slowly', F:0.029, k:0.057, seed:2, DA:0.18},
+  {n:'Mitosis',        d:'spots that divide',      F:0.0367, k:0.0649,  seed:1},
+  {n:'Coral',          d:'branching fronts',       F:0.0545, k:0.062,   seed:1},
+  {n:'Worms',          d:'wandering filaments',    F:0.078,  k:0.061,   seed:2, steps:26, draw:1},
+  {n:'Holes',          d:'spots, inverted',        F:0.039,  k:0.058,   seed:2},
+  {n:'Waves',          d:'travelling fronts',      F:0.014,  k:0.045,   seed:1, draw:1},
+  {n:'Chaos',          d:'never settles',          F:0.026,  k:0.051,   seed:2},
+  {n:'Drifting spots', d:'spots that wander',      F:0.014,  k:0.054,   seed:2},
+  {n:'Pulses',         d:'blobs that breathe',     F:0.025,  k:0.060,   seed:2}
 ];
-
+var DA_DEFAULT = 0.30, STEPS_DEFAULT = 12;
 /* ------------------------------------------------------------------ *
  * Shaders
  * ------------------------------------------------------------------ */
@@ -489,29 +489,34 @@ var FS_SEED = [
 '#version 300 es',
 'precision highp float;',
 'in vec2 vUv; out vec4 outColor;',
-'uniform float uSeed; uniform int uMode;',
+'uniform float uSeed; uniform int uMode; uniform vec2 uTexel;',
 'float hash(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x*p.y); }',
 'void main(){',
 '  float a = 1.0, b = 0.0;',
 '  vec2 uv = vUv;',
+/* Seed features are measured in CELLS, not in a fraction of the field. The pattern
+   wavelength is about sixteen cells whatever the grid size, so a seed written as a
+   fraction of the field shrinks below the size that can survive when the grid is
+   coarser: on a 256 grid the mitosis blob simply died. */
+'  float cell = uTexel.x;',
 '  if(uMode == 1){',
-'    vec2 d = uv - 0.5;',
-'    if(abs(d.x) < 0.028 && abs(d.y) < 0.028){ a = 0.5; b = 0.25; }',
+'    vec2 d = (uv - 0.5)/cell;',
+'    if(abs(d.x) < 14.3 && abs(d.y) < 14.3){ a = 0.5; b = 0.25; }',
 '  } else if(uMode == 2){',
 '    for(int i = 0; i < 16; i++){',
 '      float fi = float(i);',
 '      vec2 cc = vec2(hash(vec2(fi + uSeed, 7.13)), hash(vec2(fi*3.7 + uSeed, 19.31)));',
-'      vec2 d = uv - cc; d = fract(d + 0.5) - 0.5;',
-'      float r = 0.016 + 0.028*hash(vec2(fi + uSeed, 51.7));',
+'      vec2 d = uv - cc; d = (fract(d + 0.5) - 0.5)/cell;',
+'      float r = 8.2 + 14.3*hash(vec2(fi + uSeed, 51.7));',
 '      if(dot(d,d) < r*r){ a = 0.5; b = 0.25; }',
 '    }',
 '  } else if(uMode == 3){',
-'    if(hash(uv*263.0 + uSeed) > 0.5){ a = 0.5; b = 0.25; }',
+'    if(hash(uv/cell*0.51 + uSeed) > 0.5){ a = 0.5; b = 0.25; }',
 '  } else if(uMode == 4){',
 '    if(sin(uv.x*6.2831853*5.0 + uSeed) > 0.35){ a = 0.5; b = 0.25; }',
 '  }',
 '  float nz = (uMode == 0) ? 0.0 : 0.02;',
-'  a += (hash(uv*1024.0 + uSeed*3.17) - 0.5)*nz;',
+'  a += (hash(uv/cell*2.0 + uSeed*3.17) - 0.5)*nz;',
 '  outColor = vec4(clamp(a,0.0,1.0), clamp(b,0.0,1.0), 0.0, 1.0);',
 '}'].join('\n');
 
@@ -601,8 +606,15 @@ var S = {
 };
 var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
 
+/* The grid is drawn into a square as wide as the stage, so a 512 grid on a phone puts
+   the same pattern into half the width and the features come out too small to read. A
+   phone starts on 256, which keeps a wavelength at roughly the desktop's 22 screen
+   pixels. The Grid control still offers the rest. */
+if(matchMedia('(max-width:820px)').matches ||
+   (matchMedia('(pointer:coarse)').matches && Math.min(innerWidth, innerHeight) <= 560)) S.N = 256;
+
 var cvs = $('gl'), ov = $('ov'), stage = $('stage'), ovx = ov.getContext('2d');
-var gl = null, P = {}, ST = null, redFbo = null, redTex = null, pix = null, linSamp = null;
+var gl = null, P = {}, ST = null, redFbo = null, redTex = null, pix = null, linSamp = null, smoothOK = true;
 var RED = 128;
 var WA = new Float32Array(4), WB = new Float32Array(4);
 
@@ -685,8 +697,16 @@ function allocGrid(N){
   S.N = N;
   var t0 = mkTex(N,N,IFMT,gl.RGBA,ITYPE), t1 = mkTex(N,N,IFMT,gl.RGBA,ITYPE);
   ST = { tex:[t0,t1], fbo:[mkFbo(t0), mkFbo(t1)], cur:0 };
-  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE){
+    if(IFMT === gl.RGBA32F){
+      /* last resort on a device that cannot render 32 bit: 16 bit still draws something */
+      gl.deleteTexture(t0); gl.deleteTexture(t1);
+      gl.deleteFramebuffer(ST.fbo[0]); gl.deleteFramebuffer(ST.fbo[1]);
+      IFMT = gl.RGBA16F; ITYPE = gl.HALF_FLOAT; ST = null;
+      allocGrid(N); return;
+    }
     throw new Error('float render target unavailable');
+  }
 }
 
 function initGL(){
@@ -696,9 +716,15 @@ function initGL(){
     fail('Your browser has WebGL 2 but will not render to floating point textures, which this simulation needs.');
     return false;
   }
-  var lin = gl.getExtension('OES_texture_float_linear');
-  IFMT = lin ? gl.RGBA32F : gl.RGBA16F;
-  ITYPE = lin ? gl.FLOAT : gl.HALF_FLOAT;
+  /* The state must be 32 bit. Half floats have a spacing of about 0.001 near 1.0, and
+     the reaction terms per step are smaller than that, so on a 16 bit target the field
+     simply freezes: mitosis never divides, holes never open and pulses stop breathing.
+     That is what made most of the presets look broken on phones, where
+     OES_texture_float_linear is often missing and the old code fell back to 16 bit.
+     Filtering is a display concern only, so it is handled in drawField instead. */
+  smoothOK = !!gl.getExtension('OES_texture_float_linear');
+  IFMT = gl.RGBA32F;
+  ITYPE = gl.FLOAT;
   try{
     P.sim = program(FS_SIM); P.splat = program(FS_SPLAT); P.seed = program(FS_SEED);
     P.draw = program(FS_DRAW); P.red = program(FS_RED);
@@ -731,6 +757,7 @@ function seedField(mode){
   gl.useProgram(P.seed.p);
   gl.uniform1f(P.seed.u.uSeed, Math.random()*97.0);
   gl.uniform1i(P.seed.u.uMode, mode);
+  gl.uniform2f(P.seed.u.uTexel, 1/S.N, 1/S.N);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   ST.cur = d;
   S.total = 0;
@@ -792,7 +819,7 @@ function drawField(){
   gl.useProgram(P.draw.p);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, ST.tex[ST.cur]);
-  gl.bindSampler(0, linSamp);
+  gl.bindSampler(0, smoothOK ? linSamp : null);
   gl.uniform1i(P.draw.u.uState, 0);
   gl.uniform2f(P.draw.u.uTexel, 1/S.N, 1/S.N);
   gl.uniform1f(P.draw.u.uLo, Math.max(0, S.level - span));
@@ -1001,6 +1028,7 @@ function paintAt(ev){
     for(var i=1;i<n;i++) splat(ptr.lu + du*i/n, ptr.lv + dv*i/n, ru, rv, mode);
   }
   splat(u, v, ru, rv, mode);
+  if(drawHintOn) showDrawHint(false);
   ptr.lu = u; ptr.lv = v; ptr.has = true;
 }
 
@@ -1045,14 +1073,44 @@ function buildPresets(){
     b.type = 'button';
     b.setAttribute('aria-pressed', 'false');
     b.innerHTML = '<b>' + p.n + '</b><small>' + p.d + '</small>';
-    b.addEventListener('click', function(){
-      S.F = p.F; S.k = p.k; S.preset = i;
-      seedField(S.growOn ? 4 : p.seed);
-      S.g = 1;
-      syncParams();
-    });
+    b.addEventListener('click', function(){ applyPreset(i); });
     box.appendChild(b);
   });
+}
+/* A preset sets the chemistry, and may also set the feature scale (DA), turn the fast
+   axis on, or run at its own speed. Anything it does not set goes back to the default,
+   so presets never inherit a previous one's settings. */
+function applyPreset(i){
+  var p = PRESETS[i];
+  S.F = p.F; S.k = p.k; S.preset = i;
+  S.DA = p.DA || DA_DEFAULT;
+  S.steps = p.steps || STEPS_DEFAULT;
+  S.anisOn = !!p.aniso;
+  if(p.aniso){ S.angle = p.aniso[0]; S.aniso = p.aniso[1]; }
+  seedField(S.growOn ? 4 : p.seed);
+  S.g = 1;
+  syncPanel();
+  syncParams();
+  showDrawHint(!!p.draw);
+}
+/* the panel has to agree with what the preset just did */
+function syncPanel(){
+  $('anisOn').checked = S.anisOn;
+  $('anisAng').disabled = !S.anisOn; $('anisAmt').disabled = !S.anisOn;
+  ['rowAnisAng','rowAnisAmt'].forEach(function(id){ $(id).classList.toggle('off', !S.anisOn); });
+  $('anisAng').value = S.angle; $('anisAngVal').textContent = Math.round(S.angle) + '\u00b0';
+  $('anisAmt').value = S.aniso; $('anisAmtVal').textContent = S.aniso.toFixed(2) + '\u00d7';
+  $('stepsSl').value = S.steps; $('stepsVal').textContent = String(S.steps);
+  syncGrowth();
+}
+/* Worms and Waves both die out from a plain seed: they need something drawn into the
+   field before there is anything to travel. Say so, and let the prompt fade on the
+   first stroke. */
+var drawHintOn = false;
+function showDrawHint(on){
+  var h = $('drawhint'); if(!h) return;
+  drawHintOn = on;
+  h.classList.toggle('on', on);
 }
 function bindRange(id, valId, get, set, render){
   var el = $(id);
@@ -1094,7 +1152,7 @@ function wire(){
 
   $('growOn').addEventListener('change', function(){
     S.growOn = this.checked;
-    ['growRate','growMax','growReset'].forEach(function(id){ $(id).disabled = !S.growOn; });
+    ['growRate','growMax'].forEach(function(id){ $(id).disabled = !S.growOn; });
     ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
     S.g = 1;
     if(S.growOn) seedField(4);
@@ -1108,7 +1166,6 @@ function wire(){
     function(){ return S.gMax; },
     function(v){ S.gMax = v; if(S.g > v) S.g = v; },
     function(){ return S.gMax.toFixed(1) + '\u00d7'; });
-  $('growReset').addEventListener('click', function(){ S.g = 1; seedField(4); });
 
   $('anisOn').addEventListener('change', function(){
     S.anisOn = this.checked;
@@ -1141,6 +1198,7 @@ function wire(){
   bindRange('contrastSl','contrastVal', function(){ return S.contrast; },
     function(v){ S.contrast = v; }, function(){ return S.contrast.toFixed(2); });
 
+  $('gridSel').value = String(S.N);
   $('gridSel').addEventListener('change', function(){
     try{ allocGrid(parseInt(this.value,10)); seedField(S.seedMode); }
     catch(e){ fail(e.message); }
@@ -1149,12 +1207,10 @@ function wire(){
   $('reliefOn').addEventListener('change', function(){ S.relief = this.checked; });
 
   $('playBtn').addEventListener('click', function(){ setPlaying(!S.running); });
-  $('stepBtn').addEventListener('click', function(){ setPlaying(false); updateWeights(); runSteps(1); });
   $('seedBtn').addEventListener('click', function(){
     seedField(S.growOn ? 4 : (S.seedMode === 0 ? 2 : S.seedMode));
     if(S.growOn) S.g = 1;
   });
-  $('clearBtn').addEventListener('click', function(){ seedField(0); });
   $('saveBtn').addEventListener('click', function(){
     drawField();
     var a = document.createElement('a');
@@ -1193,8 +1249,6 @@ function wire(){
 var last = 0, acc = 0, frames = 0, statTick = 0;
 function hudText(){
   var L = [];
-  L.push(chip('step', S.total.toLocaleString()));
-  L.push(chip('activator', stats.meanV.toFixed(3)));
   L.push(chip('coverage', Math.round(stats.cov*100) + '<small>%</small>'));
   if(S.growOn) L.push(chip('length', '\u00d7' + S.g.toFixed(2)));
   if(S.growOn) L.push(chip('bands across', stats.bands));
@@ -1204,6 +1258,21 @@ function hudText(){
 function chip(k, v){
   return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
 }
+window.__turing = function(){
+  return {N:S.N, F:S.F, k:S.k, DA:S.DA, steps:S.steps, anisOn:S.anisOn, angle:S.angle,
+          aniso:S.aniso, cov:stats.cov, total:S.total, fps:stats.fps, smoothOK:smoothOK,
+          fmt:(IFMT === gl.RGBA32F ? '32f' : '16f'), preset:S.preset};
+};
+window.__turingPreset = function(i){ applyPreset(i); };
+/* runs the model without waiting for frames, so the pattern tests can measure a fixed
+   number of steps instead of a fixed number of seconds */
+window.__turingRun = function(n){
+  updateWeights();
+  var done = 0;
+  while(done < n){ var c = Math.min(200, n-done); runSteps(c); done += c; }
+  readStats();
+  return {cov:stats.cov, total:S.total};
+};
 function frame(t){
   requestAnimationFrame(frame);
   if(!last) last = t;
@@ -1272,7 +1341,6 @@ if(initGL()){
     var k = e.key.toLowerCase();
     if(e.key === ' '){ e.preventDefault(); $('playBtn').click(); }
     else if(k === 'r'){ $('seedBtn').click(); }
-    else if(k === 'c'){ $('clearBtn').click(); }
     else if(k === 'h'){ clean.click(); }
     else if(k === 'f'){ full.click(); }
     else if(k === '?' || k === '/'){ $('aboutBtn').click(); }
