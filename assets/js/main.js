@@ -155,6 +155,28 @@ const GLYPH = {
     return `<path d="${d}" stroke-width="0.85" opacity=".55"/>
       <path class="accent2 lz-bead" d="${d}" pathLength="1000" stroke-dasharray="34 1000" stroke-width="1.7"/>`;
   },
+  'turing-patterns'() {
+    /* The Kondo-Asai observation, which is the whole point of the growing-domain mode:
+       as the tissue stretches, the stripes keep their spacing instead of scaling up, so
+       new ones have to insert themselves in the widening gaps. Each stripe is moved with
+       translate() alone, so the wavy line never shears and the stroke stays even. */
+    const S = 30, K = 0.34;
+    const wig = (x, ph) => path(sample(t => [x + 3.6 * Math.sin(t * 0.055 + ph), t], 16, 112, 44));
+    let body = '', css = '';
+    [-2, -1, 0, 1, 2].forEach((d, i) => {
+      const dx = (d * S * K).toFixed(2);
+      css += `@keyframes tpS${i}{0%,6%{transform:translateX(0)}56%,100%{transform:translateX(${dx}px)}}` +
+             `.tp-s${i}{animation:tpS${i} 5.4s cubic-bezier(.4,.05,.3,1) infinite}`;
+      body += `<path class="tp-s${i}" d="${wig(CX + d * S, i * 1.3)}"/>`;
+    });
+    [-1.5, -0.5, 0.5, 1.5].forEach((d, i) => {
+      body += `<path class="accent2 tp-n" style="animation-delay:${(-0.06 * i).toFixed(2)}s" d="${wig(CX + d * S * (1 + K), 2.4 + i * 1.1)}"/>`;
+    });
+    css += `@keyframes tpN{0%,34%{opacity:0}62%,100%{opacity:.95}}` +
+           `.tp-n{animation:tpN 5.4s ease-out infinite;opacity:0}`;
+    addAnim(css);
+    return `<g class="soft"><path d="M30 16 V112 M250 16 V112" stroke-dasharray="2 6"/></g>${body}`;
+  },
   'reaction-diffusion'() {
     const ring = (r, k, ph) => path(sample(t => [CX + (r + k * Math.sin(6 * t + ph)) * Math.cos(t) * 1.9,
       CY + (r + k * Math.sin(6 * t + ph)) * Math.sin(t)], 0, Math.PI * 2, 120));

@@ -70,7 +70,7 @@
     var doc;
     try { doc = frame.contentDocument; } catch (e) { return; }
     if (!doc) return;
-    var btn = doc.querySelector('.about-btn');
+    var btn = doc.querySelector('.about-btn[data-host-on-phone]');
     var title = document.getElementById('sim-title');
     if (!btn || !title) return;
     doc.documentElement.classList.add('hosted-about');

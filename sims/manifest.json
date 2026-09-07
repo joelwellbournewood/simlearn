@@ -123,6 +123,22 @@
     "visible": false
   },
   {
+    "id": "turing-patterns",
+    "title": "Turing Patterns",
+    "category": "Emergent Systems",
+    "tags": [
+      "reaction-diffusion",
+      "biology",
+      "emergence",
+      "pattern formation"
+    ],
+    "difficulty": "Intermediate",
+    "description": "Two chemicals in a sheet of tissue. One makes more of itself, the other spreads faster and holds it back. Out come spots, labyrinths, dividing blobs, branching coral and travelling waves, with a live map of which chemistry gives which.",
+    "status": "live",
+    "hook": "Spots and stripes from two chemicals",
+    "visible": true
+  },
+  {
     "id": "reaction-diffusion",
     "title": "Reaction-Diffusion",
     "category": "Emergent Systems",

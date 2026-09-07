@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<title>Turing Patterns: how spots, stripes and coral grow out of two chemicals | SimLearn</title>
+<meta name="description" content="An interactive Gray-Scott reaction-diffusion field. Two chemicals, no blueprint: spots, labyrinths, dividing blobs, branching coral and travelling waves. Steer the feed and kill rates on a live parameter map, grow the tissue and watch new stripes insert themselves.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c; --gold:#e6c34f;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage canvas.panning{cursor:grabbing}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:304px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.p-toggle{display:none}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
+.label:first-of-type{margin-top:0}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
+.preset small{color:var(--muted);font-size:11px;line-height:1.25}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:10px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:2px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.seg button:hover{border-color:var(--line-strong);color:var(--ink)}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.seg button:disabled{opacity:.35;cursor:default}
+.toggles{display:flex;flex-wrap:wrap;gap:5px}
+.tg{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.tg:hover{border-color:var(--line-strong);color:var(--ink)}
+.tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.tg:disabled{opacity:.35;cursor:default}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:min(46ch,calc(100% - 700px));line-height:1.5}
+.sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
+.sel.on{display:block}
+.sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sel h4 i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.sel table{border-collapse:collapse;width:100%;font-size:12.5px}
+.sel td{padding:2px 0;vertical-align:baseline}
+.sel td:first-child{color:var(--muted);padding-right:10px}
+.sel td:last-child{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.sel .kind{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
+.sel .kind.unb{color:var(--gold)}
+.sel .acts{display:flex;gap:6px;margin-top:8px}
+.sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
+.sel .acts button:hover{border-color:var(--line-strong)}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(86vh,800px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:64ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-inner kbd{font-family:var(--mono);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel-2);color:var(--ink)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
+  .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
+  .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
+    transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
+  .panel.open{transform:none;overflow-y:auto}
+  .p-toggle{display:flex;position:sticky;top:0;width:100%;height:46px;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;
+    color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
+  .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
+  .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
+  .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
+  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
+  .hint{display:none}
+  .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
+  .sel table{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+/* On a portrait phone the player shows the explainer next to the simulation's title,
+   so the in-panel copy would be a duplicate. Landscape keeps its own. */
+@media (max-width:820px) and (orientation:portrait){ .hosted-about .about-btn{display:none} }
+
+/* ---------- Turing patterns: module-specific chrome ---------- */
+#stage canvas{cursor:crosshair}
+#stage.tool-erase canvas{cursor:cell}
+.panel{width:322px}
+.notice{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;
+  background:rgba(7,18,15,.94);z-index:9}
+.notice h2{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 10px}
+.notice p{color:var(--muted);font-size:13.5px;margin:0 0 6px;max-width:44ch}
+/* parameter map: the sim's own navigation instrument, so it keeps its plotted colours */
+#map{width:100%;aspect-ratio:1/.86;display:block;border-radius:10px;cursor:crosshair;
+  touch-action:none;background:#07120f;border:1px solid var(--line)}
+.mapfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:7px;
+  font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.mapfoot b{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+#mapname{color:var(--muted);font-size:12px;min-height:1.35em;margin-top:2px}
+.legend{list-style:none;margin:8px 0 0;padding:0;font-size:11px;color:var(--muted);line-height:1.7}
+.legend li{display:flex;align-items:center;gap:9px}
+.legend .sw{width:13px;height:9px;border-radius:2px;background:#37391d;border:1px solid #5b5d2e;flex:none}
+.legend .ln{width:13px;height:0;border-top:1.5px solid #93b9ae;flex:none}
+.legend .ln.dash{border-top-style:dashed;border-top-color:#6f9fc4}
+.presets{grid-template-columns:1fr 1fr}
+.seg.two{grid-template-columns:1fr 1fr}
+.btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px}
+.btnrow .btn{padding:7px 6px;border:1px solid var(--line);border-radius:9px;background:transparent;
+  color:var(--muted);font-family:var(--body);font-size:12px;transition:border-color .18s,color .18s}
+.btnrow .btn:hover:not(:disabled){border-color:var(--line-strong);color:var(--ink)}
+.btnrow .btn:disabled{opacity:.35;cursor:default}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-size:13px;margin:2px 0 8px}
+.toggle input{appearance:none;-webkit-appearance:none;width:34px;height:19px;border-radius:99px;
+  background:var(--panel-2);border:1px solid var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .16s,border-color .16s}
+.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+  background:var(--muted);transition:transform .16s,background .16s}
+.toggle input:checked{background:var(--accent-dim);border-color:rgba(86,224,194,.5)}
+.toggle input:checked::after{transform:translateX(15px);background:var(--accent)}
+select{width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:7px 9px;font-family:var(--body);font-size:12.5px}
+.row.off{opacity:.4}
+details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+details.more>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--muted);padding:3px 0}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:'+ ';font-family:var(--mono)}
+details.more[open]>summary::before{content:'\2212 '}
+details.more>summary:hover{color:var(--ink)}
+.eq{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--panel-2);
+  border-left:2px solid var(--accent);padding:11px 14px;margin:10px 0 14px;white-space:pre-wrap;line-height:1.9}
+.about-inner em{color:var(--ink);font-style:normal}
+.hud{max-width:calc(100% - 380px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .panel{width:100%}
+  #map{aspect-ratio:1/.7}
+  .hud{max-width:none}
+}
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div class="notice" id="notice">
+    <div>
+      <h2>This simulation needs WebGL 2</h2>
+      <p id="noticeMsg">Your browser or graphics driver did not provide it.</p>
+      <p>Chrome or Edge on a desktop machine is the safest bet.</p>
+    </div>
+  </div>
+</div>
+
+<header class="brand">
+  <p class="kicker">Reaction and diffusion</p>
+  <h1>Turing patterns</h1>
+  <p>Two chemicals, no blueprint.</p>
+</header>
+
+<div class="actions">
+  <button class="icon-btn" id="playBtn" title="Pause (space)" aria-label="Pause" aria-pressed="true">
+    <svg class="main" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="seedBtn" title="Reseed the field (R)" aria-label="Reseed the field">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4"/></svg>
+  </button>
+  <button class="icon-btn" id="saveBtn" title="Save the pattern as an image" aria-label="Save image">
+    <svg class="main" viewBox="0 0 24 24"><path d="M12 3v11M8 11l4 4 4-4M4 19h16"/></svg>
+  </button>
+  <button class="icon-btn" id="btnClean" title="Hide the interface (H)" aria-label="Hide the interface">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.5 10.5 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.8 8.6 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 4.4-1"/></svg>
+  </button>
+  <button class="icon-btn" id="btnFull" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel" id="panel">
+  <button class="p-toggle" id="p-toggle" aria-expanded="false">Controls</button>
+  <button class="about-btn" id="aboutBtn" data-host-on-phone="1">What am I looking at?</button>
+
+  <p class="label">Try one</p>
+  <div class="presets" id="presets"></div>
+
+  <p class="label">Steer it yourself</p>
+  <canvas id="map" width="300" height="258" aria-label="Parameter map of feed rate against kill rate. Click to move the chemistry."></canvas>
+  <div class="mapfoot"><span>feed <b id="fVal">0.030</b></span><span>kill <b id="kVal">0.062</b></span></div>
+  <div id="mapname">&nbsp;</div>
+  <ul class="legend">
+    <li><span class="ln"></span>uniform states collide and vanish</li>
+    <li><span class="ln dash"></span>steady state starts to oscillate</li>
+    <li><span class="sw"></span>true Turing instability lives here</li>
+  </ul>
+  <div class="row">
+    <label for="fSl"><span class="nm">Feed rate
+      <span class="tip" tabindex="0" data-tip="How fast fresh substrate is topped up. Raise it and the pattern fills the field; drop it and structures starve.">i</span></span><span class="val" id="fOut">0.0300</span></label>
+    <input type="range" id="fSl" min="0.005" max="0.09" step="0.0002">
+  </div>
+  <div class="row">
+    <label for="kSl"><span class="nm">Kill rate
+      <span class="tip" tabindex="0" data-tip="How fast the activator is removed. It sets whether a blob holds its size, splits in two, or dies out.">i</span></span><span class="val" id="kOut">0.0620</span></label>
+    <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
+  </div>
+  <div class="btnrow">
+    <button class="btn" id="stepBtn">One step</button>
+    <button class="btn" id="clearBtn">Wipe</button>
+    <button class="btn" id="growReset" disabled>Regrow</button>
+  </div>
+
+  <p class="label">Paint into the field</p>
+  <div class="seg two" id="toolSeg" role="group" aria-label="Pointer tool">
+    <button data-tool="seed" aria-pressed="true">Seed</button>
+    <button data-tool="erase" aria-pressed="false">Erase</button>
+  </div>
+  <div class="row">
+    <label for="brushSl"><span class="nm">Brush</span><span class="val" id="brushVal">28 px</span></label>
+    <input type="range" id="brushSl" min="4" max="120" step="1" value="28">
+  </div>
+
+  <p class="label">Change the chemistry</p>
+  <div class="row">
+    <label for="ratioSl"><span class="nm">Diffusion ratio
+      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator. This is the number Turing's argument turns on: push it past about 3 and the olive patch on the map opens out.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
+    <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
+  </div>
+  <div class="row">
+    <label for="stepsSl"><span class="nm">Speed</span><span class="val" id="stepsVal">12</span></label>
+    <input type="range" id="stepsSl" min="1" max="40" step="1" value="12">
+  </div>
+
+  <p class="label">Grow the tissue</p>
+  <label class="toggle"><input type="checkbox" id="growOn"><span>Stretch the field lengthwise</span></label>
+  <div class="row" id="rowGrowRate">
+    <label for="growRate"><span class="nm">Growth speed
+      <span class="tip" tabindex="0" data-tip="Real embryos pattern while getting bigger. As the field stretches, the chemistry keeps its own spacing, so new stripes insert between the old ones instead of the pattern scaling up.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
+    <input type="range" id="growRate" min="1" max="100" step="1" value="45" disabled>
+  </div>
+  <div class="row" id="rowGrowMax">
+    <label for="growMax"><span class="nm">Final length</span><span class="val" id="growMaxVal">4.0&times;</span></label>
+    <input type="range" id="growMax" min="2" max="6" step="0.5" value="4" disabled>
+  </div>
+
+  <p class="label">Line the pattern up</p>
+  <label class="toggle"><input type="checkbox" id="anisOn"><span>Diffuse faster along one axis</span></label>
+  <div class="row" id="rowAnisAng">
+    <label for="anisAng"><span class="nm">Direction
+      <span class="tip" tabindex="0" data-tip="Tissue is often fibrous, so a chemical spreads faster along one direction than across it. Stripes then run across the fast axis.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
+    <input type="range" id="anisAng" min="0" max="180" step="1" value="0" disabled>
+  </div>
+  <div class="row" id="rowAnisAmt">
+    <label for="anisAmt"><span class="nm">Strength</span><span class="val" id="anisAmtVal">2.00&times;</span></label>
+    <input type="range" id="anisAmt" min="1" max="3" step="0.05" value="2" disabled>
+  </div>
+
+  <details class="more">
+    <summary>Look and resolution</summary>
+    <div class="row">
+      <label for="palSel"><span class="nm">Palette</span></label>
+      <select id="palSel">
+        <option value="1" selected>Coral</option>
+        <option value="0">Ink on paper</option>
+        <option value="2">Thermal</option>
+        <option value="3">Culture</option>
+        <option value="4">Grey</option>
+      </select>
+    </div>
+    <label class="toggle"><input type="checkbox" id="reliefOn" checked><span>Relief shading</span></label>
+    <div class="row">
+      <label for="levelSl"><span class="nm">Threshold</span><span class="val" id="levelVal">0.18</span></label>
+      <input type="range" id="levelSl" min="0.02" max="0.4" step="0.005" value="0.18">
+    </div>
+    <div class="row">
+      <label for="contrastSl"><span class="nm">Contrast</span><span class="val" id="contrastVal">1.6</span></label>
+      <input type="range" id="contrastSl" min="0.4" max="4" step="0.05" value="1.6">
+    </div>
+    <div class="row">
+      <label for="gridSel"><span class="nm">Grid</span></label>
+      <select id="gridSel">
+        <option value="256">256 &times; 256</option>
+        <option value="384">384 &times; 384</option>
+        <option value="512" selected>512 &times; 512</option>
+        <option value="768">768 &times; 768</option>
+      </select>
+    </div>
+  </details>
+</div>
+
+<div class="hud" id="hud"></div>
+
+<dialog id="about" class="about">
+  <div class="about-inner">
+    <button class="about-close" id="closeAbout" aria-label="Close">&times;</button>
+    <h2>What am I looking at?</h2>
+    <p>A square of tissue with two chemicals in it. One of them, the activator, makes more of itself and eats the other. The second, the substrate, is pumped in from outside and spreads about twice as fast. That is the entire mechanism, and it is enough to produce spots, stripes, branching coral, dividing blobs and travelling waves without anyone drawing them.</p>
+
+    <h3>Turing's idea</h3>
+    <p>In 1952 Alan Turing pointed out something counterintuitive: diffusion, which normally smooths differences out, can create them. If a self-amplifying chemical is held in check by a second one that spreads faster, a uniform mixture becomes unstable. Any tiny fluctuation grows locally while suppressing its neighbourhood, and the system settles into a pattern with a characteristic spacing. Turing called the chemicals morphogens and suggested they were how embryos decide where to put things.</p>
+    <p>This particular pair is the Gray&ndash;Scott model, an autocatalytic reaction in a stirred tank rewritten as a field. <em>u</em> is the substrate, <em>v</em> the activator, and the reaction is u + 2v &rarr; 3v.</p>
+    <div class="eq">&part;u/&part;t = D<sub>u</sub>&nabla;&sup2;u &minus; uv&sup2; + F(1 &minus; u)
+&part;v/&part;t = D<sub>v</sub>&nabla;&sup2;v + uv&sup2; &minus; (F + k)v</div>
+    <p><em>F</em> is the feed rate, the rate at which substrate is topped up towards 1. <em>k</em> is the extra kill rate on the activator. Those two numbers are the only things the presets change.</p>
+
+    <h3>Why the map has that shape</h3>
+    <p>The two curves on the parameter map are not decoration; they are solved from the equations with the diffusion switched off.</p>
+    <ul>
+      <li>The <em>upper arc</em> is where the non-trivial steady states collide and vanish. Above it, the only uniform state is the dead one, u = 1 and v = 0. Patterns still live up there, but only as isolated structures that must keep dividing to survive, which is why the mitosis preset sits just above the line.</li>
+      <li>The <em>lower curve</em> is a Hopf bifurcation. To its left the steady state loses stability by oscillating rather than by splitting in space, so instead of a static pattern you get travelling waves and chemical turbulence. The waves and chaos presets sit right on it.</li>
+      <li>The <em>olive patch</em> is the only region where a classical Turing instability actually applies: a uniform steady state that is stable on its own but goes unstable once diffusion is switched on. Unlike the two curves, this one does depend on how much faster the substrate spreads. At the default ratio of 2 it is a thin sliver on the right; drag the diffusion ratio up and watch it open out across the map.</li>
+    </ul>
+    <p>Every preset in the list sits within a few thousandths of one of the two curves. The whole zoo lives in a sliver, which is why the map is worth navigating by clicking rather than by typing numbers.</p>
+
+    <h3>The growing field</h3>
+    <p>Real embryos are not fixed squares. A somite-stage vertebrate trunk, a fish flank, a limb bud: all of them are patterning while getting bigger. When you switch on growth here, the tissue stretches lengthwise while the chemistry keeps its own preferred spacing. The result is that stripes do not stretch with the animal. New ones insert between the old ones, which is exactly what was observed in the marine angelfish <em>Pomacanthus</em> by Kondo and Asai in 1995: as the fish grows, its stripes keep constant width and new stripes appear in between, rather than the existing pattern simply scaling up.</p>
+    <p>The field is drawn in material coordinates, so what you see is the tissue itself elongating. Watch the stripe count in the readout climb while the visible spacing stays put.</p>
+
+    <h3>Directional diffusion</h3>
+    <p>Diffusion in tissue is often faster along one axis than another, because cells are elongated, or aligned, or the extracellular matrix is fibrous. Turning on directional diffusion replaces the single diffusion constant with a tensor. Structures then line up: the pattern's wavelength is longer along the fast axis, so stripes tend to run across it. The strength is capped at 3&times; because beyond that the explicit solver used here stops being stable.</p>
+
+    <h3>Are these actually Turing patterns?</h3>
+    <p>Partly, and it is worth being precise about it. Turing's own argument is a linear one: take a uniform steady state that is stable on its own, add diffusion, show that a perturbation now grows. That condition is the olive patch on the map, and at the standard diffusion ratio of 2 not one of the twelve presets falls inside it. Most of them sit where no non-trivial uniform state exists at all, or where the state oscillates. What you are watching in those cases is not a uniform mixture going unstable; it is a self-sustaining localized structure, a pulse of activator that eats outward, splits when it gets too broad, and starves where the substrate has run out.</p>
+    <p>That gap is why Pearson's 1993 paper on this model is called <em>Complex patterns in a simple system</em>. The ingredients are Turing's and so is the characteristic spacing, but the linear analysis Turing wrote down does not by itself explain a spot that divides. Push the diffusion ratio above about 3 and the olive region swells to cover the right-hand presets, which is the regime where the textbook version does hold.</p>
+
+    <h3>What this is not</h3>
+    <p>Gray&ndash;Scott is a caricature. No animal runs this exact reaction. Whether Turing mechanisms actually set real body patterns was argued over for decades, and the answer turned out to be yes in some places: zebrafish pigment stripes arise from short-range and long-range interactions between pigment cell types, mouse digit number follows a Turing-like Bmp/Sox9/Wnt network, and hair follicle spacing depends on a Wnt/Dkk activator&ndash;inhibitor pair. In those systems the "diffusing" species are often cells or signalling ranges rather than freely diffusing molecules, but the mathematics is the same family.</p>
+
+    <h3>Under the hood</h3>
+    <ul>
+      <li>Explicit forward Euler on a periodic grid, so the left edge wraps to the right and the top to the bottom.</li>
+      <li>A nine-point diffusion stencil, generalised to a diffusion tensor so that the directional and growth modes stay stable.</li>
+      <li>Growth is handled in material coordinates: the diffusion term along the growing axis is divided by the square of the stretch factor, and both chemicals are diluted at the rate the tissue expands.</li>
+      <li>The whole thing runs on the GPU in a pair of floating-point textures.</li>
+    </ul>
+  </div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+
+/* ------------------------------------------------------------------ *
+ * Presets. F and k only; everything else is left as the user set it.
+ * ------------------------------------------------------------------ */
+var PRESETS = [
+  {n:'Spots',          d:'holds its spacing',    F:0.030,  k:0.062,   seed:2},
+  {n:'Stripes',        d:'labyrinth',            F:0.029,  k:0.057,   seed:2},
+  {n:'Mitosis',        d:'spots that divide',    F:0.0367, k:0.0649,  seed:1},
+  {n:'Coral',          d:'branching fronts',     F:0.0545, k:0.062,   seed:1},
+  {n:'Worms',          d:'wandering filaments',  F:0.078,  k:0.061,   seed:2},
+  {n:'Holes',          d:'spots, inverted',      F:0.039,  k:0.058,   seed:2},
+  {n:'Waves',          d:'travelling fronts',    F:0.014,  k:0.045,   seed:1},
+  {n:'Chaos',          d:'never settles',        F:0.026,  k:0.051,   seed:2},
+  {n:'Drifting spots', d:'spots that wander',    F:0.014,  k:0.054,   seed:2},
+  {n:'Fingerprint',    d:'dense ridges',         F:0.037,  k:0.060,   seed:3},
+  {n:'Pulses',         d:'blobs that breathe',   F:0.025,  k:0.060,   seed:2},
+  {n:'Gliders',        d:'fragile, be patient',  F:0.062,  k:0.06093, seed:1}
+];
+
+/* ------------------------------------------------------------------ *
+ * Shaders
+ * ------------------------------------------------------------------ */
+var VS = [
+'#version 300 es',
+'precision highp float;',
+'out vec2 vUv;',
+'void main(){',
+'  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));',
+'  vUv = p;',
+'  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_SIM = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState;',
+'uniform vec2 uTexel;',
+'uniform vec4 uWA;',   // alongX, alongY, diag(+,+), diag(+,-)
+'uniform vec4 uWB;',
+'uniform float uF, uK, uDil;',
+'void main(){',
+'  vec2 t = uTexel;',
+'  vec2 c  = texture(uState, vUv).rg;',
+'  vec2 xp = texture(uState, vUv + vec2( t.x, 0.0)).rg;',
+'  vec2 xm = texture(uState, vUv + vec2(-t.x, 0.0)).rg;',
+'  vec2 yp = texture(uState, vUv + vec2(0.0,  t.y)).rg;',
+'  vec2 ym = texture(uState, vUv + vec2(0.0, -t.y)).rg;',
+'  vec2 pp = texture(uState, vUv + vec2( t.x,  t.y)).rg;',
+'  vec2 mm = texture(uState, vUv + vec2(-t.x, -t.y)).rg;',
+'  vec2 pm = texture(uState, vUv + vec2( t.x, -t.y)).rg;',
+'  vec2 mp = texture(uState, vUv + vec2(-t.x,  t.y)).rg;',
+'  float cenA = 2.0*(uWA.x+uWA.y+uWA.z+uWA.w);',
+'  float cenB = 2.0*(uWB.x+uWB.y+uWB.z+uWB.w);',
+'  float lapA = uWA.x*(xp.r+xm.r) + uWA.y*(yp.r+ym.r) + uWA.z*(pp.r+mm.r) + uWA.w*(pm.r+mp.r) - cenA*c.r;',
+'  float lapB = uWB.x*(xp.g+xm.g) + uWB.y*(yp.g+ym.g) + uWB.z*(pp.g+mm.g) + uWB.w*(pm.g+mp.g) - cenB*c.g;',
+'  float a = c.r, b = c.g;',
+'  float r = a*b*b;',
+'  float na = a + lapA - r + uF*(1.0 - a) - uDil*a;',
+'  float nb = b + lapB + r - (uF + uK)*b - uDil*b;',
+'  outColor = vec4(clamp(na,0.0,1.0), clamp(nb,0.0,1.0), 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_SPLAT = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState;',
+'uniform vec2 uP; uniform vec2 uR; uniform float uMode;',
+'void main(){',
+'  vec2 st = texture(uState, vUv).rg;',
+'  vec2 d = vUv - uP;',
+'  d = fract(d + 0.5) - 0.5;',
+'  d /= uR;',
+'  float f = smoothstep(0.0, 0.55, 1.0 - dot(d,d));',
+'  if(uMode > 0.0){',
+'    st.g = max(st.g, f*0.92);',
+'    st.r = min(st.r, mix(1.0, 0.12, f));',
+'  } else {',
+'    st.g *= (1.0 - f);',
+'    st.r = mix(st.r, 1.0, f);',
+'  }',
+'  outColor = vec4(clamp(st,0.0,1.0), 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_SEED = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform float uSeed; uniform int uMode;',
+'float hash(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x*p.y); }',
+'void main(){',
+'  float a = 1.0, b = 0.0;',
+'  vec2 uv = vUv;',
+'  if(uMode == 1){',
+'    vec2 d = uv - 0.5;',
+'    if(abs(d.x) < 0.028 && abs(d.y) < 0.028){ a = 0.5; b = 0.25; }',
+'  } else if(uMode == 2){',
+'    for(int i = 0; i < 16; i++){',
+'      float fi = float(i);',
+'      vec2 cc = vec2(hash(vec2(fi + uSeed, 7.13)), hash(vec2(fi*3.7 + uSeed, 19.31)));',
+'      vec2 d = uv - cc; d = fract(d + 0.5) - 0.5;',
+'      float r = 0.016 + 0.028*hash(vec2(fi + uSeed, 51.7));',
+'      if(dot(d,d) < r*r){ a = 0.5; b = 0.25; }',
+'    }',
+'  } else if(uMode == 3){',
+'    if(hash(uv*263.0 + uSeed) > 0.5){ a = 0.5; b = 0.25; }',
+'  } else if(uMode == 4){',
+'    if(sin(uv.x*6.2831853*5.0 + uSeed) > 0.35){ a = 0.5; b = 0.25; }',
+'  }',
+'  float nz = (uMode == 0) ? 0.0 : 0.02;',
+'  a += (hash(uv*1024.0 + uSeed*3.17) - 0.5)*nz;',
+'  outColor = vec4(clamp(a,0.0,1.0), clamp(b,0.0,1.0), 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_DRAW = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState;',
+'uniform vec2 uTexel;',
+'uniform float uLo, uHi, uRelief;',
+'uniform int uPal;',
+'vec3 inferno(float t){',
+'  const vec3 c0 = vec3(0.00021894, 0.00165100, -0.01948090);',
+'  const vec3 c1 = vec3(0.10651342, 0.56395644, 3.93271239);',
+'  const vec3 c2 = vec3(11.6024931, -3.97285397, -15.9423941);',
+'  const vec3 c3 = vec3(-41.7039961, 17.4363989, 44.3541452);',
+'  const vec3 c4 = vec3(77.1629357, -33.4023589, -81.8073093);',
+'  const vec3 c5 = vec3(-71.3194282, 32.6260643, 73.2095199);',
+'  const vec3 c6 = vec3(25.1311262, -12.2426690, -23.0703250);',
+'  return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));',
+'}',
+'vec3 viridis(float t){',
+'  const vec3 c0 = vec3(0.27772733, 0.00540734, 0.33409981);',
+'  const vec3 c1 = vec3(0.10509304, 1.40461353, 1.38459016);',
+'  const vec3 c2 = vec3(-0.33086183, 0.21484756, 0.09509516);',
+'  const vec3 c3 = vec3(-4.63423050, -5.79910097, -19.3324410);',
+'  const vec3 c4 = vec3(6.22826994, 14.1799334, 56.6905526);',
+'  const vec3 c5 = vec3(4.77638500, -13.7451454, -65.3530326);',
+'  const vec3 c6 = vec3(-5.43545586, 4.64585261, 26.3124352);',
+'  return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));',
+'}',
+'vec3 pal(float t){',
+'  if(uPal == 0) return mix(vec3(0.961,0.953,0.929), vec3(0.055,0.075,0.157), t);',
+'  if(uPal == 1){',
+'    vec3 c = mix(vec3(0.992,0.957,0.878), vec3(0.949,0.596,0.231), smoothstep(0.0,0.62,t));',
+'    return mix(c, vec3(0.400,0.055,0.114), smoothstep(0.52,1.0,t));',
+'  }',
+'  if(uPal == 2) return inferno(t);',
+'  if(uPal == 3) return viridis(t);',
+'  return vec3(0.07 + 0.87*t);',
+'}',
+'float hgt(vec2 uv){ return smoothstep(uLo, uHi, texture(uState, uv).g); }',
+'void main(){',
+'  float h = hgt(vUv);',
+'  vec3 col = pal(h);',
+'  if(uRelief > 0.0){',
+'    float hx = hgt(vUv + vec2(uTexel.x,0.0)) - hgt(vUv - vec2(uTexel.x,0.0));',
+'    float hy = hgt(vUv + vec2(0.0,uTexel.y)) - hgt(vUv - vec2(0.0,uTexel.y));',
+'    vec3 n = normalize(vec3(-hx*uRelief, -hy*uRelief, 1.0));',
+'    vec3 L = normalize(vec3(-0.42, 0.55, 0.72));',
+'    float df = clamp(dot(n, L), 0.0, 1.0);',
+'    vec3 hv = normalize(L + vec3(0.0,0.0,1.0));',
+'    float sp = pow(clamp(dot(n, hv), 0.0, 1.0), 42.0);',
+'    col = col*(0.60 + 0.52*df) + sp*0.26;',
+'  }',
+'  outColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
+'}'].join('\n');
+
+var FS_RED = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState; uniform vec2 uTexel;',
+'void main(){',
+'  vec2 s = texture(uState, vUv + vec2(-0.5,-0.5)*uTexel).rg',
+'         + texture(uState, vUv + vec2( 0.5,-0.5)*uTexel).rg',
+'         + texture(uState, vUv + vec2(-0.5, 0.5)*uTexel).rg',
+'         + texture(uState, vUv + vec2( 0.5, 0.5)*uTexel).rg;',
+'  s *= 0.25;',
+'  outColor = vec4(clamp(s.g*2.0,0.0,1.0), step(0.15, s.g), clamp(s.r,0.0,1.0), 1.0);',
+'}'].join('\n');
+
+/* ------------------------------------------------------------------ *
+ * State
+ * ------------------------------------------------------------------ */
+var S = {
+  N: 512,
+  F: 0.037, k: 0.060,
+  DA: 0.30, ratio: 2.0,
+  steps: 12,
+  running: true,
+  anisOn: false, angle: 0, aniso: 2.0,
+  growOn: false, gRate: 1.55e-4, gMax: 4, g: 1, dil: 0,
+  pal: 1, relief: true, level: 0.18, contrast: 1.6,
+  brush: 28, tool: 'seed',
+  seedMode: 2, total: 0, preset: -1
+};
+var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
+
+var cvs = $('gl'), ov = $('ov'), stage = $('stage'), ovx = ov.getContext('2d');
+var gl = null, P = {}, ST = null, redFbo = null, redTex = null, pix = null, linSamp = null;
+var RED = 128;
+var WA = new Float32Array(4), WB = new Float32Array(4);
+
+/* ------------------------------------------------------------------ *
+ * Diffusion stencil for a tensor D = R(angle) diag(d1,d2) R(angle)^T,
+ * squeezed by the growth stretch, decomposed onto the four lattice
+ * directions so the explicit step stays stable.
+ * ------------------------------------------------------------------ */
+function stencil(D, angle, ratio, g, out){
+  var cs = Math.cos(angle), sn = Math.sin(angle);
+  var d1 = D, d2 = D/ratio;
+  var xx = d1*cs*cs + d2*sn*sn;
+  var yy = d1*sn*sn + d2*cs*cs;
+  var xy = (d1 - d2)*sn*cs;
+  xx /= g*g; xy /= g;
+  var mn = Math.min(xx, yy);
+  if(xy >  mn) xy =  mn;
+  if(xy < -mn) xy = -mn;
+  var gam = Math.max(Math.abs(xy), mn/3);
+  if(gam > mn) gam = mn;
+  out[0] = xx - gam;        // (+1, 0) and (-1, 0)
+  out[1] = yy - gam;        // ( 0,+1) and ( 0,-1)
+  out[2] = (gam + xy)*0.5;  // (+1,+1) and (-1,-1)
+  out[3] = (gam - xy)*0.5;  // (+1,-1) and (-1,+1)
+}
+function updateWeights(){
+  var ang = S.anisOn ? S.angle*Math.PI/180 : 0;
+  var rat = S.anisOn ? S.aniso : 1;
+  var g = S.growOn ? S.g : 1;
+  stencil(S.DA, ang, rat, g, WA);
+  stencil(S.DA/S.ratio, ang, rat, g, WB);
+}
+
+/* ------------------------------------------------------------------ *
+ * GL plumbing
+ * ------------------------------------------------------------------ */
+function fail(msg){
+  $('noticeMsg').textContent = msg;
+  $('notice').style.display = 'grid';
+  cvs.style.display = 'none'; ov.style.display = 'none';
+}
+function shader(type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(fs){
+  var p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, VS));
+  gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  var u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for(var i=0;i<n;i++){ var nm = gl.getActiveUniform(p,i).name; u[nm] = gl.getUniformLocation(p,nm); }
+  return {p:p, u:u};
+}
+var IFMT, ITYPE;
+function mkTex(w,h,ifmt,fmt,type){
+  var t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, type, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  return t;
+}
+function mkFbo(tex){
+  var f = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return f;
+}
+function allocGrid(N){
+  if(ST){
+    gl.deleteTexture(ST.tex[0]); gl.deleteTexture(ST.tex[1]);
+    gl.deleteFramebuffer(ST.fbo[0]); gl.deleteFramebuffer(ST.fbo[1]);
+  }
+  S.N = N;
+  var t0 = mkTex(N,N,IFMT,gl.RGBA,ITYPE), t1 = mkTex(N,N,IFMT,gl.RGBA,ITYPE);
+  ST = { tex:[t0,t1], fbo:[mkFbo(t0), mkFbo(t1)], cur:0 };
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+    throw new Error('float render target unavailable');
+}
+
+function initGL(){
+  gl = cvs.getContext('webgl2', {antialias:false, alpha:false, depth:false, stencil:false});
+  if(!gl){ fail('This page needs WebGL 2. Try a current Chrome, Firefox, Edge or Safari.'); return false; }
+  if(!gl.getExtension('EXT_color_buffer_float')){
+    fail('Your browser has WebGL 2 but will not render to floating point textures, which this simulation needs.');
+    return false;
+  }
+  var lin = gl.getExtension('OES_texture_float_linear');
+  IFMT = lin ? gl.RGBA32F : gl.RGBA16F;
+  ITYPE = lin ? gl.FLOAT : gl.HALF_FLOAT;
+  try{
+    P.sim = program(FS_SIM); P.splat = program(FS_SPLAT); P.seed = program(FS_SEED);
+    P.draw = program(FS_DRAW); P.red = program(FS_RED);
+  }catch(e){ fail('Shader compilation failed: ' + e.message); return false; }
+
+  linSamp = gl.createSampler();
+  gl.samplerParameteri(linSamp, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.samplerParameteri(linSamp, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.samplerParameteri(linSamp, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.samplerParameteri(linSamp, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+  redTex = mkTex(RED, RED, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+  redFbo = mkFbo(redTex);
+  pix = new Uint8Array(RED*RED*4);
+
+  gl.bindVertexArray(gl.createVertexArray());
+  gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+  try{ allocGrid(S.N); }catch(e){ fail(e.message); return false; }
+  return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * Passes
+ * ------------------------------------------------------------------ */
+function seedField(mode){
+  S.seedMode = mode;
+  var d = 1 - ST.cur;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
+  gl.viewport(0,0,S.N,S.N);
+  gl.useProgram(P.seed.p);
+  gl.uniform1f(P.seed.u.uSeed, Math.random()*97.0);
+  gl.uniform1i(P.seed.u.uMode, mode);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  ST.cur = d;
+  S.total = 0;
+}
+function runSteps(n){
+  gl.useProgram(P.sim.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindSampler(0, null);
+  gl.uniform1i(P.sim.u.uState, 0);
+  gl.uniform2f(P.sim.u.uTexel, 1/S.N, 1/S.N);
+  gl.uniform4fv(P.sim.u.uWA, WA);
+  gl.uniform4fv(P.sim.u.uWB, WB);
+  gl.uniform1f(P.sim.u.uF, S.F);
+  gl.uniform1f(P.sim.u.uK, S.k);
+  gl.uniform1f(P.sim.u.uDil, S.dil);
+  gl.viewport(0,0,S.N,S.N);
+  for(var i=0;i<n;i++){
+    var s = ST.cur, d = 1 - s;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
+    gl.bindTexture(gl.TEXTURE_2D, ST.tex[s]);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    ST.cur = d;
+  }
+  S.total += n;
+}
+function splat(u, v, ru, rv, mode){
+  var s = ST.cur, d = 1 - s;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
+  gl.viewport(0,0,S.N,S.N);
+  gl.useProgram(P.splat.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindSampler(0, null);
+  gl.bindTexture(gl.TEXTURE_2D, ST.tex[s]);
+  gl.uniform1i(P.splat.u.uState, 0);
+  gl.uniform2f(P.splat.u.uP, u, v);
+  gl.uniform2f(P.splat.u.uR, ru, rv);
+  gl.uniform1f(P.splat.u.uMode, mode);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  ST.cur = d;
+}
+function domainRect(){
+  var W = cvs.width, H = cvs.height;
+  if(S.growOn){
+    var h = Math.min(H*0.94, (W*0.94)/S.gMax);
+    var w = h*S.g;
+    return {x:(W-w)/2, y:(H-h)/2, w:w, h:h};
+  }
+  var s = Math.min(W,H)*0.94;
+  return {x:(W-s)/2, y:(H-s)/2, w:s, h:s};
+}
+function drawField(){
+  var span = 0.25/S.contrast;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0,0,cvs.width,cvs.height);
+  gl.clearColor(0.027, 0.063, 0.059, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  var R = domainRect();
+  gl.viewport(Math.round(R.x), Math.round(cvs.height - R.y - R.h), Math.round(R.w), Math.round(R.h));
+  gl.useProgram(P.draw.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, ST.tex[ST.cur]);
+  gl.bindSampler(0, linSamp);
+  gl.uniform1i(P.draw.u.uState, 0);
+  gl.uniform2f(P.draw.u.uTexel, 1/S.N, 1/S.N);
+  gl.uniform1f(P.draw.u.uLo, Math.max(0, S.level - span));
+  gl.uniform1f(P.draw.u.uHi, S.level + span);
+  gl.uniform1f(P.draw.u.uRelief, S.relief ? 2.0 : 0.0);
+  gl.uniform1i(P.draw.u.uPal, S.pal);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindSampler(0, null);
+}
+function readStats(){
+  gl.bindFramebuffer(gl.FRAMEBUFFER, redFbo);
+  gl.viewport(0,0,RED,RED);
+  gl.useProgram(P.red.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindSampler(0, null);
+  gl.bindTexture(gl.TEXTURE_2D, ST.tex[ST.cur]);
+  gl.uniform1i(P.red.u.uState, 0);
+  gl.uniform2f(P.red.u.uTexel, 1/S.N, 1/S.N);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.readPixels(0,0,RED,RED,gl.RGBA,gl.UNSIGNED_BYTE,pix);
+  var sum = 0, cov = 0, i;
+  for(i=0;i<RED*RED;i++){ sum += pix[i*4]; cov += pix[i*4+1] > 127 ? 1 : 0; }
+  stats.meanV = sum/(RED*RED)/255/2;
+  stats.cov = cov/(RED*RED);
+  var counts = [];
+  for(var r = (RED>>1) - 6; r <= (RED>>1) + 6; r += 3){
+    var n = 0, prev = pix[(r*RED)*4+1] > 127;
+    for(var x=1;x<RED;x++){
+      var cur = pix[(r*RED + x)*4+1] > 127;
+      if(cur !== prev){ n++; prev = cur; }
+    }
+    counts.push(n);
+  }
+  counts.sort(function(a,b){ return a-b; });
+  stats.bands = Math.round(counts[counts.length>>1]/2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Parameter map
+ * ------------------------------------------------------------------ */
+var mapCv = $('map'), mx = mapCv.getContext('2d');
+var MAPR = {F0:0.005, F1:0.09, K0:0.035, K1:0.072};
+var base = document.createElement('canvas'), bx = base.getContext('2d');
+var baseKey = '';
+
+function mX(F,w){ return (F-MAPR.F0)/(MAPR.F1-MAPR.F0)*w; }
+function mY(k,h){ return h - (k-MAPR.K0)/(MAPR.K1-MAPR.K0)*h; }
+function iF(x,w){ return MAPR.F0 + x/w*(MAPR.F1-MAPR.F0); }
+function iK(y,h){ return MAPR.K0 + (h-y)/h*(MAPR.K1-MAPR.K0); }
+
+function classify(F,k,Du,Dv){
+  var s = F+k, disc = F*F - 4*F*s*s;
+  if(disc < 0) return 0;
+  var v = (F + Math.sqrt(disc))/(2*s);
+  var det = s*(v*v - F);
+  if(det <= 0) return 1;
+  if(k - v*v >= 0) return 2;
+  var H = Dv*(-v*v - F) + Du*s;
+  if(H > 0 && H*H > 4*Du*Dv*det) return 4;
+  return 3;
+}
+var ZONE = ['#0a1214','#0d181a','#132532','#15292b','#37391d'];
+
+function buildBase(w,h){
+  base.width = w; base.height = h;
+  bx.clearRect(0,0,w,h);
+  var Du = S.DA, Dv = S.DA/S.ratio, cell = 3, x, y;
+  for(x=0;x<w;x+=cell) for(y=0;y<h;y+=cell){
+    bx.fillStyle = ZONE[classify(iF(x+cell/2,w), iK(y+cell/2,h), Du, Dv)];
+    bx.fillRect(x,y,cell,cell);
+  }
+  // saddle-node arc: the non-trivial steady states meet and vanish
+  bx.strokeStyle = '#93b9ae'; bx.lineWidth = 1.4; bx.setLineDash([]);
+  bx.beginPath();
+  var started = false;
+  for(x=0;x<=w;x++){
+    var F = iF(x,w), kk = Math.sqrt(F)/2 - F;
+    var yy = mY(kk,h);
+    if(!started){ bx.moveTo(x,yy); started = true; } else bx.lineTo(x,yy);
+  }
+  bx.stroke();
+  // Hopf curve, both branches: F*sqrt(k) = (F+k)^2
+  bx.strokeStyle = '#6f9fc4'; bx.lineWidth = 1.2; bx.setLineDash([3,3]);
+  bx.beginPath();
+  var pts = [], kk2, b2, d2;
+  for(kk2 = MAPR.K0; kk2 <= 0.0625; kk2 += 0.0002){
+    b2 = Math.sqrt(kk2) - 2*kk2; d2 = b2*b2 - 4*kk2*kk2;
+    if(d2 < 0) continue;
+    pts.push([(b2 - Math.sqrt(d2))/2, kk2]);
+  }
+  for(kk2 = 0.0625; kk2 >= MAPR.K0; kk2 -= 0.0002){
+    b2 = Math.sqrt(kk2) - 2*kk2; d2 = b2*b2 - 4*kk2*kk2;
+    if(d2 < 0) continue;
+    pts.push([(b2 + Math.sqrt(d2))/2, kk2]);
+  }
+  for(var i=0;i<pts.length;i++){
+    var px = mX(pts[i][0], w), py = mY(pts[i][1], h);
+    if(i === 0) bx.moveTo(px,py); else bx.lineTo(px,py);
+  }
+  bx.stroke();
+  bx.setLineDash([]);
+  // preset markers
+  for(var j=0;j<PRESETS.length;j++){
+    var p = PRESETS[j], cx = mX(p.F,w), cy = mY(p.k,h);
+    bx.beginPath(); bx.arc(cx,cy,2.6,0,6.2832);
+    bx.fillStyle = 'rgba(10,18,20,.85)'; bx.fill();
+    bx.strokeStyle = 'rgba(210,228,222,.55)'; bx.lineWidth = 1; bx.stroke();
+  }
+  baseKey = w+'x'+h+':'+S.ratio.toFixed(2);
+}
+function drawMap(){
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var w = Math.round(mapCv.clientWidth*dpr), h = Math.round(mapCv.clientHeight*dpr);
+  if(w < 4 || h < 4) return;
+  if(mapCv.width !== w || mapCv.height !== h){ mapCv.width = w; mapCv.height = h; }
+  if(baseKey !== w+'x'+h+':'+S.ratio.toFixed(2)) buildBase(w,h);
+  mx.clearRect(0,0,w,h);
+  mx.drawImage(base,0,0);
+  var cx = mX(S.F,w), cy = mY(S.k,h);
+  mx.strokeStyle = 'rgba(230,178,60,.45)'; mx.lineWidth = 1;
+  mx.beginPath(); mx.moveTo(0,cy); mx.lineTo(w,cy); mx.moveTo(cx,0); mx.lineTo(cx,h); mx.stroke();
+  mx.beginPath(); mx.arc(cx,cy,4.5*dpr,0,6.2832);
+  mx.fillStyle = '#e6b23c'; mx.fill();
+  mx.strokeStyle = '#0a1214'; mx.lineWidth = 1.5; mx.stroke();
+}
+function mapPick(ev, commit){
+  var r = mapCv.getBoundingClientRect();
+  var x = (ev.clientX - r.left)/r.width*mapCv.width;
+  var y = (ev.clientY - r.top)/r.height*mapCv.height;
+  x = Math.max(0, Math.min(mapCv.width, x));
+  y = Math.max(0, Math.min(mapCv.height, y));
+  if(commit){
+    S.F = Math.round(iF(x,mapCv.width)/0.0002)*0.0002;
+    S.k = Math.round(iK(y,mapCv.height)/0.0002)*0.0002;
+    S.preset = -1;
+    syncParams();
+  }
+  return {x:x, y:y};
+}
+function nearestPreset(x,y){
+  var best = -1, bd = 1e9;
+  for(var i=0;i<PRESETS.length;i++){
+    var dx = x - mX(PRESETS[i].F, mapCv.width), dy = y - mY(PRESETS[i].k, mapCv.height);
+    var d = dx*dx + dy*dy;
+    if(d < bd){ bd = d; best = i; }
+  }
+  return bd < 320 ? best : -1;
+}
+
+/* ------------------------------------------------------------------ *
+ * Overlay: brush ring, field outline, growth ruler, diffusion axis
+ * ------------------------------------------------------------------ */
+var ptr = {x:0, y:0, in:false, down:false, lu:0, lv:0, has:false};
+function drawOverlay(){
+  var w = ov.width, h = ov.height;
+  ovx.clearRect(0,0,w,h);
+  var R = domainRect(), dpr = ov.clientWidth ? w/ov.clientWidth : 1;
+  ovx.strokeStyle = 'rgba(120,170,165,.22)'; ovx.lineWidth = 1;
+  ovx.strokeRect(R.x+0.5, R.y+0.5, R.w-1, R.h-1);
+
+  if(S.growOn){
+    var y = R.y + R.h + 9*dpr;
+    ovx.strokeStyle = 'rgba(230,178,60,.5)'; ovx.lineWidth = 1*dpr;
+    ovx.beginPath();
+    ovx.moveTo(R.x, y); ovx.lineTo(R.x + R.w, y);
+    ovx.moveTo(R.x, y-4*dpr); ovx.lineTo(R.x, y+4*dpr);
+    ovx.moveTo(R.x + R.h, y-4*dpr); ovx.lineTo(R.x + R.h, y+4*dpr);
+    ovx.moveTo(R.x + R.w, y-4*dpr); ovx.lineTo(R.x + R.w, y+4*dpr);
+    ovx.stroke();
+    ovx.fillStyle = 'rgba(230,178,60,.85)';
+    ovx.font = (10.5*dpr)+'px ui-monospace, Menlo, monospace';
+    ovx.textAlign = 'center';
+    ovx.fillText('start', R.x + R.h/2, y + 15*dpr);
+    if(S.g > 1.25) ovx.fillText('\u00d7' + S.g.toFixed(2), R.x + (R.h + R.w)/2, y + 15*dpr);
+  }
+  if(S.anisOn){
+    var ax = R.x + R.w - 30*dpr, ay = R.y + 30*dpr, L = 17*dpr;
+    var a = -S.angle*Math.PI/180;
+    var dx = Math.cos(a)*L, dy = Math.sin(a)*L;
+    ovx.strokeStyle = 'rgba(79,179,161,.8)'; ovx.lineWidth = 1.6*dpr;
+    ovx.beginPath(); ovx.moveTo(ax-dx, ay-dy); ovx.lineTo(ax+dx, ay+dy); ovx.stroke();
+    ovx.beginPath();
+    ovx.arc(ax+dx, ay+dy, 2.6*dpr, 0, 6.2832);
+    ovx.arc(ax-dx, ay-dy, 2.6*dpr, 0, 6.2832);
+    ovx.fillStyle = 'rgba(79,179,161,.9)'; ovx.fill();
+  }
+  if(ptr.in){
+    var rr = S.brush*dpr*0.5;
+    ovx.strokeStyle = S.tool === 'seed' ? 'rgba(235,240,236,.75)' : 'rgba(212,112,90,.85)';
+    ovx.lineWidth = 1*dpr;
+    ovx.beginPath(); ovx.arc(ptr.x, ptr.y, rr, 0, 6.2832); ovx.stroke();
+  }
+}
+function paintAt(ev){
+  var r = ov.getBoundingClientRect();
+  var sx = ov.width/r.width, sy = ov.height/r.height;
+  var px = (ev.clientX - r.left)*sx, py = (ev.clientY - r.top)*sy;
+  var R = domainRect();
+  var u = (px - R.x)/R.w, v = 1 - (py - R.y)/R.h;
+  var rad = S.brush*sx*0.5;
+  var ru = rad/R.w, rv = rad/R.h;
+  var mode = S.tool === 'seed' ? 1 : -1;
+  if(ptr.has){
+    var du = u - ptr.lu, dv = v - ptr.lv;
+    var n = Math.min(8, Math.ceil(Math.sqrt(du*du + dv*dv)/Math.max(ru,0.002)*2));
+    for(var i=1;i<n;i++) splat(ptr.lu + du*i/n, ptr.lv + dv*i/n, ru, rv, mode);
+  }
+  splat(u, v, ru, rv, mode);
+  ptr.lu = u; ptr.lv = v; ptr.has = true;
+}
+
+/* ------------------------------------------------------------------ *
+ * Sizing
+ * ------------------------------------------------------------------ */
+function resize(){
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var w = Math.max(1, Math.round(stage.clientWidth*dpr));
+  var h = Math.max(1, Math.round(stage.clientHeight*dpr));
+  if(cvs.width !== w || cvs.height !== h){ cvs.width = w; cvs.height = h; }
+  if(ov.width !== w || ov.height !== h){ ov.width = w; ov.height = h; }
+  drawMap();
+}
+
+/* ------------------------------------------------------------------ *
+ * UI
+ * ------------------------------------------------------------------ */
+function fmt(x,n){ return x.toFixed(n); }
+function syncParams(){
+  $('fSl').value = S.F; $('kSl').value = S.k;
+  $('fVal').textContent = fmt(S.F,4); $('kVal').textContent = fmt(S.k,4);
+  $('fOut').textContent = fmt(S.F,4);  $('kOut').textContent = fmt(S.k,4);
+  var btns = $('presets').children;
+  for(var i=0;i<btns.length;i++) btns[i].setAttribute('aria-pressed', i === S.preset ? 'true' : 'false');
+  drawMap();
+}
+function growSeconds(){
+  var perStep = Math.log(S.gMax)/Math.log(1 + S.gRate);
+  return perStep/S.steps/60;
+}
+function syncGrowth(){
+  var s = growSeconds();
+  $('growRateVal').textContent = s < 90 ? ('\u2248 ' + Math.round(s) + ' s') : ('\u2248 ' + (s/60).toFixed(1) + ' min');
+  $('growMaxVal').textContent = S.gMax.toFixed(1) + '\u00d7';
+}
+function buildPresets(){
+  var box = $('presets');
+  PRESETS.forEach(function(p, i){
+    var b = document.createElement('button');
+    b.className = 'preset';
+    b.type = 'button';
+    b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = '<b>' + p.n + '</b><small>' + p.d + '</small>';
+    b.addEventListener('click', function(){
+      S.F = p.F; S.k = p.k; S.preset = i;
+      seedField(S.growOn ? 4 : p.seed);
+      S.g = 1;
+      syncParams();
+    });
+    box.appendChild(b);
+  });
+}
+function bindRange(id, valId, get, set, render){
+  var el = $(id);
+  el.addEventListener('input', function(){
+    set(parseFloat(el.value));
+    $(valId).textContent = render();
+  });
+  el.value = get();
+  $(valId).textContent = render();
+}
+function setPlaying(on){
+  S.running = on;
+  var pb = $('playBtn');
+  pb.setAttribute('data-on', on ? 'false' : 'true');   /* .alt icon = the play triangle */
+  pb.setAttribute('aria-pressed', on ? 'true' : 'false');
+  pb.setAttribute('aria-label', on ? 'Pause' : 'Play');
+  pb.title = on ? 'Pause (space)' : 'Play (space)';
+}
+
+function wire(){
+  buildPresets();
+
+  $('fSl').addEventListener('input', function(){ S.F = parseFloat(this.value); S.preset = -1; syncParams(); });
+  $('kSl').addEventListener('input', function(){ S.k = parseFloat(this.value); S.preset = -1; syncParams(); });
+
+  var mapDown = false;
+  mapCv.addEventListener('pointerdown', function(e){
+    mapDown = true; mapCv.setPointerCapture(e.pointerId); mapPick(e, true);
+  });
+  mapCv.addEventListener('pointermove', function(e){
+    var p = mapPick(e, mapDown);
+    if(!mapDown){
+      var i = nearestPreset(p.x, p.y);
+      $('mapname').textContent = i >= 0 ? (PRESETS[i].n + ' \u2014 ' + PRESETS[i].d) : '\u00a0';
+    }
+  });
+  mapCv.addEventListener('pointerup', function(){ mapDown = false; });
+  mapCv.addEventListener('pointerleave', function(){ $('mapname').innerHTML = '&nbsp;'; });
+
+  $('growOn').addEventListener('change', function(){
+    S.growOn = this.checked;
+    ['growRate','growMax','growReset'].forEach(function(id){ $(id).disabled = !S.growOn; });
+    ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
+    S.g = 1;
+    if(S.growOn) seedField(4);
+    syncGrowth();
+  });
+  bindRange('growRate','growRateVal',
+    function(){ return 45; },
+    function(v){ S.gRate = 2e-5*Math.pow(100,(v-1)/99); },
+    function(){ var s = growSeconds(); return s < 90 ? ('\u2248 ' + Math.round(s) + ' s') : ('\u2248 ' + (s/60).toFixed(1) + ' min'); });
+  bindRange('growMax','growMaxVal',
+    function(){ return S.gMax; },
+    function(v){ S.gMax = v; if(S.g > v) S.g = v; },
+    function(){ return S.gMax.toFixed(1) + '\u00d7'; });
+  $('growReset').addEventListener('click', function(){ S.g = 1; seedField(4); });
+
+  $('anisOn').addEventListener('change', function(){
+    S.anisOn = this.checked;
+    $('anisAng').disabled = !S.anisOn; $('anisAmt').disabled = !S.anisOn;
+    ['rowAnisAng','rowAnisAmt'].forEach(function(id){ $(id).classList.toggle('off', !S.anisOn); });
+  });
+  bindRange('anisAng','anisAngVal', function(){ return S.angle; },
+    function(v){ S.angle = v; }, function(){ return Math.round(S.angle) + '\u00b0'; });
+  bindRange('anisAmt','anisAmtVal', function(){ return S.aniso; },
+    function(v){ S.aniso = v; }, function(){ return S.aniso.toFixed(2) + '\u00d7'; });
+
+  var seg = $('toolSeg');
+  seg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    S.tool = b.dataset.tool;
+    Array.prototype.forEach.call(seg.children, function(c){
+      c.setAttribute('aria-pressed', c === b ? 'true' : 'false');
+    });
+    stage.classList.toggle('tool-erase', S.tool === 'erase');
+  });
+  bindRange('brushSl','brushVal', function(){ return S.brush; },
+    function(v){ S.brush = v; }, function(){ return Math.round(S.brush) + ' px'; });
+
+  bindRange('ratioSl','ratioVal', function(){ return S.ratio; },
+    function(v){ S.ratio = v; drawMap(); }, function(){ return S.ratio.toFixed(2); });
+  bindRange('stepsSl','stepsVal', function(){ return S.steps; },
+    function(v){ S.steps = v; syncGrowth(); }, function(){ return String(S.steps); });
+  bindRange('levelSl','levelVal', function(){ return S.level; },
+    function(v){ S.level = v; }, function(){ return S.level.toFixed(3); });
+  bindRange('contrastSl','contrastVal', function(){ return S.contrast; },
+    function(v){ S.contrast = v; }, function(){ return S.contrast.toFixed(2); });
+
+  $('gridSel').addEventListener('change', function(){
+    try{ allocGrid(parseInt(this.value,10)); seedField(S.seedMode); }
+    catch(e){ fail(e.message); }
+  });
+  $('palSel').addEventListener('change', function(){ S.pal = parseInt(this.value,10); });
+  $('reliefOn').addEventListener('change', function(){ S.relief = this.checked; });
+
+  $('playBtn').addEventListener('click', function(){ setPlaying(!S.running); });
+  $('stepBtn').addEventListener('click', function(){ setPlaying(false); updateWeights(); runSteps(1); });
+  $('seedBtn').addEventListener('click', function(){
+    seedField(S.growOn ? 4 : (S.seedMode === 0 ? 2 : S.seedMode));
+    if(S.growOn) S.g = 1;
+  });
+  $('clearBtn').addEventListener('click', function(){ seedField(0); });
+  $('saveBtn').addEventListener('click', function(){
+    drawField();
+    var a = document.createElement('a');
+    a.download = 'turing-F' + fmt(S.F,4) + '-k' + fmt(S.k,4) + '.png';
+    a.href = cvs.toDataURL('image/png');
+    a.click();
+  });
+
+  $('aboutBtn').addEventListener('click', function(){ $('about').showModal(); });
+  $('closeAbout').addEventListener('click', function(){ $('about').close(); });
+
+  ov.addEventListener('pointerdown', function(e){
+    ptr.down = true; ptr.has = false; ov.setPointerCapture(e.pointerId);
+    ptr.in = true; paintAt(e);
+  });
+  ov.addEventListener('pointermove', function(e){
+    var r = ov.getBoundingClientRect();
+    ptr.x = (e.clientX - r.left)*(ov.width/r.width);
+    ptr.y = (e.clientY - r.top)*(ov.height/r.height);
+    ptr.in = true;
+    if(ptr.down) paintAt(e);
+  });
+  ov.addEventListener('pointerup', function(){ ptr.down = false; ptr.has = false; });
+  ov.addEventListener('pointercancel', function(){ ptr.down = false; ptr.has = false; });
+  ov.addEventListener('pointerleave', function(){ ptr.in = false; ptr.down = false; ptr.has = false; });
+
+  /* keyboard is handled once, in the shell block at the end of this file */
+
+  if(window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  window.addEventListener('resize', resize);
+}
+
+/* ------------------------------------------------------------------ *
+ * Loop
+ * ------------------------------------------------------------------ */
+var last = 0, acc = 0, frames = 0, statTick = 0;
+function hudText(){
+  var L = [];
+  L.push(chip('step', S.total.toLocaleString()));
+  L.push(chip('activator', stats.meanV.toFixed(3)));
+  L.push(chip('coverage', Math.round(stats.cov*100) + '<small>%</small>'));
+  if(S.growOn) L.push(chip('length', '\u00d7' + S.g.toFixed(2)));
+  if(S.growOn) L.push(chip('bands across', stats.bands));
+  if(S.anisOn) L.push(chip('fast axis', Math.round(S.angle) + '<small>\u00b0</small>'));
+  return L.join('');
+}
+function chip(k, v){
+  return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+}
+function frame(t){
+  requestAnimationFrame(frame);
+  if(!last) last = t;
+  var dt = t - last; last = t;
+  acc += dt; frames++;
+  if(acc > 400){ stats.fps = frames*1000/acc; acc = 0; frames = 0; }
+
+  if(S.growOn && S.g < S.gMax && S.running){
+    S.g = Math.min(S.gMax, S.g*Math.pow(1 + S.gRate, S.steps));
+    S.dil = S.gRate;
+  } else {
+    S.dil = 0;
+  }
+  updateWeights();
+  if(S.running) runSteps(S.steps);
+  drawField();
+  drawOverlay();
+  if(++statTick % 12 === 0){ readStats(); $('hud').innerHTML = hudText(); }
+}
+
+/* ------------------------------------------------------------------ */
+if(initGL()){
+  wire();
+  resize();
+  seedField(2);
+  syncParams();
+  syncGrowth();
+  setPlaying(true);
+  requestAnimationFrame(frame);
+  setTimeout(function(){ resize(); drawMap(); }, 60);
+}
+/* ------------------------------------------------------------------ *
+ * SimLearn shell wiring: frame awareness, clean mode, fullscreen,
+ * the mobile control sheet and the keyboard shortcuts every module has.
+ * ------------------------------------------------------------------ */
+(function(){
+  var body = document.body;
+  try{ if(window.self !== window.top) body.classList.add('in-frame'); }
+  catch(e){ body.classList.add('in-frame'); }
+
+  var panel = $('panel'), pt = $('p-toggle');
+  if(pt) pt.addEventListener('click', function(){
+    var open = panel.classList.toggle('open');
+    pt.setAttribute('aria-expanded', open ? 'true' : 'false');
+    pt.textContent = open ? 'Hide controls' : 'Controls';
+    if(open) panel.scrollTop = 0;
+  });
+
+  var clean = $('btnClean');
+  clean.addEventListener('click', function(){
+    var on = body.classList.toggle('clean');
+    clean.setAttribute('data-on', on ? 'true' : 'false');
+  });
+
+  var full = $('btnFull');
+  full.addEventListener('click', function(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if(t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+    if($('about').open){ if(e.key === 'Escape') $('about').close(); return; }
+    var k = e.key.toLowerCase();
+    if(e.key === ' '){ e.preventDefault(); $('playBtn').click(); }
+    else if(k === 'r'){ $('seedBtn').click(); }
+    else if(k === 'c'){ $('clearBtn').click(); }
+    else if(k === 'h'){ clean.click(); }
+    else if(k === 'f'){ full.click(); }
+    else if(k === '?' || k === '/'){ $('aboutBtn').click(); }
+    else if(k >= '1' && k <= '9'){
+      var b = $('presets').children[parseInt(k,10) - 1];
+      if(b) b.click();
+    }
+  });
+})();
+
+})();
+
+</script>
+</body>
+</html>
