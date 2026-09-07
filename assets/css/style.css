@@ -233,15 +233,17 @@ body.sim-page .logo{font-size:1.05rem}
   border:1px solid var(--line); padding:5px 11px; border-radius:999px; transition:color .16s,border-color .16s}
 .sim-header a.back:hover{color:var(--accent); border-color:var(--line-strong)}
 .sim-header h1{margin:0; font-family:var(--display); font-weight:600; font-size:1.1rem; letter-spacing:-.012em}
-/* sim.html moves a simulation's explainer button up here on a portrait phone, where the
-   top of the canvas has no room for it. Hidden everywhere else. */
-.host-about{display:none}
+/* sim.html lifts every simulation's explainer button up here, next to the title, on
+   every screen size. The simulation's own copy is hidden while it is framed. */
+.host-about{display:inline-flex; align-items:center; margin-left:9px; vertical-align:middle;
+  border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--muted);
+  font-family:var(--body); font-weight:500; font-size:.74rem; letter-spacing:.01em;
+  padding:5px 12px; line-height:1; white-space:nowrap; cursor:pointer;
+  transition:color .16s, border-color .16s}
+.host-about:hover{color:var(--accent); border-color:var(--line-strong)}
+.host-about:active{color:var(--ink); border-color:var(--line-strong)}
 @media(max-width:820px) and (orientation:portrait){
-  .host-about{display:inline-flex; align-items:center; margin-left:9px; vertical-align:middle;
-    border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--muted);
-    font-family:var(--body); font-weight:500; font-size:.72rem; letter-spacing:.01em;
-    padding:5px 11px; line-height:1; white-space:nowrap; cursor:pointer}
-  .host-about:active{color:var(--ink); border-color:var(--line-strong)}
+  .host-about{font-size:.72rem; padding:5px 11px}
   /* the phone rule below clips the title with an ellipsis; let the pill out */
   .sim-header h1{white-space:normal; overflow:visible; text-overflow:clip}
 }

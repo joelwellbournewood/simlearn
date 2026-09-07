@@ -215,6 +215,8 @@
     .layout{flex:1 1 auto;min-height:0;display:grid;
             grid-template-columns:minmax(240px,272px) minmax(0,1fr) minmax(300px,340px);
             gap:16px;align-items:stretch}
+    .side{display:contents}
+    .col-l{order:1} .col-c{order:2} .col-r{order:3}
     .col{min-width:0;min-height:0}
     .col-l,.col-r{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
                   padding-right:4px}
@@ -308,6 +310,11 @@
        only the controls underneath scroll. */
     .in-frame body{padding-top:0}
     .in-frame .col-c{padding-top:8px;top:0}
+    .side{display:contents}
+    /* Fullscreen on a phone puts the field under the camera cutout, so it gets the
+       safe-area inset plus a little air of its own. */
+    html:fullscreen .col-c,html:-webkit-full-screen .col-c,body.is-full .col-c{
+      padding-top:calc(env(safe-area-inset-top,0px) + 18px)}
   }
   /* ---------- landscape phone ----------
      A portrait-style single column is unusable here: the field is sized from the width,
@@ -317,18 +324,25 @@
   @media (max-width:1060px) and (orientation:landscape) and (max-height:620px){
     html{height:100%}
     body{max-width:none;height:100%;overflow:hidden;display:flex;flex-direction:column;
-         padding:8px 10px calc(6px + env(safe-area-inset-bottom))}
+         padding:8px calc(10px + env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom))
+                 calc(10px + env(safe-area-inset-left,0px))}
     header,footer{display:none}
+    /* grid, not flex: the field is a canvas at height:100%, and only a grid row gives it
+       a definite height to resolve its width against */
     .layout{flex:1 1 auto;min-height:0;display:grid;
-            grid-template-columns:auto minmax(150px,1fr) minmax(150px,1fr);
-            gap:10px;align-items:stretch}
+            grid-template-columns:auto minmax(190px,340px);gap:10px;align-items:stretch}
     .col{min-width:0;min-height:0}
     .col-c{order:-1;margin-bottom:0;position:static;padding:0;box-shadow:none;
            display:flex;justify-content:center;align-items:center;overflow:hidden}
-    .col-l,.col-r{max-height:100%;overflow-y:auto;overscroll-behavior:contain;
-                  scrollbar-width:thin;padding-right:4px}
-    .col-l::-webkit-scrollbar,.col-r::-webkit-scrollbar{width:6px}
-    .col-l::-webkit-scrollbar-thumb,.col-r::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+    /* One pane, not two: readouts, speed and experiments run straight on into the
+       sliders, and the whole thing scrolls together beside the field. */
+    .side{min-width:0;min-height:0;max-height:100%;
+          display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+          scrollbar-width:thin;padding-right:4px}
+    .side::-webkit-scrollbar{width:6px}
+    .side::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+    .col-l,.col-r{max-height:none;overflow:visible;padding-right:0}
+    .col-r > .card:first-child{margin-top:8px}
     .field-wrap{margin-top:0;height:100%;display:flex;align-items:center;justify-content:center}
     #field{width:auto;height:100%;max-width:100%;max-height:100%;display:block}
     /* short viewport: the same trims the desktop layout makes when it runs out of height */
@@ -368,6 +382,16 @@
 </header>
 
 <div class="layout">
+  <div class="col col-c">
+<div class="field-wrap">
+  <canvas id="field"></canvas>
+  <div class="field-tag">The field</div>
+  <div class="extinct" id="extinct"></div>
+</div>
+  </div>
+  <!-- On a landscape phone .side becomes one single scrolling control pane;
+       everywhere else it is display:contents and the columns lay out as before. -->
+  <div class="side">
   <div class="col col-l">
 <button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
 <div class="status">
@@ -409,13 +433,6 @@
     <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
   </div>
 </div>
-</div>
-  </div>
-  <div class="col col-c">
-<div class="field-wrap">
-  <canvas id="field"></canvas>
-  <div class="field-tag">The field</div>
-  <div class="extinct" id="extinct"></div>
 </div>
   </div>
   <div class="col col-r">
@@ -475,6 +492,7 @@
     </div>
   </div>
 </div>
+  </div>
   </div>
 </div>
 
@@ -972,6 +990,15 @@
   el('btnAbout').addEventListener('click', ()=>{ dlg.showModal ? dlg.showModal() : dlg.setAttribute('open',''); });
   el('btnAboutClose').addEventListener('click', ()=> dlg.close());
   dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
+
+  // ---- fullscreen state as a class, so the layout can react to it ----
+  (function(){
+    const sync=()=>document.body.classList.toggle('is-full',
+      !!(document.fullscreenElement||document.webkitFullscreenElement));
+    document.addEventListener('fullscreenchange',sync);
+    document.addEventListener('webkitfullscreenchange',sync);
+    sync();
+  })();
 
   // ---- the left column only shows a scrollbar when it actually has to scroll ----
   (function(){

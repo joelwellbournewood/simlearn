@@ -60,20 +60,27 @@
       frame.src = 'sims/' + sim.id + '/index.html';
     });
 
-  /* On a portrait phone the top of a simulation is crowded, so the explainer moves out
-     here next to the title. The frame is same-origin, so the pill just clicks the
-     simulation's own button; the simulation hides its copy when html.hosted-about is
-     set. If a simulation has no explainer button, no pill appears. */
+  /* Every simulation's explainer moves out here, next to the title, on every screen
+     size: the top of a canvas is the wrong place for a block of prose. The frame is
+     same-origin, so the pill just clicks the simulation's own button, and a style
+     injected into the frame hides that button while it is framed. It comes back if the
+     simulation goes fullscreen, where this header is not on screen. */
   frame.addEventListener('load', function () {
     var pill = document.querySelector('.host-about');
     if (pill) pill.remove();
     var doc;
     try { doc = frame.contentDocument; } catch (e) { return; }
     if (!doc) return;
-    var btn = doc.querySelector('.about-btn[data-host-on-phone]');
+    var btn = doc.querySelector('.about-btn');
     var title = document.getElementById('sim-title');
     if (!btn || !title) return;
     doc.documentElement.classList.add('hosted-about');
+    if (!doc.getElementById('hosted-about-css')) {
+      var st = doc.createElement('style');
+      st.id = 'hosted-about-css';
+      st.textContent = 'html:not(:fullscreen) .about-btn{display:none!important}';
+      doc.head.appendChild(st);
+    }
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'host-about';

@@ -159,6 +159,19 @@ body.clean .tapwrap{display:none}
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<style>
+/* Landscape phone: readouts and the brake button share a left band, clear of the ring
+   and clear of the sheet handle. Loaded after the shared mobile layer so it wins. */
+@media (max-height:560px) and (orientation:landscape) and (pointer:coarse){
+  .hud{left:12px;right:auto;top:12px;bottom:auto;flex-direction:column;flex-wrap:nowrap;
+       align-items:flex-start;justify-content:flex-start;gap:7px;max-width:34vw;text-align:left}
+  .hud .stat{text-align:left;min-width:0;padding:0 1px}
+  .hud .stat .v{font-size:14px} .hud .stat .k{font-size:10px}
+  .tapwrap{left:12px;bottom:calc(54px + env(safe-area-inset-bottom));transform:none;
+           align-items:flex-start;max-width:40vw}
+  .tap-btn{padding:9px 14px;font-size:12.5px}
+}
+</style>
 <script src="../../assets/js/sim-mobile.js" defer></script>
 </head><body>
 <div id="stage"><canvas id="c"></canvas></div>
@@ -318,34 +331,57 @@ function resize(){
   cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
   narrow = W<820 || (H<560 && matchMedia('(pointer:coarse)').matches);
-  COLW = narrow ? Math.max(92,Math.min(190,W*0.32)) : Math.max(240,Math.min(340,W*0.25));
+  /* A landscape phone is its own case. Treating it as a tall phone left the ring with a
+     sliver of height and put the brake button on top of it. Here the screen is read as
+     three bands: readouts and the brake button down the left, the ring in the middle
+     using the full height, the diagram down the right. */
+  const land = narrow && H<=560 && W>H && matchMedia('(pointer:coarse)').matches;
+  COLW = land ? Math.max(140,Math.min(230,W*0.24))
+       : narrow ? Math.max(92,Math.min(190,W*0.32)) : Math.max(240,Math.min(340,W*0.25));
   COLX = W-COLW-(narrow?12:22);
   /* the space-time column shares the right-hand edge with the icon buttons, so on a phone
      it starts below them (measured, not guessed) rather than under their labels */
   const actEl=document.querySelector('.actions');
   const actB = narrow&&actEl ? Math.round(actEl.getBoundingClientRect().bottom) : 0;
-  STY = narrow ? Math.max(62, actB+28) : 112;
+  STY = land ? actB+14 : narrow ? Math.max(62, actB+28) : 112;
   const tw=el('tapwrap'), hudEl=document.querySelector('.hud');
   /* On a phone the readouts sit bottom right and the brake button rides just above them.
      Measure the readouts rather than guessing: they wrap to two rows on a 320px screen. */
   const hudH = narrow&&hudEl ? Math.round(hudEl.getBoundingClientRect().height) : 0;
   /* the readouts have no box now, so the diagram stops above them rather than behind them */
   const hudAll = hudEl ? Math.round(hudEl.getBoundingClientRect().height) : 0;
-  const stBottom = H-(narrow?(74+hudH):(28+hudAll));
+  /* in landscape the readouts move to the left band, so the diagram runs to the floor,
+     stopping just above the sheet handle */
+  const stBottom = land ? H-52 : H-(narrow?(74+hudH):(28+hudAll));
   STH = Math.max(110, Math.round(stBottom-STY));
   const clean=document.body.classList.contains('clean');
-  const leftEdge=(clean||narrow)?(narrow?10:26):396;
+  /* landscape: the ring starts to the right of whatever the left band actually needs */
+  let leftEdge;
+  if(land){
+    let lb=10;
+    if(!clean){
+      if(hudEl) lb=Math.max(lb, Math.round(hudEl.getBoundingClientRect().right));
+      if(tw) lb=Math.max(lb, Math.round(tw.getBoundingClientRect().right));
+    }
+    leftEdge=lb+16;
+  } else leftEdge=(clean||narrow)?(narrow?10:26):396;
   const availW=COLX-(narrow?14:24)-leftEdge;
   /* the ring must clear the brake button, which sits under it and is the thing you press */
   const tapH = tw ? Math.round(tw.getBoundingClientRect().height) : 62;
-  const ringBottom = narrow ? H-(121+hudH) : H-(40+tapH);
-  const ringH=Math.max(120, ringBottom-STY);
+  const ringTop = land ? 12 : STY;
+  const ringBottom = land ? H-52 : narrow ? H-(121+hudH) : H-(40+tapH);
+  const ringH=Math.max(120, ringBottom-ringTop);
   RR=Math.max(46,Math.min(availW/2-14, ringH/2-14));
-  RX=leftEdge+availW/2; RY=STY+ringH/2;
-  if(tw){ tw.style.left=Math.round(RX)+'px'; tw.style.bottom = narrow ? (70+hudH)+'px' : ''; }
+  RX=leftEdge+availW/2; RY=ringTop+ringH/2;
+  if(tw){
+    if(land){ tw.style.left=''; tw.style.bottom=''; }
+    else { tw.style.left=Math.round(RX)+'px'; tw.style.bottom = narrow ? (70+hudH)+'px' : ''; }
+  }
   stc.width=Math.max(60,Math.round(COLW)); stc.height=STH; stRow=0; stFill=0;
   stx=stc.getContext('2d'); stx.fillStyle='#0b1412'; stx.fillRect(0,0,stc.width,stc.height);
 }
+/* layout probe, used by the layout tests */
+window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:STY,STH:STH,narrow:narrow,W:W,H:H};};
 function pushRow(){
   const w=stc.width;
   stx.fillStyle='#0b1412'; stx.fillRect(0,stRow,w,1);
@@ -408,7 +444,13 @@ function drawST(){
   ctx.drawImage(stc,0,0,stc.width,stRow,COLX,STY+older,COLW,stRow);
   ctx.restore();
   label('one lap of the ring \u2192',COLX,STY-8);
-  label('time \u2193',COLX+COLW,STY-8,'rgba(163,188,190,.45)',11,'right');
+  /* time runs down the diagram, so its label runs down the left edge of it: rotated a
+     quarter turn clockwise, which also points the arrow down and keeps the label out of
+     the top row where it used to collide with the icon buttons on a phone. */
+  ctx.save();
+  ctx.translate(COLX-14, STY+2); ctx.rotate(Math.PI/2);
+  label('time \u2192',0,0,'rgba(163,188,190,.45)',11);
+  ctx.restore();
 }
 function draw(){
   ctx.clearRect(0,0,W,H);
