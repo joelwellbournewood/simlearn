@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050c0a">
 <title>Turing's Morphogenesis: how spots, stripes and coral grow out of two chemicals | SimLearn</title>
-<meta name="description" content="Two chemicals in a sheet of tissue, and the spots, stripes and labyrinths that come out of them.">
+<meta name="description" content="Natural patterns arising from a uniform, featureless start.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -427,13 +427,21 @@ body.sheet-open .panel{z-index:9}
 
 <div class="hud" id="hud"></div>
 
-<dialog id="about" class="about">
-  <div class="about-inner">
-    <button class="about-close" id="closeAbout" aria-label="Close">&times;</button>
-    <h2>What am I looking at?</h2>
-    <p>A square of tissue with two chemicals in it. One of them, the activator, makes more of itself and eats the other. The second, the substrate, is pumped in from outside and spreads about twice as fast. That is the entire mechanism, and it is enough to produce spots, stripes, branching coral, dividing blobs and travelling waves without anyone drawing them.</p>
+<dialog id="about" class="about"><div class="about-inner">
+<button class="about-close" id="closeAbout" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>A square of tissue with two chemicals dissolved in it, and no plan for what it should look like. Every cell starts identical to every other one. The pattern you end up with is not drawn anywhere; it appears because a uniform state turns out to be unstable.</p>
+<p>Two substances react and spread, and that is the whole mechanism.</p>
+<ul>
+  <li>The <b>activator</b> makes more of itself, and it consumes the second chemical to do it. This is autocatalysis: wherever there is a little more of it than average, it builds up faster still.</li>
+  <li>The <b>substrate</b> is fed in evenly from outside at the <b>feed rate F</b>, and it spreads through the sheet about twice as fast as the activator does.</li>
+  <li>Everything is removed at the <b>kill rate k</b>, so a blob that stops being fed dies back.</li>
+</ul>
+<p>The competition between those two is what makes shapes. A patch of activator grows, and while it grows it starves the ring of tissue around it, because the substrate it needs is drained from a wider area than the patch itself covers. That ring cannot start a patch of its own, so the next patch has to start further out, at a distance set by how far the two chemicals spread. Local growth with longer-range suppression gives you a spacing, and a spacing is a pattern.</p>
+<p>Only three sliders change the chemistry: <b>feed rate</b>, <b>kill rate</b> and the <b>diffusion ratio</b> between the two substances. The map beside the field shows where in that space you are, and the regions on it are what the presets pick out. Small moves matter: the boundary between spots, stripes and a labyrinth is a few thousandths of a unit wide, which is why nudging one slider can turn a settled pattern into a growing one. Everything else in the panel is either painting on the field or how it is drawn, apart from growth and anisotropy, which stretch the tissue while the pattern forms and are how a real pattern gets aligned with the body it sits on.</p>
 
-    <h3>Turing's idea</h3>
+<div class="more-box"><div class="more-body">
+<h3>Turing's idea</h3>
     <p>In 1952 Alan Turing pointed out something counterintuitive: diffusion, which normally smooths differences out, can create them. If a self-amplifying chemical is held in check by a second one that spreads faster, a uniform mixture becomes unstable. Any tiny fluctuation grows locally while suppressing its neighbourhood, and the system settles into a pattern with a characteristic spacing. Turing called the chemicals morphogens and suggested they were how embryos decide where to put things.</p>
     <p>This particular pair is the Gray&ndash;Scott model, an autocatalytic reaction in a stirred tank rewritten as a field. <em>u</em> is the substrate, <em>v</em> the activator, and the reaction is u + 2v &rarr; 3v.</p>
     <div class="eq">&part;u/&part;t = D<sub>u</sub>&nabla;&sup2;u &minus; uv&sup2; + F(1 &minus; u)
@@ -471,7 +479,35 @@ body.sheet-open .panel{z-index:9}
       <li>Growth is handled in material coordinates: the diffusion term along the growing axis is divided by the square of the stretch factor, and both chemicals are diluted at the rate the tissue expands.</li>
       <li>The whole thing runs on the GPU in a pair of floating-point textures.</li>
     </ul>
-  </div>
+  <h3>The equations on screen</h3>
+<p>This is the Gray-Scott model, a two-species reaction-diffusion system for concentrations u, the substrate, and v, the activator, on a grid with periodic boundaries:</p>
+<span class="eq">&part;u/&part;t = D<sub>u</sub> &nabla;&sup2;u &minus; u v&sup2; + F(1 &minus; u)<br>&part;v/&part;t = D<sub>v</sub> &nabla;&sup2;v + u v&sup2; &minus; (F + k) v</span>
+<p>The cubic term u v&sup2; is the autocatalytic step, in which two molecules of v convert one of u into a third v. F is the rate at which fresh u is pumped in and everything is washed out, and k is an extra decay applied to v alone. The Laplacian is evaluated with a nine-point stencil and the whole thing is stepped forward on the GPU, one texel per cell. Pearson (1993) mapped the behaviour of this system across the F-k plane and named the regimes; the map in the panel is that parameter plane, and the labelled zones follow his classification.</p>
+
+<h3>Why a uniform state is unstable</h3>
+<p>Turing (1952) asked what happens to a homogeneous chemical steady state when you perturb it slightly, and answered it by linearising the system and asking which spatial Fourier modes grow. A perturbation of wavenumber q grows or decays according to the eigenvalues of the Jacobian of the reaction terms with the diffusion terms &minus;D q&sup2; added along the diagonal. If diffusion is absent or equal for both species the steady state is stable. If the inhibitory species diffuses sufficiently faster than the autocatalytic one, a band of intermediate wavenumbers acquires a positive growth rate while q = 0 and large q stay negative. The state is stable against uniform change and unstable against change at one particular length scale, which is why the resulting pattern has a characteristic spacing rather than a characteristic size. This is a diffusion-driven instability, and it is the sense in which the pattern is created by diffusion, the process that usually smooths things out.</p>
+<p>Gierer and Meinhardt (1972) restated the requirement in the form that is now standard in developmental biology: short-range activation with long-range inhibition. The diffusion ratio slider is that condition made adjustable. Turn it down toward 1 and every pattern in the system dissolves, however you set F and k.</p>
+
+<h3>How much of this happens in animals</h3>
+<p>Turing's paper was theory with no molecular candidates, and for forty years the competing account of pattern in embryos was positional information: cells read a pre-existing gradient and consult a lookup table (Wolpert, 1969). The evidence for genuine Turing mechanisms came later. Kondo and Asai (1995) showed that the stripes of the marine angelfish <i>Pomacanthus</i> rearrange as the fish grows, inserting new stripes to hold spacing constant, which is what a reaction-diffusion system does and not what a fixed prepattern does. Sick et al. (2006) identified WNT and its diffusible inhibitor DKK as an activator-inhibitor pair setting mouse hair follicle spacing. Economou et al. (2012) showed the periodic ridges of the mouse palate form by a Turing mechanism, and Sheth et al. (2012) showed that reducing Hox gene dose increases the number of digits in a way consistent with a Turing-type periodic patterning of the limb bud rather than with a gradient. The modern position, argued in reviews such as Green and Sharpe (2015), is that real embryos combine both: gradients position and orient the field, and local self-organising instabilities fill it in with periodic structure.</p>
+
+<h3>Limits of what you are watching</h3>
+<p>Gray-Scott is a chemistry, not a tissue. There are no cells, no mechanics, no gene regulation and no growth except the artificial stretch this simulation applies. Two chemicals is the minimum for the instability, and real patterning networks have more components, which changes which patterns are reachable. Nothing here is fitted to measurements from any organism: the resemblance to a shell, a coat or a coral is qualitative, and it is evidence about what kind of mechanism could produce such a thing, not proof that it did.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Turing, A. M. (1952). The chemical basis of morphogenesis. Philosophical Transactions of the Royal Society B.</li>
+  <li>Gierer, A., &amp; Meinhardt, H. (1972). A theory of biological pattern formation. Kybernetik.</li>
+  <li>Gray, P., &amp; Scott, S. K. (1984). Autocatalytic reactions in the isothermal continuous stirred tank reactor. Chemical Engineering Science.</li>
+  <li>Pearson, J. E. (1993). Complex patterns in a simple system. Science.</li>
+  <li>Kondo, S., &amp; Asai, R. (1995). A reaction-diffusion wave on the skin of the marine angelfish Pomacanthus. Nature.</li>
+  <li>Sick, S., Reinker, S., Timmer, J., &amp; Schlake, T. (2006). WNT and DKK determine hair follicle spacing through a reaction-diffusion mechanism. Science.</li>
+  <li>Economou, A. D., et al. (2012). Periodic stripe formation by a Turing mechanism operating at growth zones in the mammalian palate. Nature Genetics.</li>
+  <li>Sheth, R., et al. (2012). Hox genes regulate digit patterning by controlling the wavelength of a Turing-type mechanism. Science.</li>
+  <li>Green, J. B. A., &amp; Sharpe, J. (2015). Positional information and reaction-diffusion: two big ideas in developmental biology combine. Development.</li>
+</ul>
+</div></div>
+</div>
 </dialog>
 
 <script>
@@ -1718,5 +1754,6 @@ if(initGL()){
 })();
 
 </script>
+<script src="../../assets/js/explainer.js" defer></script>
 </body>
 </html>

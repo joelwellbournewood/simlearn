@@ -161,13 +161,27 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 </div>
 <div class="hint">Click the field to re-release from that angle. 1-5 presets, space pause, R restart, H hide.</div>
 
-<dialog class="about" id="about">
-  <div class="about-inner">
-    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
-    <h2>What am I looking at?</h2>
-    <p>One rod swinging from a pivot, with a second rod swinging from the end of the first. The equations of motion are exact and written out in full in this page's source. Nothing here is random. Run the same starting numbers twice and you get the same motion twice, to the last decimal place.</p>
-    <p>The motion is still unpredictable. That combination is what <b>chaos</b> means, and it is the subject of this page.</p>
-    <h3>The demonstration</h3>
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>Two rigid arms, joined by a free hinge, swinging under gravity with no friction and no driving force. That is the whole system: four numbers describe it completely, the two angles and the two rates at which they are changing. It is as simple as a mechanical system can be while still being unpredictable.</p>
+<p>What you are watching is not one pendulum but many, released together and differing only by the amount in <b>starting spread</b>, which is a fraction of a degree. Every copy obeys the same equations to the same precision. Nothing random is added at any point.</p>
+<ul>
+  <li>For the first few swings they move as one line, because a tiny difference is still tiny.</li>
+  <li>Then the line frays. Small differences are amplified at every swing, roughly multiplying rather than adding, so the gap grows geometrically.</li>
+  <li>Within about ten seconds the copies fill the whole reachable area and knowing where one of them is tells you nothing about where the others are.</li>
+</ul>
+<p>This is sensitive dependence on initial conditions, and it is the point of the demonstration. The system is fully deterministic: the same starting numbers always give the same motion. It is also unpredictable in practice, because to predict twice as far ahead you need roughly the square of the precision in your starting measurement, and no measurement is exact.</p>
+<p><b>Release angle</b> is the important slider, because it sets the energy. Start the arms low and the motion stays regular and repetitive, and the copies stay together for a long time. Somewhere above the height at which the lower arm can just swing over the top, the behaviour changes character and the flipping begins. <b>Lower arm length</b> changes the geometry, <b>copies released</b> and <b>trail length</b> change what is drawn, and <b>time speed</b> only changes playback, not the physics.</p>
+<h3>Things to try</h3>
+    <ul>
+      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than most people expect.</li>
+      <li>Watch the <b>spread now</b> readout climb. Its growth is close to a straight line on a log scale, which is what an exponent looks like.</li>
+      <li>Give the lower arm a length of 1.6 and release from 180 degrees. The tip trace fills the whole disc it can reach.</li>
+    </ul>
+  
+<div class="more-box"><div class="more-body">
+<h3>The demonstration</h3>
     <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree. For the first few seconds they move as one thick line, because for practical purposes they are the same pendulum. Then the line frays and splits, and within about fifteen seconds the hundred copies are scattered over every angle, with no memory of their shared start.</p>
     <p>Nothing was added. No noise was injected and no forcing applied. The tiny difference they began with was simply <b>stretched</b>, at a roughly constant exponential rate, until it reached the size of the whole system. That rate is the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days however good the measurements get.</p>
     <h3>The cost of sensitive dependence</h3>
@@ -180,13 +194,36 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
       <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
       <li>The rods are massless and the bobs are points. Real hardware has friction, and eventually stops.</li>
     </ul>
-    <h3>Things to try</h3>
-    <ul>
-      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than most people expect.</li>
-      <li>Watch the <b>spread now</b> readout climb. Its growth is close to a straight line on a log scale, which is what an exponent looks like.</li>
-      <li>Give the lower arm a length of 1.6 and release from 180 degrees. The tip trace fills the whole disc it can reach.</li>
-    </ul>
-  </div>
+    <h3>Equations of motion</h3>
+<p>The standard derivation is Lagrangian. With arm lengths L1, L2, masses m1, m2 and angles &theta;1, &theta;2 measured from vertical, the Lagrangian L = T &minus; V is written out and the two Euler-Lagrange equations give a pair of coupled second-order equations that can be arranged as</p>
+<span class="eq">M(&theta;1, &theta;2) &middot; (&theta;&#776;1, &theta;&#776;2)&#7488; = f(&theta;1, &theta;2, &theta;&#775;1, &theta;&#775;2)</span>
+<p>where M is a 2x2 mass matrix depending on the difference of the angles, so the angular accelerations are obtained by inverting a matrix at every timestep. The nonlinearity comes from the sines and cosines of the angles and from the centrifugal terms in f, which are quadratic in the velocities. There is no closed-form solution and none is expected.</p>
+<p>Two degrees of freedom means a four-dimensional phase space. Energy is conserved, which confines the motion to a three-dimensional surface inside it. There are no other conserved quantities, and it is that absence, rather than the number of parts, which makes chaos possible: with one more conserved quantity the system would be integrable and every trajectory would be quasi-periodic.</p>
+
+<h3>Regular and chaotic motion in the same machine</h3>
+<p>At low energy the motion is close to two coupled harmonic oscillators. Trajectories lie on invariant tori in phase space, and a Poincare section through them shows closed curves. The Kolmogorov-Arnold-Moser theorem guarantees that most of these tori survive a small nonlinear perturbation, which is why gentle swinging is predictable. As energy rises the resonances between the two normal modes overlap, tori break up, and a connected chaotic sea appears in the section, with islands of regular motion embedded in it. The double pendulum is the standard teaching example of this transition because the threshold has a physical meaning you can see: chaos becomes widespread once there is enough energy for the lower arm to pass over its own pivot.</p>
+
+<h3>Quantifying the divergence</h3>
+<p>Nearby trajectories separate on average as</p>
+<span class="eq">&delta;(t) &asymp; &delta;(0) e<sup>&lambda;t</sup></span>
+<p>where &lambda; is the largest Lyapunov exponent, positive in the chaotic regime and zero on a torus. Rearranged, the horizon of prediction is t &asymp; (1/&lambda;) ln(&delta;<sub>tol</sub>/&delta;(0)). Because the initial error appears inside a logarithm, improving your measurement by a factor of ten buys the same fixed extra amount of prediction time, not ten times as much. That is the honest content of the phrase butterfly effect, and it applies with equal force to weather models. The fan of copies on screen is a visual estimate of &lambda;: the time it takes the fan to spread to a visible angle scales with 1/&lambda;.</p>
+<p>Chaos in the real double pendulum is not just a numerical phenomenon. Shinbrot et al. (1992) built one, measured its divergence and its Poincare sections, and used it as a laboratory demonstration of sensitive dependence.</p>
+
+<h3>Numerics, and how to tell physics from arithmetic</h3>
+<p>The equations here are integrated with fourth-order Runge-Kutta, with each animation frame subdivided into several substeps so the step size stays small when the arms are moving fast. Total energy is displayed live and its drift is the diagnostic that matters: a symplectic or sufficiently small-step integrator holds it nearly constant, and any visible drift would mean the separation on screen is partly the integrator's error rather than the system's dynamics. In a chaotic system the trajectory of a single simulated pendulum after a few seconds is not the trajectory of the ideal one at any tolerance, because floating-point rounding is itself a perturbation which then grows as e<sup>&lambda;t</sup>. Statistical properties, meaning how quickly the ensemble spreads and which regions it visits, are robust; the exact position of copy number 37 at t = 20 s is not.</p>
+
+<h3>What is idealised away</h3>
+<p>Point masses, massless rigid arms, frictionless hinges, no air resistance and exactly two dimensions. A real double pendulum loses energy and eventually stops, so it settles into the hanging state; chaos there is a transient, though a long one. Adding damping and a periodic drive gives the forced damped pendulum, in which chaos is sustained indefinitely on a strange attractor rather than filling an energy shell.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Shinbrot, T., Grebogi, C., Wisdom, J., &amp; Yorke, J. A. (1992). Chaos in a double pendulum. American Journal of Physics.</li>
+  <li>Levien, R. B., &amp; Tan, S. M. (1993). Double pendulum: an experiment in chaos. American Journal of Physics.</li>
+  <li>Ott, E. (2002). Chaos in Dynamical Systems, 2nd ed. Cambridge University Press.</li>
+  <li>Lichtenberg, A. J., &amp; Lieberman, M. A. (1992). Regular and Chaotic Dynamics. Springer. (KAM tori and resonance overlap.)</li>
+</ul>
+</div></div>
+</div>
 </dialog>
 <script>
 (function(){
@@ -416,4 +453,5 @@ resize(); applyPreset('twins');
 requestAnimationFrame(loop);
 })();
 </script>
+<script src="../../assets/js/explainer.js" defer></script>
 </body></html>

@@ -224,12 +224,28 @@ body.clean .tapwrap{display:none}
   <div class="stat"><div class="k">Jam waves</div><div class="v" id="h-j" style="color:var(--danger)">0</div></div>
 </div>
 <div class="hint">B taps the brakes. Space pauses, R restarts, H hides the panels.</div>
-<dialog class="about" id="about">
-  <div class="about-inner">
-    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
-    <h2>What am I looking at?</h2>
-    <p>Every car on this ring road follows one rule: get up to your desired speed if the road ahead is clear, and keep a safe gap from the car in front if it is not. There is no accident, no roadworks, no traffic light and nowhere to turn off. Run it with enough cars and a jam appears anyway. It sits almost still on the map while cars pour into the back of it and dribble out of the front, and it drifts slowly backwards around the loop.</p>
-    <h3>Start here</h3>
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>A single-lane ring road with no junction, no traffic light, no accident and nowhere to turn off. Every car follows one rule, the same rule, all the way round: accelerate toward your desired speed when the road ahead is clear, and brake when the gap to the car in front gets too small for your speed. Run it with enough cars and a jam appears anyway.</p>
+<p>Watch what the jam actually is. It sits almost still on the road while cars pour into the back of it and dribble out of the front, and it drifts slowly <b>backwards</b> around the loop, against the direction of travel, at a few metres per second. No car is stuck in it for long. The jam is not a place and it is not a thing; it is a wave passing through the traffic, and the cars are only its medium.</p>
+<p>Each driver decides its acceleration from three quantities, every instant.</p>
+<ul>
+  <li><b>How far below its desired speed it is.</b> On an empty road this alone applies, so the car accelerates smoothly up to cruising speed.</li>
+  <li><b>The gap to the car in front, compared with the gap it wants.</b> The wanted gap grows with speed, which is the <b>following gap</b> slider, a time headway in seconds.</li>
+  <li><b>The speed difference.</b> Closing fast on the car in front produces much harder braking than sitting at the same speed behind it.</li>
+</ul>
+<p>The instability comes from the delay in that third term. A driver brakes a little harder than the car in front did, because by the time it reacts the gap has already closed, so the following driver brakes harder still. Each car amplifies its predecessor's disturbance slightly, and after twenty or thirty cars a tap on the brakes has grown into a full stop. Below a critical density the amplification dies out and the road stays smooth. Above it, the smallest wobble grows without any external cause, which is why the phrase for this is a phantom jam.</p>
+<p>So there are only two things to play with. <b>Cars</b> sets the density, and it is the control that decides whether the road is stable at all. <b>Following gap</b> sets how much slack each driver keeps, which changes both the capacity of the road and how quickly a disturbance grows. <b>Self-driving cars</b> replaces some fraction of the drivers with ones that hold a steady gap without over-braking, and a surprisingly small fraction is enough to damp the waves out.</p>
+<h3>Things worth trying</h3>
+    <ul>
+      <li>Tap the brakes on the open road, then again with the cars slider at sixty. Watch one disturbance die and the other grow.</li>
+      <li>Shorten the following gap. Tailgating fits more cars on the road and makes every wave travel further.</li>
+      <li>Push the self-driving share up slowly. A fifth of the cars barely helps and the waves keep coming. It takes most of the road before the stop-and-go flattens out, and with every car under control the loop settles to one steady speed. Smoothing traffic is not something a small minority can do alone.</li>
+    </ul>
+  
+<div class="more-box"><div class="more-body">
+<h3>Start here</h3>
     <p>The road opens steady. Every driver has a comfortable gap and nothing is going wrong. Press <kbd>B</kbd> and one driver, chosen at random, brakes for no reason at all and then carries on. The driver behind brakes a little harder to restore the gap, the next harder still, and a few cars back somebody stops. The road never recovers: that one dab of the brake pedal becomes a wave that outlives the car that caused it.</p>
     <h3>The rule, exactly</h3>
     <p>This is the Intelligent Driver Model. A driver's acceleration is the free part minus the interaction part. The free part pushes towards the desired speed. The interaction part is the ratio between the gap the driver wants and the gap they actually have, squared, so it is almost nothing at a comfortable distance and enormous when the gap collapses. The wanted gap grows with speed, because it is a following time rather than a following distance, and it grows again when you are closing on the car ahead. Every human driver also carries a small random wobble on the pedal, which is the seed a jam grows from.</p>
@@ -237,13 +253,35 @@ body.clean .tapwrap{display:none}
     <p>Below about fifty cars on this kilometre the wobble dies away: the road is stable and a brake tap is absorbed. Above it the same wobble grows instead, and you do not have to touch anything for a jam to appear. That threshold is the whole subject. A road that is fine at nine in the morning and solid at nine fifteen has not changed, and neither have the drivers.</p>
     <h3>The diagram on the right</h3>
     <p>That is a space-time diagram, the standard way traffic engineers see a jam. Position around the ring runs left to right, time runs downward, and each streak is one car. Free flow makes a family of parallel diagonal lines. A jam makes a dark band leaning the other way, because the jam moves backwards through the traffic even though every car in it is moving forwards. The slope of that band is close to fifteen kilometres per hour upstream, and it barely depends on what the cars are doing.</p>
-    <h3>Things worth trying</h3>
-    <ul>
-      <li>Tap the brakes on the open road, then again with the cars slider at sixty. Watch one disturbance die and the other grow.</li>
-      <li>Shorten the following gap. Tailgating fits more cars on the road and makes every wave travel further.</li>
-      <li>Push the self-driving share up slowly. A fifth of the cars barely helps and the waves keep coming. It takes most of the road before the stop-and-go flattens out, and with every car under control the loop settles to one steady speed. Smoothing traffic is not something a small minority can do alone.</li>
-    </ul>
-  </div>
+    <h3>The car-following model</h3>
+<p>Each vehicle is an instance of the Intelligent Driver Model (Treiber, Hennecke &amp; Helbing, 2000). For car &alpha; with speed v, gap s to the vehicle ahead and approach rate &Delta;v:</p>
+<span class="eq">dv/dt = a [ 1 &minus; (v/v&#8320;)<sup>&delta;</sup> &minus; (s*(v,&Delta;v)/s)&sup2; ]<br>s*(v,&Delta;v) = s&#8320; + max(0, vT + v&Delta;v / (2&radic;(ab)) )</span>
+<p>The first bracket is free acceleration toward desired speed v&#8320;, the second is the interaction term. s* is the desired minimum gap: a standstill distance s&#8320;, plus the distance covered in the safe time headway T, plus a term that grows with the approach rate and represents intelligent braking. Parameters a and b are comfortable acceleration and deceleration. The model is collision-free by construction for reasonable parameters, and it is continuous, deterministic and complete: everything on screen is this equation applied to every car, integrated in small steps.</p>
+<p>The other standard family is discrete. Nagel and Schreckenberg (1992) modelled a road as a cellular automaton in which each car advances, accelerates, brakes to avoid the car ahead, and then with probability p slows down for no reason. That single stochastic step is enough to produce jams, which established that stop-and-go traffic requires no driver heterogeneity, no bottleneck and no rational cause at all.</p>
+
+<h3>String instability, and the critical density</h3>
+<p>The formal name for what you are watching is string instability, or convective instability of a platoon. Linearise the car-following equation about a uniform flow in which every car has the same speed and gap, and ask how a small perturbation of car n is transmitted to car n+1. Whether its amplitude grows or shrinks along the chain depends on the density and on the sensitivity of the driver's response to gap and to speed difference. The uniform solution remains a valid solution above the critical density, but it is no longer the one the system stays in: it is unstable, and the flow settles into a limit cycle of alternating jammed and free clusters instead. The transition is a bifurcation of the whole platoon, not a property of any single car, which is why looking for the driver who caused the jam is the wrong question.</p>
+<p>Sugiyama et al. (2008) demonstrated this experimentally, asking twenty-two human drivers to circulate on a 230 m single-lane ring at a uniform speed. The uniform state survived for a short time and then collapsed into a backward-propagating stop-and-go wave, with no obstacle and no instruction to brake. The experiment is the physical version of exactly this simulation.</p>
+
+<h3>The space-time diagram</h3>
+<p>The plot beside the road is the standard representation in traffic science: position along the road on one axis, time on the other, with each car's world line drawn as a trace. Jams appear as dark stripes with a negative slope, and the value of that slope is the propagation speed of the jam, which in field data on motorways is consistently around 15 to 20 km/h upstream and is remarkably insensitive to the details of the traffic. Plotting flow against density instead gives the fundamental diagram, which rises to a maximum at the critical density and then falls: a road carries the most vehicles per hour just before it becomes unstable, which is why motorways are at their most fragile when they are working hardest. The associated capacity drop, in which flow after a jam forms is measurably lower than the flow just before it, is the reason variable speed limits and ramp metering exist.</p>
+
+<h3>Autonomous vehicles</h3>
+<p>Because the instability is a property of the collective response, a minority of vehicles with a different control law can stabilise the whole platoon. Stern et al. (2018) repeated the ring experiment with twenty-one human drivers and one autonomous vehicle running a controller designed to damp waves, and the stop-and-go oscillations were substantially suppressed, with measured reductions in fuel consumption for all vehicles on the ring. The <b>self-driving cars</b> slider is that result: the mechanism is that a controller which does not over-brake, and which keeps its own speed steady rather than tracking the car in front exactly, breaks the amplification chain. Real deployments complicate this, since many production adaptive cruise controls are tuned for comfort with short headways and have been measured to be string-unstable themselves.</p>
+
+<h3>Limits</h3>
+<p>One lane, no overtaking, no junctions, identical vehicles apart from any you change, no reaction-time delay term, and drivers who never make a mistake beyond what you impose. A ring road is a device for studying a closed platoon at fixed density, not a model of a real network, where bottlenecks fix the location where jams form. The numbers here are in the right physical range but are not calibrated to any particular road.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Treiber, M., Hennecke, A., &amp; Helbing, D. (2000). Congested traffic states in empirical observations and microscopic simulations. Physical Review E.</li>
+  <li>Nagel, K., &amp; Schreckenberg, M. (1992). A cellular automaton model for freeway traffic. Journal de Physique I.</li>
+  <li>Sugiyama, Y., et al. (2008). Traffic jams without bottlenecks: experimental evidence for the physical mechanism of the formation of a jam. New Journal of Physics.</li>
+  <li>Stern, R. E., et al. (2018). Dissipation of stop-and-go waves via control of autonomous vehicles: field experiments. Transportation Research Part C.</li>
+  <li>Treiber, M., &amp; Kesting, A. (2013). Traffic Flow Dynamics. Springer.</li>
+</ul>
+</div></div>
+</div>
 </dialog>
 <script>
 (function(){
@@ -551,5 +589,6 @@ if(REDUCED){ for(let i=0;i<300;i++) step(DT); for(let i=0;i<60;i++){ step(DT); p
 else requestAnimationFrame(loop);
 })();
 </script>
+<script src="../../assets/js/explainer.js" defer></script>
 </body>
 </html>

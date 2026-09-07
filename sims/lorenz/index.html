@@ -176,13 +176,24 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <div class="stat"><div class="k">Lobe swaps</div><div class="v" id="s-sw">0</div></div>
 </div>
 <div class="hint">Drag to turn the view. 1-5 presets, space pause, R restart, H hide.</div>
-<dialog class="about" id="about">
-  <div class="about-inner">
-    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
-    <h2>What am I looking at?</h2>
-    <p>In 1963 Edward Lorenz reduced a model of atmospheric convection to three numbers: how fast the fluid is rolling, and two measures of how the heat is distributed across it. Three equations, with no randomness and no external forcing. He expected the solution to settle down or to repeat. It did neither.</p>
-    <p>The moving point is the state of that system drawn in three dimensions. It never crosses its own path and it never escapes the region. It winds around one lobe for a while, flips to the other, winds there, flips back, indefinitely, in an order that has no pattern.</p>
-    <h3>Why the picture mattered</h3>
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>One point moving through three-dimensional space, tracing where it has been. The three coordinates are not positions in a room. They are the state of a slice of fluid heated from below, reduced by Edward Lorenz in 1963 to the smallest description that still behaves like the real thing: x is how fast the fluid is rolling over, y is the temperature difference between the rising and falling sides, and z is how far the vertical temperature profile has been bent away from a straight line.</p>
+<p>The rules are three lines of arithmetic, each one saying how fast its coordinate is changing right now:</p>
+<span class="eq">dx/dt = &sigma;(y &minus; x)<br>dy/dt = x(&rho; &minus; z) &minus; y<br>dz/dt = xy &minus; &beta;z</span>
+<p>Only two terms are nonlinear, the products xz and xy, and everything interesting comes from them. The path never crosses itself, never repeats and never escapes, and it does all three at once, which is why it took the idea of a strange attractor to describe it.</p>
+<p>The two lobes are the two directions the fluid can roll, clockwise and anticlockwise. The trajectory winds outward on one lobe until it gets too far from the centre, then crosses over and winds outward on the other. The number of turns it takes before each switch has no pattern to it. Release a swarm of points a hair apart with <b>trajectories</b> and <b>starting spread</b> and you can watch them stay together, then separate, then end up on opposite lobes: the same starting conditions to eleven decimal places, and a completely different history.</p>
+<p><b>&rho;</b>, the Rayleigh number, is the slider that matters. It is how hard the fluid is being heated. Below about 1 the heat just conducts and everything decays to the origin. Between 1 and about 24.7 the fluid rolls steadily and the point spirals into one of two fixed states. Above 24.74 neither of those states is stable any more and nothing settles down again, which is the classic butterfly. <b>&sigma;</b> and <b>&beta;</b> describe the fluid and the shape of the container and are usually left at 10 and 8/3. <b>Time speed</b> and <b>rotation</b> change only the view.</p>
+<h3>Things to try</h3>
+    <ul>
+      <li>Set &rho; to 14 and restart. Watch the spiral tighten and stop. Then move it to 25 and restart. The equations have not changed shape, and the behaviour has.</li>
+      <li>Release the swarm, then read the <b>lobe swaps</b> counter. The sequence of left and right is as good a coin flip as anything in physics, and it comes out of arithmetic with no randomness in it.</li>
+      <li>Drag the view until you are looking down the attractor's axis. The two lobes are not flat discs; they are sheets that never quite touch.</li>
+    </ul>
+  
+<div class="more-box"><div class="more-body">
+<h3>Why the picture mattered</h3>
     <p>Before Lorenz, an aperiodic wiggle in a model was put down to noise or to too few decimal places. He produced one in a system with neither excuse. The set the path is drawn onto is a <b>strange attractor</b>: everything nearby is pulled towards it, and yet two points on it that start a millionth apart end up on opposite lobes. It attracts and it stays unpredictable.</p>
     <p>This is also the origin of the butterfly. The shape is a coincidence; the substance is Lorenz's question about whether a flap in Brazil could set off a tornado in Texas. Press <b class="hl">Swarm of fifty</b> and watch fifty starts a thousandth apart become fifty unrelated futures.</p>
     <h3>The parameter that decides the behaviour</h3>
@@ -199,13 +210,41 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
       <li>This is not weather. It is three variables where the atmosphere has billions. It demonstrates that unpredictability can be built into a system; it does not model anything you would forecast with.</li>
       <li>The <b>separation</b> readout is the largest distance between any two of the released paths in state space. On a chaotic setting it grows roughly exponentially until it saturates at the size of the attractor.</li>
     </ul>
-    <h3>Things to try</h3>
-    <ul>
-      <li>Set &rho; to 14 and restart. Watch the spiral tighten and stop. Then move it to 25 and restart. The equations have not changed shape, and the behaviour has.</li>
-      <li>Release the swarm, then read the <b>lobe swaps</b> counter. The sequence of left and right is as good a coin flip as anything in physics, and it comes out of arithmetic with no randomness in it.</li>
-      <li>Drag the view until you are looking down the attractor's axis. The two lobes are not flat discs; they are sheets that never quite touch.</li>
-    </ul>
-  </div>
+    <h3>Where the three equations come from</h3>
+<p>The system is a severe truncation of Rayleigh-Benard convection: a fluid layer heated from below, cooled from above, described by the Navier-Stokes and heat equations. Saltzman (1962) expanded the stream function and temperature field in Fourier modes and integrated the resulting set numerically. Lorenz (1963) kept just three of those modes, one for the convective roll and two for the temperature field, and obtained a closed system in x, y and z with parameters &sigma; the Prandtl number, &rho; the Rayleigh number scaled by its critical value, and &beta; a geometric factor for the aspect ratio of the roll, conventionally 8/3. The truncation is far too brutal to be quantitatively valid for a real fluid at high Rayleigh number, and Lorenz said so. Its value is that it is the simplest continuous dissipative system known to have an aperiodic solution, and it is exactly solvable by nobody.</p>
+
+<h3>Bifurcation structure</h3>
+<p>The flow contracts volume everywhere: the divergence of the vector field is &minus;(&sigma; + 1 + &beta;), a negative constant, so any blob of initial conditions shrinks exponentially in volume while stretching in one direction. That combination is what produces an attractor of zero volume and non-integer dimension.</p>
+<ul>
+  <li>&rho; &lt; 1: the origin is the only fixed point and is globally stable. Pure conduction.</li>
+  <li>&rho; = 1: the origin loses stability in a pitchfork bifurcation and two symmetric fixed points, C&#8314; and C&#8315;, appear. These are the two steady rolls.</li>
+  <li>1 &lt; &rho; &lt; 13.926: trajectories spiral into one of them.</li>
+  <li>&rho; &asymp; 13.926: a homoclinic explosion creates an infinite family of unstable periodic orbits; transient chaos becomes possible although the fixed points are still stable.</li>
+  <li>&rho; &asymp; 24.06 to 24.74: the strange attractor and the stable fixed points coexist, so the outcome depends on where you start.</li>
+  <li>&rho; &gt; &rho;<sub>H</sub> = 24.7368 (for &sigma; = 10, &beta; = 8/3): the two fixed points lose stability through a subcritical Hopf bifurcation and nothing is left to settle onto. This is the standard value &rho; = 28 that draws the familiar figure.</li>
+  <li>Higher still, there are periodic windows, for instance near &rho; = 100.5, where the attractor collapses back onto a stable periodic orbit. The <b>periodic window</b> preset sits in one of them.</li>
+</ul>
+
+<h3>Strange, and provably so</h3>
+<p>At the classical parameters the attractor has a correlation dimension of about 2.05, so it is a set of measure zero which is nonetheless not a surface, and the largest Lyapunov exponent is about 0.906 per unit time, giving an e-folding time for errors of a little over one time unit. Sensitive dependence is therefore not a numerical artefact but a measurable rate. For decades the existence of the attractor was supported by numerics rather than proof; Tucker (2002) closed that gap with a computer-assisted proof using rigorous interval arithmetic and normal forms, establishing that the Lorenz system at the classical parameters does possess a robust strange attractor. The geometric skeleton behind it is the geometric Lorenz model of Guckenheimer and Williams (1979), in which the return map on a cross-section stretches and folds a line segment.</p>
+
+<h3>Why it mattered outside mathematics</h3>
+<p>Lorenz found the behaviour while restarting a weather calculation from a printout rounded to three decimal places instead of the six the machine held, and getting a completely different forecast. The consequence, argued in his 1963 paper and popularised in the title of his 1972 talk about a butterfly's wings, is that deterministic prediction of a system with this property has a hard horizon set by the accuracy of the initial state, and that no improvement in the model removes the horizon. It is the reason operational weather forecasting is done with ensembles of perturbed initial conditions rather than a single run, and the reason forecasts are quoted as probabilities. The swarm in this simulation is a miniature version of that ensemble method.</p>
+
+<h3>Limits</h3>
+<p>Three modes cannot represent a turbulent fluid; real convection has a full spectrum of modes, and the quantitative agreement with Rayleigh-Benard experiments fails well below &rho; = 28. The equations are also non-dimensional, so the time axis is not seconds. What transfers to the real world is the structure, meaning a bounded aperiodic attractor with positive Lyapunov exponent in a low-dimensional deterministic system, which turned out to be common. Numerically, any single trajectory here diverges from the true one within tens of time units at double precision; the shape of the attractor and the statistics of lobe switching are what remain reliable.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Lorenz, E. N. (1963). Deterministic nonperiodic flow. Journal of the Atmospheric Sciences.</li>
+  <li>Saltzman, B. (1962). Finite amplitude free convection as an initial value problem. Journal of the Atmospheric Sciences.</li>
+  <li>Guckenheimer, J., &amp; Williams, R. F. (1979). Structural stability of Lorenz attractors. Publications Mathematiques de l'IHES.</li>
+  <li>Sparrow, C. (1982). The Lorenz Equations: Bifurcations, Chaos, and Strange Attractors. Springer.</li>
+  <li>Tucker, W. (2002). A rigorous ODE solver and Smale's 14th problem. Foundations of Computational Mathematics.</li>
+  <li>Strogatz, S. H. (2015). Nonlinear Dynamics and Chaos, 2nd ed. Westview. (Chapter 9 works through the bifurcation values quoted above.)</li>
+</ul>
+</div></div>
+</div>
 </dialog>
 <script>
 (function(){
@@ -410,4 +449,5 @@ resize(); applyPreset('classic');
 requestAnimationFrame(loop);
 })();
 </script>
+<script src="../../assets/js/explainer.js" defer></script>
 </body></html>

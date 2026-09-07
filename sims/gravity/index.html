@@ -249,13 +249,33 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
 </div>
 
-<dialog class="about" id="about">
-  <div class="about-inner">
-    <button class="about-close" id="b-close" aria-label="Close">&times;</button>
-    <h2>What am I looking at?</h2>
-    <p>Every body on screen pulls on every other one, with the force Newton wrote down in 1687: it grows with both masses and falls away with the square of the distance between them. That single line of arithmetic is the whole program. Nothing in the code knows the word orbit, or galaxy, or Lagrange point. Those are emergent structures. They appear because a large number of bodies are all obeying the same simple law at once, which is exactly why the real sky is full of them.</p>
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>Every body on screen pulls on every other one, with the law Newton published in 1687: the force grows with both masses and falls away with the square of the distance between them. That single line of arithmetic is the whole program, applied to every pair of bodies, thousands of times a second.</p>
+<p>Nothing in the code knows the word orbit, or galaxy, or Lagrange point. There is no rule that makes a planet go round in an ellipse. What each body does is only this, at every instant:</p>
+<ul>
+  <li><b>Add up the pulls.</b> Every other body contributes an acceleration toward itself, proportional to its own mass and to one over the square of its distance.</li>
+  <li><b>Change velocity by that acceleration, then change position by that velocity.</b> There is nothing else. Mass, position, velocity.</li>
+</ul>
+<p>Everything else on screen is a consequence. An ellipse is what you get when the pull is exactly balanced by the tendency to fly off in a straight line, and the ellipse's shape follows from the speed you happened to give the body. A body that is going a little too fast leaves and never comes back. Three bodies of similar mass cannot settle into anything at all, and usually resolve the problem by throwing one member out. Stable points appear in a rotating two-body system where the pulls cancel. Two discs passing each other tear long tails out of one another, because the near side of a disc is pulled harder than the far side.</p>
+<p>Click any body to see the orbit it is currently on, drawn as a dashed curve, with its eccentricity and period. Drag on empty space to sling a new body in and the dotted line previews where it will go. Reset rebuilds the scene with your sliders where you left them, so you can run the same experiment with one thing changed; clicking the arrangement card again puts it back to how it was published.</p>
+<h3>Things to try</h3>
+    <ul>
+      <li>Start <b class="hl">Star and planets</b>, click the comet, and watch its speed as it swings past the star.</li>
+      <li>Raise <b>Large bodies</b> on the same arrangement. Two or three stars at the centre still hold the planets, until they do not.</li>
+      <li>On <b class="hl">Lagrange points</b>, drag a body to rest on L4 and another on L1. The teal one stays put for the whole run; the gold one leaves within an orbit or two. In the co-rotating view a body "at rest" means at rest with the pair, which is what the drag arrow measures there.</li>
+      <li>Run <b class="hl">Pythagorean three</b> twice and compare. Then change the softening a little and run it again.</li>
+      <li>On <b class="hl">Galaxy and intruder</b>, watch in the centre-of-mass view. The long tail is thrown from the far side of the disc, not the side that was hit.</li>
+      <li>Set gravity to 0.3 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge on the way.</li>
+      <li>Sling a heavy body through <b class="hl">Binary pair</b> and count how many of the disc orbits survive it.</li>
+    </ul>
 
-    <h3>Kepler's laws come out on their own</h3>
+    <h3>Keyboard</h3>
+    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>8</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+  
+<div class="more-box"><div class="more-body">
+<h3>Kepler's laws come out on their own</h3>
     <p>Click any body. The dashed curve is the path it would follow if only its main attractor existed: an ellipse if it is bound to that body, a hyperbola if it is passing through. The card gives you its eccentricity, its semi-major axis and its period. Watch the comet in <b class="hl">Star and planets</b>. It crawls at the far end of its ellipse and whips around the near end, sweeping out equal areas in equal times, which is Kepler's second law. Compare any two planets and you will find the period grows as the semi-major axis to the power of one and a half, which is his third. Kepler spent years extracting those rules from Tycho Brahe's observations. Here they arrive free with the inverse square law.</p>
 
     <h3>Why two bodies are easy and three are not</h3>
@@ -297,20 +317,34 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
       <li>Everything is two dimensional. Discs are flat anyway, but real galaxies also carry dark matter and gas, so the rotation here falls off in the Keplerian way rather than staying flat as it does in the sky.</li>
     </ul>
 
-    <h3>Things to try</h3>
-    <ul>
-      <li>Start <b class="hl">Star and planets</b>, click the comet, and watch its speed as it swings past the star.</li>
-      <li>Raise <b>Large bodies</b> on the same arrangement. Two or three stars at the centre still hold the planets, until they do not.</li>
-      <li>On <b class="hl">Lagrange points</b>, drag a body to rest on L4 and another on L1. The teal one stays put for the whole run; the gold one leaves within an orbit or two. In the co-rotating view a body "at rest" means at rest with the pair, which is what the drag arrow measures there.</li>
-      <li>Run <b class="hl">Pythagorean three</b> twice and compare. Then change the softening a little and run it again.</li>
-      <li>On <b class="hl">Galaxy and intruder</b>, watch in the centre-of-mass view. The long tail is thrown from the far side of the disc, not the side that was hit.</li>
-      <li>Set gravity to 0.3 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge on the way.</li>
-      <li>Sling a heavy body through <b class="hl">Binary pair</b> and count how many of the disc orbits survive it.</li>
-    </ul>
+    <h3>The mathematics being integrated</h3>
+<p>For N bodies with masses m<sub>i</sub> at positions r<sub>i</sub>, the whole model is</p>
+<span class="eq">r&#776;<sub>i</sub> = &minus;G &sum;<sub>j&ne;i</sub> m<sub>j</sub> (r<sub>i</sub> &minus; r<sub>j</sub>) / (|r<sub>i</sub> &minus; r<sub>j</sub>|&sup2; + &epsilon;&sup2;)<sup>3/2</sup></span>
+<p>The &epsilon; is a softening length, standing in for the physical size of a body: without it the force diverges during a close pass and the integrator loses accuracy or blows up. Softening is standard practice in astrophysical simulation and it changes the dynamics at short range, which is worth remembering when a result depends on a very close approach.</p>
+<p>Two bodies reduce exactly to the Kepler problem, which has a closed-form solution: bound orbits are conic sections, and Kepler's three laws follow from conservation of angular momentum and energy. For N = 3 there is no general closed-form solution. Bruns and Poincare showed in the 1880s and 1890s that no further algebraic integrals of the required kind exist, and Poincare's work on the restricted three-body problem, which was where he found homoclinic tangles, is the origin of dynamical chaos as a subject. The two lasting facts are that the three-body problem is chaotic for generic initial conditions, and that its typical outcome is disintegration: one body is ejected and the remaining two form a binary. Special periodic solutions exist but occupy a set of measure zero, which is why the figure-eight orbit, found numerically by Moore (1993) and proved to exist by Chenciner and Montgomery (2000), has never been observed in the sky.</p>
 
-    <h3>Keyboard</h3>
-    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>8</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
-  </div>
+<h3>Numerical method and cost</h3>
+<p>Motion is integrated with velocity Verlet, a symplectic scheme that conserves phase-space volume and keeps energy error bounded and oscillatory rather than growing steadily, which is why total energy holds to well under a percent through ordinary orbits here. Each frame is subdivided into as many substeps as the largest acceleration on screen requires. The live energy drift readout exists so that a separation you see can be attributed to the physics rather than to arithmetic; in a chaotic configuration those two are indistinguishable without it.</p>
+<p>Direct summation costs O(N&sup2;) force evaluations per step. Past a few hundred bodies this simulation switches to a Barnes-Hut tree (Barnes &amp; Hut, 1986), which groups distant bodies into cells and replaces each with its centre of mass whenever the cell subtends a small enough angle, reducing the cost to O(N log N) for a force error near a percent. Professional galaxy and cosmology codes use the same idea, or the fast multipole method, for the same reason.</p>
+
+<h3>Where the specific set pieces come from</h3>
+<p>The five equilibrium points of the circular restricted three-body problem were found by Euler, for the three collinear points, and Lagrange in 1772 for the triangular pair. L4 and L5 are linearly stable when the mass ratio of the secondary to the total is below the Routh value of about 0.0385, that is roughly one twenty-fifth, a condition established by Gascheau in 1843; the Coriolis term in the rotating frame is what curls a displaced body back into a libration orbit rather than letting it fall away. Jupiter's Trojan asteroids and the Earth's tadpole companions occupy those points. L1, L2 and L3 are saddle points, so spacecraft placed there, including the James Webb Space Telescope at Sun-Earth L2, must perform regular station-keeping burns. The tidal bridges and tails in the galaxy arrangements follow Toomre and Toomre (1972), who showed with a few hundred test particles that the streamers of peculiar galaxies are gravitational tides from a close passage, with the longest tails produced when the disc's spin is prograde with respect to the encounter.</p>
+
+<h3>Limits</h3>
+<p>Everything is two-dimensional and Newtonian: no relativistic precession, no radiation, no gas, no dark matter halo, so galaxy rotation here falls off in the Keplerian way instead of staying flat as observed rotation curves do. Collisions are modelled as perfectly inelastic mergers conserving mass and momentum, which is a crude stand-in for accretion and is wrong for stars, which essentially never collide, and so is switched off in the galaxy scenes. Units are arbitrary. The value of the model is structural: one inverse-square law, applied to everything at once, is sufficient to generate the whole catalogue of orbital behaviour.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Newton, I. (1687). Philosophiae Naturalis Principia Mathematica.</li>
+  <li>Poincare, H. (1892-1899). Les Methodes Nouvelles de la Mecanique Celeste.</li>
+  <li>Barnes, J., &amp; Hut, P. (1986). A hierarchical O(N log N) force-calculation algorithm. Nature.</li>
+  <li>Toomre, A., &amp; Toomre, J. (1972). Galactic bridges and tails. Astrophysical Journal.</li>
+  <li>Chenciner, A., &amp; Montgomery, R. (2000). A remarkable periodic solution of the three-body problem in the case of equal masses. Annals of Mathematics.</li>
+  <li>Szebehely, V. (1967). Theory of Orbits: The Restricted Problem of Three Bodies. Academic Press.</li>
+  <li>Aarseth, S. J. (2003). Gravitational N-Body Simulations. Cambridge University Press.</li>
+</ul>
+</div></div>
+</div>
 </dialog>
 
 <script id="core">
@@ -1371,4 +1405,5 @@ resize(true); restart('star');
 requestAnimationFrame(loop);
 })();
 </script>
+<script src="../../assets/js/explainer.js" defer></script>
 </body></html>

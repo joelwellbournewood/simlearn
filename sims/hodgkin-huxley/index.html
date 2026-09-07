@@ -426,16 +426,23 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
       </section>  </div>
 </div>
 
-<dialog class="about" id="explainer">
-<div class="about-inner sheet">
-    <h2>What am I looking at?</h2>
-    <p class="kicker">A membrane doing the one trick that makes nervous systems possible.</p>
+<dialog class="about" id="explainer"><div class="about-inner sheet">
 
-    <p>An axon at rest sits at about −65 millivolts, inside negative. That voltage is held up by two opposing gradients: sodium is piled up outside, potassium is piled up inside. In the theatre view each dot is an ion, and the lopsided counts above and below the membrane are the gradients themselves — drawn in the ratios this model's reversal potentials imply, about eight sodium ions outside for every one inside, and about twenty-four potassium inside for every one outside. Chloride and the big organic anions are drawn too, dimmer, because each side has to come out electrically neutral. Nothing moves until a channel opens.</p>
-
-    <p>Push a little current in and the voltage creeps up. Push enough and the membrane stops being a passive thing and takes over: sodium channels open, sodium floods in, that drives the voltage up further, which opens more sodium channels. The spike is that runaway, caught and killed about a millisecond later by two slower processes.</p>
-
-    <h3>The three gates</h3>
+<h2>What am I looking at?</h2>
+<p>A patch of nerve membrane, magnified, running the equations Alan Hodgkin and Andrew Huxley fitted to the giant axon of the squid in 1952. The picture on the left is the membrane itself, with the channels sitting in it and the ions on either side of it. The trace on the right is the voltage across that membrane, measured in millivolts, as it changes.</p>
+<p>Three things set that voltage, and only three.</p>
+<ul>
+  <li><b>The gradients.</b> There is more sodium outside the cell than inside, and more potassium inside than outside. Each ion therefore has a voltage it would drag the membrane to if it were the only one that could cross: about +50 mV for sodium, about &minus;77 mV for potassium.</li>
+  <li><b>The gates.</b> Sodium and potassium cross through separate channels, and those channels open and close depending on the voltage they currently sit at. Sodium opens fast, then closes itself off. Potassium opens slowly and stays open.</li>
+  <li><b>The pump.</b> The Na/K pump spends energy putting the ions back where they started, which is what keeps the gradients from running down.</li>
+</ul>
+<p>Everything you see follows from those. At rest, potassium leaks out and holds the membrane near &minus;65 mV. Push the voltage up far enough with the electrode and sodium channels open, sodium floods in, and the voltage they are responding to is the voltage they are changing: the rise feeds itself and the spike goes all the way to the top with no further help from you. Sodium then inactivates and the slow potassium channels are still opening, so the voltage overshoots downward before settling. The whole event takes about two milliseconds.</p>
+<p><b>Fire pulse</b> injects current at the strength and duration set in the panel. The interesting settings are the ones near the edge: just under threshold gives nothing at all, just over gives a full-height spike, and a second pulse arriving too early gives nothing however hard you push, because the sodium channels have not reset yet. The electrode chips change what the apparatus is doing rather than what the axon is: current clamp injects current and lets the voltage move, voltage clamp holds the voltage where you put it and measures the current needed, which is the experiment the equations were fitted to. The drug chips block one channel type each. Each chip explains itself if you hover it.</p>
+<h3>Keys</h3>
+    <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+    
+<div class="more-box"><div class="more-body">
+<h3>The three gates</h3>
     <p>Hodgkin and Huxley described the whole thing with three numbers between 0 and 1, plotted under the voltage trace:</p>
     <ul>
       <li><b>m</b> — the sodium activation gate. Fast. Opens on depolarisation. Sodium conductance goes as m³, so three of these have to line up.</li>
@@ -480,9 +487,35 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
     <h3>What this model does not do</h3>
     <p>The concentration gradients are treated as fixed; a real spike moves a vanishing fraction of the ions and the pump handles the rest over seconds. The pump drawn here runs far too fast, and the drawn channels are far too few and far too big — a square micrometre of real axon holds hundreds. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities are the right shape but only roughly the right size. And these are the 1952 squid equations at 6.3 °C, held there throughout: mammalian axons at body temperature use faster kinetics and additional channel types.</p>
 
-    <h3>Keys</h3>
-    <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
-    <button class="close" id="closeExplainer">Close</button>
+    <h3>The equations</h3>
+<p>The membrane is treated as a capacitor in parallel with three conductances, giving one current-balance equation and three gating equations:</p>
+<span class="eq">C<sub>m</sub> dV/dt = I &minus; g&#772;<sub>Na</sub> m&sup3;h (V &minus; E<sub>Na</sub>) &minus; g&#772;<sub>K</sub> n&#8308; (V &minus; E<sub>K</sub>) &minus; g<sub>L</sub> (V &minus; E<sub>L</sub>)<br>dx/dt = &alpha;<sub>x</sub>(V)(1 &minus; x) &minus; &beta;<sub>x</sub>(V) x&nbsp;&nbsp;for x = m, h, n</span>
+<p>m is sodium activation, h is sodium inactivation and n is potassium activation. Each is a probability between 0 and 1, relaxing toward a voltage-dependent steady state with a voltage-dependent time constant. The powers are not decoration: Hodgkin and Huxley chose m&sup3;h and n&#8308; because those exponents fitted the sigmoid onset of the measured conductances, and the numbers were later read as the number of independent gating particles that must be in place for a channel to conduct. In the original paper the maximal conductances are 120 mS/cm&sup2; for sodium and 36 mS/cm&sup2; for potassium, with a leak of 0.3, at 6.3 &deg;C. Rate constants scale steeply with temperature, roughly a factor of 3 per 10 &deg;C, which is why a squid axon at room temperature fires a much narrower spike.</p>
+
+<h3>Where the numbers came from</h3>
+<p>The measurement problem was that membrane current depends on voltage while voltage depends on current. Cole and Marmont's feedback amplifier, the voltage clamp, broke the loop by holding the voltage at a commanded value and recording the current the amplifier had to supply. Hodgkin and Huxley combined that with ion substitution to separate the sodium and potassium components, published the analysis as a series of papers in the Journal of Physiology in 1952, and integrated the resulting equations by hand on a mechanical calculator, which took weeks per simulated spike. The predicted action potential shape, threshold and conduction velocity all matched recordings that had not been used in the fit. They shared the 1963 Nobel Prize in Physiology or Medicine with John Eccles. The voltage clamp mode in this simulation is that experiment, and the current traces it produces are the ones the model was built from.</p>
+
+<h3>Threshold is a property of the dynamics, not a number</h3>
+<p>There is no comparator in these equations and no value written down as a firing level. The apparent threshold is where the inward sodium current begins to exceed the outward potassium and leak currents, so that the positive feedback loop wins. In the space-clamped model this is not a sharp mathematical boundary but a very steep one, and in dynamical terms it corresponds to the boundary between the basins of attraction around the resting state, with the transition to repetitive firing under steady current occurring through a Hopf bifurcation. Izhikevich (2007) sets out the classification. This is why threshold in this simulation is measured by running the model rather than looked up: adding a channel blocker to the bath moves it a long way.</p>
+
+<h3>Refractoriness, blockers and propagation</h3>
+<p>The absolute refractory period is h, sodium inactivation, sitting near zero: no stimulus of any size can recruit channels that are inactivated. The relative refractory period that follows is h recovering while n is still elevated, so a larger stimulus is required and the resulting spike is smaller. Tetrodotoxin, the pufferfish toxin, binds the outer pore of the voltage-gated sodium channel and abolishes the spike while leaving the potassium current intact, a selectivity that made it a standard tool for dissecting the two currents (Narahashi, Moore &amp; Scott, 1964). Tetraethylammonium does the reverse and blocks the potassium channel, broadening the spike.</p>
+<p>Propagation along an axon needs one more ingredient, the cable equation, in which local circuit current from an active patch depolarises the patch ahead of it. In an unmyelinated fibre conduction velocity scales with the square root of diameter. Myelin raises membrane resistance and lowers capacitance between nodes, so the depolarisation jumps from node to node, which Huxley and Stampfli (1949) demonstrated in single frog fibres. The myelinated axon in this simulation is a chain of Hodgkin-Huxley nodes coupled by axial resistance, and stripping the sheath slows or blocks it in the way a demyelinating lesion does.</p>
+
+<h3>What the model leaves out</h3>
+<p>Real channels are stochastic: a single channel flicks open and shut at random, and m, h and n are the averages over a large population, so the model has no channel noise and no spontaneous firing. Real neurons carry a dozen or more channel types, including calcium and several potassium variants, which the squid axon largely lacks; the shapes of spikes in mammalian cortex depend on those. Concentrations here are held fixed rather than depleted, and the pump is drawn as a mechanism rather than modelled as a current. Later work also showed the inactivation gate is a distinct structural mechanism from activation, not a fourth identical particle. The equations remain accurate for what they were fitted to, and they are the foundation of every conductance-based neuron model since.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Hodgkin, A. L., &amp; Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. Journal of Physiology, 117, 500-544. (Last of a series of five papers that year.)</li>
+  <li>Huxley, A. F., &amp; Stampfli, R. (1949). Evidence for saltatory conduction in peripheral myelinated nerve fibres. Journal of Physiology.</li>
+  <li>Narahashi, T., Moore, J. W., &amp; Scott, W. R. (1964). Tetrodotoxin blockage of sodium conductance increase in lobster giant axons. Journal of General Physiology.</li>
+  <li>Cole, K. S. (1949). Dynamic electrical characteristics of the squid axon membrane. Archives des Sciences Physiologiques.</li>
+  <li>Izhikevich, E. M. (2007). Dynamical Systems in Neuroscience. MIT Press.</li>
+</ul>
+</div></div>
+<button class="close" id="closeExplainer">Close</button>
+
   </dialog>
 
 <script>
@@ -3017,5 +3050,6 @@ function shell(){
 
 boot();
 </script>
+<script src="../../assets/js/explainer.js" defer></script>
 </body>
 </html>
