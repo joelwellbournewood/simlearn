@@ -43,7 +43,11 @@
         var wr = word.getBoundingClientRect(), cr = cv.getBoundingClientRect();
         var wantBarY = wr.top + wr.height * 0.5;
         host.style.marginTop = Math.round(wantBarY - PIVY - cr.top) + 'px';
-        cx = (wr.right + 20 - cr.left) + BARW / 2;
+        /* the "Interactive Models" line now sits under that last word, inside the band
+           the hanging balls occupy, so the linkage clears whichever of the two is wider */
+        var right = wr.right, sub = document.querySelector('.hero-sub');
+        if (sub) right = Math.max(right, sub.getBoundingClientRect().right);
+        cx = (right + 18 - cr.left) + BARW / 2;
       }
     } else {
       host.style.marginTop = '';

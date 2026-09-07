@@ -199,25 +199,36 @@ const GLYPH = {
       <g stroke-width="1.75" stroke-dasharray="${SEG} ${GAP}">${flow}</g>`;
   },
   'hodgkin-huxley'() {
-    /* A myelinated axon seen from the side, with one action potential jumping from node
-       to node. The waveform is the shape the model draws: fast rise, overshoot, slower
-       repolarisation through an undershoot. The spike itself and the node it is standing
-       on are red, so the still frame already carries the accent (529 red pixels at rest);
-       on hover the group steps node to node, which is what saltatory conduction is. */
+    /* A myelinated axon seen from the side with one action potential travelling along it.
+       The waveform is the shape the model draws: fast rise, overshoot, slower repolarisation
+       through an undershoot. The spike and the bright patch of membrane under it are red, so
+       the still frame already carries the accent; on hover the whole group glides at a
+       constant speed from the first node to the last while each node flashes as the front
+       reaches it, which is what saltatory conduction looks like when you do not freeze it. */
     const NODE = [44, 88, 132, 176, 220];
+    const RUN = NODE[NODE.length - 1] - NODE[0];      // 176px of axon to cross
+    const T = 4.4;                                     // seconds for one pass
     let sheath = '';
     for (let i = 0; i < NODE.length - 1; i++)
-      sheath += `<rect x="${NODE[i] + 7}" y="${84}" width="${44 - 14}" height="17" rx="6"/>`;
+      sheath += `<rect x="${NODE[i] + 7}" y="84" width="30" height="17" rx="6"/>`;
     sheath += `<rect x="${NODE[NODE.length - 1] + 7}" y="84" width="26" height="17" rx="6"/>`;
     sheath += `<rect x="11" y="84" width="26" height="17" rx="6"/>`;
     const nodes = NODE.map(x => `<path d="M${x} 84 V101"/>`).join('');
-    addAnim(`@keyframes hhJump{0%,13%{transform:translateX(0)}17%,30%{transform:translateX(44px)}` +
-      `34%,47%{transform:translateX(88px)}51%,64%{transform:translateX(132px)}` +
-      `68%,84%{transform:translateX(176px)}100%{transform:translateX(176px)}}` +
-      `@keyframes hhFade{0%,84%{opacity:1}93%,100%{opacity:0}}` +
-      `.hh-run{animation:hhJump 5.2s cubic-bezier(.5,0,.5,1) infinite,hhFade 5.2s linear infinite}`);
+    /* one flash per node, delayed by the time the front takes to get there */
+    const flash = NODE.map((x, i) =>
+      `<g class="hh-node" style="animation-delay:${(T * i / (NODE.length - 1) * 0.955).toFixed(2)}s">
+         <path class="accent2" stroke-width="2.6" d="M${x} 83 V102"/>
+         <circle class="fill2" cx="${x}" cy="92.5" r="9" opacity=".16"/>
+       </g>`).join('');
+    addAnim(
+      `@keyframes hhGlide{from{transform:translateX(0)}to{transform:translateX(${RUN}px)}}` +
+      `@keyframes hhEdge{0%,86%{opacity:1}99%,100%{opacity:0}}` +
+      `@keyframes hhNode{0%,100%{opacity:0}3%{opacity:1}14%{opacity:0}}` +
+      `.hh-run{animation:hhGlide ${T}s linear infinite,hhEdge ${T}s linear infinite}` +
+      `.hh-node{opacity:0;animation:hhNode ${T}s linear infinite}`);
     return `<g class="soft"><path d="M12 66 H268" stroke-dasharray="2 5"/>
         <path d="M12 92 H268"/>${sheath}${nodes}</g>
+      ${flash}
       <g class="hh-run">
         <rect class="fill2" x="41" y="82" width="6" height="21" rx="2.5" opacity=".85"/>
         <path class="accent2" stroke-width="2.4" d="M18.0 66.0 L18.8 66.0 L19.5 66.0 L20.2 66.0 L21.0 66.0 L21.8 66.0 L22.5 66.0 L23.2 66.0 L24.0 66.0 L24.8 66.0 L25.5 66.0 L26.2 66.0 L27.0 66.0 L27.8 65.9 L28.5 65.9 L29.2 65.8 L30.0 65.6 L30.8 65.4 L31.5 65.0 L32.2 64.4 L33.0 63.6 L33.8 62.5 L34.5 61.0 L35.2 59.0 L36.0 56.5 L36.8 53.4 L37.5 49.8 L38.2 45.7 L39.0 41.4 L39.8 36.9 L40.5 32.5 L41.2 28.6 L42.0 25.4 L42.8 23.1 L43.5 22.0 L44.2 22.2 L45.0 23.7 L45.8 26.5 L46.5 30.3 L47.2 35.0 L48.0 40.2 L48.8 45.6 L49.5 51.0 L50.2 56.1 L51.0 60.8 L51.8 65.0 L52.5 68.5 L53.2 71.4 L54.0 73.8 L54.8 75.6 L55.5 76.9 L56.2 77.7 L57.0 78.3 L57.8 78.5 L58.5 78.4 L59.2 78.1 L60.0 77.7 L60.8 77.1 L61.5 76.4 L62.2 75.6 L63.0 74.7 L63.8 73.8 L64.5 73.0 L65.2 72.1 L66.0 71.3 L66.8 70.5 L67.5 69.8 L68.2 69.2 L69.0 68.6 L69.8 68.1 L70.5 67.7 L71.2 67.4 L72.0 67.1 L72.8 66.8 L73.5 66.6 L74.2 66.5 L75.0 66.4 L75.8 66.3 L76.5 66.2 L77.2 66.1 L78.0 66.1 L78.8 66.1 L79.5 66.0 L80.2 66.0 L81.0 66.0 L81.8 66.0 L82.5 66.0 L83.2 66.0 L84.0 66.0 L84.8 66.0 L85.5 66.0 L86.2 66.0 L87.0 66.0 L87.8 66.0 L88.5 66.0 L89.2 66.0 L90.0 66.0"/>

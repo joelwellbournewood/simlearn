@@ -149,7 +149,7 @@
       "ion channels"
     ],
     "difficulty": "Intermediate",
-    "description": "The 1952 squid axon equations, running live. Fire an electrode and watch sodium and potassium channels build a spike ion by ion, poison them with pufferfish toxin, run the voltage clamp the equations came from, or send an impulse down a myelinated nerve and strip the sheath away.",
+    "description": "Fire an electrode and watch sodium and potassium channels build a nerve impulse, ion by ion.",
     "status": "live",
     "hook": "How a nerve fires",
     "visible": true

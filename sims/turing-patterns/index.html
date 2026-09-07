@@ -230,45 +230,33 @@ details.more>summary:hover{color:var(--ink)}
 /* ---- the free play card sits across the top of the preset grid ---- */
 .preset.free{grid-column:1/-1;border-style:dashed}
 .preset.free[aria-pressed="true"]{border-style:solid}
-/* ---- on a phone the map is docked next to the field, never inside the sheet, so it
-       can be touched while the pattern is in view ---- */
+/* ---- on a phone the map is docked next to the field: the bare plot, nothing else, so
+       it is as big as the space allows and a finger can put the chemistry anywhere on it
+       without opening the controls. Every word that explains the plot lives in the sheet:
+       opening the controls moves this same element in there, at full size with its
+       labels, its legend and the three sliders, and the sheet then covers the pattern. */
 .mc-side{display:contents}
-.mapcard.docked{position:fixed;z-index:6;overflow-y:auto;-webkit-overflow-scrolling:touch;
+.mapcard.docked{position:fixed;z-index:6;overflow:hidden;
   background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;
-  padding:9px 10px;max-height:none}
-.mapcard.docked .mc-sub{display:none}
-.mapcard.docked .mc-title{font-size:12.5px}
-.mapcard.docked .mc-zone{min-height:0;font-size:11.5px;margin:5px 0 0}
-.mapcard.docked .mc-note{min-height:0;font-size:10.5px}
-.mapcard.docked .legend{font-size:10.5px;line-height:1.55;margin-top:6px}
-.mapcard.docked .mc-rule{margin:9px 0 2px}
-.mapcard.docked .row{margin-top:7px}
+  padding:7px;max-height:none;display:flex;align-items:center;justify-content:center}
+.mapcard.docked .mc-head,.mapcard.docked .mc-sub,.mapcard.docked .mc-side{display:none}
+.mapcard.docked #map{width:auto;height:100%;max-width:100%;margin:0;border-radius:9px}
 body.clean.map-docked #stage{inset:0}
-/* portrait: pattern on top, map underneath, clear of the controls handle */
+/* portrait: pattern on top, plot underneath, clear of the controls handle */
 @media (orientation:portrait){
-  body.map-docked{--mapH:min(34vh,238px)}
-  body.map-docked #stage{bottom:calc(var(--mapH) + 58px)}
-  body.map-docked .mapcard.docked{left:8px;right:8px;bottom:52px;top:auto;width:auto;height:var(--mapH);
-    overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px 11px}
-  body.map-docked .mapcard.docked .mc-head{flex:0 0 100%}
-  body.map-docked .mapcard.docked #map{flex:none;height:min(23vh,162px);width:auto;max-width:46%;margin:0}
-  /* the column beside the map scrolls on its own, so reaching the sliders never pushes
-     the plot off the screen */
-  body.map-docked .mapcard.docked .mc-side{display:block;flex:1 1 0;min-width:0;
-    height:calc(var(--mapH) - 46px);overflow-y:auto;-webkit-overflow-scrolling:touch}
-  body.map-docked .mapcard.docked .mc-zone{margin-top:0}
+  body.map-docked{--mapH:min(32vh,250px)}
+  body.map-docked #stage{bottom:calc(var(--mapH) + 56px)}
+  body.map-docked .mapcard.docked{left:8px;right:8px;bottom:50px;top:auto;width:auto;height:var(--mapH)}
 }
-/* landscape: pattern on the left, map on the right under the icon buttons */
+/* landscape: pattern on the left, plot on the right under the icon buttons */
 @media (orientation:landscape){
-  body.map-docked{--mapW:min(40vw,300px)}
+  body.map-docked{--mapW:min(42vw,330px)}
   body.map-docked #stage{right:calc(var(--mapW) + 12px);bottom:0}
-  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:52px;width:var(--mapW);height:auto;
-    display:flex;flex-direction:column}
-  body.map-docked .mapcard.docked #map{height:min(50vh,198px);width:auto;max-width:100%;align-self:center;flex:none}
-  body.map-docked .mapcard.docked .legend,
-  body.map-docked .mapcard.docked .mc-note{order:1}
+  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:12px;width:var(--mapW);height:auto}
   body.map-docked .hud{left:14px;right:auto;top:auto;bottom:54px;flex-direction:row;align-items:flex-start;gap:12px}
 }
+/* the sheet is a cover over the pattern, not a shelf under the plot */
+body.sheet-open .panel{z-index:9}
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <link rel="stylesheet" href="../../assets/css/sim-mobile.css">
@@ -1465,10 +1453,18 @@ var PHONE_MQ = matchMedia('(max-width:820px), (max-height:560px) and (pointer:co
    docked against the pattern on a phone, on the right in landscape and underneath in
    portrait, so it can be touched without opening the sheet; inside the controls sheet
    only on the in-between sizes where there is no room for either. */
+var mapMode = '';
 function placeMapCard(){
   var card = $('mapcard'), slot = $('mapslot');
   if(!card || !slot) return;
-  var mode = SIDE_MQ.matches ? 'side' : (PHONE_MQ.matches ? 'dock' : 'sheet');
+  /* On a phone the plot is docked bare against the pattern while the controls are shut,
+     and moves into the controls sheet, with all of its words, the moment they open. One
+     element with three homes, so the two copies can never disagree. */
+  var open = document.body.classList.contains('sheet-open');
+  var mode = SIDE_MQ.matches ? 'side'
+           : (PHONE_MQ.matches ? (open ? 'sheet' : 'dock') : 'sheet');
+  if(mode === mapMode) return false;
+  mapMode = mode;
   if(mode === 'sheet'){ if(card.parentNode !== slot) slot.appendChild(card); }
   else if(card.parentNode !== document.body){ document.body.appendChild(card); }
   card.classList.toggle('in-sheet', mode === 'sheet');
@@ -1476,8 +1472,13 @@ function placeMapCard(){
   document.body.classList.toggle('map-docked', mode === 'dock');
   baseKey = '';
   drawMap();
+  return true;
 }
-function onPlacementChange(){ resize(); }
+function onPlacementChange(){ mapMode = ''; placeMapCard(); resize(); }
+/* the sheet opening or closing is a placement change like any other */
+new MutationObserver(function(){
+  if(placeMapCard()) requestAnimationFrame(resize);
+}).observe(document.body, {attributes:true, attributeFilter:['class']});
 [SIDE_MQ, PHONE_MQ].forEach(function(mq){
   if(mq.addEventListener) mq.addEventListener('change', onPlacementChange);
   else if(mq.addListener) mq.addListener(onPlacementChange);

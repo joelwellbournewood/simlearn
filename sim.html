@@ -44,7 +44,14 @@
         document.getElementById('sim-title').textContent = 'Simulation not found';
         return;
       }
-      document.getElementById('sim-title').textContent = sim.title;
+      /* the title text lives in its own span so it can be the only thing that gets
+         clipped when the header has to fit on one line next to the explainer pill */
+      var tt = document.createElement('span');
+      tt.className = 't';
+      tt.textContent = sim.title;
+      var th = document.getElementById('sim-title');
+      th.textContent = '';
+      th.appendChild(tt);
       document.getElementById('sim-desc').textContent = sim.description;
       document.title = sim.title + ' \u2014 SimLearn';
       if (sim.status && sim.status !== 'live') {

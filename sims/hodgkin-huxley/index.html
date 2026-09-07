@@ -146,7 +146,12 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   --na:#ff9a3c; --k:#a58bff;
 }
 [hidden]{display:none!important}
-#views{position:absolute;left:344px;right:20px;top:16px;bottom:76px;
+/* The panel is a little wider than the house default and the picture takes everything
+   else: there are no stat chips in the corner any more, so the stage runs to the bottom
+   of the window. sizeViews() then draws both canvases at one canvas unit per CSS pixel,
+   which is what makes the labels on them full size. */
+.panel{width:338px}
+#views{position:absolute;left:378px;right:18px;top:14px;bottom:16px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:2}
 body.side #views{flex-direction:row}
 body.clean #views{left:14px;right:14px;bottom:14px}
@@ -154,27 +159,38 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .plots{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0d1a16;flex:none}
 .theatre canvas,.plots canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .note{position:absolute;left:0;top:0;max-width:min(70%,660px);padding:11px 34px 12px 14px;
-  font-size:12px;line-height:1.5;color:var(--muted);pointer-events:none;
+  font-size:14px;line-height:1.5;color:var(--muted);pointer-events:none;
   background:linear-gradient(105deg,rgba(4,12,10,.86) 60%,rgba(4,12,10,0));text-shadow:0 1px 3px rgba(0,0,0,.9)}
 .note b{color:var(--ink);font-weight:600}
-.legend{position:absolute;right:10px;bottom:9px;display:flex;gap:12px;flex-wrap:wrap;padding:6px 11px;border-radius:9px;
-  background:var(--panel);backdrop-filter:blur(7px);border:1px solid var(--line);font-size:11px;color:var(--muted);pointer-events:none}
+.legend{position:absolute;right:12px;bottom:11px;display:flex;gap:14px;flex-wrap:wrap;padding:8px 13px;border-radius:10px;
+  background:var(--panel);backdrop-filter:blur(7px);border:1px solid var(--line);font-size:13px;color:var(--muted);pointer-events:none}
 .legend span{display:inline-flex;align-items:center;gap:5px}
-.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
 
 /* ---- panel sections ------------------------------------------------ */
-.block{border-top:1px solid var(--line);padding-top:11px;margin-top:12px}
+.block{border-top:1px solid var(--line);padding-top:12px;margin-top:13px}
 .block:first-of-type{border-top:0;padding-top:0;margin-top:0}
-.block > h2{font-family:var(--body);font-size:12px;font-weight:400;letter-spacing:.01em;color:var(--muted);margin:0 0 8px}
+.block > h2{position:relative;display:flex;align-items:center;gap:7px;
+  font-family:var(--body);font-size:13.5px;font-weight:400;letter-spacing:.01em;color:var(--muted);margin:0 0 9px}
 .seg.two{grid-template-columns:1fr 1fr}
-.ctl{position:relative;margin:0 0 11px}
+.seg.two button{font-size:13.5px}
+.label{font-size:13.5px}
+.ctl{position:relative;margin:0 0 13px}
 .ctl:last-child{margin-bottom:0}
-.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 2px;position:static}
-.ctl label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)}
-.ctl .num{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.ctl .num em{font-style:normal;font-size:10.5px;margin-left:2px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{font-family:var(--body);font-size:12px;display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 9px;
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 3px;position:static}
+.ctl label{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;color:var(--ink)}
+.ctl .num{font-family:var(--mono);font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ctl .num em{font-style:normal;font-size:11.5px;margin-left:2px}
+/* Anything that used to be a native title is a bubble over the group it belongs to.
+   The bubble is anchored to .chips, not to the chip, so it gets the full panel width
+   to put the sentence on instead of the width of one button. */
+.chips{display:flex;flex-wrap:wrap;gap:6px;position:relative}
+.chip[data-tip]::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% + 7px);
+  padding:9px 11px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);
+  font-size:12.5px;line-height:1.45;font-weight:400;opacity:0;pointer-events:none;transition:opacity .12s;
+  z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.chip[data-tip]:hover::after,.chip[data-tip]:focus-visible::after{opacity:1}
+.chip{font-family:var(--body);font-size:13px;display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 10px;
   border-radius:999px;cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--muted);
   transition:border-color .18s,background .18s,color .18s}
 .chip i{width:7px;height:7px;border-radius:50%;background:var(--line-strong);display:inline-block;flex:none}
@@ -183,22 +199,27 @@ body.clean #views{left:14px;right:14px;bottom:14px}
   background:color-mix(in srgb, currentColor 13%, transparent)}
 .chip[aria-pressed="true"] i{background:currentColor;box-shadow:0 0 8px currentColor}
 .chip.on[aria-pressed="true"]{--dc:var(--accent)}
-.fire{display:flex;gap:6px;margin-top:11px}
-.fire button{font-family:var(--display);font-size:13px;font-weight:600;padding:9px 13px;border-radius:10px;cursor:pointer;
+/* firing the electrode is the one thing everybody does, so it is the biggest control
+   in the panel and it is lit */
+.fire{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap}
+.fire button{font-family:var(--display);font-size:13.5px;font-weight:600;padding:10px 14px;border-radius:11px;cursor:pointer;
   border:1px solid var(--line);background:transparent;color:var(--ink);flex:none;transition:border-color .18s,background .18s}
 .fire button:hover{border-color:var(--line-strong)}
-.fire .go{flex:1;background:var(--accent);color:#05201a;border-color:var(--accent)}
-.fire .go:hover{background:#7ff0d6;border-color:#7ff0d6}
-.hint{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
-.readout{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12.5px;margin:2px 0 0}
+.fire .go{flex:1 1 100%;background:var(--accent);color:#05201a;border-color:var(--accent);
+  font-size:17px;letter-spacing:.005em;padding:15px 16px;border-radius:13px;
+  box-shadow:0 0 0 0 rgba(86,224,194,.45);transition:box-shadow .18s,background .18s,transform .1s}
+.fire .go:hover{background:#7ff0d6;border-color:#7ff0d6;box-shadow:0 0 26px rgba(86,224,194,.34)}
+.fire .go:active{transform:translateY(1px)}
+.fire .go + button{flex:1 1 0}
+.foot{font-size:12.5px;color:var(--muted);margin:9px 0 0;line-height:1.5}
+.readout{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:13.5px;margin:3px 0 0}
 .readout dt{color:var(--muted)}
 .readout dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .readout dd.warn{color:var(--danger)}
 .readout dd.good{color:var(--accent)}
-.verdict{margin-top:10px;padding:9px 11px;border-radius:10px;font-size:12.5px;
+.verdict{margin-top:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;
   background:rgba(86,224,194,.07);border:1px solid var(--line);color:var(--muted)}
 .verdict b{color:var(--ink);font-weight:600}
-.presets{grid-template-columns:1fr 1fr}
 
 /* ---- explainer ----------------------------------------------------- */
 dialog.about{width:min(760px,calc(100vw - 28px))}
@@ -215,10 +236,12 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
 
 /* ---- phones -------------------------------------------------------- */
 @media (max-width:820px), (max-height:560px) and (pointer:coarse){
-  #views{left:12px;right:12px;top:54px;bottom:112px}
+  #views{left:10px;right:10px;top:52px;bottom:62px}
   .note{position:static;max-width:none;padding:9px 11px;background:rgba(4,12,10,.7)}
   .legend{right:8px;bottom:7px;gap:9px;padding:5px 9px;font-size:10px}
-  .fire button{font-size:12.5px;padding:8px 11px}
+  .fire button{font-size:13px;padding:9px 12px}
+  .fire .go{font-size:16px;padding:14px}
+  .panel{width:100%}
 }
 
 </style>
@@ -264,11 +287,6 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
   </button>
 </div>
 
-<div class="hud">
-  <div class="stat"><div class="k">Membrane</div><div class="v"><span id="hudV">-65</span> <small>mV</small></div></div>
-  <div class="stat"><div class="k" id="hudBK">Spikes</div><div class="v" id="hudB">0</div></div>
-</div>
-
 <div class="panel" id="panel">
   <button class="p-toggle" id="p-toggle" aria-expanded="false">Controls</button>
   <button class="about-btn" id="openExplainer">What am I looking at?</button>
@@ -278,9 +296,6 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
     <button id="modePatch" aria-pressed="true">Membrane patch</button>
     <button id="modeCable" aria-pressed="false">Whole axon</button>
   </div>
-
-  <p class="label">Experiments</p>
-  <div class="presets" id="presets"></div>
 
   <div class="blocks">
 <section class="block" id="stimBlock">
@@ -325,7 +340,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
           <button id="reset">Reset</button>
         </div>
         <div class="verdict" id="verdict" hidden></div>
-        <p class="hint">Space fires the electrode, R resets it, P pauses. 1 to 9 pick an experiment, H hides the panels, F is fullscreen.</p>
+        <p class="foot">Space fires the electrode, R resets it, P pauses, H hides the panels, F is fullscreen.</p>
       </section>
 
       <section class="block" id="axonBlock" hidden>
@@ -359,7 +374,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
       </section>
 
       <section class="block" id="recBlock">
-        <h2>Recording electrode</h2>
+        <h2>Recording electrode <span class="tip" tabindex="0" data-tip="How the voltage is measured, and what the amplifier is doing while it measures. A sharp microelectrode only watches. A clamp takes control: current clamp holds a current you choose and lets the voltage do what it likes, voltage clamp holds a voltage and reports the current the membrane draws, which is the experiment the equations were fitted to. Hover a button to see what that one records.">?</span></h2>
         <div class="chips" id="recChips"></div>
         <div class="ctl" id="icmdCtl" hidden style="margin-top:13px">
           <div class="row">
@@ -382,7 +397,6 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
         <div class="chips" id="repeatCtl" hidden style="margin-top:9px">
           <button class="chip on" id="repeat" aria-pressed="false"><i></i>Repeat automatically</button>
         </div>
-        <p class="hint" id="recHint"></p>
       </section>
 
       <section class="block">
@@ -407,8 +421,8 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
           <button class="chip on" id="showCharge" aria-pressed="true"><i></i>Charge layer</button>
           <button class="chip on" id="playing" aria-pressed="true"><i></i>Running</button>
         </div>
-        <p class="hint">Point at anything in the picture to find out what it is.</p>
-        <p class="hint">Squid giant axon, Hodgkin and Huxley 1952 parameters, at 6.3 &#176;C.</p>
+        <p class="foot">Point at anything in the picture to find out what it is.</p>
+        <p class="foot">Squid giant axon, Hodgkin and Huxley 1952 parameters, at 6.3 &#176;C.</p>
       </section>  </div>
 </div>
 
@@ -467,7 +481,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
     <p>The concentration gradients are treated as fixed; a real spike moves a vanishing fraction of the ions and the pump handles the rest over seconds. The pump drawn here runs far too fast, and the drawn channels are far too few and far too big — a square micrometre of real axon holds hundreds. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities are the right shape but only roughly the right size. And these are the 1952 squid equations at 6.3 °C, held there throughout: mammalian axons at body temperature use faster kinetics and additional channel types.</p>
 
     <h3>Keys</h3>
-    <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>1</kbd>-<kbd>9</kbd> experiments, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+    <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
     <button class="close" id="closeExplainer">Close</button>
   </dialog>
 
@@ -788,18 +802,21 @@ const TH = {
   channels:[], parts:[], transits:[], drugMol:[],
   naIn:0, naIn0:0, kOut:0, kOut0:0, pumpPhase:0,
   pump:{phase:0, stage:null, frac:0, cargo:[]}, pumpCh:null, patchCh:[], rec:'sharp', naDebt:0, kDebt:0, lDebt:0,
-  gw:22, gh:4, gOut:null, gIn:null,
+  gw:22, gh:4, gOut:null, gIn:null, setW:0, setH:0,
   mx:null, my:null, hits:[], recV:VREST
 };
 
 function layoutTheatre(narrow){
-  TH.LW = narrow ? 620 : 1120;
-  TH.LH = narrow ? 640 : 560;
-  TH.memH = narrow ? 80 : 92;
+  /* relayout() hands the picture its size in CSS pixels; the fallbacks are the sizes
+     the drawing code was originally written against. */
+  TH.LW = Math.round(TH.setW || (narrow ? 620 : 1120));
+  TH.LH = Math.round(TH.setH || (narrow ? 640 : 560));
+  const k = clamp(TH.LW/(narrow ? 620 : 1120), 0.9, 1.3);
+  TH.memH = Math.round((narrow ? 80 : 92) * clamp(TH.LH/(narrow ? 640 : 560), 0.85, 1.25));
   TH.memTop = Math.round(TH.LH*0.42);
   TH.memBot = TH.memTop + TH.memH;
-  TH.chanL = narrow ? 62 : 90;
-  TH.chanR = TH.LW - (narrow ? 84 : 130);
+  TH.chanL = Math.round((narrow ? 62 : 90)*k);
+  TH.chanR = TH.LW - Math.round((narrow ? 84 : 130)*k);
 
   const roster = narrow
     ? ['na','k','leak','pump','k','na','na']
@@ -807,7 +824,7 @@ function layoutTheatre(narrow){
   const n = roster.length, span = TH.chanR-TH.chanL, slot = span/n;
   TH.channels = roster.map((type,i)=>({
     type, cx: Math.round(TH.chanL + slot*(i+0.5)),
-    w: type==='pump'?64:(type==='leak'?30:(narrow?52:58)),
+    w: Math.round((type==='pump'?64:(type==='leak'?30:(narrow?52:58)))*k),
     mS:[0,0,0], hS:1, nS:[0,0,0,0],
     act:0, inact:1, gate:0, glow:0, cond:false, blk:null, noH:false,
     sway:Math.random()*6.28
@@ -1612,13 +1629,13 @@ function drawHover(g){
   g.fillStyle='rgba(255,240,210,.07)'; g.fill();
   g.restore();
 
-  const padX=12, padY=10, maxW=248;
-  g.font='500 13px "Space Grotesk",sans-serif';
+  const padX=14, padY=12, maxW=320;
+  g.font='600 17px "Space Grotesk",sans-serif';
   const tw=Math.min(maxW, g.measureText(hit.title).width);
-  g.font='400 11.5px "Space Grotesk",sans-serif';
+  g.font='400 14.5px "Space Grotesk",sans-serif';
   const lines = hit.note ? wrapText(g, hit.note, maxW) : [];
   let bw=Math.max(tw, ...lines.map(l=>g.measureText(l).width), 60)+padX*2;
-  const bh = padY*2 + 17 + lines.length*15;
+  const bh = padY*2 + 22 + lines.length*19;
   let bx = TH.mx+16, by = TH.my+16;
   if(bx+bw > TH.LW-8) bx = TH.mx-16-bw;
   if(by+bh > TH.LH-8) by = TH.my-16-bh;
@@ -1627,10 +1644,10 @@ function drawHover(g){
   rr(g,bx,by,bw,bh,10); g.fill();
   g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1; g.stroke();
   g.textAlign='left';
-  g.fillStyle='#f4efe4'; g.font='500 13px "Space Grotesk",sans-serif';
-  g.fillText(hit.title, bx+padX, by+padY+12);
-  g.fillStyle='#b9b0a0'; g.font='400 11.5px "Space Grotesk",sans-serif';
-  lines.forEach((l,i)=> g.fillText(l, bx+padX, by+padY+29+i*15));
+  g.fillStyle='#f4efe4'; g.font='600 17px "Space Grotesk",sans-serif';
+  g.fillText(hit.title, bx+padX, by+padY+15);
+  g.fillStyle='#c6bdac'; g.font='400 14.5px "Space Grotesk",sans-serif';
+  lines.forEach((l,i)=> g.fillText(l, bx+padX, by+padY+37+i*19));
 }
 
 /* ---------------- compose ---------------- */
@@ -2511,6 +2528,8 @@ function buildRecs(){
     const b=document.createElement('button');
     b.className='chip'; b.id='rec_'+r.key; b.setAttribute('aria-pressed','false');
     b.innerHTML='<i></i>'+r.label;
+    /* what this electrode records is a bubble over the group, not a paragraph beside it */
+    b.setAttribute('data-tip', r.tip);
     b.onclick=()=>{
       if(S.mode==='patch') S.rec=r.key; else S.recCable=r.key;
       Object.assign(S, r.defs());
@@ -2523,7 +2542,6 @@ function buildRecs(){
 function applyRecUI(){
   const cur = S.mode==='patch' ? S.rec : S.recCable;
   const found = recList().find(r=>r.key===cur);
-  if(found) el('recHint').textContent = found.tip;
   const clampMode = isClamp();
   el('stimBlock').hidden = clampMode;
   el('vcmdCtl').hidden = !(S.mode==='patch' && (S.rec==='vc'||S.rec==='attached'));
@@ -2553,7 +2571,7 @@ function buildDrugs(){
     b.className='chip'; b.id='drug_'+key; b.setAttribute('aria-pressed','false');
     b.innerHTML='<i></i>'+d.label;
     b.style.setProperty('--dc', DRUGCOL[key]);
-    b.title=d.tip;
+    b.setAttribute('data-tip', d.tip);
     b.onclick=()=>{
       S.drugs[key]=!S.drugs[key];
       setChip('drug_'+key, S.drugs[key]);
@@ -2777,7 +2795,6 @@ function frame(now){
     renderCableTheatre(gT, cable, opt);
     drawCablePlots(gP);
   }
-  updateHud(dtWall);
   outAcc+=dtWall;
   if(outAcc>0.12 && S.mode==='cable'){
     outAcc=0;
@@ -2836,7 +2853,6 @@ function boot(){
     else if(k==='h'||k==='H'){ el('b-clean').click(); }
     else if(k==='f'||k==='F'){ el('b-full').click(); }
     else if(k==='?'||k==='/'){ el('explainer').showModal(); }
-    else if(k>='1'&&k<='9'){ applyExperiment(parseInt(k,10)-1); }
   });
 
   wirePointer();
@@ -2860,119 +2876,51 @@ function boot(){
    by hand, because a canvas with an aspect ratio and both a max width
    and a max height distorts instead of shrinking. On a short landscape
    screen the two sit side by side, everywhere else they stack.       */
-function sizeViews(){
-  const host=el('views'); if(!host) return;
-  const W=host.clientWidth, H=host.clientHeight, gap=10;
-  const at=TH.LH/TH.LW, ap=PL.LH/PL.LW;
-  const side=document.body.classList.contains('side');
-  let w = side ? Math.min((W-gap)/2, H/Math.max(at,ap))
-               : Math.min(W, (H-gap)/(at+ap));
-  w=Math.max(150,Math.floor(w));
-  const t=el('theatre').parentElement.style, p=el('plots').parentElement.style;
-  t.width=w+'px'; t.height=Math.round(w*at)+'px';
-  p.width=w+'px'; p.height=Math.round(w*ap)+'px';
-}
-function relayout(){
-  const host=el('views'); if(!host) return;
+function planViews(){
+  const host=el('views'); if(!host) return null;
   const W=host.clientWidth||900, H=host.clientHeight||600, gap=10;
-  /* Which arrangement fits best is decided by measurement, not by a width breakpoint.
-     The wide picture is 1120x560 over a 1120x470 plot, so stacked it needs 0.92 of its
-     width in height; the compact picture is 620x640 over a 620x620 plot, 2.03 stacked
-     and 1.03 side by side. The wide one carries more of the membrane and more channels,
-     so it is preferred wherever it still comes out at half size or better; below that
-     the compact pair takes over, side by side when the screen is short and wide. */
-  const wideW = Math.min(W, (H-gap)/0.9196);
-  const wide = wideW >= 560;
-  let side = false;
-  if(!wide){
-    const stacked = Math.min(W, (H-gap)/2.032);
-    const beside  = Math.min((W-gap)/2, H/1.032);
-    side = beside > stacked*1.05;
-  }
-  document.body.classList.toggle('side', side);
-  narrow = !wide;
+  /* Stacked: take the whole width and the whole height, and only give height back if
+     the pair would end up taller than it is wide, or width back if it would end up a
+     letterbox slit. 0.62 and 1.30 are the flattest and tallest the pair may be. */
+  let sw=Math.min(W,1560), sh=H-gap;
+  /* a narrow screen is allowed a much taller pair: on a phone the two pictures go
+     nearly square rather than leaving a third of the screen empty */
+  const maxR = sw < 700 ? 2.05 : 1.30;
+  if(sh > maxR*sw) sh = maxR*sw;
+  if(sh < 0.62*sw) sw = Math.max(260, sh/0.62);
+  const share = (sh/sw) > 1.5 ? 0.515 : 0.545;
+  const stack={side:false, tw:sw, th:sh*share, pw:sw, ph:sh*(1-share), area:sw*sh};
+  /* Side by side: only wins on a short, wide screen, which in practice is a phone
+     held sideways. Each picture is then roughly square. */
+  let bw=Math.min((W-gap)/2, 900), bh=H;
+  if(bh > 1.35*bw) bh = 1.35*bw;
+  if(bh < 0.60*bw) bw = Math.max(240, bh/0.60);
+  const beside={side:true, tw:bw, th:bh, pw:bw, ph:bh, area:2*bw*bh};
+  const pick = beside.area > stack.area*1.06 ? beside : stack;
+  ['tw','th','pw','ph'].forEach(k=>{ pick[k]=Math.max(140,Math.floor(pick[k])); });
+  return pick;
+}
+function sizeViews(){
+  const p=planViews(); if(!p) return null;
+  document.body.classList.toggle('side', p.side);
+  const t=el('theatre').parentElement.style, q=el('plots').parentElement.style;
+  t.width=p.tw+'px'; t.height=p.th+'px';
+  q.width=p.pw+'px'; q.height=p.ph+'px';
+  return p;
+}
+/* One canvas unit is one CSS pixel. The drawing code used to be written against a fixed
+   1120x560 stage and then squeezed into whatever was left over, which shrank every label
+   on it by a quarter; now the stage is whatever the window can spare and the labels come
+   out at the size they are written in. */
+function relayout(){
+  const p=sizeViews(); if(!p) return;
+  narrow = p.tw < 760;
+  TH.setW=p.tw; TH.setH=p.th;
   layoutTheatre(narrow); assignBlocks(S.drugs);
   layoutCable();
-  PL.LW = TH.LW; PL.LH = narrow ? 620 : 470;
+  PL.LW = p.pw; PL.LH = p.ph;
   gT = fit(el('theatre'), TH.LW, TH.LH);
   gP = fit(el('plots'), PL.LW, PL.LH);
-  sizeViews();
-}
-
-/* ---- experiments -------------------------------------------------
-   Every card is a complete recipe: preparation, recording electrode,
-   drugs in the bath, the axon build and the stimulus. Nothing is left
-   over from the card before it, so a card can never be lit while a
-   different experiment is running. Where the point of the card is a
-   stimulus just over or just under threshold, the strength is measured
-   from the model with those drugs in place rather than written down,
-   because a blocker moves threshold by nearly an order of magnitude. */
-const EXPS=[
- {n:'All or nothing', d:'over threshold: one full spike, every time',
-  ampx:1.6, set:{dur:1,npulse:1,gap:16,hold:0,speed:0.10}},
- {n:'Just too weak', d:'the same pulse a hair smaller, and nothing',
-  ampx:0.9, set:{dur:1,npulse:1,gap:16,hold:0,speed:0.10}},
- {n:'Refractory period', d:'a second pulse too soon has no effect',
-  ampx:1.7, set:{dur:1,npulse:2,gap:8,hold:0,speed:0.12}},
- {n:'Firing over and over', d:'a steady current and it never stops',
-  ampx:1.6, set:{dur:1,npulse:1,hold:12,speed:0.30}},
- {n:'Pufferfish toxin', d:'TTX plugs every sodium pore: no spike at any strength',
-  drugs:['ttx'], set:{amp:90,dur:1,npulse:1,hold:0,speed:0.10}},
- {n:'Local anaesthetic', d:'lidocaine raises threshold about eightfold',
-  drugs:['lidocaine'], ampx:1.25, set:{dur:1,npulse:1,hold:0,speed:0.10}},
- {n:'Potassium blocked', d:'TEA, and the spike will not shut itself off',
-  drugs:['tea'], ampx:1.6, set:{dur:1,npulse:1,hold:0,speed:0.16}},
- {n:'Voltage clamp', d:'the 1952 experiment: hold the voltage, read the current',
-  rec:'vc', set:{vcmd:0,dur:12,speed:0.16,repeat:false}},
- {n:'One channel at a time', d:'a cell-attached patch: square steps, one protein',
-  rec:'attached', set:{vcmd:0,dur:20,speed:0.30,repeat:true}},
- {n:'Myelinated nerve', d:'the impulse jumps node to node',
-  mode:'cable', myelin:true, wraps:80, inode:2.4, set:{amp:400,dur:0.5,speed:0.08}},
- {n:'Bare axon', d:'no sheath: slow, continuous, expensive',
-  mode:'cable', myelin:false, set:{amp:400,dur:0.5,speed:0.08}},
- {n:'Demyelination', d:'strip a patch of sheath and conduction fails',
-  mode:'cable', myelin:true, wraps:80, inode:2.4, lesion:true, lesionLen:6,
-  set:{amp:400,dur:0.5,speed:0.08}}
-];
-let CUREXP=-1;
-function buildExperiments(){
-  const box=el('presets'); box.innerHTML='';
-  EXPS.forEach((p,i)=>{
-    const b=document.createElement('button');
-    b.className='preset'; b.type='button'; b.dataset.i=String(i);
-    b.setAttribute('aria-pressed','false');
-    b.innerHTML='<b>'+p.n+'</b><small>'+p.d+'</small>';
-    b.onclick=()=>applyExperiment(i);
-    box.appendChild(b);
-  });
-}
-function markExperiment(){
-  const bs=el('presets').children;
-  for(let i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', i===CUREXP?'true':'false');
-}
-function freeExperiment(){ if(CUREXP<0) return; CUREXP=-1; markExperiment(); }
-function applyExperiment(i){
-  const p=EXPS[i]; if(!p) return;
-  CUREXP=i;
-  for(const k in S.drugs) S.drugs[k] = !!(p.drugs && p.drugs.indexOf(k)>=0);
-  S.myelin=!!p.myelin; S.lesion=!!p.lesion;
-  if(p.wraps!==undefined) S.wraps=p.wraps;
-  if(p.inode!==undefined) S.inode=p.inode;
-  if(p.lesionLen!==undefined) S.lesionLen=p.lesionLen;
-  const mode=p.mode||'patch';
-  if(mode==='patch') S.rec=p.rec||'sharp'; else S.recCable=p.rec||'intra';
-  setMode(mode);
-  const r=recList().find(x=>x.key===(mode==='patch'?S.rec:S.recCable));
-  if(r) Object.assign(S, r.defs());
-  if(p.set) for(const k in p.set) S[k]=p.set[k];
-  if(p.ampx){
-    const t=singleThreshold(S.dur);
-    if(t) S.amp=+(t*p.ampx).toFixed(1);
-  }
-  clearSweeps(); applyRecUI(); syncInputs();
-  resetAll(); assignBlocks(S.drugs); drugNote(); markExperiment();
-  if(p.fire!==false) fire();
-  markExperiment();
 }
 
 /* ---- tooltip bubbles --------------------------------------------
@@ -2996,30 +2944,12 @@ function tipify(){
   });
 }
 
-/* ---- readouts ---------------------------------------------------- */
-let hudAcc=0;
-function updateHud(dt){
-  hudAcc+=dt; if(hudAcc<0.1) return; hudAcc=0;
-  if(S.mode==='patch'){
-    el('hudV').textContent = patch.V.toFixed(0);
-    el('hudBK').textContent = 'Spikes';
-    el('hudB').textContent = String(spikeTimes.length);
-  } else {
-    const i=Math.round(CAB_N*0.75);
-    el('hudV').textContent = (cable.V?cable.V[i]:VREST).toFixed(0);
-    el('hudBK').textContent = 'Speed';
-    el('hudB').innerHTML = CB.vel ? CB.vel.toFixed(1)+' <small>m/s</small>'
-                                  : (CB.blocked ? 'blocked' : '&hellip;');
-  }
-}
-
 /* ---- chrome ------------------------------------------------------ */
 function setPlaying(on){
   S.playing=on; setChip('playing',on);
   const b=el('b-pause'); if(b) b.dataset.on=String(!on);
 }
 function shell(){
-  buildExperiments();
   tipify();
   if(window.self!==window.top) document.body.classList.add('in-frame');
 
@@ -3043,19 +2973,6 @@ function shell(){
   };
   /* the chip in the panel and the icon button are the same switch */
   el('playing').onclick=()=>setPlaying(!S.playing);
-
-  /* moving anything by hand stops a card claiming to be in force */
-  const keep={'b-fire':1,'b-pause':1,'b-reset':1,'b-clean':1,'b-full':1,'p-toggle':1,
-              'openExplainer':1,'closeExplainer':1,'fire':1,'reset':1,'sweep':1,
-              'clearSweeps':1,'playing':1};
-  const touched=e=>{
-    const t=e.target.closest('button,input'); if(!t) return;
-    if(t.closest('#presets')) return;
-    if(keep[t.id]) return;
-    freeExperiment();
-  };
-  el('panel').addEventListener('input',touched,true);
-  el('panel').addEventListener('click',touched,true);
 
   let rt=null;
   const kick=()=>{ clearTimeout(rt); rt=setTimeout(relayout,120); };
