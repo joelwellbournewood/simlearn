@@ -84,8 +84,8 @@ input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;bac
 .tg:hover{border-color:var(--line-strong);color:var(--ink)}
 .tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
 .tg:disabled{opacity:.35;cursor:default}
-.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
-.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
@@ -132,7 +132,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
   .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
   .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
-  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
+  .hud .stat{padding:0 1px;min-width:0;text-align:right} .hud .stat .v{font-size:14px} .hud .stat .k{font-size:9.5px}
   .hint{display:none}
   .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
   .sel table{font-size:12px}
@@ -320,17 +320,25 @@ function resize(){
   narrow = W<820 || (H<560 && matchMedia('(pointer:coarse)').matches);
   COLW = narrow ? Math.max(92,Math.min(190,W*0.32)) : Math.max(240,Math.min(340,W*0.25));
   COLX = W-COLW-(narrow?12:22);
-  STY = narrow?62:112;
+  /* the space-time column shares the right-hand edge with the icon buttons, so on a phone
+     it starts below them (measured, not guessed) rather than under their labels */
+  const actEl=document.querySelector('.actions');
+  const actB = narrow&&actEl ? Math.round(actEl.getBoundingClientRect().bottom) : 0;
+  STY = narrow ? Math.max(62, actB+28) : 112;
   const tw=el('tapwrap'), hudEl=document.querySelector('.hud');
   /* On a phone the readouts sit bottom right and the brake button rides just above them.
      Measure the readouts rather than guessing: they wrap to two rows on a 320px screen. */
   const hudH = narrow&&hudEl ? Math.round(hudEl.getBoundingClientRect().height) : 0;
-  const stBottom = H-(narrow?(66+hudH):52);
+  /* the readouts have no box now, so the diagram stops above them rather than behind them */
+  const hudAll = hudEl ? Math.round(hudEl.getBoundingClientRect().height) : 0;
+  const stBottom = H-(narrow?(74+hudH):(28+hudAll));
   STH = Math.max(110, Math.round(stBottom-STY));
   const clean=document.body.classList.contains('clean');
   const leftEdge=(clean||narrow)?(narrow?10:26):396;
   const availW=COLX-(narrow?14:24)-leftEdge;
-  const ringBottom = narrow ? H-(121+hudH) : H-52;
+  /* the ring must clear the brake button, which sits under it and is the thing you press */
+  const tapH = tw ? Math.round(tw.getBoundingClientRect().height) : 62;
+  const ringBottom = narrow ? H-(121+hudH) : H-(40+tapH);
   const ringH=Math.max(120, ringBottom-STY);
   RR=Math.max(46,Math.min(availW/2-14, ringH/2-14));
   RX=leftEdge+availW/2; RY=STY+ringH/2;
