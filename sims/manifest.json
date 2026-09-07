@@ -133,7 +133,7 @@
       "pattern formation"
     ],
     "difficulty": "Intermediate",
-    "description": "Two chemicals in a sheet of tissue. One makes more of itself, the other spreads faster and holds it back. Out come spots, labyrinths, dividing blobs, branching coral and travelling waves, with a live map of which chemistry gives which.",
+    "description": "Two chemicals in a sheet of tissue, and the spots, stripes and labyrinths that come out of them.",
     "status": "live",
     "hook": "Two chemicals, no blueprint",
     "visible": true
@@ -149,7 +149,7 @@
       "ion channels"
     ],
     "difficulty": "Intermediate",
-    "description": "Fire an electrode and watch sodium and potassium channels build a nerve impulse, ion by ion.",
+    "description": "The 1952 squid axon equations, running live.",
     "status": "live",
     "hook": "How a nerve fires",
     "visible": true

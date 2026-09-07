@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050c0a">
 <title>Hodgkin-Huxley Axon: how a nerve impulse builds itself | SimLearn</title>
-<meta name="description" content="The 1952 squid axon equations, running live. Fire an electrode and watch sodium and potassium channels build an action potential ion by ion, block them with TTX, TEA or lidocaine, run a voltage clamp, or send an impulse down a myelinated nerve and strip the sheath away.">
+<meta name="description" content="The 1952 squid axon equations, running live.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -122,7 +122,7 @@ dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
 body.in-frame .brand{display:none}
 body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 @media (max-width:820px), (max-height:560px) and (pointer:coarse){
-  .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
+  .brand{left:14px;top:12px;max-width:calc(100vw - 252px)} .brand h1{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .brand p{display:none} .brand .kicker{margin-bottom:3px}
   .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
   .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
     transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
@@ -818,20 +818,40 @@ function layoutTheatre(narrow){
   TH.chanL = Math.round((narrow ? 62 : 90)*k);
   TH.chanR = TH.LW - Math.round((narrow ? 84 : 130)*k);
 
-  const roster = narrow
-    ? ['na','k','leak','pump','k','na','na']
-    : ['na','k','leak','pump','k','na','na','na'];
-  const n = roster.length, span = TH.chanR-TH.chanL, slot = span/n;
+  /* How many channels the membrane holds is decided by the width it actually has, not
+     by a fixed list. A phone used to be handed seven channels 47px wide in slots 34px
+     apart, so they sat on top of each other. Rosters are tried largest first and the
+     first one that leaves a real gap between neighbours wins; the drawn width is then
+     scaled so the widest channel still clears its slot. */
+  const BASE = t => t==='pump' ? 64 : (t==='leak' ? 30 : (narrow?52:58));
+  const ROSTERS = narrow
+    ? [['na','k','leak','pump','k','na','na'],
+       ['na','k','leak','pump','na','na'],
+       ['na','k','pump','na','na'],
+       ['na','k','pump','na']]
+    : [['na','k','leak','pump','k','na','na','na']];
+  const span = TH.chanR-TH.chanL, GAP = 16, MINS = 0.62;
+  let roster = ROSTERS[ROSTERS.length-1], sc0 = MINS;
+  for(const cand of ROSTERS){
+    const wide = Math.max(...cand.map(BASE));
+    const sc = Math.min(k, (span/cand.length - GAP)/wide);
+    if(sc >= MINS || cand === ROSTERS[ROSTERS.length-1]){
+      roster = cand; sc0 = Math.min(k, Math.max(sc, MINS)); break;
+    }
+  }
+  const n = roster.length, slot = span/n;
   TH.channels = roster.map((type,i)=>({
     type, cx: Math.round(TH.chanL + slot*(i+0.5)),
-    w: Math.round((type==='pump'?64:(type==='leak'?30:(narrow?52:58)))*k),
+    w: Math.round(BASE(type)*sc0),
     mS:[0,0,0], hS:1, nS:[0,0,0,0],
     act:0, inact:1, gate:0, glow:0, cond:false, blk:null, noH:false,
     sway:Math.random()*6.28
   }));
 
   /* ion pools, sized straight off the concentration table */
-  const total = narrow ? 250 : 440;
+  /* One ion per ~1080 square pixels, which is the density the wide picture was drawn
+     at. Fixing the COUNT instead filled a phone's smaller picture solid. */
+  const total = narrow ? clamp(Math.round(TH.LW*TH.LH/1080), 110, 250) : 440;
   let sum=0; for(const k in CONC.out) sum+=CONC.out[k];
   for(const k in CONC.in) sum+=CONC.in[k];
   const f = total/sum;
@@ -1596,6 +1616,9 @@ function patchPipette(g, cfg, V, cmdText){
       : 'The seal is left intact, so only the handful of channels under the tip are recorded. Each opening is one protein, and the trace steps between shut and open.'};
 }
 /* ---------------- hover ---------------- */
+/* On a phone there is no room for a paragraph over the picture, so a tap on a channel
+   names it and stops there; the detail is in the explainer and the panel tooltips. */
+const PHONE_MQ = matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
 function hitPush(x,y,w,h,title,note,rad){
   TH.hits.push({x:Math.min(x,x+w), y:Math.min(y,y+h),
                 w:Math.abs(w), h:Math.abs(h), title, note, rad:rad===undefined?9:rad});
@@ -1629,13 +1652,14 @@ function drawHover(g){
   g.fillStyle='rgba(255,240,210,.07)'; g.fill();
   g.restore();
 
-  const padX=14, padY=12, maxW=320;
+  const phone = PHONE_MQ.matches;
+  const padX=phone?11:14, padY=phone?9:12, maxW=phone?Math.min(240,TH.LW-40):320;
   g.font='600 17px "Space Grotesk",sans-serif';
   const tw=Math.min(maxW, g.measureText(hit.title).width);
   g.font='400 14.5px "Space Grotesk",sans-serif';
-  const lines = hit.note ? wrapText(g, hit.note, maxW) : [];
+  const lines = (hit.note && !phone) ? wrapText(g, hit.note, maxW) : [];
   let bw=Math.max(tw, ...lines.map(l=>g.measureText(l).width), 60)+padX*2;
-  const bh = padY*2 + 22 + lines.length*19;
+  const bh = padY*2 + (lines.length?22:14) + lines.length*19;
   let bx = TH.mx+16, by = TH.my+16;
   if(bx+bw > TH.LW-8) bx = TH.mx-16-bw;
   if(by+bh > TH.LH-8) by = TH.my-16-bh;
@@ -2062,6 +2086,16 @@ function gatesPanel(g, L, y, pw, h, tArr, mArr, hArr, nArr, X, t0){
   g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
   g.fillText('1', L-6, Y(1)+4); g.fillText('0', L-6, Y(0)+4);
 }
+/* The four reference levels share a 48px gutter to the left of the plot. On a narrow
+   plot the labels drop their numbers rather than hanging off the edge, and a label that
+   would land on the one above it is left out instead of being drawn over it. */
+function levelLabel(g, lab, col, L, y, used){
+  const txt = PL.LW < 560 ? lab.split(' ')[0] : lab;
+  for(const u of used) if(Math.abs(u-y) < 11) return;
+  used.push(y);
+  g.fillStyle = col.replace(/[\d.]+\)$/,'.85)');
+  g.fillText(txt, Math.max(L-6, g.measureText(txt).width+2), y+3.5);
+}
 function timeAxis(g, L, pw, yBase, H, t0, t1, step){
   g.textAlign='center'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
   for(let tk=Math.ceil(t0/step)*step; tk<=t1-step*0.4; tk+=step){
@@ -2116,13 +2150,13 @@ function drawCurrentClamp(g, train){
     g.fillRect(xa,y1,Math.max(1.2,xb-xa),y3+h3-y1);
   }
   const vLo=-95, vHi=58, Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
-  g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right';
+  g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
   for(const [v,lab,col] of [[ENA,'E_Na +50','rgba(255,154,60,.5)'],[0,'0','rgba(255,255,255,.14)'],
                             [VREST,'rest −65','rgba(255,255,255,.16)'],[EK,'E_K −77','rgba(165,139,255,.5)']]){
     const y=Y1(v);
     g.strokeStyle=col; g.lineWidth=1; g.setLineDash(v===0?[2,4]:[4,5]);
     g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
-    g.fillStyle=col.replace(/[\d.]+\)$/,'.85)'); g.fillText(lab, L-6, y+3.5);
+    levelLabel(g, lab, col, L, y, used);
   }
   if(HIST.t.length>1){
     g.beginPath();
@@ -2184,13 +2218,13 @@ function drawCCSweeps(g){
 
   gridPanel(g,L,y2,pw,h2,'membrane potential · mV');
   const vLo=-95, vHi=58, Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
-  g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right';
+  g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
   for(const [v,lab,col] of [[ENA,'E_Na +50','rgba(255,154,60,.45)'],[0,'0','rgba(255,255,255,.13)'],
                             [VREST,'rest −65','rgba(255,255,255,.15)'],[EK,'E_K −77','rgba(165,139,255,.45)']]){
     const y=Y2(v);
     g.strokeStyle=col; g.lineWidth=1; g.setLineDash([4,5]);
     g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
-    g.fillStyle=col.replace(/[\d.]+\)$/,'.85)'); g.fillText(lab, L-6, y+3.5);
+    levelLabel(g, lab, col, L, y, used);
   }
   for(const sw of SWEEPS){
     g.strokeStyle='rgba(244,239,228,.26)'; g.lineWidth=1.3;
