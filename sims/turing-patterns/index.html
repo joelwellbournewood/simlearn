@@ -495,7 +495,7 @@ var PRESETS = [
    c:['#f6f4ef','#8f8d88','#0e0e10',0.50]},
   {n:'Labyrinth',      d:'dense maze, spreads slowly', F:0.029, k:0.057, seed:2, DA:0.18,
    c:['#fbe9de','#e08468','#4a1622',0.56]},
-  {n:'Turtle shell',   d:'plates and seams, draw to start', F:0.0802, k:0.0594, seed:0, draw:1, steps:20,
+  {n:'Turtle shell',   d:'plates and seams from seven seeds', F:0.0802, k:0.0594, seed:0, dots:7, steps:20,
    c:['#f2dfae','#a8762c','#26301c',0.55]},
   {n:'Mitosis',        d:'spots that divide',      F:0.0367, k:0.0649,  seed:1,
    c:['#f1eaf7','#b552a4','#2a0a3d',0.55]},
@@ -951,6 +951,25 @@ function splat(u, v, ru, rv, mode){
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   ST.cur = d;
 }
+/* Some presets start from a handful of nuclei rather than a lattice or an empty field.
+   The dots are laid out on a jittered ring plus a centre so they are scattered but never
+   overlap, and they are painted through the same stippling brush a finger uses, because a
+   solid disc of activator starves in its own middle in exactly these regimes. */
+function scatterDots(n){
+  var rr = 18/S.N;  /* in CELLS, so a phone and a desktop start the same experiment */
+  var ph = Math.random()*6.2831853;
+  for(var i=0;i<n;i++){
+    var u, v;
+    if(i === 0){ u = 0.5; v = 0.5; }
+    else {
+      var a = ph + (i-1)*6.2831853/(n-1) + (Math.random()-0.5)*0.5;
+      var rad = 0.27 + Math.random()*0.09;
+      u = 0.5 + Math.cos(a)*rad; v = 0.5 + Math.sin(a)*rad;
+    }
+    u += (Math.random()-0.5)*0.04; v += (Math.random()-0.5)*0.04;
+    splat(u, v, rr, rr, 1);
+  }
+}
 function domainRect(){
   var W = cvs.width, H = cvs.height;
   if(S.growOn){
@@ -1329,7 +1348,7 @@ function buildPresets(){
   f.dataset.i = '-1';
   f.setAttribute('aria-pressed', 'false');
   f.innerHTML = '<b>Free play</b><small>every control is yours: mix your own chemistry and draw into it</small>';
-  f.addEventListener('click', function(){ freeMode(); });
+  f.addEventListener('click', function(){ freePlay(); });
   box.appendChild(f);
   PRESETS.forEach(function(p, i){
     var b = document.createElement('button');
@@ -1362,6 +1381,7 @@ function applyPreset(i){
   setPalette(p.c || PAL_DEFAULT);
   S.growOn = false; S.g = 1; S.dil = 0;
   seedField(p.seed === undefined ? 2 : p.seed);
+  if(p.dots) scatterDots(p.dots);
   syncPanel();
   syncParams();
   showDrawHint(!!p.draw);
@@ -1374,6 +1394,16 @@ function freeMode(){
   S.preset = -1;
   showDrawHint(false);
   syncParams();
+}
+/* Clicking the Free play card keeps every setting exactly where it is and empties the
+   field, so you start from a blank sheet with your own chemistry and draw into it.
+   freeMode above is the passive version: a control moved while a preset is lit only
+   stops the card claiming to be in force, it never wipes what is on screen. */
+function freePlay(){
+  S.preset = -1;
+  seedField(0);
+  syncParams();
+  showDrawHint(true);
 }
 function setPalette(c){
   S.pal = 5;
