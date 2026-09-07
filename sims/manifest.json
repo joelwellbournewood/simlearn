@@ -124,7 +124,7 @@
   },
   {
     "id": "turing-patterns",
-    "title": "Turing Patterns",
+    "title": "Turing's Morphogenesis",
     "category": "Emergent Systems",
     "tags": [
       "reaction-diffusion",
@@ -135,23 +135,8 @@
     "difficulty": "Intermediate",
     "description": "Two chemicals in a sheet of tissue. One makes more of itself, the other spreads faster and holds it back. Out come spots, labyrinths, dividing blobs, branching coral and travelling waves, with a live map of which chemistry gives which.",
     "status": "live",
-    "hook": "Spots and stripes from two chemicals",
+    "hook": "Two chemicals, no blueprint",
     "visible": true
-  },
-  {
-    "id": "reaction-diffusion",
-    "title": "Reaction-Diffusion",
-    "category": "Emergent Systems",
-    "tags": [
-      "chemistry",
-      "pattern formation",
-      "cellular automaton"
-    ],
-    "difficulty": "Intermediate",
-    "description": "Two chemicals spread and react by the Gray-Scott rules. Spots, stripes and coral shapes appear on their own. Pick a preset or paint your own seed.",
-    "status": "live",
-    "hook": "Chemistry that draws patterns",
-    "visible": false
   },
   {
     "id": "segregation",

@@ -26,6 +26,36 @@ function orbitKF(name, f, n) {
   return `@keyframes ${name}{${k}}`;
 }
 
+/* The maze in the Turing card is the real model, not a drawing of one: Gray-Scott run
+   20,000 steps at F=0.030, k=0.056, Du=0.16, Dv=0.08 on a 124x61 periodic grid, contoured
+   at the mid activator level and simplified to 0.7px. Isotropic by measurement (angular
+   power spectrum peak/mean 1.75, so no preferred direction), which is what makes it wander
+   instead of striping. The field is mapped to a box wider and taller than the card, so the
+   open contour ends fall outside the viewBox instead of dangling in view.
+   Generator: artifacts/tools/turing_glyph.py 61 124 0.030 0.056 20000 0.7 0.16 0.08 9 */
+const TURING_MAZE = ['M294.0 112.9 L289.8 107.1 L284.0 102.0 L271.5 96.9 L264.0 95.9 L256.4 98.9 L246.4 106.7 L238.9 106.1 L233.9 107.2 L213.9 117.8 L181.3 124.1 L171.3 124.0 L162.1 119.7 L155.7 112.1 L152.8 104.5 L150.0 89.3 L141.3 75.7 L138.7 73.2 L133.7 71.4 L128.7 73.6 L126.4 76.7 L125.8 79.2 L127.1 84.3 L136.9 96.9 L145.0 117.2 L156.3 132.5 L163.8 138.6 L168.8 138.8 L193.8 135.1 L208.9 131.6 L226.4 129.7 L231.4 126.4 L246.4 110.2 L248.9 109.6 L258.9 111.8 L274.0 111.3 L279.0 114.0 L281.1 117.2 L281.9 122.3 L278.1 140.0',
+'M128.3 -12.0 L133.7 -3.7 L136.7 3.2 L138.6 20.9 L150.0 38.7 L151.3 46.3 L150.3 58.9 L151.9 64.0 L159.4 74.1 L163.8 77.3 L166.3 77.8 L193.8 75.4 L206.1 71.6 L233.4 58.9 L237.6 53.9 L237.9 48.8 L233.9 43.5 L228.9 42.7 L223.9 45.3 L213.5 53.9 L201.3 59.2 L178.8 64.1 L173.8 64.1 L168.8 62.5 L164.9 58.9 L162.7 53.9 L163.4 36.1 L162.5 31.1 L151.0 15.9 L149.9 10.8 L151.0 -1.9 L149.0 -6.9 L144.6 -12.0',
+'M88.7 29.5 L83.7 33.7 L76.4 46.3 L71.4 51.3 L53.6 61.0 L41.1 73.7 L28.6 80.8 L24.6 84.3 L21.4 91.9 L22.1 96.9 L23.6 99.2 L28.6 101.3 L33.6 99.5 L51.1 81.0 L72.4 66.5 L86.2 53.9 L98.2 46.3 L101.0 41.2 L100.4 33.6 L96.2 29.5 L93.7 28.7 L88.7 29.5z',
+'M211.4 -7.1 L188.8 -2.4 L168.8 -0.1 L166.3 2.6 L165.6 5.7 L166.6 10.8 L168.8 14.7 L171.3 16.8 L176.3 17.4 L191.3 10.4 L198.8 8.1 L211.4 6.2 L218.9 6.4 L223.9 8.1 L226.9 10.8 L231.4 25.0 L233.9 28.6 L236.4 30.1 L241.4 30.2 L246.4 26.8 L248.8 20.9 L246.8 13.3 L234.3 3.2 L228.9 -4.9 L223.9 -8.0 L211.4 -7.1z',
+'M101.2 63.1 L96.2 66.2 L81.2 80.2 L61.1 93.6 L43.2 112.1 L38.9 119.7 L39.6 124.8 L41.1 126.7 L48.6 129.6 L56.1 127.8 L58.6 124.6 L62.0 109.6 L66.1 104.6 L83.7 97.4 L94.7 84.3 L98.7 82.1 L108.7 79.2 L112.2 76.7 L113.5 71.6 L111.2 66.0 L106.2 62.6 L101.2 63.1z',
+'M246.4 69.0 L228.9 79.5 L201.3 90.1 L191.3 92.1 L171.3 91.9 L167.6 94.4 L166.8 96.9 L167.8 102.0 L169.5 104.5 L173.8 107.5 L183.8 107.6 L208.9 102.2 L228.9 92.6 L248.9 86.3 L256.1 81.7 L257.9 76.7 L256.4 72.2 L253.9 69.7 L251.4 68.6 L246.4 69.0z',
+'M26.1 48.8 L11.0 54.0 L6.0 58.0 L0.9 64.0 L-3.8 79.2 L-11.0 91.9 L-10.8 96.9 L-6.5 102.2 L-4.0 103.0 L1.0 101.7 L5.6 96.9 L8.2 79.2 L12.8 71.6 L18.6 67.4 L31.1 61.5 L36.2 56.4 L37.1 53.9 L36.1 50.4 L31.1 48.2 L26.1 48.8z',
+'M25.3 -12.0 L23.6 -9.4 L22.6 -4.4 L24.6 0.7 L28.6 3.6 L38.6 6.2 L53.6 2.0 L61.1 1.9 L68.6 5.6 L76.1 15.1 L81.2 17.8 L86.2 16.7 L88.6 13.3 L87.9 5.7 L82.3 -1.9 L71.1 -10.1 L67.0 -12.0',
+'M142.2 140.0 L130.1 122.3 L118.7 98.4 L116.2 95.7 L111.2 94.3 L103.7 98.1 L101.3 102.0 L101.3 104.5 L102.4 107.1 L113.7 119.7 L126.5 140.0',
+'M203.9 22.9 L193.8 27.6 L183.1 31.1 L179.1 33.6 L177.0 38.7 L178.8 45.5 L183.8 47.7 L188.8 46.8 L207.3 38.7 L215.2 33.6 L217.1 28.5 L214.2 23.5 L208.9 21.9 L203.9 22.9z',
+'M94.9 -12.0 L101.8 -1.9 L106.2 18.2 L108.7 21.3 L113.7 23.4 L118.7 22.6 L120.8 20.9 L122.2 18.4 L122.5 13.3 L118.9 3.2 L109.7 -12.0',
+'M277.7 -12.0 L274.7 -4.4 L264.4 5.7 L261.6 10.8 L262.1 15.9 L263.6 18.4 L266.5 20.7 L271.5 21.8 L276.5 19.1 L279.0 15.5 L290.1 -12.0',
+'M7.3 140.0 L11.0 133.1 L21.1 126.5 L24.7 122.3 L24.9 117.2 L23.6 114.3 L21.1 112.1 L16.0 111.1 L6.5 114.7 L1.6 119.7 L-3.0 140.0',
+'M48.6 20.2 L44.0 26.0 L42.6 36.1 L43.6 41.2 L46.1 43.7 L48.6 44.3 L53.6 43.2 L61.1 38.7 L65.4 33.6 L66.8 28.5 L64.6 23.5 L61.1 20.7 L53.6 18.8 L48.6 20.2z',
+'M108.0 140.0 L91.2 116.6 L86.2 113.6 L81.2 114.5 L77.5 117.2 L74.5 122.3 L74.8 127.3 L76.8 129.9 L92.5 140.0',
+'M-14.0 52.0 L-9.0 51.4 L-3.9 46.3 L-3.1 41.2 L-7.0 28.5 L-7.2 23.5 L-5.7 18.4 L7.1 3.2 L8.1 -1.9 L7.2 -12.0',
+'M121.2 35.0 L115.7 41.2 L114.7 46.3 L116.0 51.3 L118.7 54.7 L123.7 57.8 L131.2 58.5 L134.1 56.4 L135.8 51.3 L133.7 41.3 L128.7 35.3 L126.2 34.3 L121.2 35.0z',
+'M258.9 35.4 L252.8 41.2 L251.2 48.8 L253.9 54.4 L256.4 56.0 L261.4 56.6 L266.5 54.8 L271.0 51.3 L272.8 48.8 L274.0 43.7 L272.7 38.7 L269.0 34.9 L264.0 34.1 L258.9 35.4z',
+'M279.0 63.2 L272.6 69.1 L270.7 76.7 L273.9 81.7 L276.5 83.3 L284.0 84.4 L286.5 83.4 L289.9 79.2 L292.7 71.6 L292.6 66.5 L291.2 64.0 L286.5 61.6 L279.0 63.2z',
+'M18.6 15.3 L13.2 18.4 L9.3 26.0 L10.1 33.6 L13.5 36.3 L18.6 36.4 L23.6 34.7 L27.7 31.1 L29.7 26.0 L29.2 20.9 L27.4 18.4 L23.6 15.9 L18.6 15.3z',
+'M262.3 140.0 L264.4 134.9 L264.5 129.9 L262.8 127.3 L258.9 125.8 L253.9 126.6 L248.9 129.6 L243.6 134.9 L241.5 140.0',
+'M294.0 19.7 L289.0 28.5 L287.8 36.1 L290.1 46.3 L294.0 50.8'];
+
 const GLYPH = {
   boids() {
     // The flock flies right; the predator is the odd-coloured bird at the BACK, chasing.
@@ -156,35 +186,17 @@ const GLYPH = {
       <path class="accent2 lz-bead" d="${d}" pathLength="1000" stroke-dasharray="34 1000" stroke-width="1.7"/>`;
   },
   'turing-patterns'() {
-    /* The Kondo-Asai observation, which is the whole point of the growing-domain mode:
-       as the tissue stretches, the stripes keep their spacing instead of scaling up, so
-       new ones have to insert themselves in the widening gaps. Each stripe is moved with
-       translate() alone, so the wavy line never shears and the stroke stays even. */
-    const S = 30, K = 0.34;
-    const wig = (x, ph) => path(sample(t => [x + 3.6 * Math.sin(t * 0.055 + ph), t], 16, 112, 44));
-    let body = '', css = '';
-    [-2, -1, 0, 1, 2].forEach((d, i) => {
-      const dx = (d * S * K).toFixed(2);
-      css += `@keyframes tpS${i}{0%,6%{transform:translateX(0)}56%,100%{transform:translateX(${dx}px)}}` +
-             `.tp-s${i}{animation:tpS${i} 5.4s cubic-bezier(.4,.05,.3,1) infinite}`;
-      body += `<path class="tp-s${i}" d="${wig(CX + d * S, i * 1.3)}"/>`;
-    });
-    [-1.5, -0.5, 0.5, 1.5].forEach((d, i) => {
-      body += `<path class="accent2 tp-n" style="animation-delay:${(-0.06 * i).toFixed(2)}s" d="${wig(CX + d * S * (1 + K), 2.4 + i * 1.1)}"/>`;
-    });
-    css += `@keyframes tpN{0%,34%{opacity:0}62%,100%{opacity:.95}}` +
-           `.tp-n{animation:tpN 5.4s ease-out infinite;opacity:0}`;
-    addAnim(css);
-    return `<g class="soft"><path d="M30 16 V112 M250 16 V112" stroke-dasharray="2 6"/></g>${body}`;
-  },
-  'reaction-diffusion'() {
-    const ring = (r, k, ph) => path(sample(t => [CX + (r + k * Math.sin(6 * t + ph)) * Math.cos(t) * 1.9,
-      CY + (r + k * Math.sin(6 * t + ph)) * Math.sin(t)], 0, Math.PI * 2, 120));
-    addAnim(`@keyframes rdBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.075)}}` +
-      `.rd{animation:rdBreath 3.4s ease-in-out infinite;transform-origin:${CX}px ${CY}px}` +
-      `.rd-2{animation-delay:-.55s}.rd-3{animation-delay:-1.1s}`);
-    return `<path class="soft rd" d="${ring(46, 5, 0)}"/><path class="rd rd-2" d="${ring(31, 4, 1.1)}"/>
-      <path class="accent2 rd rd-3" d="${ring(16, 3, 2.2)}"/>${dot(CX, CY, 3, 'fillA')}`;
+    /* Activator pulses run along the walls of the maze the model actually made. Red is
+       present in the still frame (each path carries dashes from offset 0), and on hover the
+       dashes travel the tortuous path itself, which is the part a static picture cannot show. */
+    const GAP = 108, SEG = 15;
+    addAnim(`@keyframes tpFlow{from{stroke-dashoffset:0}to{stroke-dashoffset:-${GAP + SEG}px}}` +
+      `.tp-flow{animation:tpFlow 5.6s linear infinite}`);
+    const base = TURING_MAZE.map(d => `<path d="${d}"/>`).join('');
+    const flow = TURING_MAZE.map((d, i) =>
+      `<path class="accent2 tp-flow" d="${d}" style="animation-delay:${(-0.41 * i).toFixed(2)}s"/>`).join('');
+    return `<g opacity=".46" stroke-width="1.15">${base}</g>
+      <g stroke-width="1.75" stroke-dasharray="${SEG} ${GAP}">${flow}</g>`;
   },
   segregation() {
     let s = '';
