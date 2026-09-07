@@ -352,6 +352,10 @@ body.leaving .card:not(.launching){opacity:.25; transition:opacity .18s}
 @media (max-width:720px){
   body.sim-page header.site-header{display:none}
   .sim-header{border-top:0}
+  /* a long title plus the explainer pill wrapped onto a second line and ate a whole
+     row of the sim, so both come down a step on a phone */
+  .sim-header h1{font-size:.88rem}
+  .host-about{font-size:.66rem; padding:4px 9px; margin-left:8px}
 }
 /* phone held sideways: every pixel of height goes to the sim */
 @media (max-width:960px) and (max-height:540px){

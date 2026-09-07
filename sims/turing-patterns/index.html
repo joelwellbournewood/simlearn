@@ -226,6 +226,49 @@ details.more>summary:hover{color:var(--ink)}
   .mc-zone{min-height:0}
   .legend{font-size:11.5px;line-height:1.75}
 }
+
+/* ---- the free play card sits across the top of the preset grid ---- */
+.preset.free{grid-column:1/-1;border-style:dashed}
+.preset.free[aria-pressed="true"]{border-style:solid}
+/* ---- on a phone the map is docked next to the field, never inside the sheet, so it
+       can be touched while the pattern is in view ---- */
+.mc-side{display:contents}
+.mapcard.docked{position:fixed;z-index:6;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;
+  padding:9px 10px;max-height:none}
+.mapcard.docked .mc-sub{display:none}
+.mapcard.docked .mc-title{font-size:12.5px}
+.mapcard.docked .mc-zone{min-height:0;font-size:11.5px;margin:5px 0 0}
+.mapcard.docked .mc-note{min-height:0;font-size:10.5px}
+.mapcard.docked .legend{font-size:10.5px;line-height:1.55;margin-top:6px}
+.mapcard.docked .mc-rule{margin:9px 0 2px}
+.mapcard.docked .row{margin-top:7px}
+body.clean.map-docked #stage{inset:0}
+/* portrait: pattern on top, map underneath, clear of the controls handle */
+@media (orientation:portrait){
+  body.map-docked{--mapH:min(34vh,238px)}
+  body.map-docked #stage{bottom:calc(var(--mapH) + 58px)}
+  body.map-docked .mapcard.docked{left:8px;right:8px;bottom:52px;top:auto;width:auto;height:var(--mapH);
+    overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px 11px}
+  body.map-docked .mapcard.docked .mc-head{flex:0 0 100%}
+  body.map-docked .mapcard.docked #map{flex:none;height:min(23vh,162px);width:auto;max-width:46%;margin:0}
+  /* the column beside the map scrolls on its own, so reaching the sliders never pushes
+     the plot off the screen */
+  body.map-docked .mapcard.docked .mc-side{display:block;flex:1 1 0;min-width:0;
+    height:calc(var(--mapH) - 46px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  body.map-docked .mapcard.docked .mc-zone{margin-top:0}
+}
+/* landscape: pattern on the left, map on the right under the icon buttons */
+@media (orientation:landscape){
+  body.map-docked{--mapW:min(40vw,300px)}
+  body.map-docked #stage{right:calc(var(--mapW) + 12px);bottom:0}
+  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:52px;width:var(--mapW);height:auto;
+    display:flex;flex-direction:column}
+  body.map-docked .mapcard.docked #map{height:min(50vh,198px);width:auto;max-width:100%;align-self:center;flex:none}
+  body.map-docked .mapcard.docked .legend,
+  body.map-docked .mapcard.docked .mc-note{order:1}
+  body.map-docked .hud{left:14px;right:auto;top:auto;bottom:54px;flex-direction:row;align-items:flex-start;gap:12px}
+}
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <link rel="stylesheet" href="../../assets/css/sim-mobile.css">
@@ -325,7 +368,8 @@ details.more>summary:hover{color:var(--ink)}
     <div class="row">
       <label for="palSel"><span class="nm">Palette</span></label>
       <select id="palSel">
-        <option value="1" selected>Coral</option>
+        <option value="5" selected>The preset&#39;s own</option>
+        <option value="1">Coral</option>
         <option value="0">Ink on paper</option>
         <option value="2">Thermal</option>
         <option value="3">Culture</option>
@@ -356,15 +400,16 @@ details.more>summary:hover{color:var(--ink)}
 <aside class="mapcard" id="mapcard">
   <div class="mc-head">
     <span class="mc-title">Steer it yourself</span>
-    <span class="tip" tabindex="0" data-tip="Two numbers decide everything: how fast substrate is fed in, and how fast the activator is removed. Each preset is one dot on this map. Click or drag anywhere to move the chemistry there.">i</span>
+    <span class="tip" tabindex="0" data-tip="Across the bottom is the feed rate F, how fast fresh substrate is topped up: low on the left, high on the right. Up the side is the kill rate k, how fast the activator is removed: low at the bottom, high at the top. The exact numbers are on the two sliders below. Each preset is a dot; click or drag anywhere to move the chemistry there.">i</span>
   </div>
   <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own.</p>
   <canvas id="map" width="320" height="300" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry."></canvas>
+  <div class="mc-side">
   <p class="mc-zone" id="mapzone">&nbsp;</p>
   <ul class="legend">
     <li><span class="ln"></span>above this line no uniform mixture exists</li>
     <li><span class="ln dash"></span>left of this the mixture oscillates</li>
-    <li><span class="sw"></span>a uniform mixture breaks up by itself</li>
+    <li><span class="sw"></span>genuine Turing instability</li>
   </ul>
   <div class="row">
     <label for="fSl"><span class="nm">Feed rate <i>F</i>
@@ -383,6 +428,7 @@ details.more>summary:hover{color:var(--ink)}
     <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
   </div>
   <p class="mc-note" id="mapnote">&nbsp;</p>
+  </div>
 </aside>
 
 <div class="hud" id="hud"></div>
@@ -399,6 +445,7 @@ details.more>summary:hover{color:var(--ink)}
     <div class="eq">&part;u/&part;t = D<sub>u</sub>&nabla;&sup2;u &minus; uv&sup2; + F(1 &minus; u)
 &part;v/&part;t = D<sub>v</sub>&nabla;&sup2;v + uv&sup2; &minus; (F + k)v</div>
     <p><em>F</em> is the feed rate, the rate at which substrate is topped up towards 1. <em>k</em> is the extra kill rate on the activator. Those two numbers are what the map navigates, and most presets change nothing else. Three of them go further: Labyrinth lowers both diffusion constants together, which shrinks the spacing without moving on the map; Stripes switches on the fast axis, because an isotropic field gives a maze and never parallel stripes; Worms runs more steps per frame, because its filaments crawl slowly.</p>
+    <p>Each preset is a complete recipe. Clicking one sets the feed and kill rates, the diffusion ratio, the fast axis, the seed, the speed and the colours, and puts everything it does not name back to the default, so a preset always produces the pattern it is named after. Move any control that changes the chemistry and the selection drops to <em>Free play</em>, which is the card to start from when you want to mix your own.</p>
 
     <h3>Why the map has that shape</h3>
     <p>The two curves on the parameter map are not decoration; they are solved from the equations with the diffusion switched off.</p>
@@ -442,18 +489,39 @@ var $ = function(id){ return document.getElementById(id); };
  * Presets. F and k only; everything else is left as the user set it.
  * ------------------------------------------------------------------ */
 var PRESETS = [
-  {n:'Spots',          d:'holds its spacing',      F:0.030,  k:0.062,   seed:2, sp:32, sr:4},
-  {n:'Stripes',        d:'lined up, not a maze',   F:0.029,  k:0.057,   seed:4, aniso:[90,1.6]},
-  {n:'Labyrinth',      d:'dense maze, spreads slowly', F:0.029, k:0.057, seed:2, DA:0.18},
-  {n:'Mitosis',        d:'spots that divide',      F:0.0367, k:0.0649,  seed:1},
-  {n:'Coral',          d:'branching fronts',       F:0.0545, k:0.062,   seed:1},
-  {n:'Worms',          d:'wandering filaments',    F:0.078,  k:0.061,   seed:2, steps:26, draw:1},
-  {n:'Holes',          d:'spots, inverted',        F:0.039,  k:0.058,   seed:2, sp:32, sr:4},
-  {n:'Waves',          d:'travelling fronts',      F:0.014,  k:0.045,   seed:1, draw:1},
-  {n:'Chaos',          d:'never settles',          F:0.026,  k:0.051,   seed:2},
-  {n:'Drifting spots', d:'spots that wander',      F:0.014,  k:0.054,   seed:2, sp:32, sr:4},
-  {n:'Pulses',         d:'blobs that breathe',     F:0.025,  k:0.060,   seed:2, sp:32, sr:4}
+  {n:'Spots',          d:'holds its spacing',      F:0.030,  k:0.062,   seed:2, sp:32, sr:4,
+   c:['#f7ecd2','#d59a3c','#33200f',0.58]},
+  {n:'Stripes',        d:'lined up, not a maze',   F:0.029,  k:0.057,   seed:4, aniso:[90,1.6],
+   c:['#f6f4ef','#8f8d88','#0e0e10',0.50]},
+  {n:'Labyrinth',      d:'dense maze, spreads slowly', F:0.029, k:0.057, seed:2, DA:0.18,
+   c:['#fbe9de','#e08468','#4a1622',0.56]},
+  {n:'Turtle shell',   d:'plates and seams, draw to start', F:0.0802, k:0.0594, seed:0, draw:1, steps:20,
+   c:['#f2dfae','#a8762c','#26301c',0.55]},
+  {n:'Mitosis',        d:'spots that divide',      F:0.0367, k:0.0649,  seed:1,
+   c:['#f1eaf7','#b552a4','#2a0a3d',0.55]},
+  {n:'Coral',          d:'branching fronts',       F:0.0545, k:0.062,   seed:1,
+   c:['#fdf4e0','#f29a3b','#66120f',0.60]},
+  {n:'Worms',          d:'wandering filaments',    F:0.078,  k:0.061,   seed:2, steps:26, draw:1,
+   c:['#efe6cf','#b7763a','#2a2116',0.58]},
+  {n:'Holes',          d:'spots, inverted',        F:0.039,  k:0.058,   seed:2, sp:32, sr:4,
+   c:['#fff3cf','#e8b21f','#4a2f06',0.60]},
+  {n:'Waves',          d:'travelling fronts',      F:0.014,  k:0.045,   seed:1, draw:1,
+   c:['#e9f7fb','#3aa6d0','#0a2340',0.55]},
+  {n:'Chaos',          d:'never settles',          F:0.026,  k:0.051,   seed:2,
+   c:['#fdf0c8','#df4a3a','#14040f',0.55]},
+  {n:'Drifting spots', d:'spots that wander',      F:0.014,  k:0.054,   seed:2, sp:32, sr:4,
+   c:['#eef8f2','#3fd0b3','#0f2338',0.55]},
+  {n:'Pulses',         d:'blobs that breathe',     F:0.025,  k:0.060,   seed:2, sp:32, sr:4,
+   c:['#ffece9','#e04b4b','#2a0709',0.55]}
 ];
+/* Every preset now carries a complete recipe. Anything a preset does not name is put
+   back to the default below, the diffusion ratio included: leaving a modified ratio in
+   place was why Stripes could be selected and still not make stripes. */
+var PAL_DEFAULT = ['#fdf4e0','#f29a3b','#66120f',0.60];
+var RATIO_DEFAULT = 2.0, LEVEL_DEFAULT = 0.18, CONTRAST_DEFAULT = 1.6;
+function hx(c){
+  return [parseInt(c.substr(1,2),16)/255, parseInt(c.substr(3,2),16)/255, parseInt(c.substr(5,2),16)/255];
+}
 var DA_DEFAULT = 0.30, STEPS_DEFAULT = 12, SP_DEFAULT = 64, SR_DEFAULT = 14;
 /* ------------------------------------------------------------------ *
  * Shaders
@@ -590,6 +658,7 @@ var FS_DRAW = [
 'uniform vec2 uTexel;',
 'uniform float uLo, uHi, uRelief;',
 'uniform int uPal; uniform float uBilin;',
+'uniform vec3 uC0, uC1, uC2; uniform float uMid;',
 'vec3 inferno(float t){',
 '  const vec3 c0 = vec3(0.00021894, 0.00165100, -0.01948090);',
 '  const vec3 c1 = vec3(0.10651342, 0.56395644, 3.93271239);',
@@ -611,6 +680,10 @@ var FS_DRAW = [
 '  return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));',
 '}',
 'vec3 pal(float t){',
+'  if(uPal == 5){',
+'    vec3 c = mix(uC0, uC1, smoothstep(0.0, uMid, t));',
+'    return mix(c, uC2, smoothstep(uMid*0.86, 1.0, t));',
+'  }',
 '  if(uPal == 0) return mix(vec3(0.961,0.953,0.929), vec3(0.055,0.075,0.157), t);',
 '  if(uPal == 1){',
 '    vec3 c = mix(vec3(0.992,0.957,0.878), vec3(0.949,0.596,0.231), smoothstep(0.0,0.62,t));',
@@ -677,7 +750,8 @@ var S = {
   running: true,
   anisOn: false, angle: 0, aniso: 2.0,
   growOn: false, gRate: 1.55e-4, gMax: 4, g: 1, dil: 0,
-  pal: 1, relief: true, level: 0.18, contrast: 1.6,
+  pal: 5, c0:[0,0,0], c1:[0,0,0], c2:[0,0,0], mid: 0.6,
+  relief: true, level: 0.18, contrast: 1.6,
   brush: 28, tool: 'seed',
   seedMode: 2, seedSp: 64, seedR: 14, total: 0, preset: -1
 };
@@ -905,6 +979,10 @@ function drawField(){
   gl.uniform1f(P.draw.u.uHi, S.level + span);
   gl.uniform1f(P.draw.u.uRelief, S.relief ? 2.0 : 0.0);
   gl.uniform1i(P.draw.u.uPal, S.pal);
+  gl.uniform3f(P.draw.u.uC0, S.c0[0], S.c0[1], S.c0[2]);
+  gl.uniform3f(P.draw.u.uC1, S.c1[0], S.c1[1], S.c1[2]);
+  gl.uniform3f(P.draw.u.uC2, S.c2[0], S.c2[1], S.c2[2]);
+  gl.uniform1f(P.draw.u.uMid, S.mid);
   gl.uniform1f(P.draw.u.uBilin, smoothOK ? 0.0 : 1.0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindSampler(0, null);
@@ -947,7 +1025,7 @@ var baseKey = '';
 /* The plot now sits inside a margin so the axes can be labelled, so every conversion
    goes through the plot rectangle rather than the whole canvas. */
 var PR = {x:0, y:0, w:1, h:1};
-var MPAD = {l:38, r:10, t:10, b:31};
+var MPAD = {l:18, r:10, t:10, b:18};
 
 function mX(F){ return PR.x + (F - MAPR.F0)/(MAPR.F1 - MAPR.F0)*PR.w; }
 function mY(k){ return PR.y + PR.h - (k - MAPR.K0)/(MAPR.K1 - MAPR.K0)*PR.h; }
@@ -1063,32 +1141,19 @@ function buildBase(w,h,dpr){
   }
   bx.restore();
 
-  /* axes */
-  var mono = Math.round(9.5*dpr) + 'px "Space Mono",monospace';
+  /* axes: named, not numbered. The exact values live on the two sliders under the
+     map and in the tooltip, which is enough and leaves the plot uncluttered. */
   bx.strokeStyle = 'rgba(130,170,150,.34)'; bx.lineWidth = 1;
   bx.strokeRect(PR.x + 0.5, PR.y + 0.5, PR.w - 1, PR.h - 1);
-  bx.fillStyle = '#88a397'; bx.font = mono;
-  bx.textAlign = 'center'; bx.textBaseline = 'top';
-  [0.01,0.03,0.05,0.07,0.09].forEach(function(v){
-    var tx = mX(v);
-    bx.beginPath(); bx.moveTo(tx, PR.y+PR.h); bx.lineTo(tx, PR.y+PR.h+3*dpr); bx.stroke();
-    bx.fillText(v.toFixed(2), tx, PR.y+PR.h+5*dpr);
-  });
-  bx.textAlign = 'right'; bx.textBaseline = 'middle';
-  [0.04,0.05,0.06,0.07].forEach(function(v){
-    var ty = mY(v);
-    bx.beginPath(); bx.moveTo(PR.x-3*dpr, ty); bx.lineTo(PR.x, ty); bx.stroke();
-    bx.fillText(v.toFixed(2), PR.x-5*dpr, ty);
-  });
   var ts = Math.round(10*dpr);
   bx.font = '600 ' + ts + 'px "Space Grotesk",sans-serif';
   bx.fillStyle = '#b9d0c6';
   bx.textAlign = 'center'; bx.textBaseline = 'bottom';
-  bx.fillText('feed rate F \u2192 more substrate', PR.x + PR.w/2, h - 1);
+  bx.fillText('feed rate F \u2192', PR.x + PR.w/2, h - 1);
   bx.save();
   bx.translate(ts + 1, PR.y + PR.h/2); bx.rotate(-Math.PI/2);
   bx.textAlign = 'center'; bx.textBaseline = 'top';
-  bx.fillText('kill rate k \u2192 activator dies faster', 0, 0);
+  bx.fillText('kill rate k \u2192', 0, 0);
   bx.restore();
 }
 function mapDpr(){
@@ -1224,12 +1289,13 @@ function paintAt(ev){
  * Sizing
  * ------------------------------------------------------------------ */
 function resize(){
+  /* the card is placed first: docking changes the size of the stage */
+  placeMapCard();
   var dpr = Math.min(window.devicePixelRatio||1, 2);
   var w = Math.max(1, Math.round(stage.clientWidth*dpr));
   var h = Math.max(1, Math.round(stage.clientHeight*dpr));
   if(cvs.width !== w || cvs.height !== h){ cvs.width = w; cvs.height = h; }
   if(ov.width !== w || ov.height !== h){ ov.width = w; ov.height = h; }
-  placeMapCard();
 }
 
 /* ------------------------------------------------------------------ *
@@ -1240,7 +1306,10 @@ function syncParams(){
   $('fSl').value = S.F; $('kSl').value = S.k;
   $('fOut').textContent = fmt(S.F,4);  $('kOut').textContent = fmt(S.k,4);
   var btns = $('presets').children;
-  for(var i=0;i<btns.length;i++) btns[i].setAttribute('aria-pressed', i === S.preset ? 'true' : 'false');
+  for(var i=0;i<btns.length;i++){
+    var pi = parseInt(btns[i].dataset.i, 10);
+    btns[i].setAttribute('aria-pressed', pi === S.preset ? 'true' : 'false');
+  }
   updateMapText(-1);
   drawMap();
 }
@@ -1255,10 +1324,18 @@ function syncGrowth(){
 }
 function buildPresets(){
   var box = $('presets');
+  var f = document.createElement('button');
+  f.className = 'preset free'; f.type = 'button';
+  f.dataset.i = '-1';
+  f.setAttribute('aria-pressed', 'false');
+  f.innerHTML = '<b>Free play</b><small>every control is yours: mix your own chemistry and draw into it</small>';
+  f.addEventListener('click', function(){ freeMode(); });
+  box.appendChild(f);
   PRESETS.forEach(function(p, i){
     var b = document.createElement('button');
     b.className = 'preset';
     b.type = 'button';
+    b.dataset.i = String(i);
     b.setAttribute('aria-pressed', 'false');
     b.innerHTML = '<b>' + p.n + '</b><small>' + p.d + '</small>';
     b.addEventListener('click', function(){ applyPreset(i); });
@@ -1270,20 +1347,49 @@ function buildPresets(){
    so presets never inherit a previous one's settings. */
 function applyPreset(i){
   var p = PRESETS[i];
-  S.F = p.F; S.k = p.k; S.preset = i;
+  S.preset = i;
+  S.F = p.F; S.k = p.k;
+  S.ratio = p.ratio || RATIO_DEFAULT;
   S.DA = p.DA || DA_DEFAULT;
   S.steps = p.steps || STEPS_DEFAULT;
   S.anisOn = !!p.aniso;
-  if(p.aniso){ S.angle = p.aniso[0]; S.aniso = p.aniso[1]; }
+  S.angle = p.aniso ? p.aniso[0] : 0;
+  S.aniso = p.aniso ? p.aniso[1] : 2.0;
   S.seedSp = p.sp || SP_DEFAULT; S.seedR = p.sr || SR_DEFAULT;
-  seedField(S.growOn ? 4 : p.seed);
-  S.g = 1;
+  S.level = p.level || LEVEL_DEFAULT;
+  S.contrast = p.contrast || CONTRAST_DEFAULT;
+  S.relief = true;
+  setPalette(p.c || PAL_DEFAULT);
+  S.growOn = false; S.g = 1; S.dil = 0;
+  seedField(p.seed === undefined ? 2 : p.seed);
   syncPanel();
   syncParams();
   showDrawHint(!!p.draw);
 }
+/* Free play leaves the field exactly as it is and simply stops claiming that a preset
+   is in force. Moving any control that changes the chemistry drops into it too, so the
+   highlighted card and what is actually running can never disagree. */
+function freeMode(){
+  if(S.preset < 0) return;
+  S.preset = -1;
+  showDrawHint(false);
+  syncParams();
+}
+function setPalette(c){
+  S.pal = 5;
+  S.c0 = hx(c[0]); S.c1 = hx(c[1]); S.c2 = hx(c[2]); S.mid = c[3];
+}
+setPalette(PAL_DEFAULT);
 /* the panel has to agree with what the preset just did */
 function syncPanel(){
+  $('growOn').checked = S.growOn;
+  ['growRate','growMax'].forEach(function(id){ $(id).disabled = !S.growOn; });
+  ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
+  $('ratioSl').value = S.ratio; $('ratioVal').textContent = S.ratio.toFixed(2) + '\u00d7';
+  $('palSel').value = String(S.pal);
+  $('levelSl').value = S.level; $('levelVal').textContent = S.level.toFixed(3);
+  $('contrastSl').value = S.contrast; $('contrastVal').textContent = S.contrast.toFixed(2);
+  $('reliefOn').checked = S.relief;
   $('anisOn').checked = S.anisOn;
   $('anisAng').disabled = !S.anisOn; $('anisAmt').disabled = !S.anisOn;
   ['rowAnisAng','rowAnisAmt'].forEach(function(id){ $(id).classList.toggle('off', !S.anisOn); });
@@ -1324,21 +1430,28 @@ function setPlaying(on){
    both too small to read. Landscape phones are only 390 tall, so they use the sheet
    too. One element, moved, so there is never a second copy to keep in sync. */
 var SIDE_MQ = matchMedia('(min-width:900px) and (min-height:620px)');
+var PHONE_MQ = matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
+/* Three homes for one element, never two copies of it. Beside the pattern on a desktop;
+   docked against the pattern on a phone, on the right in landscape and underneath in
+   portrait, so it can be touched without opening the sheet; inside the controls sheet
+   only on the in-between sizes where there is no room for either. */
 function placeMapCard(){
   var card = $('mapcard'), slot = $('mapslot');
   if(!card || !slot) return;
-  if(SIDE_MQ.matches){
-    if(card.parentNode !== document.body){ document.body.appendChild(card); }
-    card.classList.remove('in-sheet');
-  } else {
-    if(card.parentNode !== slot){ slot.appendChild(card); }
-    card.classList.add('in-sheet');
-  }
+  var mode = SIDE_MQ.matches ? 'side' : (PHONE_MQ.matches ? 'dock' : 'sheet');
+  if(mode === 'sheet'){ if(card.parentNode !== slot) slot.appendChild(card); }
+  else if(card.parentNode !== document.body){ document.body.appendChild(card); }
+  card.classList.toggle('in-sheet', mode === 'sheet');
+  card.classList.toggle('docked', mode === 'dock');
+  document.body.classList.toggle('map-docked', mode === 'dock');
   baseKey = '';
   drawMap();
 }
-if(SIDE_MQ.addEventListener) SIDE_MQ.addEventListener('change', placeMapCard);
-else if(SIDE_MQ.addListener) SIDE_MQ.addListener(placeMapCard);
+function onPlacementChange(){ resize(); }
+[SIDE_MQ, PHONE_MQ].forEach(function(mq){
+  if(mq.addEventListener) mq.addEventListener('change', onPlacementChange);
+  else if(mq.addListener) mq.addListener(onPlacementChange);
+});
 
 function wire(){
   buildPresets();
@@ -1362,7 +1475,7 @@ function wire(){
   mapCv.addEventListener('pointerleave', function(){ updateMapText(-1); });
 
   $('growOn').addEventListener('change', function(){
-    S.growOn = this.checked;
+    S.growOn = this.checked; freeMode();
     ['growRate','growMax'].forEach(function(id){ $(id).disabled = !S.growOn; });
     ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
     S.g = 1;
@@ -1379,14 +1492,14 @@ function wire(){
     function(){ return S.gMax.toFixed(1) + '\u00d7'; });
 
   $('anisOn').addEventListener('change', function(){
-    S.anisOn = this.checked;
+    S.anisOn = this.checked; freeMode();
     $('anisAng').disabled = !S.anisOn; $('anisAmt').disabled = !S.anisOn;
     ['rowAnisAng','rowAnisAmt'].forEach(function(id){ $(id).classList.toggle('off', !S.anisOn); });
   });
   bindRange('anisAng','anisAngVal', function(){ return S.angle; },
-    function(v){ S.angle = v; }, function(){ return Math.round(S.angle) + '\u00b0'; });
+    function(v){ S.angle = v; freeMode(); }, function(){ return Math.round(S.angle) + '\u00b0'; });
   bindRange('anisAmt','anisAmtVal', function(){ return S.aniso; },
-    function(v){ S.aniso = v; }, function(){ return S.aniso.toFixed(2) + '\u00d7'; });
+    function(v){ S.aniso = v; freeMode(); }, function(){ return S.aniso.toFixed(2) + '\u00d7'; });
 
   var seg = $('toolSeg');
   seg.addEventListener('click', function(e){
@@ -1401,7 +1514,8 @@ function wire(){
     function(v){ S.brush = v; }, function(){ return Math.round(S.brush) + ' px'; });
 
   bindRange('ratioSl','ratioVal', function(){ return S.ratio; },
-    function(v){ S.ratio = v; updateMapText(-1); drawMap(); }, function(){ return S.ratio.toFixed(2); });
+    function(v){ S.ratio = v; freeMode(); updateMapText(-1); drawMap(); },
+    function(){ return S.ratio.toFixed(2) + '\u00d7'; });
   bindRange('stepsSl','stepsVal', function(){ return S.steps; },
     function(v){ S.steps = v; syncGrowth(); }, function(){ return String(S.steps); });
   bindRange('levelSl','levelVal', function(){ return S.level; },
@@ -1414,7 +1528,10 @@ function wire(){
     try{ allocGrid(parseInt(this.value,10)); seedField(S.seedMode); }
     catch(e){ fail(e.message); }
   });
-  $('palSel').addEventListener('change', function(){ S.pal = parseInt(this.value,10); });
+  $('palSel').addEventListener('change', function(){
+    S.pal = parseInt(this.value,10);
+    if(S.pal === 5) setPalette(S.preset >= 0 ? (PRESETS[S.preset].c || PAL_DEFAULT) : PAL_DEFAULT);
+  });
   $('reliefOn').addEventListener('change', function(){ S.relief = this.checked; });
 
   $('playBtn').addEventListener('click', function(){ setPlaying(!S.running); });
@@ -1472,7 +1589,9 @@ function chip(k, v){
 window.__turing = function(){
   return {N:S.N, F:S.F, k:S.k, DA:S.DA, steps:S.steps, anisOn:S.anisOn, angle:S.angle,
           aniso:S.aniso, cov:stats.cov, total:S.total, fps:stats.fps, smoothOK:smoothOK,
-          fmt:(IFMT === gl.RGBA32F ? '32f' : '16f'), preset:S.preset};
+          fmt:(IFMT === gl.RGBA32F ? '32f' : '16f'), preset:S.preset,
+          ratio:S.ratio, level:S.level, contrast:S.contrast, growOn:S.growOn,
+          pal:S.pal, sp:S.seedSp, sr:S.seedR};
 };
 window.__turingPreset = function(i){ applyPreset(i); };
 /* runs the model without waiting for frames, so the pattern tests can measure a fixed
@@ -1555,8 +1674,8 @@ if(initGL()){
     else if(k === 'h'){ clean.click(); }
     else if(k === 'f'){ full.click(); }
     else if(k === '?' || k === '/'){ $('aboutBtn').click(); }
-    else if(k >= '1' && k <= '9'){
-      var b = $('presets').children[parseInt(k,10) - 1];
+    else if(k >= '0' && k <= '9'){
+      var b = $('presets').querySelector('.preset[data-i="' + (parseInt(k,10) - 1) + '"]');
       if(b) b.click();
     }
   });
