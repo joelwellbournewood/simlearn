@@ -139,6 +139,22 @@
     "visible": true
   },
   {
+    "id": "hodgkin-huxley",
+    "title": "Hodgkin-Huxley Axon",
+    "category": "Physiology",
+    "tags": [
+      "neuroscience",
+      "electrophysiology",
+      "biology",
+      "ion channels"
+    ],
+    "difficulty": "Intermediate",
+    "description": "The 1952 squid axon equations, running live. Fire an electrode and watch sodium and potassium channels build a spike ion by ion, poison them with pufferfish toxin, run the voltage clamp the equations came from, or send an impulse down a myelinated nerve and strip the sheath away.",
+    "status": "live",
+    "hook": "How a nerve fires",
+    "visible": true
+  },
+  {
     "id": "segregation",
     "title": "Schelling's Segregation Model",
     "category": "Social Dynamics",
