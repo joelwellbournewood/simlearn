@@ -83,3 +83,25 @@ The matching script skeleton is also worth copying: DPR capped to a 3.2M device
 pixel budget in `resize()`, a `PRESETS` object whose keys drive both the cards and
 the 1-9 number keys, `bind(id, valueId, formatter, setter)` for sliders, and the
 space / R / H / F key handlers.
+
+## Theme lock (added 2026-09-08), required on every page
+
+Every HTML page on the site carries these three lines. A new sim without them
+will be recoloured by dark mode extensions and by Windows High Contrast, which
+destroys the colour coding in the scene.
+
+```html
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+```
+
+The two metas go straight after `<meta name="theme-color">`; the stylesheet link
+goes last in `<head>` so it wins on order. It pins `color-scheme: only dark` at
+the root, holds native widgets (range, checkbox, radio, select) at their light
+rendering so nothing restyles, and switches `forced-color-adjust` off under
+`forced-colors: active` so a high contrast user gets our stylesheet rather than
+system colours. `assets/js/theme-guard.js` is loaded on the three top level pages
+only (index, about, sim) and shows one dismissible notice if an extension
+repaints the page in spite of the lock. Verified: patched pages are
+property-for-property identical with `forced-colors: active` and without it.

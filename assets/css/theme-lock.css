@@ -1,0 +1,49 @@
+/* SimLearn theme lock.
+   The site ships one palette on purpose: every scene is colour coded to its
+   meaning, so an automatic dark, light, or high contrast rewrite of the page
+   makes the simulations unreadable. This file pins the palette while leaving
+   the design untouched for a browser that was not going to interfere.
+   Loaded last on every page. Bump the ?v= stamp when this file changes. */
+
+/* Declare the page dark, and only dark. This stops the browser's own
+   auto dark theme (Chrome on Android, Edge) from darkening a dark site a
+   second time, and it tells dark mode extensions there is nothing to do. */
+:root{ color-scheme: only dark; }
+
+/* Native widgets keep the light rendering they have always had here, so
+   declaring the scheme does not restyle a single checkbox, slider, or menu. */
+input[type=range], input[type=checkbox], input[type=radio],
+select, option, progress, meter{ color-scheme: light; }
+
+/* Page scrollbar, stated outright rather than left to follow the scheme. */
+html{ scrollbar-color: rgba(120,190,165,.30) rgba(5,12,10,.65); }
+
+/* Windows High Contrast, Firefox's "use my colours", and any other forced
+   colour mode: keep our own colours, which already clear WCAG AA on text. */
+@media (forced-colors: active){
+  /* One declaration, deliberately. Switching the adjustment off hands the page
+     back to its own stylesheet, so a forced colour user sees exactly the design
+     everyone else sees rather than a guess at it. Adding colour overrides here
+     was worse: they leaked the homepage palette into sims that define their own
+     tokens. */
+  *, *::before, *::after{ forced-color-adjust: none !important; }
+}
+
+/* A page-wide filter is how most dark mode extensions work. If one is running
+   despite the lock above, theme-guard.js adds this class and the notice. */
+html.tg-recoloured body{ background-color: #050c0a; }
+#theme-guard-note{
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 2147483000;
+  max-width: 680px; margin: 0 auto; padding: 12px 14px;
+  border: 1px solid #2a4b40; border-radius: 12px;
+  background: #0a1714; color: #f1fcf7;
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; gap: 12px; align-items: flex-start;
+  box-shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+#theme-guard-note b{ color: #56e0c2; font-weight: 600; }
+#theme-guard-note button{
+  flex: none; margin-left: auto; padding: 6px 10px; cursor: pointer;
+  border: 1px solid #2a4b40; border-radius: 8px;
+  background: #12241e; color: #f1fcf7; font: inherit;
+}
