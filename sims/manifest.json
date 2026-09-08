@@ -10,7 +10,7 @@
       "3d"
     ],
     "difficulty": "Beginner",
-    "description": "Separation, alignment and cohesion are the only three rules. The shape of the flock follows from them. Ten presets, 2D and 3D, with predators, obstacles and currents you can paint into the sky.",
+    "description": "Separation, alignment, and cohesion are the only three rules. The shape of the flock follows from them. Ten presets, 2D and 3D, with predators, obstacles, and currents you can paint into the sky.",
     "status": "live",
     "hook": "Three rules make a flock",
     "visible": true
@@ -25,7 +25,7 @@
       "Lotka-Volterra"
     ],
     "difficulty": "Intermediate",
-    "description": "Every dot is one animal with its own energy budget, grazing, hunting and breeding. The boom and bust population cycles come out of those individual decisions.",
+    "description": "Every dot is one animal with its own energy budget, grazing, hunting, and breeding. The boom and bust population cycles come out of those individual decisions.",
     "status": "live",
     "hook": "Booms, busts, and extinction",
     "visible": true
@@ -72,7 +72,7 @@
       "cameras"
     ],
     "difficulty": "Beginner",
-    "description": "An optical bench with real ray tracing. Move the object, the lens and the sensor, and watch the image form. Aperture, focus error, blur circles and spherical aberration, with a live view of what the sensor actually records.",
+    "description": "An optical bench with real ray tracing. Move the object, the lens, and the sensor, and watch the image form. Aperture, focus error, blur circles, and spherical aberration, with a live view of what the sensor actually records.",
     "status": "live",
     "hook": "Trace rays, form an image",
     "visible": false
@@ -87,7 +87,7 @@
       "public health"
     ],
     "difficulty": "Beginner",
-    "description": "Susceptible, infected and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
+    "description": "Susceptible, infected, and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
     "status": "live",
     "hook": "One case to an outbreak",
     "visible": false
@@ -103,7 +103,7 @@
       "transportation"
     ],
     "difficulty": "Intermediate",
-    "description": "A ring road with no junction, no obstacle and nowhere to turn off. Every driver follows the Intelligent Driver Model. Tap the brakes on one car and watch the wave outlive it, or pack the road until an ordinary wobble on the pedal is enough to stop it. Live space-time diagram, and self-driving cars to try to fix it.",
+    "description": "One lane of road bent into a circle, where nothing can hold a car up except the car in front. Every driver follows the Intelligent Driver Model. Tap the brakes on one car and watch the wave outlive it, or pack the road until an ordinary wobble on the pedal is enough to stop it. Live space-time diagram, and self-driving cars to try to fix it.",
     "status": "live",
     "hook": "A brake tap becomes a wave",
     "visible": true
@@ -178,7 +178,7 @@
       "emergence"
     ],
     "difficulty": "Beginner",
-    "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators and patterns that never settle down.",
+    "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators, and patterns that never settle down.",
     "status": "live",
     "hook": "Life from one rule",
     "visible": false
