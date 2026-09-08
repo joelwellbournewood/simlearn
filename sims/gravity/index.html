@@ -270,6 +270,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
       <li>Start <b class="hl">Star and planets</b>, click the comet, and watch its speed as it swings past the star.</li>
       <li>Raise <b>Large bodies</b> on the same arrangement. Two or three stars at the centre still hold the planets, until they do not.</li>
       <li>On <b class="hl">Lagrange points</b>, drag a body to rest on L4 and another on L1. The teal one stays put for the whole run, and the gold one leaves within an orbit or two. In the co-rotating view a body "at rest" means at rest with the pair, which is what the drag arrow measures there.</li>
+      <li>On <b class="hl">Horseshoe orbits</b>, pick one companion and watch the gap to the planet stop shrinking and open again. Then widen the offset by dragging a body outward, and it crosses the planet's orbit instead and is thrown out of the scene.</li>
       <li>Run <b class="hl">Pythagorean three</b> twice and compare. Then change the softening a little and run it again.</li>
       <li>On <b class="hl">Galaxy and intruder</b>, watch in the centre-of-mass view. The long tail is thrown from the far side of the disc rather than the side that was hit.</li>
       <li>Set gravity to 0.3 on <b class="hl">Cold collapse</b>. The cloud still falls in, slowly, and far fewer bodies merge on the way.</li>
@@ -277,7 +278,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     </ul>
 
     <h3>Keyboard</h3>
-    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>8</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>9</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
   
 <div class="more-box"><div class="more-body">
 <h3>Kepler's laws come out on their own</h3>
@@ -299,7 +300,10 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
       <li><b>L4</b> and <b>L5</b> sit on the planet's own orbit, 60 degrees ahead of it and 60 degrees behind. Each one makes an equilateral triangle with the star and the planet, which is why the faint triangle is drawn to them. They are the two furthest from the pair, and the only two that lie off the line.</li>
     </ul>
     <p><b>Stable or not.</b> L4 and L5 (marked teal) are genuinely stable when the planet is lighter than about a twenty-fifth of the star: nudge a body off them and the Coriolis effect curls it back into a slow loop around the point. That is why Jupiter's Trojan asteroids have held those two spots for billions of years, and why the six small bodies drawn there in this arrangement librate rather than escape. L1, L2, and L3 (marked gold) are saddle points, balanced on a ridge, so anything left there slides away within an orbit or two. The James Webb telescope sits at Sun-Earth L2 and fires thrusters every few weeks to stay there, and the fuel it carries for those burns is what sets the end of its mission.</p>
-    <p>The four bodies started on the planet's orbit a hair inside and outside it trace <b>horseshoes</b> in the rotating view. The inner one runs slightly faster, catches up with the planet, is pushed outward by it, then falls behind and comes back. Saturn's moons Janus and Epimetheus do exactly this, swapping orbits every four years.</p>
+    <h3>Horseshoe orbits</h3>
+    <p>The <b class="hl">Horseshoe orbits</b> arrangement shows the other family of co-orbital motion, and it needs a lighter planet than the one in the Lagrange scene. Each companion starts on a circle about two percent wider or two percent narrower than the planet's, which is enough to make it drift slowly past in the rotating view, and little enough that the planet can turn it back well before it arrives.</p>
+    <p>Follow the narrow one. It goes round slightly faster, so it gains on the planet from behind. The planet, ahead of it, pulls it forward, which adds energy and lifts it into a wider and therefore slower orbit, and from there it falls behind again. Coming up on the planet from the other side, the pull is backwards, energy is taken away, and it drops back to the narrow orbit. Neither companion ever gets close, and in the rotating view each traces a long horseshoe whose ends stop well short of the planet. Turn the trail up and give it a minute to draw the whole shape.</p>
+    <p>Saturn's moons Janus and Epimetheus are on exactly this dance, about fifty kilometres apart in orbital radius, and they trade orbits every four years without ever coming within fifteen thousand kilometres of one another. Earth has a horseshoe companion too, the asteroid 2010 SO16, which takes hundreds of years to make one pass of the shape. The narrowness of the band matters: too close to the planet's own orbit and the companion settles into a tadpole around L4 or L5 instead, too far and the planet cannot turn it back at all, so it crosses the orbit and is scattered.</p>
     <p>The star here is 100 times the mass of the planet, which is a heavier planet than any in the solar system. That is deliberate, because it puts L1 and L2 far enough from the planet to see. The point positions are computed from the current separation of the two heaviest bodies, so if you sling a new heavy body in, the crosses move to where they now belong.</p>
 
     <h3>The slingshot</h3>
@@ -603,7 +607,7 @@ let sK=2.05;
 function radiusOf(m){ return Math.max(1.5,Math.pow(m,0.28)*sK); }
 function setSize(b){ b.r=radiusOf(b.m); b.eps=Math.max(1.2,softK*b.r); b.eps2=b.eps*b.eps; }
 function mk(x,y,vx,vy,m){ const b={id:nextId++,x,y,vx,vy,m,ax:0,ay:0,jx:0,jy:0,trail:[],r:0,eps:0,eps2:0}; setSize(b); return b; }
-function trailCap(){ const n=Math.max(1,bodies.length); return Math.min(Math.round(trailPct/100*420),Math.floor(70000/n)); }
+function trailCap(){ const n=Math.max(1,bodies.length), P=PRESETS[activePreset], boost=(P&&P.tcap)||1; return Math.min(Math.round(trailPct/100*420*boost),Math.floor(70000/n)); }
 function bodyById(id){ for(const b of bodies) if(b.id===id) return b; return null; }
 function heaviest(){ let h=null; for(const b of bodies) if(!h||b.m>h.m) h=b; return h; }
 function twoHeaviest(){ let A=null,B=null; for(const b of bodies){ if(!A||b.m>A.m){ B=A; A=b; } else if(!B||b.m>B.m) B=b; } return [A,B]; }
@@ -805,18 +809,37 @@ const PRESETS={
     /* seeds at the three unstable points */
     const L=NBCore.lagrange(out[0],out[1]);
     for(let i=0;i<3;i++) ring(L[i].x*1.004,L[i].y);
-    /* horseshoe companions: the planet's orbit, a hair inside and outside */
-    for(let i=0;i<4;i++){
-      const an=Math.PI*(0.45+0.33*i)*(i%2?1:-1), r=d*(1+(i%2?0.014:-0.014));
-      ring(x1+Math.cos(an)*r,Math.sin(an)*r);
-    }
+    /* dust, kept clear of the band the planet stirs up, so the Trojans are not knocked out of it */
     while(small.length<n){
-      const an=Math.random()*TAU, r=d*(0.55+0.9*Math.random());
+      const an=Math.random()*TAU, inner=small.length%2===0;
+      const r=d*(inner?0.26+0.32*Math.random():1.50+0.34*Math.random());
       const v=Math.sqrt(G*M1/r);
       small.push(mk(x1+Math.cos(an)*r,Math.sin(an)*r,-Math.sin(an)*v,Math.cos(an)*v,0.05));
     }
     small.length=n;
     return out.concat(small);}},
+  horseshoe:{name:'Horseshoe orbits',tag:'Co-orbital bodies that never meet',n:4,lmin:2,lmax:2,ldef:2,frame:'rot',merge:false,trail:80,tcap:14,speed:3,build(n){
+    const S=Math.min(W,H), d=S*0.30, M1=16000, M2=16, M=M1+M2;
+    const x1=-d*M2/M, x2=d*M1/M;
+    const out=[mk(x1,0,0,0,M1), mk(x2,0,0,0,M2)];
+    out[1].lab='planet';
+    /* the pair on a circular orbit in the softened field the code integrates, so the
+       planet's distance holds steady and the co-orbital resonance is not smeared */
+    const e2=out[0].eps2+out[1].eps2, w=Math.sqrt(G*M/Math.pow(d*d+e2,1.5));
+    out[0].vy=w*x1; out[1].vy=w*x2;
+    /* companions on the planet's orbit, about two percent wide or two percent narrow.
+       They are given a ten thousandth of the planet's mass: they still pull on everything,
+       and the horseshoe is decided by the planet rather than by the companions on each other.
+       Speed comes from the softened field the code actually integrates, so the
+       starting orbit is round and the offset is the one asked for. */
+    const ph=[184,176,192,168,200,160,208,152], dls=[0.019,0.019,0.021,0.021,0.023,0.023,0.025,0.025];
+    const k=Math.max(2,Math.min(8,n||4));
+    for(let i=0;i<k;i++){
+      const sg=i%2?-1:1, r=d*(1+sg*dls[i]), an=ph[i]*Math.PI/180;
+      const v=Math.sqrt(G*M*r*r/Math.pow(r*r+e2,1.5));
+      out.push(mk(r*Math.cos(an),r*Math.sin(an),-v*Math.sin(an),v*Math.cos(an),1e-4));
+    }
+    return out;}},
   collapse:{name:'Cold collapse',tag:'A cloud falls in on itself',n:40,lmin:0,lmax:5,ldef:0,frame:'com',merge:true,build(n,nL){
     const S=Math.min(W,H), R=S*0.40, out=[];
     for(let i=0;i<nL;i++){
@@ -1227,6 +1250,8 @@ function restart(key,keep){
     if(+tv.value!==twant){ tv.value=twant; tv.dispatchEvent(new Event('input')); }
     const gv=el('s-g');
     if(+gv.value!==1){ gv.value=1; gv.dispatchEvent(new Event('input')); }
+    const spv=el('s-speed'), spwant=P.speed||1;
+    if(+spv.value!==spwant){ spv.value=spwant; spv.dispatchEvent(new Event('input')); }
   }
   const nL=Math.max(lo,Math.min(hi,+lSlider.value||lo)); lSlider.value=nL;
   const n=sliderToN(+nSlider.value);
