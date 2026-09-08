@@ -67,11 +67,31 @@
     if(r){ state.reason = r; show(r); return true; }
     return false;
   }
+  var obs = null, pending = 0, stopAt = 0;
+  function stop(){
+    if(obs){ obs.disconnect(); obs = null; }
+  }
+  function later(){
+    if(pending) return;
+    pending = setTimeout(function(){ pending = 0; if(check() || Date.now() > stopAt) stop(); }, 400);
+  }
   function start(){
+    stopAt = Date.now() + 60000;
     if(check()) return;
-    [700, 2200, 6000].forEach(function(ms){ setTimeout(check, ms); });
+    /* Extensions inject at their own pace, and the user can switch one on
+       halfway through a session, so watch for a minute rather than sampling
+       once. The observer catches the injected stylesheet; the timers catch a
+       change that arrives without touching the DOM we can see. */
+    [700, 2200, 6000, 12000, 20000, 40000, 60000].forEach(function(ms){
+      setTimeout(function(){ if(check()) stop(); }, ms);
+    });
+    try{
+      obs = new MutationObserver(later);
+      obs.observe(document.documentElement, { childList: true, subtree: true, attributes: true,
+        attributeFilter: ['style', 'class'] });
+    }catch(e){}
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
-  window.__themeGuard = function(){ return { checks: state.checks, reason: state.reason, shown: state.shown, build: '20260908f' }; };
+  window.__themeGuard = function(){ return { checks: state.checks, reason: state.reason, shown: state.shown, build: '20260908g' }; };
 })();
