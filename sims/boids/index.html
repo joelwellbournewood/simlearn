@@ -385,6 +385,12 @@
     <button data-tool="predator"><svg viewBox="0 0 24 24"><path d="M4 12l16-7-5 7 5 7z"/></svg>Predator</button>
     <button data-tool="erase"><svg viewBox="0 0 24 24"><path d="M4 16l9-9 6 6-6 6H8z"/><path d="M4 21h16"/></svg>Erase</button>
   </div>
+  <div class="seg" role="group" aria-label="Obstacle shape" id="shapes" hidden>
+    <button data-shape="sphere" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Round</button>
+    <button data-shape="box"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>Box</button>
+    <button data-shape="cyl"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="6" ry="2.6"/><path d="M6 6.5v11c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-11"/></svg>Column</button>
+    <button data-shape="free"><svg viewBox="0 0 24 24"><path d="M4 17c3-8 6 4 9-3s4 2 7-2"/></svg>Freehand</button>
+  </div>
   <div class="hint" id="hint"></div>
 </div>
 
@@ -753,22 +759,68 @@ class Flock {
       if (al > force) { const q = force / al; ax *= q; ay *= q; az *= q; }
       S[0] += ax * w; S[1] += ay * w; S[2] += az * w;
     }
+    /* Outward normal and distance to the surface of an obstacle, whatever its shape.
+       NRM holds nx, ny, nz and the signed distance, negative inside the solid. A sphere
+       gives exactly the old numbers, so nothing about the round case has changed. */
+    const NRM = new Float64Array(4);
+    function obField(ob, x, y, z) {
+      const k = ob.kind;
+      if (k === 'box') {
+        const dx = x - ob.x, dy = y - ob.y, dz = is3 ? z - ob.z : 0;
+        const hz = is3 ? ob.hz : 1e9;
+        const qx = Math.abs(dx) - ob.hx, qy = Math.abs(dy) - ob.hy, qz = Math.abs(dz) - hz;
+        const mx = qx > 0 ? qx : 0, my = qy > 0 ? qy : 0, mz = qz > 0 ? qz : 0;
+        const out = Math.sqrt(mx * mx + my * my + mz * mz);
+        if (out > 1e-6) {
+          NRM[0] = (dx < 0 ? -mx : mx) / out; NRM[1] = (dy < 0 ? -my : my) / out;
+          NRM[2] = is3 ? (dz < 0 ? -mz : mz) / out : 0; NRM[3] = out;
+        } else {
+          const az = is3 ? qz : -1e9;
+          NRM[0] = 0; NRM[1] = 0; NRM[2] = 0;
+          if (qx >= qy && qx >= az) { NRM[0] = dx < 0 ? -1 : 1; NRM[3] = qx; }
+          else if (qy >= az) { NRM[1] = dy < 0 ? -1 : 1; NRM[3] = qy; }
+          else { NRM[2] = dz < 0 ? -1 : 1; NRM[3] = az; }
+        }
+        return;
+      }
+      if (k === 'cyl') {
+        const dx = x - ob.x, dz = is3 ? z - ob.z : 0, dy = y - ob.y;
+        const rr = Math.sqrt(dx * dx + dz * dz) || 1e-6;
+        const qr = rr - ob.hx, qy = Math.abs(dy) - ob.hy;
+        if (qr > 0 || qy > 0) {
+          const mr = qr > 0 ? qr : 0, my = qy > 0 ? qy : 0;
+          const out = Math.sqrt(mr * mr + my * my) || 1e-6;
+          NRM[0] = (dx / rr) * (mr / out); NRM[2] = is3 ? (dz / rr) * (mr / out) : 0;
+          NRM[1] = (dy < 0 ? -my : my) / out; NRM[3] = out;
+        } else if (qr >= qy) {
+          NRM[0] = dx / rr; NRM[1] = 0; NRM[2] = is3 ? dz / rr : 0; NRM[3] = qr;
+        } else {
+          NRM[0] = 0; NRM[1] = dy < 0 ? -1 : 1; NRM[2] = 0; NRM[3] = qy;
+        }
+        return;
+      }
+      const dx = x - ob.x, dy = y - ob.y, dz = is3 ? z - ob.z : 0;
+      const dd = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+      NRM[0] = dx / dd; NRM[1] = dy / dd; NRM[2] = is3 ? dz / dd : 0; NRM[3] = dd - ob.r;
+    }
     function environment(i, x, y, z, vx0, vy0, vz0, ux, uy, uz, top, force) {
       // obstacles
+      const reach = margin * 0.9;
       for (let o = 0; o < obs.length; o++) {
         const ob = obs[o];
-        const dx = x - ob.x, dy = y - ob.y, dz = is3 ? z - ob.z : 0;
-        const dd = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
-        const reach = ob.r + margin * 0.9;
-        if (dd < reach) {
-          const t = clamp(1 - (dd - ob.r) / (reach - ob.r), 0, 1);
-          const nxn = dx / dd, nyn = dy / dd, nzn = dz / dd;
+        const bx = x - ob.x, by = y - ob.y, bz = is3 ? z - ob.z : 0, br = ob.r + reach;
+        if (bx * bx + by * by + bz * bz > br * br) continue;
+        obField(ob, x, y, z);
+        const sd = NRM[3];
+        if (sd < reach) {
+          const t = clamp(1 - sd / reach, 0, 1);
+          const nxn = NRM[0], nyn = NRM[1], nzn = NRM[2];
           const dot = nxn * ux + nyn * uy + nzn * uz;
           let lx = nxn - ux * dot, ly = nyn - uy * dot, lz = nzn - uz * dot;
           const ll = Math.sqrt(lx * lx + ly * ly + lz * lz);
           if (ll < 1e-3) { lx = -uy; ly = ux; lz = 0; } else { lx /= ll; ly /= ll; lz /= ll; }
           steer(nxn * 0.7 + lx * 0.9, nyn * 0.7 + ly * 0.9, nzn * 0.7 + lz * 0.9, vx0, vy0, vz0, top, force * 3, 1.5 * t * t + 1);
-          if (dd < ob.r) { px[i] = ob.x + nxn * ob.r; py[i] = ob.y + nyn * ob.r; if (is3) pz[i] = ob.z + nzn * ob.r; }
+          if (sd < 0) { px[i] = x - nxn * sd; py[i] = y - nyn * sd; if (is3) pz[i] = z - nzn * sd; }
         }
       }
       // soft walls
@@ -1276,13 +1328,18 @@ class View2D {
       o.stroke();
     }
     // obstacles
+    const obPath = (ob) => {
+      o.beginPath();
+      if (ob.kind === 'box') o.rect(ob.x - ob.hx, ob.y - ob.hy, ob.hx * 2, ob.hy * 2);
+      else o.arc(ob.x, ob.y, ob.kind === 'cyl' ? ob.hx : ob.r, 0, TAU);
+    };
     for (const ob of flock.obstacles) {
-      o.beginPath(); o.arc(ob.x, ob.y, ob.r, 0, TAU);
+      obPath(ob);
       o.fillStyle = `rgba(${ink},0.06)`; o.fill();
       o.strokeStyle = `rgba(${ink},0.4)`; o.lineWidth = 1.2; o.stroke();
     }
     if (ctx.draft) {
-      o.beginPath(); o.arc(ctx.draft.x, ctx.draft.y, ctx.draft.r, 0, TAU);
+      obPath(ctx.draft);
       o.setLineDash([4, 5]); o.strokeStyle = `rgba(${ink},0.6)`; o.stroke(); o.setLineDash([]);
     }
     // pointer field
@@ -1606,10 +1663,15 @@ class View3D {
   rebuildObstacles(flock, draft) {
     const g = this.obstacleGroup;
     while (g.children.length) { const c = g.children.pop(); c.geometry.dispose(); }
+    const geoFor = (ob, coarse) => {
+      if (ob.kind === 'box') return new THREE.BoxGeometry(ob.hx * 2, ob.hy * 2, ob.hz * 2);
+      if (ob.kind === 'cyl') return new THREE.CylinderGeometry(ob.hx, ob.hx, ob.hy * 2, coarse ? 10 : 22, 1);
+      return new THREE.SphereGeometry(ob.r, coarse ? 12 : 24, coarse ? 8 : 16);
+    };
     const add = (ob, wire) => {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(ob.r, 24, 16), wire ? this.obstacleWire : this.obstacleMat);
+      const m = new THREE.Mesh(geoFor(ob, false), wire ? this.obstacleWire : this.obstacleMat);
       m.position.set(ob.x, ob.y, ob.z); g.add(m);
-      if (!wire) { const w = new THREE.Mesh(new THREE.SphereGeometry(ob.r, 12, 8), this.obstacleWire); w.position.copy(m.position); g.add(w); }
+      if (!wire) { const w = new THREE.Mesh(geoFor(ob, true), this.obstacleWire); w.position.copy(m.position); g.add(w); }
     };
     for (const ob of flock.obstacles) add(ob, false);
     if (draft) add(draft, true);
@@ -2022,6 +2084,7 @@ async function setMode(m) {
   view2d.clear();
   if (view3d) view3d.resetTrails();
   syncUI();
+  shapesForMode();
   setHint();
 }
 $('mode2d').addEventListener('click', () => setMode('2d'));
@@ -2032,7 +2095,7 @@ const HINTS = {
   orbit: 'Drag to look around, scroll to zoom. Pick a tool to touch the flock.',
   attract: mode => mode === '3d' ? 'Hold on the box to pull the flock toward the pointer. Right-drag to orbit.' : 'Hold anywhere to pull the flock toward the pointer. Scroll to zoom, right-drag to move.',
   repel: mode => mode === '3d' ? 'Hold to push the flock away. Right-drag to orbit.' : 'Hold to push the flock away from the pointer. Scroll to zoom, right-drag to move.',
-  obstacle: 'Press and drag to size a new obstacle.',
+  obstacle: (m) => obShape === 'free' && m === '2d' ? 'Draw with the pointer to lay a wall of obstacles.' : 'Press and drag to size a new obstacle.',
   predator: 'Click to release a predator where you point.',
   erase: 'Click an obstacle or predator to remove it.',
 };
@@ -2041,11 +2104,36 @@ function setHint(text) {
   $('hint').textContent = text;
 }
 const TOOL_WORD = {orbit:'Orbit', attract:'Attract', repel:'Repel', obstacle:'Obstacle', predator:'Predator', erase:'Erase'};
+/* ---- obstacle shapes. Round is the original sphere and is unchanged; Box and Column
+   are solids with the same avoidance rule applied to their own surface; Freehand lays a
+   line of small round obstacles along the pointer and is 2D only. ---- */
+let obShape = 'sphere';
+function makeObstacle(x, y, z, r, kind) {
+  r = Math.max(12, r);
+  if (kind === 'box') { const h = r * 0.85; return { kind: 'box', x, y, z, hx: h, hy: h, hz: h, r: h * 1.7321 }; }
+  if (kind === 'cyl') { const cr = r * 0.72, ch = r * 1.5; return { kind: 'cyl', x, y, z, hx: cr, hy: ch, r: Math.hypot(cr, ch) }; }
+  return { kind: 'sphere', x, y, z, r };
+}
+function shapesForMode() {
+  const box = $('shapes'); if (!box) return;
+  box.hidden = ctx.tool !== 'obstacle';
+  box.querySelector('[data-shape="cyl"]').hidden = mode === '2d';
+  box.querySelector('[data-shape="free"]').hidden = mode === '3d';
+  if (mode === '2d' && obShape === 'cyl') selectShape('sphere');
+  if (mode === '3d' && obShape === 'free') selectShape('sphere');
+}
+function selectShape(k) {
+  obShape = k;
+  document.querySelectorAll('#shapes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shape === k)));
+  setHint();
+}
+document.querySelectorAll('#shapes button').forEach(b => b.addEventListener('click', () => selectShape(b.dataset.shape)));
 function selectTool(t) {
   ctx.tool = t;
   ctx.mouse.mode = t;
   const tn = $('toolName'); if (tn) tn.textContent = TOOL_WORD[t] || '';
   document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+  shapesForMode();
   setHint();
 }
 document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => selectTool(b.dataset.tool)));
@@ -2075,7 +2163,10 @@ stage.addEventListener('pointerdown', e => {
   const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
   switch (ctx.tool) {
     case 'attract': case 'repel': m.active = true; break;
-    case 'obstacle': ctx.draft = { x: p.x, y: p.y, z: p.z, r: 12 }; break;
+    case 'obstacle':
+      if (obShape === 'free' && mode === '2d') { penR = 16; penLast = null; layBlob(p); }
+      else ctx.draft = makeObstacle(p.x, p.y, p.z, 12, obShape);
+      break;
     case 'predator': if (flock.countSpecies(1) < 40) { flock.addPredator(p.x, p.y, p.z); P.predators = flock.countSpecies(1); reflect('predators'); } break;
     case 'erase': erase(p, e); break;
   }
@@ -2102,7 +2193,11 @@ stage.addEventListener('pointermove', e => {
   if (mode === '3d' && !view3d) return;
   const p = worldFromEvent(e); if (!p) return;
   const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
-  if (ctx.draft) ctx.draft.r = Math.max(12, Math.hypot(p.x - ctx.draft.x, p.y - ctx.draft.y, p.z - ctx.draft.z));
+  if (ctx.draft) {
+    const d = ctx.draft, r = Math.max(12, Math.hypot(p.x - d.x, p.y - d.y, p.z - d.z));
+    ctx.draft = makeObstacle(d.x, d.y, d.z, r, d.kind);
+  }
+  else if (rec && ctx.tool === 'obstacle' && obShape === 'free' && mode === '2d') layBlob(p);
   else if (rec && ctx.tool === 'erase' && mode === '2d') erase(p);
 });
 function endPointer(e) {
@@ -2110,7 +2205,8 @@ function endPointer(e) {
   if (pointers.size < 2) { pinchDist = 0; pinchMid = null; }
   if (pointers.size === 0) {
     orbiting = false; panning = false; ctx.mouse.active = false;
-    if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push({ x: d.x, y: d.y, z: d.z, r: Math.max(15, d.r) }); flock.obstaclesVersion++; }
+    if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push(d); flock.obstaclesVersion++; }
+    penLast = null;
   }
 }
 stage.addEventListener('pointerup', endPointer);
@@ -2126,6 +2222,16 @@ stage.addEventListener('dblclick', e => {
   if (e.target.closest('.tip')) return;
   if (mode === '2d') view2d.resetView(); else if (view3d) view3d.resetCamera();
 });
+/* freehand: one small round obstacle every two thirds of a brush width, so the stroke
+   comes out as a continuous wall rather than a row of beads */
+let penR = 16, penLast = null;
+function layBlob(p) {
+  if (penLast && Math.hypot(p.x - penLast.x, p.y - penLast.y) < penR * 0.66) return;
+  if (flock.obstacles.length > 400) return;
+  flock.obstacles.push({ kind: 'sphere', x: p.x, y: p.y, z: 0, r: penR });
+  flock.obstaclesVersion++;
+  penLast = { x: p.x, y: p.y };
+}
 function erase(p, e) {
   if (mode === '3d' && view3d && e) {
     const hit = view3d.pick((e.clientX / width) * 2 - 1, -(e.clientY / height) * 2 + 1, flock);
