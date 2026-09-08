@@ -173,7 +173,12 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 .mapcard::-webkit-scrollbar{width:8px} .mapcard::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .mc-head{display:flex;align-items:center;gap:7px;position:relative}
 /* the card's own tip has no room to open upward, so it opens downward */
-.mc-head .tip::after{bottom:auto;top:calc(100% + 5px);left:0;right:auto;width:min(300px,78vw)}
+.mc-head .tip::after{bottom:auto;top:calc(100% + 5px);left:0;right:auto;
+  box-sizing:border-box;width:min(300px,78vw);max-width:100%}
+/* pseudo-elements are not matched by the universal box-sizing rule, so any tooltip
+   with an explicit width has to say so itself or its padding lands outside the card */
+.tip::after{box-sizing:border-box}
+.mapcard{overflow-x:hidden}
 .mc-title{font-family:var(--display);font-weight:600;font-size:14.5px;color:var(--ink)}
 .mc-sub{margin:3px 0 9px;color:var(--muted);font-size:11.5px;line-height:1.42}
 .mc-zone{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink);min-height:2.9em}
@@ -183,6 +188,16 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 /* the map keeps its own plotted colours: they carry meaning, not decoration */
 #map{width:100%;aspect-ratio:1/.9;display:block;border-radius:10px;cursor:crosshair;
   touch-action:none;background:#07120f;border:1px solid var(--line)}
+/* zoom row under the map: the fine structures sit in bands a few thousandths wide,
+   so at full extent one slider step is under a pixel and they cannot be clicked */
+.mzoom{display:flex;align-items:center;gap:5px;margin-top:7px}
+.mz{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;
+  height:26px;min-width:26px;padding:0 7px;font-family:var(--body);font-size:12px;line-height:1;
+  cursor:pointer;transition:border-color .18s,color .18s}
+.mz:hover:not(:disabled){border-color:var(--line-strong);color:var(--ink)}
+.mz:disabled{opacity:.42;cursor:default}
+.mz.wide{flex:1 1 auto;min-width:0}
+.mzl{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:34px;text-align:right}
 .legend{list-style:none;margin:9px 0 0;padding:0;font-size:11px;color:var(--muted);line-height:1.65}
 .legend li{display:flex;align-items:center;gap:9px}
 .legend .sw{width:13px;height:9px;border-radius:2px;background:#41451f;border:1px solid #b9c25f;flex:none}
@@ -397,10 +412,16 @@ body.sheet-open .panel{z-index:9}
 <aside class="mapcard" id="mapcard">
   <div class="mc-head">
     <span class="mc-title">Steer it yourself</span>
-    <span class="tip" tabindex="0" data-tip="Across the bottom is the feed rate F, how fast fresh substrate is topped up: low on the left, high on the right. Up the side is the kill rate k, how fast the activator is removed: low at the bottom, high at the top. The exact numbers are on the two sliders below. Each preset is a dot; click or drag anywhere to move the chemistry there.">i</span>
+    <span class="tip" tabindex="0" data-tip="Across the bottom is the feed rate F, how fast fresh substrate is topped up: low on the left, high on the right. Up the side is the kill rate k, how fast the activator is removed: low at the bottom, high at the top. The exact numbers are on the two sliders below. Each preset is a dot; click or drag anywhere to move the chemistry there. The interesting behaviour is packed into bands a few thousandths wide, so scroll the wheel, double-click, or use the buttons below to magnify up to 24 times, and the arrow keys to step one notch at a time. Drag past the edge and the view follows.">i</span>
   </div>
-  <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own.</p>
-  <canvas id="map" width="320" height="300" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry."></canvas>
+  <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own, and zoom in where the bands get narrow.</p>
+  <canvas id="map" width="320" height="300" tabindex="0" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry. Scroll or use the zoom buttons to magnify, arrow keys to nudge."></canvas>
+  <div class="mzoom">
+    <button class="mz" id="mzOut" aria-label="Zoom out" title="Zoom out">&minus;</button>
+    <button class="mz" id="mzIn" aria-label="Zoom in" title="Zoom in">+</button>
+    <button class="mz wide" id="mzFit" title="Show the whole map again">Whole map</button>
+    <span class="mzl" id="mzLbl">1.0&times;</span>
+  </div>
   <div class="mc-side" id="mapside">
   <p class="mc-zone" id="mapzone">&nbsp;</p>
   <ul class="legend">
@@ -1081,10 +1102,44 @@ var baseKey = '';
 var PR = {x:0, y:0, w:1, h:1};
 var MPAD = {l:18, r:10, t:10, b:18};
 
-function mX(F){ return PR.x + (F - MAPR.F0)/(MAPR.F1 - MAPR.F0)*PR.w; }
-function mY(k){ return PR.y + PR.h - (k - MAPR.K0)/(MAPR.K1 - MAPR.K0)*PR.h; }
-function iF(x){ return MAPR.F0 + (x - PR.x)/PR.w*(MAPR.F1 - MAPR.F0); }
-function iK(y){ return MAPR.K0 + (PR.y + PR.h - y)/PR.h*(MAPR.K1 - MAPR.K0); }
+/* VIEW is the part of MAPR currently drawn. Everything on the map, the shaded zones,
+   the two boundary curves, the preset dots, the marker, and the picking, goes through
+   these four functions, so the whole plot follows the view with nothing else to change.
+   The point of the zoom: at full extent the k axis covers 0.037 in about 290 pixels, so
+   one step of the slider is under two pixels and the narrow bands where the pattern is
+   fragile, solitons and worms and the U-skate strip, cannot be hit with a mouse at all. */
+var VIEW = {F0:MAPR.F0, F1:MAPR.F1, K0:MAPR.K0, K1:MAPR.K1};
+var ZMAX = 24;   /* deepest zoom: one slider step is then about 16 pixels */
+function mX(F){ return PR.x + (F - VIEW.F0)/(VIEW.F1 - VIEW.F0)*PR.w; }
+function mY(k){ return PR.y + PR.h - (k - VIEW.K0)/(VIEW.K1 - VIEW.K0)*PR.h; }
+function iF(x){ return VIEW.F0 + (x - PR.x)/PR.w*(VIEW.F1 - VIEW.F0); }
+function iK(y){ return VIEW.K0 + (PR.y + PR.h - y)/PR.h*(VIEW.K1 - VIEW.K0); }
+function mapZoom(){ return (MAPR.F1 - MAPR.F0)/(VIEW.F1 - VIEW.F0); }
+/* set the view from a centre and a zoom, clamped to stay inside the full map */
+function setView(cF, ck, z){
+  z = Math.max(1, Math.min(ZMAX, z));
+  var fw = (MAPR.F1 - MAPR.F0)/z, kw = (MAPR.K1 - MAPR.K0)/z;
+  var f0 = Math.max(MAPR.F0, Math.min(MAPR.F1 - fw, cF - fw/2));
+  var k0 = Math.max(MAPR.K0, Math.min(MAPR.K1 - kw, ck - kw/2));
+  var same = Math.abs(f0-VIEW.F0)<1e-9 && Math.abs(k0-VIEW.K0)<1e-9 && Math.abs(fw-(VIEW.F1-VIEW.F0))<1e-9;
+  VIEW.F0 = f0; VIEW.F1 = f0 + fw; VIEW.K0 = k0; VIEW.K1 = k0 + kw;
+  if(!same) drawMap();
+  syncZoomUI();
+}
+function zoomBy(mult, cF, ck){
+  var z = mapZoom(), nz = Math.max(1, Math.min(ZMAX, z*mult));
+  /* keep the point under the cursor where it is */
+  var fx = (cF - VIEW.F0)/(VIEW.F1 - VIEW.F0), kx = (ck - VIEW.K0)/(VIEW.K1 - VIEW.K0);
+  var fw = (MAPR.F1 - MAPR.F0)/nz, kw = (MAPR.K1 - MAPR.K0)/nz;
+  setView(cF - (fx - 0.5)*fw, ck - (kx - 0.5)*kw, nz);
+}
+function syncZoomUI(){
+  var l = $('mzLbl'); if(l) l.textContent = mapZoom().toFixed(1) + '\u00d7';
+  var z = mapZoom();
+  if($('mzIn')) $('mzIn').disabled = z > ZMAX - 0.001;
+  if($('mzOut')) $('mzOut').disabled = z < 1.001;
+  if($('mzFit')) $('mzFit').disabled = z < 1.001;
+}
 
 function classify(F,k,Du,Dv){
   var s = F+k, disc = F*F - 4*F*s*s;
@@ -1161,13 +1216,13 @@ function buildBase(w,h,dpr){
   // Hopf curve, both branches: F*sqrt(k) = (F+k)^2
   bx.strokeStyle = '#79b0d6'; bx.lineWidth = 1.3*dpr; bx.setLineDash([3*dpr,3*dpr]);
   bx.beginPath();
-  var pts = [], kk2, b2, d2;
-  for(kk2 = MAPR.K0; kk2 <= 0.0625; kk2 += 0.0002){
+  var pts = [], kk2, b2, d2, kstep = Math.min(0.0002, (VIEW.K1 - VIEW.K0)/400);
+  for(kk2 = MAPR.K0; kk2 <= 0.0625; kk2 += kstep){
     b2 = Math.sqrt(kk2) - 2*kk2; d2 = b2*b2 - 4*kk2*kk2;
     if(d2 < 0) continue;
     pts.push([(b2 - Math.sqrt(d2))/2, kk2]);
   }
-  for(kk2 = 0.0625; kk2 >= MAPR.K0; kk2 -= 0.0002){
+  for(kk2 = 0.0625; kk2 >= MAPR.K0; kk2 -= kstep){
     b2 = Math.sqrt(kk2) - 2*kk2; d2 = b2*b2 - 4*kk2*kk2;
     if(d2 < 0) continue;
     pts.push([(b2 + Math.sqrt(d2))/2, kk2]);
@@ -1219,8 +1274,22 @@ function drawMap(){
   if(w < 40 || h < 40) return;
   if(mapCv.width !== w || mapCv.height !== h){ mapCv.width = w; mapCv.height = h; }
   PR = {x:MPAD.l*dpr, y:MPAD.t*dpr, w:w - (MPAD.l+MPAD.r)*dpr, h:h - (MPAD.t+MPAD.b)*dpr};
-  var key = w+'x'+h+':'+S.ratio.toFixed(2);
+  var key = w+'x'+h+':'+S.ratio.toFixed(2)+':'+VIEW.F0.toFixed(6)+','+VIEW.F1.toFixed(6)
+          +','+VIEW.K0.toFixed(6)+','+VIEW.K1.toFixed(6);
   if(baseKey !== key){ buildBase(w,h,dpr); baseKey = key; }
+  /* if the chemistry has moved outside the zoomed view, follow it rather than
+     leaving the marker off screen */
+  if(mapZoom() > 1.001 &&
+     (S.F < VIEW.F0 || S.F > VIEW.F1 || S.k < VIEW.K0 || S.k > VIEW.K1)){
+    var fw0 = VIEW.F1 - VIEW.F0, kw0 = VIEW.K1 - VIEW.K0;
+    VIEW.F0 = Math.max(MAPR.F0, Math.min(MAPR.F1 - fw0, S.F - fw0/2));
+    VIEW.F1 = VIEW.F0 + fw0;
+    VIEW.K0 = Math.max(MAPR.K0, Math.min(MAPR.K1 - kw0, S.k - kw0/2));
+    VIEW.K1 = VIEW.K0 + kw0;
+    key = w+'x'+h+':'+S.ratio.toFixed(2)+':'+VIEW.F0.toFixed(6)+','+VIEW.F1.toFixed(6)
+        + ','+VIEW.K0.toFixed(6)+','+VIEW.K1.toFixed(6);
+    if(baseKey !== key){ buildBase(w,h,dpr); baseKey = key; }
+  }
   mx.clearRect(0,0,w,h);
   mx.drawImage(base,0,0);
   var cx = mX(S.F), cy = mY(S.k);
@@ -1252,6 +1321,18 @@ function mapPick(ev, commit){
   var r = mapCv.getBoundingClientRect();
   var x = (ev.clientX - r.left)/r.width*mapCv.width;
   var y = (ev.clientY - r.top)/r.height*mapCv.height;
+  /* dragging past the edge of a zoomed view pans it, so you can walk along a band
+     instead of having to zoom out and back in */
+  if(commit && mapZoom() > 1.001){
+    var ox = x < PR.x ? x - PR.x : (x > PR.x + PR.w ? x - PR.x - PR.w : 0);
+    var oy = y < PR.y ? y - PR.y : (y > PR.y + PR.h ? y - PR.y - PR.h : 0);
+    if(ox || oy){
+      var df = ox/PR.w*(VIEW.F1 - VIEW.F0), dk = -oy/PR.h*(VIEW.K1 - VIEW.K0);
+      var fw1 = VIEW.F1 - VIEW.F0, kw1 = VIEW.K1 - VIEW.K0;
+      VIEW.F0 = Math.max(MAPR.F0, Math.min(MAPR.F1 - fw1, VIEW.F0 + df)); VIEW.F1 = VIEW.F0 + fw1;
+      VIEW.K0 = Math.max(MAPR.K0, Math.min(MAPR.K1 - kw1, VIEW.K0 + dk)); VIEW.K1 = VIEW.K0 + kw1;
+    }
+  }
   x = Math.max(PR.x, Math.min(PR.x + PR.w, x));
   y = Math.max(PR.y, Math.min(PR.y + PR.h, y));
   if(commit){
@@ -1555,6 +1636,41 @@ function wire(){
     }
   });
   mapCv.addEventListener('pointerup', function(){ mapDown = false; });
+  mapCv.addEventListener('wheel', function(e){
+    e.preventDefault();
+    var r = mapCv.getBoundingClientRect();
+    var x = (e.clientX - r.left)/r.width*mapCv.width;
+    var y = (e.clientY - r.top)/r.height*mapCv.height;
+    x = Math.max(PR.x, Math.min(PR.x + PR.w, x));
+    y = Math.max(PR.y, Math.min(PR.y + PR.h, y));
+    zoomBy(e.deltaY < 0 ? 1.25 : 1/1.25, iF(x), iK(y));
+  }, {passive:false});
+  mapCv.addEventListener('dblclick', function(e){
+    var r = mapCv.getBoundingClientRect();
+    var x = (e.clientX - r.left)/r.width*mapCv.width;
+    var y = (e.clientY - r.top)/r.height*mapCv.height;
+    zoomBy(2, iF(x), iK(y));
+  });
+  /* arrow keys nudge by exactly one slider step, which is the only way to land on a
+     single point of the map with certainty */
+  mapCv.addEventListener('keydown', function(e){
+    var st = (e.shiftKey ? 10 : 1)*0.0002, dF = 0, dk = 0;
+    if(e.key === 'ArrowLeft') dF = -st;
+    else if(e.key === 'ArrowRight') dF = st;
+    else if(e.key === 'ArrowUp') dk = st;
+    else if(e.key === 'ArrowDown') dk = -st;
+    else if(e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1.5, S.F, S.k); return; }
+    else if(e.key === '-' || e.key === '_') { e.preventDefault(); zoomBy(1/1.5, S.F, S.k); return; }
+    else return;
+    e.preventDefault();
+    S.F = Math.max(MAPR.F0, Math.min(MAPR.F1, Math.round((S.F + dF)/0.0002)*0.0002));
+    S.k = Math.max(MAPR.K0, Math.min(MAPR.K1, Math.round((S.k + dk)/0.0002)*0.0002));
+    S.preset = -1; syncParams();
+  });
+  $('mzIn').addEventListener('click', function(){ zoomBy(1.5, S.F, S.k); });
+  $('mzOut').addEventListener('click', function(){ zoomBy(1/1.5, S.F, S.k); });
+  $('mzFit').addEventListener('click', function(){ setView((MAPR.F0+MAPR.F1)/2, (MAPR.K0+MAPR.K1)/2, 1); });
+  syncZoomUI();
   mapCv.addEventListener('pointerleave', function(){ updateMapText(-1); });
 
   $('growOn').addEventListener('change', function(){
@@ -1668,6 +1784,8 @@ window.__turing = function(){
           pal:S.pal, sp:S.seedSp, sr:S.seedR};
 };
 window.__turingPreset = function(i){ applyPreset(i); };
+/* verification hook for the headless checks: the map's current window and zoom */
+window.__turingMap = function(){ return {F0:VIEW.F0, F1:VIEW.F1, K0:VIEW.K0, K1:VIEW.K1, z:mapZoom()}; };
 /* runs the model without waiting for frames, so the pattern tests can measure a fixed
    number of steps instead of a fixed number of seconds */
 window.__turingRun = function(n){

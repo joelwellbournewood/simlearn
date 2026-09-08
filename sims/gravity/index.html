@@ -213,6 +213,12 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-launch" min="0" max="100" step="1" value="42">
   </div>
 
+  <p class="label">Physics</p>
+  <div class="row">
+    <label><span class="nm">Collisions<button class="tip" data-tip="Off by default, because near misses and slingshots are more interesting than a body vanishing. When it is on, two bodies that touch are replaced by one, conserving mass and momentum and losing energy the way a real impact does. Cold collapse turns it on for you, since growth by accretion is the point of that scene." aria-label="What collisions does">?</button></span></label>
+    <div class="toggles"><button class="tg" id="t-merge" aria-pressed="false">Merge on contact</button></div>
+  </div>
+
   <p class="label">View from</p>
   <div class="seg" id="frames">
     <button data-f="fixed" aria-pressed="true">Fixed</button>
@@ -228,7 +234,6 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <button class="tg" id="t-orbit" aria-pressed="true">Orbit of selected</button>
     <button class="tg" id="t-lag" aria-pressed="false">Lagrange points</button>
     <button class="tg" id="t-arrows" aria-pressed="false">Velocity arrows</button>
-    <button class="tg" id="t-merge" aria-pressed="true">Mergers on contact</button>
   </div>
 </div>
 
@@ -310,10 +315,10 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p>Send a light body past a heavy one that is itself moving and it can leave far faster than it arrived. Nothing is created. The speed is borrowed from the heavy body's orbital motion, which slows by an amount far too small to measure. Voyager 2 reached Neptune on a chain of these assists, and every mission to the outer planets since has been designed around the same trick, which is why launch windows for them come round only every few years. Drag on empty space to line one up, and the dotted line previews where your body will go.</p>
 
     <h3>Tidal tails</h3>
-    <p>In 1972 Alar and Juri Toomre showed, using a few hundred test particles on a computer weaker than the one in your pocket, that the bridges and streamers around peculiar galaxies are tidal. A passing galaxy pulls harder on the near side of a disc than on the far side, stretching it both ways at once, and the disc's own rotation winds the debris into long arcs. <b class="hl">Galaxy and intruder</b> and <b class="hl">Galaxy collision</b> follow that recipe. Encounters where the disc spins the same way it orbits throw the longest tails. Mergers are switched off in these two, because stars in a real galaxy almost never hit each other. The discs pass straight through, and gravity alone does all the damage.</p>
+    <p>In 1972 Alar and Juri Toomre showed, using a few hundred test particles on a computer weaker than the one in your pocket, that the bridges and streamers around peculiar galaxies are tidal. A passing galaxy pulls harder on the near side of a disc than on the far side, stretching it both ways at once, and the disc's own rotation winds the debris into long arcs. <b class="hl">Galaxy and intruder</b> and <b class="hl">Galaxy collision</b> follow that recipe. Encounters where the disc spins the same way it orbits throw the longest tails. Stars in a real galaxy almost never hit each other, so leave collisions off in these two. The discs pass straight through, and gravity alone does all the damage.</p>
 
     <h3>Mergers and the growth of big things</h3>
-    <p>In the other arrangements, two bodies that touch are combined into one, conserving mass and momentum. Energy is lost, because a real collision turns motion into heat. It is a rough stand-in for what happens in a dust disc, and it shows the important asymmetry: the heaviest body pulls in the most material and so grows fastest. A cloud of near-equals turns into a few large winners with leftovers around them. Planets formed roughly that way.</p>
+    <p><b>Merge on contact</b>, under <b>Physics</b>, combines two bodies that touch into one, conserving mass and momentum. Energy is lost, because a real collision turns motion into heat. It starts switched off in every arrangement except <b class="hl">Cold collapse</b>, where growth by accretion is the whole point, and off is the more interesting setting for the rest: a body that would have been swallowed instead whips round and comes back on a new orbit. Turn it on and you get the asymmetry that built the planets, which is that the heaviest body pulls in the most material and so grows fastest, until a cloud of near-equals has become a few large winners with leftovers around them.</p>
 
     <h3>Building your own arrangement</h3>
     <p>Nothing here is locked. <b>Small bodies</b> sets how many light members are created, and the number shown is the number you get. <b>Large bodies</b> sets the heavy ones, and where an arrangement allows more than one they are placed on a ring turning at the speed that ring needs. Some arrangements are defined by their heavy bodies, so the count is held there. Beyond that, drag on empty space to sling in a new body at any time, click a body to inspect it, and delete anything you do not want. The reset button rebuilds the scene with the sliders exactly where you have left them, so you can rerun the same experiment with one thing changed. Clicking the arrangement card again is the way back to the settings it was published with.</p>
@@ -340,7 +345,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <p>The five equilibrium points of the circular restricted three-body problem were found by Euler, for the three collinear points, and by Lagrange in 1772 for the triangular pair. L4 and L5 are linearly stable when the mass ratio of the secondary to the total is below the Routh value of about 0.0385, roughly one twenty-fifth, a condition established by Gascheau in 1843. The Coriolis term in the rotating frame is what curls a displaced body back into a libration orbit instead of letting it fall away. Jupiter's Trojan asteroids and the Earth's tadpole companions occupy those points. L1, L2, and L3 are saddle points, so spacecraft placed there, including the James Webb Space Telescope at Sun-Earth L2, must perform regular station-keeping burns. The tidal bridges and tails in the galaxy arrangements follow Toomre and Toomre (1972), who showed with a few hundred test particles that the streamers of peculiar galaxies are gravitational tides from a close passage, with the longest tails produced when the disc's spin is prograde with respect to the encounter.</p>
 
 <h3>Limits of the model</h3>
-<p>Everything here is two-dimensional and purely Newtonian, with no relativistic precession and no radiation, so a tight binary will never spiral in as a real one does. There is also no gas and no dark matter halo, which is why galaxy rotation in these scenes falls off in the Keplerian way instead of staying flat as observed rotation curves do. Collisions are treated as perfectly inelastic mergers conserving mass and momentum, a crude stand-in for accretion that is simply wrong for stars, and it is switched off in the galaxy scenes for that reason. The units are arbitrary, so no number on screen is in kilograms or seconds. What the model is good for is structural: one inverse-square law, applied to everything at once, is enough to generate the whole catalogue of orbital behaviour.</p>
+<p>Everything here is two-dimensional and purely Newtonian, with no relativistic precession and no radiation, so a tight binary will never spiral in as a real one does. There is also no gas and no dark matter halo, which is why galaxy rotation in these scenes falls off in the Keplerian way instead of staying flat as observed rotation curves do. Collisions, when you switch them on, are treated as perfectly inelastic mergers conserving mass and momentum, a crude stand-in for accretion that is simply wrong for stars, which is one reason they are off by default. The units are arbitrary, so no number on screen is in kilograms or seconds. What the model is good for is structural: one inverse-square law, applied to everything at once, is enough to generate the whole catalogue of orbital behaviour.</p>
 
 <h3>References</h3>
 <ul class="refs">
@@ -601,7 +606,7 @@ function govern(dtms){
 /* ---------- state ---------- */
 let bodies=[], merges=0, ejected=0, E0=null, Elast=null, paused=false, G=1, trailPct=55, speed=1, launchM=12, softK=0.7;
 let activePreset='star', nextId=1, accelFresh=false, solverName='direct', lastSub=0, selId=-1;
-let mergeOn=true, showArrows=false, showLag=false, showOrbit=true, autoFit=false;
+let mergeOn=false, showArrows=false, showLag=false, showOrbit=true, autoFit=false;
 const THETA=0.7, DIRECT_MAX=400, ETA=0.07;
 let sK=2.05;
 function radiusOf(m){ return Math.max(1.5,Math.pow(m,0.28)*sK); }
@@ -748,7 +753,7 @@ function ringOf(out,cx,cy,vx,vy,N,a,m){
 }
 /* every build gets (nSmall, nLarge) and creates exactly that many bodies */
 const PRESETS={
-  star:{name:'Star and planets',tag:'Planets and a comet round one star',n:12,lmin:1,lmax:5,ldef:1,frame:'fixed',merge:true,build(n,nL){
+  star:{name:'Star and planets',tag:'Planets and a comet round one star',n:12,lmin:1,lmax:5,ldef:1,frame:'fixed',merge:false,build(n,nL){
     const S=Math.min(W,H), R=S*0.44, M=4200, out=[];
     const a=nL<=1?S*0.045:S*(0.085+0.030*nL);   /* several stars sit well apart, not in a knot */
     ringOf(out,0,0,0,0,nL,a,M/nL);
@@ -764,7 +769,7 @@ const PRESETS={
       out.push(mk(Math.cos(aa)*ra,Math.sin(aa)*ra,-Math.sin(aa)*va,Math.cos(aa)*va,1));
     }
     return out;}},
-  binary:{name:'Binary pair',tag:'Two stars, one shared disc',n:16,lmin:2,lmax:5,ldef:2,frame:'com',merge:true,build(n,nL){
+  binary:{name:'Binary pair',tag:'Two stars, one shared disc',n:16,lmin:2,lmax:5,ldef:2,frame:'com',merge:false,build(n,nL){
     const S=Math.min(W,H), sep=S*(0.16+0.035*Math.max(0,nL-2)), M=1700, out=[];
     ringOf(out,0,0,0,0,nL,sep,M);
     const R=S*0.47, inner=sep*2.6;
@@ -796,7 +801,7 @@ const PRESETS={
       out.push(mk(q.x,q.y,q.vx,q.vy,0.3));
     }
     return out;}},
-  lagrange:{name:'Lagrange points',tag:'Five places that keep station',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:true,lag:true,build(n){
+  lagrange:{name:'Lagrange points',tag:'Five places that keep station',n:30,lmin:2,lmax:2,ldef:2,frame:'rot',merge:false,lag:true,build(n){
     const S=Math.min(W,H), d=S*0.30, M1=4000, M2=40, M=M1+M2, w=Math.sqrt(G*M/(d*d*d));
     const x1=-d*M2/M, x2=d*M1/M;
     const out=[mk(x1,0,0,w*x1,M1), mk(x2,0,0,w*x2,M2)];
@@ -1264,7 +1269,7 @@ function restart(key,keep){
   merges=0; ejected=0; PV.pts=[];
   /* keep=true keeps the view and the toggles the way the user has them */
   const keepFrame=keep?frame.mode:(P.frame||'fixed');
-  setMerge(keep?mergeOn:(P.merge!==false)); setLag(keep?showLag:!!P.lag);
+  setMerge(keep?mergeOn:(P.merge===true)); setLag(keep?showLag:!!P.lag);
   frame.mode='fixed'; setFrame(keepFrame); updateFrame(); clearTrails();
   if(!keep){ cam.x=0; cam.y=0; cam.zoom=1; }
   const wantFit=keep?autoFit:!!P.fit;
