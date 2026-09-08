@@ -344,7 +344,7 @@ function wireTransitions() {
   });
 }
 
-fetch('sims/manifest.json')
+fetch('sims/manifest.json', { cache: 'no-cache' })
   .then(r => { if (!r.ok) throw new Error('manifest ' + r.status); return r.json(); })
   .then(all => {
     const sims = all.filter(s => s.visible !== false);

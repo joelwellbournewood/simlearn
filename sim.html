@@ -35,7 +35,7 @@
   const id = params.get('id');
   const frame = document.getElementById('sim-frame');
 
-  fetch('sims/manifest.json')
+  fetch('sims/manifest.json', { cache: 'no-cache' })
     .then(r => r.json())
     .then(sims => {
       const sim = sims.find(s => s.id === id);

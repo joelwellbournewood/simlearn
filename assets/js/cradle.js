@@ -21,6 +21,7 @@
   var HELDREST = 0.45;          // bounce off a ball that a finger is holding still
   var th = [], om = [], grabbed = -1, held = [], fling = 0, flingT = 0, lastA = 0;
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.__cradleBuild = '20260908d';   // which copy of this file the browser is running
 
   for (var i = 0; i < N; i++) { th[i] = 0; om[i] = 0; }
   th[0] = -0.85;                // start with one ball lifted so it is moving on load
@@ -89,7 +90,8 @@
       }
       grabbed = -1; held = [];
     }
-    return { th: th.slice(), om: om.slice(), px: px.slice(), held: held.slice(),
+    return { build: window.__cradleBuild, reach: reach(),
+             th: th.slice(), om: om.slice(), px: px.slice(), held: held.slice(),
              grabbed: grabbed, R: R, L: L, PIVY: PIVY, W: W, H: H };
   };
 
@@ -188,6 +190,10 @@
     var s = Math.min(1, Math.max(0, edge) / L);
     return Math.min(MAXA, Math.asin(s));
   }
+  /* The reach is deliberately the same on both sides. If the canvas is narrower on one
+     side than the other, the tighter side sets the reach for both, so no ball can ever
+     travel further one way than the other. */
+  function reach() { return Math.min(limitFor(1), limitFor(-1)); }
 
   /* The pointer sets the angle of the ball it grabbed. Every ball between that one and
      the side it is moving towards is in contact with it, so it is carried along at the
@@ -196,7 +202,7 @@
      is why dragging back the other way simply lets the carried balls fall and collide. */
   function setDrag(p) {
     var a = Math.atan2(p.x - px[grabbed], Math.max(12, p.y - PIVY));
-    var lim = limitFor(a >= 0 ? 1 : -1);
+    var lim = reach();
     a = Math.max(-lim, Math.min(lim, a));
     th[grabbed] = a; om[grabbed] = 0;
     held = [grabbed];
@@ -246,7 +252,7 @@
     /* A throw may not add more energy than a full lift is worth, so the ball always
        arrives at the far side inside the swing clearance instead of hitting the clamp
        and stopping dead at the top of its arc. */
-    var top = Math.min(limitFor(1), limitFor(-1));
+    var top = reach();
     var cap = Math.sqrt(Math.max(0, 2 * (G / L) * (Math.cos(th[grabbed]) - Math.cos(top))));
     v = Math.max(-cap, Math.min(cap, v));
     /* Only a flick that continues outwards is a throw. A finger dragging back towards
