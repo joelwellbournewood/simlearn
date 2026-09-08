@@ -2,8 +2,9 @@
    Five equal pendulums hung so that they just touch at rest. Each is integrated as a
    real pendulum (theta'' = -(g/L) sin theta); contacts between neighbours are resolved
    as elastic collisions between equal masses, which is why momentum walks through the
-   line and only the far ball leaves. Drag any ball to lift it (and everything outboard
-   of it, so you can launch two or three at once) and let go. */
+   line and only the far ball leaves. Any ball can be dragged either way: the balls
+   between it and that side are touching it, so they are pushed along with it, which is
+   how you launch two or three at once. Let go and they swing; flick and they are thrown. */
 (function () {
   var host = document.getElementById('cradle');
   if (!host) return;
@@ -16,7 +17,9 @@
   var REST = 0.995;             // restitution between balls
   var MAXA = 1.05;              // largest lift angle, radians
   var W = 0, H = 0, cx = 0, px = [];
-  var th = [], om = [], grabbed = -1, grabSet = [];
+  var MAXOM = 3.2;              // largest angular velocity a flick can impart, rad/s
+  var HELDREST = 0.45;          // bounce off a ball that a finger is holding still
+  var th = [], om = [], grabbed = -1, held = [], fling = 0, flingT = 0, lastA = 0;
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   for (var i = 0; i < N; i++) { th[i] = 0; om[i] = 0; }
@@ -77,13 +80,26 @@
              barY: Math.round(r.top + PIVY), cx: cx, pad: PAD };
   };
 
+  /* test surface: lets the headless physics checks read the state they are asserting on */
+  window.__cradleState = function (next) {
+    if (next && next.th) {
+      for (var q = 0; q < N; q++) {
+        th[q] = next.th[q] || 0;
+        om[q] = (next.om && next.om[q]) || 0;
+      }
+      grabbed = -1; held = [];
+    }
+    return { th: th.slice(), om: om.slice(), px: px.slice(), held: held.slice(),
+             grabbed: grabbed, R: R, L: L, PIVY: PIVY, W: W, H: H };
+  };
+
   function bx(i) { return px[i] + L * Math.sin(th[i]); }
   function by(i) { return PIVY + L * Math.cos(th[i]); }
 
   function step(dt) {
     var k = G / L;
     for (var i = 0; i < N; i++) {
-      if (grabbed >= 0 && grabSet.indexOf(i) >= 0) { om[i] = 0; continue; }
+      if (isHeld(i)) { om[i] = 0; continue; }
       om[i] += -k * Math.sin(th[i]) * dt;
       om[i] *= DAMP;
       th[i] += om[i] * dt;
@@ -94,15 +110,32 @@
       for (var j = 0; j < N - 1; j++) {
         var gap = bx(j + 1) - bx(j);
         if (gap >= 2 * R) continue;
+        var ha = isHeld(j), hb = isHeld(j + 1);
+        if (ha && hb) continue;            // both pinned by the pointer: nothing to resolve
         var va = om[j] * Math.cos(th[j]), vb = om[j + 1] * Math.cos(th[j + 1]);
-        if (vb < va) {            // approaching: equal masses swap velocity
-          var na = vb * REST, nb = va * REST;
-          om[j] = na / Math.max(0.2, Math.cos(th[j]));
-          om[j + 1] = nb / Math.max(0.2, Math.cos(th[j + 1]));
+        if (vb < va) {
+          if (ha || hb) {
+            /* a held ball is effectively infinitely massive, so the free one rebounds
+               off it rather than handing its momentum to a finger */
+            var f = ha ? j + 1 : j;
+            om[f] = -om[f] * HELDREST;
+          } else {                         // approaching: equal masses swap velocity
+            var na = vb * REST, nb = va * REST;
+            om[j] = na / Math.max(0.2, Math.cos(th[j]));
+            om[j + 1] = nb / Math.max(0.2, Math.cos(th[j + 1]));
+          }
         }
-        var pen = (2 * R - gap) / 2 / L;   // share the overlap, in radians
-        th[j] -= pen; th[j + 1] += pen;
+        var pen = (2 * R - gap) / L;       // the overlap, in radians
+        if (ha) { th[j + 1] += pen; }      // held balls do not give ground
+        else if (hb) { th[j] -= pen; }
+        else { th[j] -= pen / 2; th[j + 1] += pen / 2; }
       }
+    }
+    /* contacts can shove a ball past the lift clamp; keep it inside the drawn box */
+    for (var m = 0; m < N; m++) {
+      if (isHeld(m)) continue;
+      if (th[m] > MAXA) { th[m] = MAXA; if (om[m] > 0) om[m] = 0; }
+      if (th[m] < -MAXA) { th[m] = -MAXA; if (om[m] < 0) om[m] = 0; }
     }
   }
 
@@ -146,29 +179,86 @@
     }
     return best;
   }
+  function isHeld(i) { return grabbed >= 0 && held.indexOf(i) >= 0; }
+
+  /* How far the grabbed ball may be lifted before the outermost ball of the line it is
+     pushing would be drawn off the edge of the canvas. */
+  function limitFor(sign) {
+    var edge = sign > 0 ? (W - R - 2 - px[N - 1]) : (px[0] - R - 2);
+    var s = Math.min(1, Math.max(0, edge) / L);
+    return Math.min(MAXA, Math.asin(s));
+  }
+
+  /* The pointer sets the angle of the ball it grabbed. Every ball between that one and
+     the side it is moving towards is in contact with it, so it is carried along at the
+     same angle: pivots are spaced one ball diameter apart, so equal angles is exactly
+     touching. The chain stops at the first neighbour already hanging further out, which
+     is why dragging back the other way simply lets the carried balls fall and collide. */
   function setDrag(p) {
     var a = Math.atan2(p.x - px[grabbed], Math.max(12, p.y - PIVY));
-    a = Math.max(-MAXA, Math.min(MAXA, a));
-    if (grabSet.length > 1) a = (grabbed < N / 2) ? Math.min(a, 0) : Math.max(a, 0);
-    for (var i = 0; i < grabSet.length; i++) { th[grabSet[i]] = a; om[grabSet[i]] = 0; }
+    var lim = limitFor(a >= 0 ? 1 : -1);
+    a = Math.max(-lim, Math.min(lim, a));
+    th[grabbed] = a; om[grabbed] = 0;
+    held = [grabbed];
+    var j;
+    for (j = grabbed - 1; j >= 0; j--) {
+      if (th[j] <= a) break;              // already further left: not being pushed
+      th[j] = a; om[j] = 0; held.push(j);
+    }
+    for (j = grabbed + 1; j < N; j++) {
+      if (th[j] >= a) break;              // already further right: not being pushed
+      th[j] = a; om[j] = 0; held.push(j);
+    }
+  }
+  /* Angular velocity of the pointer, smoothed, so a flick throws the ball instead of
+     dropping it from wherever the finger stopped. */
+  function track(a, t) {
+    var dt = (t - flingT) / 1000;
+    if (dt > 0.004 && dt < 0.2) fling = fling * 0.55 + ((a - lastA) / dt) * 0.45;
+    else if (dt >= 0.2) fling = 0;
+    lastA = a; flingT = t;
   }
   cv.addEventListener('pointerdown', function (e) {
     var p = local(e), i = pick(p);
     if (i < 0) return;
-    grabbed = i; grabSet = [];
-    if (i < N / 2) { for (var j = 0; j <= i; j++) grabSet.push(j); }
-    else { for (var k = i; k < N; k++) grabSet.push(k); }
+    grabbed = i; held = [i]; fling = 0;
+    lastA = th[i]; flingT = e.timeStamp || performance.now();
     cv.setPointerCapture(e.pointerId);
     setDrag(p); e.preventDefault();
   });
   cv.addEventListener('pointermove', function (e) {
-    if (grabbed < 0) return;
-    setDrag(local(e)); e.preventDefault();
+    if (grabbed < 0) {
+      /* the canvas is much wider than the linkage, so only show the grab cursor when
+         the pointer is actually over a ball */
+      cv.style.cursor = pick(local(e)) >= 0 ? 'grab' : 'default';
+      return;
+    }
+    cv.style.cursor = 'grabbing';
+    setDrag(local(e));
+    track(th[grabbed], e.timeStamp || performance.now());
+    e.preventDefault();
   });
-  function release() { grabbed = -1; grabSet = []; }
+  function release() {
+    if (grabbed < 0) return;
+    var now = performance.now();
+    /* a finger that has been still for a moment is a lift, not a throw */
+    var v = (now - flingT > 120) ? 0 : Math.max(-MAXOM, Math.min(MAXOM, fling));
+    /* A throw may not add more energy than a full lift is worth, so the ball always
+       arrives at the far side inside the swing clearance instead of hitting the clamp
+       and stopping dead at the top of its arc. */
+    var top = Math.min(limitFor(1), limitFor(-1));
+    var cap = Math.sqrt(Math.max(0, 2 * (G / L) * (Math.cos(th[grabbed]) - Math.cos(top))));
+    v = Math.max(-cap, Math.min(cap, v));
+    /* Only a flick that continues outwards is a throw. A finger dragging back towards
+       the middle has already let the pushed balls go, and they are falling on their own. */
+    for (var i = 0; i < held.length; i++) om[held[i]] = v;
+    grabbed = -1; held = []; fling = 0;
+    cv.style.cursor = 'grab';
+  }
   cv.addEventListener('pointerup', release);
   cv.addEventListener('pointercancel', release);
   cv.addEventListener('lostpointercapture', release);
+  cv.addEventListener('pointerleave', function () { if (grabbed < 0) cv.style.cursor = 'default'; });
 
   // ---- loop ---------------------------------------------------------------
   var last = 0, visible = true;
