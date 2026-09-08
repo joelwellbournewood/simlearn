@@ -464,7 +464,26 @@
   .pal .sw{display:inline-flex;gap:2px;flex:none}
   .pal .sw i{width:9px;height:9px;border-radius:2px;display:block}
   .pal .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pal-note{color:var(--muted);font-size:11.5px;line-height:1.35;margin:8px 0 0}
+  .swatches{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .sw-item{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:5px 7px 5px 9px;border:1px solid var(--line);border-radius:10px;
+    font-family:var(--body);font-size:12px;color:var(--ink);min-width:0}
+  .sw-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sw-item input[type=color]{-webkit-appearance:none;appearance:none;width:24px;height:22px;
+    padding:0;border:1px solid var(--line-strong);border-radius:6px;background:transparent;
+    cursor:pointer;flex:none}
+  .sw-item input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  .sw-item input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
+  .sw-item input[type=color]::-moz-color-swatch{border:0;border-radius:5px}
+  .pal-row{display:flex;gap:6px;margin-top:6px}
+  .pal-btn{flex:1 1 0;display:flex;align-items:center;gap:7px;padding:7px 9px;
+    border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);
+    font-family:var(--body);font-size:12px;text-align:left;cursor:pointer;min-width:0;
+    transition:border-color .18s, background .18s}
+  .pal-btn:hover{border-color:var(--line-strong)}
+  .pal-btn[aria-pressed="true"]{border-color:var(--hare);background:var(--hare-dim)}
+  .pal-btn .ramp{flex:none;width:34px;height:9px;border-radius:2px;
+    background:linear-gradient(90deg,var(--e0),var(--e1))}
 </style>
 <script>try{if(window.self!==window.top)document.documentElement.className+=' in-frame';}catch(e){document.documentElement.className+=' in-frame';}</script>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
@@ -611,7 +630,15 @@
     <span class="tip" role="button" tabindex="0" aria-label="What the colour palette does" data-tip="A look-up table for the field and the graph. It repaints grass, hares, and lynx and nothing else: every number, rule, and random draw is untouched, so the run carries on exactly as it was.">?</span>
   </div>
   <div class="pals" id="pals"></div>
-  <p class="pal-note" id="palNote"></p>
+  <div class="swatches">
+    <label class="sw-item"><span>Predator</span><input type="color" id="swPred" aria-label="Predator colour"></label>
+    <label class="sw-item"><span>Prey</span><input type="color" id="swPrey" aria-label="Prey colour"></label>
+    <label class="sw-item"><span>Grass</span><input type="color" id="swGrass" aria-label="Grass colour"></label>
+    <label class="sw-item"><span>Background</span><input type="color" id="swBg" aria-label="Background colour"></label>
+  </div>
+  <div class="pal-row">
+    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="false"><span class="ramp"></span>Colour by energy<span class="tip" role="button" tabindex="0" aria-label="What colouring by energy does" data-tip="Shades every animal by how much energy it is carrying, from nearly starving to fat enough to breed. Drawing only: no rule, rate, or random draw changes.">?</span></button>
+  </div>
 </div>
   </div>
   </div>
@@ -934,7 +961,30 @@
       bg:'#090614', vig:'0,0,0', va:0.5, gbg:'#0e0a1c', gink:'#8b83a8', gline:'150,140,200',
       mark:'#ffffff', note:'A false-colour ramp of the kind used for heat maps. Nothing here is a temperature, it is simply a different look-up table over the same three quantities.'}
   };
-  let PAL = PALETTES.field;
+  const clampU = t => t<0?0:(t>1?1:t);
+  const rgbOf = h => { const n=parseInt(h.slice(1),16); return [n>>16&255, n>>8&255, n&255]; };
+  const hexOf = c => '#' + c.map(v=>Math.round(v<0?0:(v>255?255:v)).toString(16).padStart(2,'0')).join('');
+  const mix = (a,b,t) => { const A=rgbOf(a), B=rgbOf(b); return hexOf([0,1,2].map(i=>A[i]+(B[i]-A[i])*t)); };
+  /* three grass shades from one picked colour, keeping the preset's own spread */
+  const grassShades = c => [mix(c,'#000000',0.24), mix(c,'#000000',0.10), c];
+
+  let PAL = Object.assign({}, PALETTES.field);
+  let palKey = 'field';
+  /* energy colouring: agents are bucketed into bands and each band is one batched fill,
+     so the whole field still costs a handful of paths however many animals there are */
+  let energyOn = false;
+  const EBINS = 6, EMAX = 1.25;          /* 1.0 is the energy at which an animal splits */
+  const ebin = e => { let b=(clampU(e/EMAX)*EBINS)|0; return b>EBINS-1?EBINS-1:b; };
+  let hareRamp = [], lynxRamp = [];
+  function buildRamps(){
+    hareRamp=[]; lynxRamp=[];
+    for(let i=0;i<EBINS;i++){
+      const t=i/(EBINS-1);
+      hareRamp.push(mix(mix(PAL.hare,PAL.bg,0.66), mix(PAL.hare,'#ffffff',0.5), t));
+      lynxRamp.push(mix(mix(PAL.lynx,PAL.bg,0.66), mix(PAL.lynx,'#ffffff',0.5), t));
+    }
+  }
+  buildRamps();
   let GREENS = PAL.grass, LYNX_HALO = hexa(PAL.lynx,0.13);
   let HARE_FILL = hexa(PAL.hare,0.10), LYNX_FILL = hexa(PAL.lynx,0.10);
   let vignette = null;
@@ -958,11 +1008,23 @@
         }
       }
     }
-    // hares (one batched fill)
-    fctx.fillStyle = PAL.hare;
-    fctx.beginPath();
-    for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
-    fctx.fill();
+    // hares: one batched fill, or one fill per energy band
+    if(energyOn){
+      for(let b=0;b<EBINS;b++){
+        fctx.fillStyle = hareRamp[b];
+        fctx.beginPath(); let any=false;
+        for(let i=0;i<hares.length;i++){
+          const h=hares[i]; if(ebin(h.e)!==b) continue; any=true;
+          fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU);
+        }
+        if(any) fctx.fill();
+      }
+    } else {
+      fctx.fillStyle = PAL.hare;
+      fctx.beginPath();
+      for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
+      fctx.fill();
+    }
     /* lynx - a lean directional dart. Deliberately minimal: two batched fills, no
        outline, no eyes, no tail. The shape alone says predator and says heading, and
        it stays legible down to a few pixels where the old cat silhouette turned to mush.
@@ -977,18 +1039,28 @@
     }
     fctx.fill();
     // the dart itself
-    fctx.fillStyle = PAL.lynx;
-    fctx.beginPath();
-    for(let i=0;i<lynx.length;i++){
-      const l=lynx[i], c=Math.cos(l.dir), s=Math.sin(l.dir);
+    const dart = (l)=>{
+      const c=Math.cos(l.dir), s=Math.sin(l.dir);
       const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
       fctx.moveTo(X( R*1.60, 0),        Y( R*1.60, 0));
       fctx.lineTo(X(-R*0.78,  R*0.82),  Y(-R*0.78,  R*0.82));
       fctx.lineTo(X(-R*0.30, 0),        Y(-R*0.30, 0));
       fctx.lineTo(X(-R*0.78, -R*0.82),  Y(-R*0.78, -R*0.82));
       fctx.closePath();
+    };
+    if(energyOn){
+      for(let b=0;b<EBINS;b++){
+        fctx.fillStyle = lynxRamp[b];
+        fctx.beginPath(); let any=false;
+        for(let i=0;i<lynx.length;i++){ const l=lynx[i]; if(ebin(l.e)!==b) continue; any=true; dart(l); }
+        if(any) fctx.fill();
+      }
+    } else {
+      fctx.fillStyle = PAL.lynx;
+      fctx.beginPath();
+      for(let i=0;i<lynx.length;i++) dart(lynx[i]);
+      fctx.fill();
     }
-    fctx.fill();
     // vignette
     fctx.fillStyle = vignette; fctx.fillRect(0,0,W,H);
   }
@@ -1177,15 +1249,33 @@
   el('btnAboutClose').addEventListener('click', ()=> dlg.close());
   dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
 
-  // ---- colour palette menu ----
+  // ---- colour palette menu, custom colours, energy colouring ----
   (function(){
-    const wrap=el('pals'), note=el('palNote');
+    const wrap=el('pals');
     if(!wrap) return;
+    const pickers={lynx:el('swPred'), hare:el('swPrey'), grass:el('swGrass'), bg:el('swBg')};
+    const eBtn=el('tEnergy');
+
+    function applyLook(){
+      GREENS=PAL.grass;
+      LYNX_HALO=hexa(PAL.lynx,0.13); HARE_FILL=hexa(PAL.hare,0.10); LYNX_FILL=hexa(PAL.lynx,0.10);
+      const r=document.documentElement.style;
+      r.setProperty('--hare',PAL.hare); r.setProperty('--hare-dim',hexa(PAL.hare,0.14));
+      r.setProperty('--lynx',PAL.lynx); r.setProperty('--lynx-dim',hexa(PAL.lynx,0.14));
+      r.setProperty('--grass',PAL.grass[2]); r.setProperty('--field',PAL.bg);
+      buildRamps(); buildVignette();
+      r.setProperty('--e0',hareRamp[0]); r.setProperty('--e1',hareRamp[EBINS-1]);
+      render(); drawGraph();
+    }
+    function syncPickers(){
+      pickers.lynx.value=PAL.lynx; pickers.hare.value=PAL.hare;
+      pickers.grass.value=PAL.grass[2]; pickers.bg.value=PAL.bg;
+    }
     Object.keys(PALETTES).forEach(k=>{
       const p=PALETTES[k];
       const b=document.createElement('button');
       b.className='pal'; b.dataset.pal=k; b.type='button';
-      b.setAttribute('aria-pressed', String(p===PAL));
+      b.setAttribute('aria-pressed', String(k===palKey));
       b.innerHTML='<span class="sw"><i style="background:'+p.grass[2]+'"></i>'+
                   '<i style="background:'+p.hare+'"></i>'+
                   '<i style="background:'+p.lynx+'"></i></span>'+
@@ -1194,19 +1284,35 @@
       b.addEventListener('click',()=>setPalette(k));
       wrap.appendChild(b);
     });
+    /* a preset is a starting point: it replaces every custom colour, and the pickers follow */
     window.setPalette=function(k){
       const p=PALETTES[k]; if(!p) return;
-      PAL=p; GREENS=p.grass;
-      LYNX_HALO=hexa(p.lynx,0.13); HARE_FILL=hexa(p.hare,0.10); LYNX_FILL=hexa(p.lynx,0.10);
-      const r=document.documentElement.style;
-      r.setProperty('--hare',p.hare); r.setProperty('--hare-dim',hexa(p.hare,0.14));
-      r.setProperty('--lynx',p.lynx); r.setProperty('--lynx-dim',hexa(p.lynx,0.14));
-      r.setProperty('--grass',p.grass[2]); r.setProperty('--field',p.bg);
-      buildVignette(); render(); drawGraph();
-      note.textContent=p.note;
+      PAL=Object.assign({},p); PAL.grass=p.grass.slice(); palKey=k;
+      applyLook(); syncPickers();
       [...wrap.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pal===k)));
     };
-    note.textContent=PAL.note;
+    /* one picked colour edits the live palette and leaves every other colour alone */
+    function custom(which,c){
+      if(which==='grass') PAL.grass=grassShades(c);
+      else if(which==='bg'){ PAL.bg=c; PAL.gbg=mix(c,'#ffffff',0.07); }
+      else PAL[which]=c;
+      palKey='';
+      [...wrap.children].forEach(b=>b.setAttribute('aria-pressed','false'));
+      applyLook();
+    }
+    Object.keys(pickers).forEach(which=>{
+      pickers[which].addEventListener('input',e=>custom(which,e.target.value));
+    });
+    window.setEnergyColour=function(on){
+      energyOn=!!on;
+      eBtn.setAttribute('aria-pressed',String(energyOn));
+      render();
+    };
+    eBtn.addEventListener('click',e=>{
+      if(e.target.classList.contains('tip')) return;
+      setEnergyColour(!energyOn);
+    });
+    applyLook(); syncPickers();
   })();
 
   // ---- corner bar: play, reset, hide the panels, fullscreen ----
@@ -1238,7 +1344,7 @@
       document.body.classList.toggle('is-full',on);
       el('fs').dataset.on=String(on);
       el('fs').title = on ? 'Leave fullscreen (F)' : 'Fullscreen (F)';
-      setChrome(!on);      /* fullscreen is for watching, so it opens bare */
+      setChrome(true);     /* both modes open with the panels up; the eye hides them */
     };
     document.addEventListener('fullscreenchange',sync);
     document.addEventListener('webkitfullscreenchange',sync);

@@ -230,7 +230,6 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
   <p class="label">Show</p>
   <div class="toggles">
-    <button class="tg" id="t-fit" aria-pressed="false">Auto-fit view</button>
     <button class="tg" id="t-orbit" aria-pressed="true">Orbit of selected</button>
     <button class="tg" id="t-lag" aria-pressed="false">Lagrange points</button>
     <button class="tg" id="t-arrows" aria-pressed="false">Velocity arrows</button>
@@ -606,7 +605,7 @@ function govern(dtms){
 /* ---------- state ---------- */
 let bodies=[], merges=0, ejected=0, E0=null, Elast=null, paused=false, G=1, trailPct=55, speed=1, launchM=12, softK=0.7;
 let activePreset='star', nextId=1, accelFresh=false, solverName='direct', lastSub=0, selId=-1;
-let mergeOn=false, showArrows=false, showLag=false, showOrbit=true, autoFit=false;
+let mergeOn=false, showArrows=false, showLag=false, showOrbit=true;
 const THETA=0.7, DIRECT_MAX=400, ETA=0.07;
 let sK=2.05;
 function radiusOf(m){ return Math.max(1.5,Math.pow(m,0.28)*sK); }
@@ -719,12 +718,10 @@ function fitView(instant){
   if(instant){ cam.x=tx; cam.y=ty; cam.zoom=z; }
   else { const k=0.07; cam.x+=(tx-cam.x)*k; cam.y+=(ty-cam.y)*k; cam.zoom*=Math.pow(z/cam.zoom,k); }
 }
-function setAutoFit(on){ autoFit=on; el('t-fit').setAttribute('aria-pressed',String(on)); }
 function zoomAt(sx,sy,factor){
   const z=Math.max(0.02,Math.min(12,cam.zoom*factor));
   s2f(sx,sy,tmp); const fx=tmp.x, fy=tmp.y;
   cam.zoom=z; cam.x=fx-(sx-W/2)/z; cam.y=fy-(sy-H/2)/z;
-  if(autoFit) setAutoFit(false);
 }
 
 /* ---------- presets (world origin at screen centre, S = min(W,H)) ---------- */
@@ -1272,8 +1269,9 @@ function restart(key,keep){
   setMerge(keep?mergeOn:(P.merge===true)); setLag(keep?showLag:!!P.lag);
   frame.mode='fixed'; setFrame(keepFrame); updateFrame(); clearTrails();
   if(!keep){ cam.x=0; cam.y=0; cam.zoom=1; }
-  const wantFit=keep?autoFit:!!P.fit;
-  setAutoFit(wantFit); if(wantFit) fitView(true);
+  /* one framing at build time for the arrangements that need it. The view is yours
+     after that: nothing moves the camera unless you ask, with the button or with 0. */
+  if(!keep && P.fit) fitView(true);
   resetEnergy();
   [...document.querySelectorAll('.preset')].forEach(p=>p.setAttribute('aria-pressed',String(p.dataset.k===activePreset)));
 }
@@ -1329,7 +1327,6 @@ el('t-merge').addEventListener('click',()=>setMerge(!mergeOn));
 el('t-lag').addEventListener('click',()=>setLag(!showLag));
 el('t-arrows').addEventListener('click',()=>{ showArrows=!showArrows; setTg('t-arrows',showArrows); });
 el('t-orbit').addEventListener('click',()=>{ showOrbit=!showOrbit; setTg('t-orbit',showOrbit); });
-el('t-fit').addEventListener('click',()=>setAutoFit(!autoFit));
 el('sel-follow').addEventListener('click',()=>setFrame('sel'));
 el('sel-del').addEventListener('click',()=>{ const b=bodyById(selId); if(b) removeBody(b); });
 el('sel-close').addEventListener('click',()=>select(-1));
@@ -1363,9 +1360,9 @@ cv.addEventListener('pointermove',e=>{
     const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y), cx=(a.x+b.x)/2, cy=(a.y+b.y)/2;
     const z=Math.max(0.02,Math.min(12,pinch.zoom0*(d/Math.max(1,pinch.d0))));
     cam.zoom=z; cam.x=pinch.camx-(cx-pinch.cx)/z; cam.y=pinch.camy-(cy-pinch.cy)/z;
-    if(autoFit) setAutoFit(false); return;
+    return;
   }
-  if(panning){ cam.x-=(p.x-panning.x)/cam.zoom; cam.y-=(p.y-panning.y)/cam.zoom; panning.x=p.x; panning.y=p.y; if(autoFit) setAutoFit(false); return; }
+  if(panning){ cam.x-=(p.x-panning.x)/cam.zoom; cam.y-=(p.y-panning.y)/cam.zoom; panning.x=p.x; panning.y=p.y; return; }
   if(drag){ drag.x1=p.x; drag.y1=p.y; if(Math.hypot(p.x-drag.x0,p.y-drag.y0)>5) drag.moved=true; }
 });
 function endPointer(e){
@@ -1388,7 +1385,10 @@ function endPointer(e){
 }
 cv.addEventListener('pointerup',endPointer);
 cv.addEventListener('pointercancel',endPointer);
-cv.addEventListener('wheel',e=>{ e.preventDefault(); const p=pos(e); zoomAt(p.x,p.y,Math.exp(-e.deltaY*0.0012)); },{passive:false});
+cv.addEventListener('wheel',e=>{ e.preventDefault(); const p=pos(e);
+  /* one notch of a mouse wheel is about 4 percent, so the view creeps rather than jumps */
+  const dy = e.deltaMode===1 ? e.deltaY*16 : e.deltaMode===2 ? e.deltaY*100 : e.deltaY;
+  zoomAt(p.x,p.y,Math.exp(-Math.max(-140,Math.min(140,dy))*0.0004)); },{passive:false});
 
 /* ---------- keys ---------- */
 const FRAME_ORDER=['fixed','com','heavy','sel','rot'];
@@ -1405,8 +1405,8 @@ window.addEventListener('keydown',e=>{
   else if(k==='l'||k==='L') el('t-lag').click();
   else if(k==='m'||k==='M') el('t-merge').click();
   else if(k==='0') fitView(true);
-  else if(k==='+'||k==='=') zoomAt(W/2,H/2,1.25);
-  else if(k==='-'||k==='_') zoomAt(W/2,H/2,0.8);
+  else if(k==='+'||k==='=') zoomAt(W/2,H/2,1.12);
+  else if(k==='-'||k==='_') zoomAt(W/2,H/2,1/1.12);
   else if(k==='c'||k==='C'){ let i=(FRAME_ORDER.indexOf(frame.mode)+1)%5; if(FRAME_ORDER[i]==='sel'&&selId<0) i=(i+1)%5; setFrame(FRAME_ORDER[i]); }
   else if(k==='Delete'||k==='Backspace'){ const b=bodyById(selId); if(b){ e.preventDefault(); removeBody(b); } }
   else if(k==='Escape'){ if(selId>=0) select(-1); }
@@ -1420,7 +1420,6 @@ function loop(now){
   if(!paused) step();
   updateFrame();
   if(!paused||bodies.length===0) recordTrails();
-  if(autoFit) fitView(false);
   if(drag){
     const n=bodies.length, every=n<=40?1:n<=100?3:6;
     if(++pvT>=every||PV.pts.length===0){ pvT=0;
@@ -1436,7 +1435,7 @@ function loop(now){
 let rt=null;
 window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(true); },150); });
 /* small hook for automated checks */
-window.__nb={ get bodies(){return bodies;}, restart, PRESETS };
+window.__nb={ get bodies(){return bodies;}, restart, PRESETS, get cam(){return {x:cam.x,y:cam.y,zoom:cam.zoom};} };
 resize(true); restart('star');
 requestAnimationFrame(loop);
 })();

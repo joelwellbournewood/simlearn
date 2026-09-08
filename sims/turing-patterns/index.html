@@ -1795,6 +1795,7 @@ window.__turingRun = function(n){
   readStats();
   return {cov:stats.cov, total:S.total};
 };
+var stepCarry = 0;
 function frame(t){
   requestAnimationFrame(frame);
   if(!last) last = t;
@@ -1802,14 +1803,29 @@ function frame(t){
   acc += dt; frames++;
   if(acc > 400){ stats.fps = frames*1000/acc; acc = 0; frames = 0; }
 
-  if(S.growOn && S.g < S.gMax && S.running){
-    S.g = Math.min(S.gMax, S.g*Math.pow(1 + S.gRate, S.steps));
+  /* The model advances on wall-clock time, not on frames. Hiding the interface makes
+     the page cheaper to draw and the frame rate rises, and when the step count was tied
+     to the frame the pattern sped up with it. Speed now means steps per sixtieth of a
+     second whatever the display is doing, with a fractional carry so nothing is lost and
+     a ceiling of four frames' worth so a stall cannot dump a thousand steps at once. */
+  var n = 0;
+  if(S.running){
+    stepCarry += S.steps * Math.min(dt, 100) / (1000/60);
+    n = Math.floor(stepCarry);
+    stepCarry -= n;
+    var capN = Math.max(1, S.steps*4);
+    if(n > capN){ n = capN; stepCarry = 0; }
+  } else {
+    stepCarry = 0;
+  }
+  if(S.growOn && S.g < S.gMax && S.running && n > 0){
+    S.g = Math.min(S.gMax, S.g*Math.pow(1 + S.gRate, n));
     S.dil = S.gRate;
   } else {
     S.dil = 0;
   }
   updateWeights();
-  if(S.running) runSteps(S.steps);
+  if(n > 0) runSteps(n);
   drawField();
   drawOverlay();
   if(++statTick % 12 === 0){ readStats(); var _h=$('hud'), _t=hudText(); _h.innerHTML=_t; _h.style.display=_t?'':'none'; }
