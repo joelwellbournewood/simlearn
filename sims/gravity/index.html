@@ -198,7 +198,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
   <div class="row">
     <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. The integrator splits each frame into as many substeps as the closest encounter needs, so speeding up does not make orbits go wrong until it hits the substep ceiling." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
-    <input type="range" id="s-speed" min="0.1" max="4" step="0.05" value="1">
+    <input type="range" id="s-speed" min="0.1" max="8" step="0.05" value="1">
   </div>
   <div class="row">
     <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen. Trails are drawn in the current reference frame, so switch to the co-rotating view and they show the path as seen from the orbiting pair." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
@@ -302,7 +302,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p><b>Stable or not.</b> L4 and L5 (marked teal) are genuinely stable when the planet is lighter than about a twenty-fifth of the star: nudge a body off them and the Coriolis effect curls it back into a slow loop around the point. That is why Jupiter's Trojan asteroids have held those two spots for billions of years, and why the six small bodies drawn there in this arrangement librate rather than escape. L1, L2, and L3 (marked gold) are saddle points, balanced on a ridge, so anything left there slides away within an orbit or two. The James Webb telescope sits at Sun-Earth L2 and fires thrusters every few weeks to stay there, and the fuel it carries for those burns is what sets the end of its mission.</p>
     <h3>Horseshoe orbits</h3>
     <p>The <b class="hl">Horseshoe orbits</b> arrangement shows the other family of co-orbital motion, and it needs a lighter planet than the one in the Lagrange scene. Each companion starts on a circle about two percent wider or two percent narrower than the planet's, which is enough to make it drift slowly past in the rotating view, and little enough that the planet can turn it back well before it arrives.</p>
-    <p>Follow the narrow one. It goes round slightly faster, so it gains on the planet from behind. The planet, ahead of it, pulls it forward, which adds energy and lifts it into a wider and therefore slower orbit, and from there it falls behind again. Coming up on the planet from the other side, the pull is backwards, energy is taken away, and it drops back to the narrow orbit. Neither companion ever gets close, and in the rotating view each traces a long horseshoe whose ends stop well short of the planet. Turn the trail up and give it a minute to draw the whole shape.</p>
+    <p>Follow the narrow one. It goes round slightly faster, so it gains on the planet from behind. The planet, ahead of it, pulls it forward, which adds energy and lifts it into a wider and therefore slower orbit, and from there it falls behind again. Coming up on the planet from the other side, the pull is backwards, energy is taken away, and it drops back to the narrow orbit. Neither companion ever gets close, and in the rotating view each traces a long horseshoe whose ends stop well short of the planet. One lap of the shape takes a few hundred orbits, so push the time speed up and let the trail draw it.</p>
     <p>Saturn's moons Janus and Epimetheus are on exactly this dance, about fifty kilometres apart in orbital radius, and they trade orbits every four years without ever coming within fifteen thousand kilometres of one another. Earth has a horseshoe companion too, the asteroid 2010 SO16, which takes hundreds of years to make one pass of the shape. The narrowness of the band matters: too close to the planet's own orbit and the companion settles into a tadpole around L4 or L5 instead, too far and the planet cannot turn it back at all, so it crosses the orbit and is scattered.</p>
     <p>The star here is 100 times the mass of the planet, which is a heavier planet than any in the solar system. That is deliberate, because it puts L1 and L2 far enough from the planet to see. The point positions are computed from the current separation of the two heaviest bodies, so if you sling a new heavy body in, the crosses move to where they now belong.</p>
 
@@ -818,7 +818,7 @@ const PRESETS={
     }
     small.length=n;
     return out.concat(small);}},
-  horseshoe:{name:'Horseshoe orbits',tag:'Co-orbital bodies that never meet',n:4,lmin:2,lmax:2,ldef:2,frame:'rot',merge:false,trail:80,tcap:14,speed:3,build(n){
+  horseshoe:{name:'Horseshoe orbits',tag:'Co-orbital bodies that never meet',n:4,lmin:2,lmax:2,ldef:2,frame:'rot',merge:false,trail:80,tcap:14,speed:5,build(n){
     const S=Math.min(W,H), d=S*0.30, M1=16000, M2=16, M=M1+M2;
     const x1=-d*M2/M, x2=d*M1/M;
     const out=[mk(x1,0,0,0,M1), mk(x2,0,0,0,M2)];
