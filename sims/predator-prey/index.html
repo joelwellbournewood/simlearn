@@ -375,10 +375,10 @@
      A small bar in the corner brings the controls back, pauses, or leaves; it fades
      out after a few seconds of stillness and comes back on the first movement, so
      the default state really is an empty field. Escape also leaves, as always. */
-  .fsbar{position:fixed;z-index:60;display:none;gap:8px;
+  .fsbar{position:fixed;z-index:60;display:none;gap:8px;flex-wrap:nowrap;
     top:calc(env(safe-area-inset-top,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 16px);
     transition:opacity .35s ease}
-  .fsbar .btn{font-size:12.5px;padding:7px 12px;background:rgba(10,24,20,.72);backdrop-filter:blur(8px)}
+  .fsbar .btn{font-size:12.5px;padding:7px 12px;white-space:nowrap;background:rgba(10,24,20,.72);backdrop-filter:blur(8px)}
   body.is-full .fsbar{display:flex}
   body.is-full .fsbar.idle{opacity:0;pointer-events:none}
   body.is-full{max-width:none;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column}
@@ -393,14 +393,26 @@
      shape the screen is, in both directions, without a max-width flattening it */
   body.is-full #field{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
   body.is-full:not(.menus) .field-tag{display:none}
-  /* with the controls called back they sit beside the field on a wide screen and
-     under it on a narrow one, and the field gives up whatever room they need */
-  body.is-full.menus .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);
-    gap:14px;padding:12px;align-items:stretch}
-  body.is-full.menus .col-c{height:auto}
-  body.is-full.menus .col-l,body.is-full.menus .col-r{max-height:100%;overflow-y:auto}
-  @media (max-width:900px){
-    body.is-full.menus .layout{grid-template-columns:1fr;overflow-y:auto}
+  /* Calling the controls back must not shuffle the picture around. Both columns
+     arrive as one glass drawer pinned to the right edge, and the field simply gives
+     up that strip and stays centred in what is left. On a narrow or short screen the
+     drawer is a bottom sheet instead. */
+  body.is-full.menus .side{display:block;position:fixed;z-index:55;top:0;right:0;bottom:0;
+    width:min(340px,40vw);
+    padding:calc(env(safe-area-inset-top,0px) + 56px) 14px calc(env(safe-area-inset-bottom,0px) + 16px) 14px;
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+    background:rgba(8,20,17,.88);backdrop-filter:blur(10px);
+    border-left:1px solid var(--line-strong);box-shadow:-24px 0 60px rgba(0,0,0,.45)}
+  body.is-full.menus .side::-webkit-scrollbar{width:8px}
+  body.is-full.menus .side::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+  body.is-full.menus .col-l,body.is-full.menus .col-r{max-height:none;overflow:visible;padding-right:0;height:auto}
+  body.is-full.menus .side > .col + .col{margin-top:12px}
+  body.is-full.menus .layout{padding-right:min(340px,40vw)}
+  @media (max-width:900px),(max-height:520px){
+    body.is-full.menus .side{top:auto;left:0;width:auto;height:min(58vh,400px);
+      padding-top:14px;border-left:0;border-top:1px solid var(--line-strong);
+      box-shadow:0 -24px 60px rgba(0,0,0,.45)}
+    body.is-full.menus .layout{padding-right:0;padding-bottom:min(58vh,400px)}
   }
 </style>
 <script>try{if(window.self!==window.top)document.documentElement.className+=' in-frame';}catch(e){document.documentElement.className+=' in-frame';}</script>
@@ -587,12 +599,12 @@
 <h3>References</h3>
 <ul class="refs">
   <li>Lotka, A. J. (1925). Elements of Physical Biology. Williams &amp; Wilkins.</li>
-  <li>Volterra, V. (1926). Fluctuations in the abundance of a species considered mathematically. Nature.</li>
+  <li>Volterra, V. (1926). Fluctuations in the abundance of a species considered mathematically. Nature. <a class="doi" href="https://doi.org/10.1038/118558a0" target="_blank" rel="noopener" title="10.1038/118558a0">DOI</a></li>
   <li>Gause, G. F. (1934). The Struggle for Existence. Williams &amp; Wilkins.</li>
-  <li>Huffaker, C. B. (1958). Experimental studies on predation: dispersion factors and predator-prey oscillations. Hilgardia.</li>
-  <li>Elton, C., &amp; Nicholson, M. (1942). The ten-year cycle in numbers of the lynx in Canada. Journal of Animal Ecology.</li>
-  <li>Rosenzweig, M. L. (1971). Paradox of enrichment: destabilization of exploitation ecosystems in ecological time. Science.</li>
-  <li>Krebs, C. J., et al. (1995). Impact of food and predation on the snowshoe hare cycle. Science.</li>
+  <li>Huffaker, C. B. (1958). Experimental studies on predation: dispersion factors and predator-prey oscillations. Hilgardia. <a class="doi" href="https://doi.org/10.3733/hilg.v27n14p343" target="_blank" rel="noopener" title="10.3733/hilg.v27n14p343">DOI</a></li>
+  <li>Elton, C., &amp; Nicholson, M. (1942). The ten-year cycle in numbers of the lynx in Canada. Journal of Animal Ecology. <a class="doi" href="https://doi.org/10.2307/1358" target="_blank" rel="noopener" title="10.2307/1358">DOI</a></li>
+  <li>Rosenzweig, M. L. (1971). Paradox of enrichment: destabilization of exploitation ecosystems in ecological time. Science. <a class="doi" href="https://doi.org/10.1126/science.171.3969.385" target="_blank" rel="noopener" title="10.1126/science.171.3969.385">DOI</a></li>
+  <li>Krebs, C. J., et al. (1995). Impact of food and predation on the snowshoe hare cycle. Science. <a class="doi" href="https://doi.org/10.1126/science.269.5227.1112" target="_blank" rel="noopener" title="10.1126/science.269.5227.1112">DOI</a></li>
 </ul>
 </div></div>
 </div>

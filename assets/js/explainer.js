@@ -17,6 +17,11 @@
     'background:rgba(255,255,255,.05);font-family:var(--mono,monospace);font-size:13px;color:var(--ink,#eaf3ee)}',
     '.about-inner .more-body .refs{list-style:none;padding-left:0;margin:0}',
     '.about-inner .more-body .refs li{font-size:12.5px;line-height:1.5;color:var(--muted,#8fa79c);margin:0 0 5px}',
+    '.about-inner .more-body .refs a.doi{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:5px;',
+    'border:1px solid var(--line-strong,rgba(255,255,255,.22));font-family:var(--mono,monospace);font-size:10.5px;',
+    'letter-spacing:.06em;color:var(--muted,#8fa79c);text-decoration:none;vertical-align:1px}',
+    '.about-inner .more-body .refs a.doi:hover,.about-inner .more-body .refs a.doi:focus-visible{',
+    'color:var(--accent,#5fd3a3);border-color:var(--accent,#5fd3a3)}',
     '@media (max-width:820px){.about-inner .more-btn{font-size:13.5px;padding:11px 12px}.about-inner .more-body{padding-left:11px}}'
   ].join('');
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);

@@ -508,11 +508,11 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
 
 <h3>References</h3>
 <ul class="refs">
-  <li>Hodgkin, A. L., &amp; Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. Journal of Physiology, 117, 500-544. (Last of a series of five papers that year.)</li>
-  <li>Huxley, A. F., &amp; Stampfli, R. (1949). Evidence for saltatory conduction in peripheral myelinated nerve fibres. Journal of Physiology.</li>
-  <li>Narahashi, T., Moore, J. W., &amp; Scott, W. R. (1964). Tetrodotoxin blockage of sodium conductance increase in lobster giant axons. Journal of General Physiology.</li>
+  <li>Hodgkin, A. L., &amp; Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. Journal of Physiology, 117, 500-544. (Last of a series of five papers that year.) <a class="doi" href="https://doi.org/10.1113/jphysiol.1952.sp004764" target="_blank" rel="noopener" title="10.1113/jphysiol.1952.sp004764">DOI</a></li>
+  <li>Huxley, A. F., &amp; Stampfli, R. (1949). Evidence for saltatory conduction in peripheral myelinated nerve fibres. Journal of Physiology. <a class="doi" href="https://doi.org/10.1113/jphysiol.1949.sp004335" target="_blank" rel="noopener" title="10.1113/jphysiol.1949.sp004335">DOI</a></li>
+  <li>Narahashi, T., Moore, J. W., &amp; Scott, W. R. (1964). Tetrodotoxin blockage of sodium conductance increase in lobster giant axons. Journal of General Physiology. <a class="doi" href="https://doi.org/10.1085/jgp.47.5.965" target="_blank" rel="noopener" title="10.1085/jgp.47.5.965">DOI</a></li>
   <li>Cole, K. S. (1949). Dynamic electrical characteristics of the squid axon membrane. Archives des Sciences Physiologiques.</li>
-  <li>Izhikevich, E. M. (2007). Dynamical Systems in Neuroscience. MIT Press.</li>
+  <li>Izhikevich, E. M. (2007). Dynamical Systems in Neuroscience. MIT Press. <a class="doi" href="https://doi.org/10.7551/mitpress/2526.001.0001" target="_blank" rel="noopener" title="10.7551/mitpress/2526.001.0001">DOI</a></li>
 </ul>
 </div></div>
 <button class="close" id="closeExplainer">Close</button>
@@ -540,13 +540,17 @@ const NAI_MAX = 2.4, KO_MAX = 1.75, ION_TAU = 2600;
 /* Charge to concentration. One spike carries roughly 0.7 uC/cm2 of sodium inward,
    which in a real axon is a shift of about one part in a hundred thousand: a real
    preparation poisoned with ouabain takes many minutes of firing to run down. These
-   gains compress that into a handful of spikes, or about ten seconds at rest. It is a
-   deliberate speed-up of some four orders of magnitude and it is stated in the
+   gains compress that into four or five spikes. It is a deliberate speed-up of some
+   four orders of magnitude and it is stated in the
    explainer; everything else about the run-down, including its direction and the size
    of the shift in E_Na, is the Nernst equation doing its own work. */
-const NA_GAIN = 8e-5, K_GAIN = 6e-5;
+const NA_GAIN = 2.6e-4, K_GAIN = 2.0e-4;
 let naQ = 0, kQ = 0;
-function ionsReset(){ IONS.nai=1; IONS.ko=1; naQ=0; kQ=0; applyReversals(); }
+/* peak of the spike in progress, and the first and latest peak recorded since the
+   pump was stopped: the voltage plot draws the first one as a line to shrink from.
+   Declared here because assignBlocks() clears them during first layout. */
+let curPeak=-1e9, ouaFirst=null, ouaLast=null;
+function ionsReset(){ IONS.nai=1; IONS.ko=1; naQ=0; kQ=0; ouaFirst=null; ouaLast=null; applyReversals(); }
 function applyReversals(){
   ENA = ENA0 - RTF*Math.log(IONS.nai);
   EK  = EK0  + RTF*Math.log(IONS.ko);
@@ -994,6 +998,7 @@ function assignBlocks(drugs){
                       c.noH = drugs.pronase && i >= Math.round((1-DRUGS.pronase.block)*na.length); });
   k.forEach((c,i)=>{ c.blk = i<kb ? kDrug : null; });
   TH.pumpBlocked = !!drugs.ouabain;
+  ouaFirst=null; ouaLast=null;   /* the peak-hold line belongs to this run of the drug */
 
   /* a few loose drug molecules drifting on the side they act from */
   TH.drugMol = [];
@@ -2250,6 +2255,17 @@ function drawCurrentClamp(g, train){
     g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
     levelLabel(g, lab, col, L, y, used);
   }
+  /* with the pump stopped every spike is shorter than the last, and a difference of a
+     few millivolts is hard to see. Hold the first peak since the drug went on as a
+     line and print what the newest spike reached against it. */
+  if(TH.pumpBlocked && ouaFirst!==null && ouaLast!==null && ouaFirst-ouaLast > 1.2){
+    const yf=Y1(ouaFirst);
+    g.strokeStyle='rgba(244,239,228,.30)'; g.lineWidth=1; g.setLineDash([2,4]);
+    g.beginPath(); g.moveTo(L,yf); g.lineTo(L+pw,yf); g.stroke(); g.setLineDash([]);
+    g.textAlign='right'; g.fillStyle='rgba(244,239,228,.62)';
+    g.font='500 10.5px "Space Grotesk",sans-serif';
+    g.fillText('first spike '+(ouaFirst>0?'+':'')+Math.round(ouaFirst), L+pw-6, yf-5);
+  }
   if(HIST.t.length>1){
     g.beginPath();
     for(let i=0;i<HIST.t.length;i++){ if(HIST.t[i]<t0) continue; g.lineTo(X(HIST.t[i]), Y1(HIST.V[i])); }
@@ -2770,8 +2786,14 @@ function advancePatch(dtModel, dtWall){
   for(let i=0;i<steps;i++){
     stepPatch(patch, dt, trainAt(train, patch.t)+S.hold, PHI, kNa, kK, kH);
     ionCharge(dt, patch.iNa, patch.iK);
-    if(!spikeUp && isSpiking(patch)){ spikeUp=true; spikeTimes.push(patch.t); }
-    if(spikeUp && spikeOver(patch)) spikeUp=false;
+    if(!spikeUp && isSpiking(patch)){ spikeUp=true; spikeTimes.push(patch.t); curPeak=-1e9; }
+    if(spikeUp){
+      if(patch.V>curPeak) curPeak=patch.V;
+      if(spikeOver(patch)){
+        spikeUp=false;
+        if(TH.pumpBlocked){ if(ouaFirst===null) ouaFirst=curPeak; ouaLast=curPeak; }
+      }
+    }
     sampleAcc+=dt;
     if(sampleAcc>=SAMPLE_MS){ pushHist(patch); sampleAcc=0; }
   }

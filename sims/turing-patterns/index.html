@@ -425,7 +425,7 @@ body.sheet-open .panel{z-index:9}
   </div>
 </aside>
 
-<div class="hud" id="hud"></div>
+<div class="hud" id="hud" style="display:none"></div>
 
 <dialog id="about" class="about"><div class="about-inner">
 <button class="about-close" id="closeAbout" aria-label="Close">&times;</button>
@@ -496,15 +496,15 @@ body.sheet-open .panel{z-index:9}
 
 <h3>References</h3>
 <ul class="refs">
-  <li>Turing, A. M. (1952). The chemical basis of morphogenesis. Philosophical Transactions of the Royal Society B.</li>
-  <li>Gierer, A., &amp; Meinhardt, H. (1972). A theory of biological pattern formation. Kybernetik.</li>
-  <li>Gray, P., &amp; Scott, S. K. (1984). Autocatalytic reactions in the isothermal continuous stirred tank reactor. Chemical Engineering Science.</li>
-  <li>Pearson, J. E. (1993). Complex patterns in a simple system. Science.</li>
-  <li>Kondo, S., &amp; Asai, R. (1995). A reaction-diffusion wave on the skin of the marine angelfish Pomacanthus. Nature.</li>
-  <li>Sick, S., Reinker, S., Timmer, J., &amp; Schlake, T. (2006). WNT and DKK determine hair follicle spacing through a reaction-diffusion mechanism. Science.</li>
-  <li>Economou, A. D., et al. (2012). Periodic stripe formation by a Turing mechanism operating at growth zones in the mammalian palate. Nature Genetics.</li>
-  <li>Sheth, R., et al. (2012). Hox genes regulate digit patterning by controlling the wavelength of a Turing-type mechanism. Science.</li>
-  <li>Green, J. B. A., &amp; Sharpe, J. (2015). Positional information and reaction-diffusion: two big ideas in developmental biology combine. Development.</li>
+  <li>Turing, A. M. (1952). The chemical basis of morphogenesis. Philosophical Transactions of the Royal Society B. <a class="doi" href="https://doi.org/10.1098/rstb.1952.0012" target="_blank" rel="noopener" title="10.1098/rstb.1952.0012">DOI</a></li>
+  <li>Gierer, A., &amp; Meinhardt, H. (1972). A theory of biological pattern formation. Kybernetik. <a class="doi" href="https://doi.org/10.1007/BF00289234" target="_blank" rel="noopener" title="10.1007/BF00289234">DOI</a></li>
+  <li>Gray, P., &amp; Scott, S. K. (1984). Autocatalytic reactions in the isothermal continuous stirred tank reactor. Chemical Engineering Science. <a class="doi" href="https://doi.org/10.1016/0009-2509(84)87017-7" target="_blank" rel="noopener" title="10.1016/0009-2509(84)87017-7">DOI</a></li>
+  <li>Pearson, J. E. (1993). Complex patterns in a simple system. Science. <a class="doi" href="https://doi.org/10.1126/science.261.5118.189" target="_blank" rel="noopener" title="10.1126/science.261.5118.189">DOI</a></li>
+  <li>Kondo, S., &amp; Asai, R. (1995). A reaction-diffusion wave on the skin of the marine angelfish Pomacanthus. Nature. <a class="doi" href="https://doi.org/10.1038/376765a0" target="_blank" rel="noopener" title="10.1038/376765a0">DOI</a></li>
+  <li>Sick, S., Reinker, S., Timmer, J., &amp; Schlake, T. (2006). WNT and DKK determine hair follicle spacing through a reaction-diffusion mechanism. Science. <a class="doi" href="https://doi.org/10.1126/science.1130088" target="_blank" rel="noopener" title="10.1126/science.1130088">DOI</a></li>
+  <li>Economou, A. D., et al. (2012). Periodic stripe formation by a Turing mechanism operating at growth zones in the mammalian palate. Nature Genetics. <a class="doi" href="https://doi.org/10.1038/ng.1090" target="_blank" rel="noopener" title="10.1038/ng.1090">DOI</a></li>
+  <li>Sheth, R., et al. (2012). Hox genes regulate digit patterning by controlling the wavelength of a Turing-type mechanism. Science. <a class="doi" href="https://doi.org/10.1126/science.1226804" target="_blank" rel="noopener" title="10.1126/science.1226804">DOI</a></li>
+  <li>Green, J. B. A., &amp; Sharpe, J. (2015). Positional information and reaction-diffusion: two big ideas in developmental biology combine. Development. <a class="doi" href="https://doi.org/10.1242/dev.114991" target="_blank" rel="noopener" title="10.1242/dev.114991">DOI</a></li>
 </ul>
 </div></div>
 </div>
@@ -1647,7 +1647,6 @@ function wire(){
 var last = 0, acc = 0, frames = 0, statTick = 0;
 function hudText(){
   var L = [];
-  L.push(chip('coverage', Math.round(stats.cov*100) + '<small>%</small>'));
   if(S.growOn) L.push(chip('length', '\u00d7' + S.g.toFixed(2)));
   if(S.growOn) L.push(chip('bands across', stats.bands));
   if(S.anisOn) L.push(chip('fast axis', Math.round(S.angle) + '<small>\u00b0</small>'));
@@ -1690,7 +1689,7 @@ function frame(t){
   if(S.running) runSteps(S.steps);
   drawField();
   drawOverlay();
-  if(++statTick % 12 === 0){ readStats(); $('hud').innerHTML = hudText(); }
+  if(++statTick % 12 === 0){ readStats(); var _h=$('hud'), _t=hudText(); _h.innerHTML=_t; _h.style.display=_t?'':'none'; }
 }
 
 /* ------------------------------------------------------------------ */
