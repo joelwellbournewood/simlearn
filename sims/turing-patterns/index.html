@@ -265,19 +265,32 @@ body.map-docked .mapslot-label{display:block}
   background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;
   padding:7px;max-height:none;display:flex;align-items:center;justify-content:center}
 .mapcard.docked .mc-head,.mapcard.docked .mc-sub,.mapcard.docked .mc-side:not(.in-slot){display:none}
-.mapcard.docked #map{width:auto;height:100%;max-width:100%;margin:0;border-radius:9px}
+/* Docked, the plot is the whole card. The zoom row goes: it cost a row of the little
+   height a phone has, and with the whole map always in view there is nothing to fit
+   back into. The three sliders in the controls sheet are the accurate way in on a
+   phone, and they place the chemistry exactly. */
+.mapcard.docked .mzoom{display:none}
+.mapcard.docked{padding:5px}
+.mapcard.docked #map{width:auto;height:100%;max-width:100%;margin:0;border-radius:9px;flex:none}
 body.clean.map-docked #stage{inset:0}
 /* portrait: pattern on top, plot underneath, clear of the controls handle */
 @media (orientation:portrait){
-  body.map-docked{--mapH:min(32vh,250px)}
+  body.map-docked{--mapH:min(38vh,330px)}
   body.map-docked #stage{bottom:calc(var(--mapH) + 56px)}
   body.map-docked .mapcard.docked{left:8px;right:8px;bottom:50px;top:auto;width:auto;height:var(--mapH)}
 }
 /* landscape: pattern on the left, plot on the right under the icon buttons */
 @media (orientation:landscape){
-  body.map-docked{--mapW:min(42vw,330px)}
+  /* three limits at once: never more than 46% of the width, never so wide that the
+     plot's own 1:0.9 shape pushes it past the bottom of the screen, and never larger
+     than it needs to be */
+  body.map-docked{--mapW:min(46vw,380px,calc((100vh - 76px)/0.9))}
   body.map-docked #stage{right:calc(var(--mapW) + 12px);bottom:0}
-  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:12px;width:var(--mapW);height:auto}
+  /* the card hugs the plot's own shape, so there is no dead glass under it and the
+     plot is as wide as the strip allows */
+  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:auto;width:var(--mapW);
+    height:calc((var(--mapW) - 10px)*0.9 + 10px);max-height:calc(100% - 64px)}
+  body.map-docked .mapcard.docked #map{width:100%;height:auto}
   body.map-docked .hud{left:14px;right:auto;top:auto;bottom:54px;flex-direction:row;align-items:flex-start;gap:12px}
 }
 /* the sheet is a cover over the pattern, not a shelf under the plot */
@@ -1646,6 +1659,9 @@ function wire(){
     zoomBy(e.deltaY < 0 ? 1.25 : 1/1.25, iF(x), iK(y));
   }, {passive:false});
   mapCv.addEventListener('dblclick', function(e){
+    /* docked on a phone the whole map is always shown, and there is no control to get
+       back out of a zoom, so a stray double tap must not enter one */
+    if(document.body.classList.contains('map-docked')) return;
     var r = mapCv.getBoundingClientRect();
     var x = (e.clientX - r.left)/r.width*mapCv.width;
     var y = (e.clientY - r.top)/r.height*mapCv.height;

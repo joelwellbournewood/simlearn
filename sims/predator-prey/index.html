@@ -418,6 +418,19 @@
       box-shadow:0 -24px 60px rgba(0,0,0,.45)}
     body.is-full.menus .layout{padding-right:0;padding-bottom:min(58vh,400px)}
   }
+  /* A landscape phone has no height to give away. The bottom sheet above took 58% of a
+     390px screen and left the field 160px tall, so in landscape the drawer stays beside
+     the field, exactly as it does on a desktop, only narrower. */
+  @media (orientation:landscape) and (max-height:620px){
+    body.is-full.menus .side{top:0;left:auto;right:0;bottom:0;height:auto;width:min(300px,44vw);
+      padding:calc(env(safe-area-inset-top,0px) + 52px) 12px calc(env(safe-area-inset-bottom,0px) + 12px) 12px;
+      border-top:0;border-left:1px solid var(--line-strong);
+      box-shadow:-24px 0 60px rgba(0,0,0,.45)}
+    body.is-full.menus .layout{padding-right:min(300px,44vw);padding-bottom:0}
+    /* the corner bar sits above the drawer, not under it */
+    body.is-full .actions,body.is-full .fsbar{right:calc(min(300px,44vw) + 10px)}
+    body.is-full:not(.menus) .actions,body.is-full:not(.menus) .fsbar{right:calc(env(safe-area-inset-right,0px) + 10px)}
+  }
 
   /* ---------- corner action bar (2026-09-08) ----------
      Same shape, same icons, and the same keys as every other module on the site:
