@@ -21,7 +21,7 @@
   var HELDREST = 0.45;          // bounce off a ball that a finger is holding still
   var th = [], om = [], grabbed = -1, held = [], fling = 0, flingT = 0, lastA = 0;
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.__cradleBuild = '20260908d';   // which copy of this file the browser is running
+  window.__cradleBuild = '20260908e';   // which copy of this file the browser is running
 
   for (var i = 0; i < N; i++) { th[i] = 0; om[i] = 0; }
   th[0] = -0.85;                // start with one ball lifted so it is moving on load
@@ -224,26 +224,17 @@
     else if (dt >= 0.2) fling = 0;
     lastA = a; flingT = t;
   }
-  cv.addEventListener('pointerdown', function (e) {
-    var p = local(e), i = pick(p);
-    if (i < 0) return;
-    grabbed = i; held = [i]; fling = 0;
-    lastA = th[i]; flingT = e.timeStamp || performance.now();
-    cv.setPointerCapture(e.pointerId);
-    setDrag(p); e.preventDefault();
-  });
-  cv.addEventListener('pointermove', function (e) {
-    if (grabbed < 0) {
-      /* the canvas is much wider than the linkage, so only show the grab cursor when
-         the pointer is actually over a ball */
-      cv.style.cursor = pick(local(e)) >= 0 ? 'grab' : 'default';
-      return;
-    }
+  /* The drag is tracked on the window, not on the canvas. The canvas is only 124px tall,
+     so a natural gesture leaves it almost immediately, and setPointerCapture is not
+     dependable everywhere (WebKit in particular). Window listeners mean the gesture
+     survives whether capture worked or not, and they are removed on release. */
+  function onMove(e) {
+    if (grabbed < 0) return;
     cv.style.cursor = 'grabbing';
     setDrag(local(e));
     track(th[grabbed], e.timeStamp || performance.now());
-    e.preventDefault();
-  });
+    if (e.cancelable) e.preventDefault();
+  }
   function release() {
     if (grabbed < 0) return;
     var now = performance.now();
@@ -260,10 +251,29 @@
     for (var i = 0; i < held.length; i++) om[held[i]] = v;
     grabbed = -1; held = []; fling = 0;
     cv.style.cursor = 'grab';
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', release);
+    window.removeEventListener('pointercancel', release);
+    window.removeEventListener('blur', release);
   }
-  cv.addEventListener('pointerup', release);
-  cv.addEventListener('pointercancel', release);
-  cv.addEventListener('lostpointercapture', release);
+  cv.addEventListener('pointerdown', function (e) {
+    var p = local(e), i = pick(p);
+    if (i < 0) return;
+    grabbed = i; held = [i]; fling = 0;
+    lastA = th[i]; flingT = e.timeStamp || performance.now();
+    try { cv.setPointerCapture(e.pointerId); } catch (err) { /* capture is a bonus, not a need */ }
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    window.addEventListener('blur', release);
+    setDrag(p); e.preventDefault();
+  });
+  /* hover: the canvas is much wider than the linkage, so only show the grab cursor when
+     the pointer is actually over a ball */
+  cv.addEventListener('pointermove', function (e) {
+    if (grabbed >= 0) return;
+    cv.style.cursor = pick(local(e)) >= 0 ? 'grab' : 'default';
+  });
   cv.addEventListener('pointerleave', function () { if (grabbed < 0) cv.style.cursor = 'default'; });
 
   // ---- loop ---------------------------------------------------------------

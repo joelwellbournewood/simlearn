@@ -115,7 +115,7 @@ body.slogan-js .hero h1{cursor:default}
   border:0; background:none; box-shadow:none;
   opacity:0; animation:rise .62s cubic-bezier(.2,.7,.25,1) .24s forwards;
 }
-.hero-sim canvas{display:block; width:100%; height:124px; touch-action:none; cursor:grab}
+.hero-sim canvas{display:block; width:100%; height:124px; touch-action:none; cursor:default}
 .hero-sim canvas:active{cursor:grabbing}
 /* stacked hero (phones and narrow tablets): the cradle belongs directly under the
    slogan, with the "Interactive Models" line closing the block underneath it.
