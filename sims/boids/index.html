@@ -49,6 +49,7 @@
   .brand h1{font-family:var(--display);font-weight:600;font-size:34px;letter-spacing:-.02em;margin:0;line-height:1;font-variation-settings:'opsz' 96}
   .brand p{margin:0;color:var(--muted);font-size:13px}
   .modes{position:absolute;left:20px;top:64px;z-index:6}
+  .seg[hidden]{display:none}
   .seg{display:inline-flex;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
   .seg button{border:0;background:transparent;color:var(--muted);padding:6px 14px;border-radius:999px;font-weight:500;transition:background .18s,color .18s}
   .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -140,6 +141,16 @@
   .tools .seg button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .tools .seg button[hidden]{display:none}
   .hint{color:var(--muted);font-size:12px;text-shadow:0 1px 8px rgba(0,0,0,.6);min-height:16px}
+  /* placement bar: only shown for the 3D placing tools */
+  .placebar{display:flex;align-items:center;gap:9px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12px;color:var(--muted)}
+  .placebar[hidden]{display:none}
+  .placebar .seg{border:0;background:transparent;padding:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .placebar .seg button{padding:4px 10px;font-family:var(--mono);font-size:12px}
+  .placebar input[type=range]{width:132px}
+  .placebar .pb-read{font-family:var(--mono);font-size:11.5px;color:var(--text);min-width:52px;text-align:center}
+  .placebar .pb-at{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:112px;text-align:center}
+  .placebar .pb-tg{padding:4px 11px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:11.5px}
+  .placebar .pb-tg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
   .tool-name{display:none;font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--text);text-shadow:0 1px 9px rgba(0,0,0,.8)}
   #stage.light ~ .tools .tool-name{text-shadow:0 1px 8px rgba(255,255,255,.75);color:#22362e}
   #stage.light ~ .tools .hint{text-shadow:0 1px 8px rgba(255,255,255,.7);color:#5c6b62}
@@ -174,6 +185,10 @@
     .tools .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
     .tools .seg::-webkit-scrollbar{display:none}
     .tools .seg button{padding:8px 10px;font-size:0;gap:0}
+    .tools .placebar{padding:4px 9px;gap:6px}
+    .tools .placebar .seg button{font-size:12px;padding:4px 8px}
+    .tools .placebar input[type=range]{width:88px}
+    .tools .placebar .pb-at{display:none}
     .tools .seg button svg{width:17px;height:17px}
     .tools .hint{display:none}
     .tool-name{display:block}
@@ -376,6 +391,22 @@
 
 
 <div class="tools">
+  <div class="seg" role="group" aria-label="Obstacle shape" id="shapes" hidden>
+    <button data-shape="sphere" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Round</button>
+    <button data-shape="box"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>Box</button>
+    <button data-shape="cyl"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="6" ry="2.6"/><path d="M6 6.5v11c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-11"/></svg>Column</button>
+    <button data-shape="free"><svg viewBox="0 0 24 24"><path d="M4 17c3-8 6 4 9-3s4 2 7-2"/></svg>Freehand</button>
+  </div>
+  <div class="placebar" id="placebar" hidden>
+    <span>Place on</span>
+    <div class="seg" role="group" aria-label="Placement plane" id="planeAxes">
+      <button data-axis="0">X</button><button data-axis="1" aria-pressed="true">Y</button><button data-axis="2">Z</button>
+    </div>
+    <input type="range" id="planeD" min="-280" max="280" step="10" value="0" aria-label="Slide the placement plane along its axis">
+    <output class="pb-read" id="planeRead">y 0</output>
+    <output class="pb-at" id="planeAt"></output>
+    <button class="pb-tg" id="planeSnap" aria-pressed="true" title="Snap the point to the grid on the plane">Snap</button>
+  </div>
   <div class="tool-name" id="toolName" aria-hidden="true">Attract</div>
   <div class="seg" role="group" aria-label="Pointer tool" id="tools">
     <button data-tool="orbit" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M3.5 14.5c-1.3-3.6 4-8 11-9.5s12 1 12.5 4.5M20.5 9.5c1.3 3.6-4 8-11 9.5S-2 18 -2.5 14.5"/></svg>Orbit</button>
@@ -384,12 +415,6 @@
     <button data-tool="obstacle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Obstacle</button>
     <button data-tool="predator"><svg viewBox="0 0 24 24"><path d="M4 12l16-7-5 7 5 7z"/></svg>Predator</button>
     <button data-tool="erase"><svg viewBox="0 0 24 24"><path d="M4 16l9-9 6 6-6 6H8z"/><path d="M4 21h16"/></svg>Erase</button>
-  </div>
-  <div class="seg" role="group" aria-label="Obstacle shape" id="shapes" hidden>
-    <button data-shape="sphere" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Round</button>
-    <button data-shape="box"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>Box</button>
-    <button data-shape="cyl"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="6" ry="2.6"/><path d="M6 6.5v11c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-11"/></svg>Column</button>
-    <button data-shape="free"><svg viewBox="0 0 24 24"><path d="M4 17c3-8 6 4 9-3s4 2 7-2"/></svg>Freehand</button>
   </div>
   <div class="hint" id="hint"></div>
 </div>
@@ -797,6 +822,27 @@ class Flock {
         } else {
           NRM[0] = 0; NRM[1] = dy < 0 ? -1 : 1; NRM[2] = 0; NRM[3] = qy;
         }
+        return;
+      }
+      if (k === 'poly') {
+        /* Closed 2D outline. Distance to the nearest edge, with the sign taken from a
+           crossing count, so a concave lasso is handled as correctly as a convex one. */
+        const q = ob.pts, np = q.length >> 1;
+        let best = 1e18, bx = 1, by = 0, sg = 1;
+        for (let i = 0, j = np - 1; i < np; j = i++) {
+          const ix = q[i * 2], iy = q[i * 2 + 1];
+          const ex = q[j * 2] - ix, ey = q[j * 2 + 1] - iy;
+          const wx = x - ix, wy = y - iy;
+          let t = (wx * ex + wy * ey) / (ex * ex + ey * ey || 1e-9);
+          t = t < 0 ? 0 : t > 1 ? 1 : t;
+          const cx = wx - ex * t, cy = wy - ey * t;
+          const d2 = cx * cx + cy * cy;
+          if (d2 < best) { best = d2; bx = cx; by = cy; }
+          const c1 = y >= iy, c2 = y < q[j * 2 + 1], c3 = ex * wy > ey * wx;
+          if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) sg = -sg;
+        }
+        const dl = Math.sqrt(best) || 1e-9;
+        NRM[0] = sg * bx / dl; NRM[1] = sg * by / dl; NRM[2] = 0; NRM[3] = sg * dl;
         return;
       }
       const dx = x - ob.x, dy = y - ob.y, dz = is3 ? z - ob.z : 0;
@@ -1331,6 +1377,11 @@ class View2D {
     const obPath = (ob) => {
       o.beginPath();
       if (ob.kind === 'box') o.rect(ob.x - ob.hx, ob.y - ob.hy, ob.hx * 2, ob.hy * 2);
+      else if (ob.kind === 'poly') {
+        const q = ob.pts; o.moveTo(q[0], q[1]);
+        for (let i = 2; i < q.length; i += 2) o.lineTo(q[i], q[i + 1]);
+        o.closePath();
+      }
       else o.arc(ob.x, ob.y, ob.kind === 'cyl' ? ob.hx : ob.r, 0, TAU);
     };
     for (const ob of flock.obstacles) {
@@ -1448,7 +1499,75 @@ class View3D {
     this.raycaster = new THREE.Raycaster(); this.plane = new THREE.Plane(); this.ndc = new THREE.Vector2(); this.hit = new THREE.Vector3();
     this.pointerRing = new THREE.Mesh(new THREE.RingGeometry(0.96, 1, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
     this.pointerRing.visible = false; this.scene.add(this.pointerRing);
+
+    /* ---- placement plane. A screen ray meets the world along a whole line, so the
+       depth of a new object has to be stated. It is stated here: one axis, one slider,
+       a grid on the plane and a crosshair through the point about to be used. ---- */
+    this.pAxis = 1; this.pVal = 0; this.pSnap = true;
+    this.pn = new THREE.Vector3(); this.pp = new THREE.Vector3();
+    this.placeGroup = new THREE.Group(); this.placeGroup.visible = false; this.scene.add(this.placeGroup);
+    this.placeGrid = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.17, depthWrite: false }));
+    this.placeFill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false }));
+    this.placeCross = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.6, depthWrite: false }));
+    this.placeCross.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(60), 3));
+    this.placeCross.geometry.setDrawRange(0, 0);
+    this.placeGroup.add(this.placeGrid, this.placeFill, this.placeCross);
+    this.buildPlacePlane();
     this.autoRotate = true;
+  }
+  planeAxes() { return this.pAxis === 0 ? [1, 2] : this.pAxis === 1 ? [0, 2] : [0, 1]; }
+  buildPlacePlane() {
+    const W = this.W, lo = W.lo, sz = W.size, ax = this.pAxis, [u, v] = this.planeAxes();
+    const val = clamp(this.pVal, lo[ax], lo[ax] + sz[ax]);
+    const u0 = lo[u], u1 = lo[u] + sz[u], v0 = lo[v], v1 = lo[v] + sz[v];
+    const P3 = (a, b) => { const q = [0, 0, 0]; q[ax] = val; q[u] = a; q[v] = b; return q; };
+    const line = [];
+    const push = (a, b, c, d) => { const s1 = P3(a, b), s2 = P3(c, d); line.push(s1[0], s1[1], s1[2], s2[0], s2[1], s2[2]); };
+    const S = 40;
+    for (let a = Math.ceil(u0 / S) * S; a <= u1; a += S) push(a, v0, a, v1);
+    for (let b = Math.ceil(v0 / S) * S; b <= v1; b += S) push(u0, b, u1, b);
+    this.placeGrid.geometry.dispose();
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(line, 3));
+    this.placeGrid.geometry = g;
+    const c1 = P3(u0, v0), c2 = P3(u1, v0), c3 = P3(u1, v1), c4 = P3(u0, v1);
+    const quad = [].concat(c1, c2, c3, c1, c3, c4);
+    this.placeFill.geometry.dispose();
+    const f = new THREE.BufferGeometry(); f.setAttribute('position', new THREE.Float32BufferAttribute(quad, 3));
+    f.computeVertexNormals(); this.placeFill.geometry = f;
+    this.placeCross.geometry.setDrawRange(0, 0);
+  }
+  /* where the pointer meets the placement plane, snapped to its grid if asked */
+  placeFromScreen(nx, ny) {
+    this.ndc.set(nx, ny);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
+    const W = this.W, lo = W.lo, sz = W.size, ax = this.pAxis;
+    this.pn.set(ax === 0 ? 1 : 0, ax === 1 ? 1 : 0, ax === 2 ? 1 : 0);
+    this.pp.set(ax === 0 ? this.pVal : 0, ax === 1 ? this.pVal : 0, ax === 2 ? this.pVal : 0);
+    this.plane.setFromNormalAndCoplanarPoint(this.pn, this.pp);
+    if (!this.raycaster.ray.intersectPlane(this.plane, this.hit)) return null;
+    const h = [this.hit.x, this.hit.y, this.hit.z];
+    h[ax] = this.pVal;
+    if (this.pSnap) { const [u, v] = this.planeAxes(), S = 40; h[u] = Math.round(h[u] / S) * S; h[v] = Math.round(h[v] / S) * S; }
+    for (let i = 0; i < 3; i++) h[i] = clamp(h[i], lo[i], lo[i] + sz[i]);
+    this.hit.set(h[0], h[1], h[2]);
+    return this.hit;
+  }
+  /* a crosshair on the plane plus a stem to the floor, so the point reads in all three axes */
+  markPlace(p) {
+    const W = this.W, lo = W.lo, sz = W.size, ax = this.pAxis, [u, v] = this.planeAxes();
+    const arr = this.placeCross.geometry.attributes.position.array;
+    let k = 0, n = 0;
+    const put = (q) => { arr[k++] = q[0]; arr[k++] = q[1]; arr[k++] = q[2]; };
+    const seg = (q1, q2) => { put(q1); put(q2); n++; };
+    const c = [p.x, p.y, p.z];
+    const at = (du, dv) => { const q = c.slice(); q[u] += du; q[v] += dv; return q; };
+    const e1 = c.slice(), e2 = c.slice(); e1[u] = lo[u]; e2[u] = lo[u] + sz[u]; seg(e1, e2);
+    const e3 = c.slice(), e4 = c.slice(); e3[v] = lo[v]; e4[v] = lo[v] + sz[v]; seg(e3, e4);
+    if (ax !== 1) { const f2 = c.slice(); f2[1] = lo[1]; seg(c.slice(), f2); }
+    const r = 11, s1 = at(-r, -r), s2 = at(r, -r), s3 = at(r, r), s4 = at(-r, r);
+    seg(s1, s2); seg(s2, s3); seg(s3, s4); seg(s4, s1);
+    this.placeCross.geometry.setDrawRange(0, n * 2);
+    this.placeCross.geometry.attributes.position.needsUpdate = true;
   }
   setWorld(size) {
     const [w, h, d] = size;
@@ -1461,6 +1580,7 @@ class View3D {
     this.gridHelper.material.transparent = true; this.gridHelper.material.opacity = 0.08;
     this.gridHelper.material.color.copy(this.box.material.color);
     this.scene.add(this.gridHelper);
+    this.buildPlacePlane();
   }
   ensureCapacity(cap, trailLen) {
     if (cap <= this.cap && trailLen === this.trailLen) return;
@@ -2017,11 +2137,13 @@ function applyPreset(key) {
   if (mode === '3d') setWorld3(P.world); delete P.world;
   if (mode === '2d') { updateArena(); P.count = Math.max(10, Math.round(P.count * clamp(width * height / (1300 * 800), 0.3, 1) / 10) * 10); }
   activePreset = key;
+  lasso = null; ctx.draft = null;
   flock.obstacles.length = 0; flock.obstaclesVersion++;
   flock.reset(P);
   view2d.clear();
   if (view3d) view3d.resetTrails();
   syncUI();
+  placeBarUpdate();
   setHint();
   requestDraw();
 }
@@ -2085,6 +2207,7 @@ async function setMode(m) {
   if (view3d) view3d.resetTrails();
   syncUI();
   shapesForMode();
+  placeBarUpdate();
   setHint();
 }
 $('mode2d').addEventListener('click', () => setMode('2d'));
@@ -2095,9 +2218,12 @@ const HINTS = {
   orbit: 'Drag to look around, scroll to zoom. Pick a tool to touch the flock.',
   attract: mode => mode === '3d' ? 'Hold on the box to pull the flock toward the pointer. Right-drag to orbit.' : 'Hold anywhere to pull the flock toward the pointer. Scroll to zoom, right-drag to move.',
   repel: mode => mode === '3d' ? 'Hold to push the flock away. Right-drag to orbit.' : 'Hold to push the flock away from the pointer. Scroll to zoom, right-drag to move.',
-  obstacle: (m) => obShape === 'free' && m === '2d' ? 'Draw with the pointer to lay a wall of obstacles.' : 'Press and drag to size a new obstacle.',
-  predator: 'Click to release a predator where you point.',
-  erase: 'Click an obstacle or predator to remove it.',
+  obstacle: (m) => obShape === 'free' && m === '2d'
+    ? 'Draw a loop with the pointer, like a lasso, and it closes into a solid shape.'
+    : (m === '3d' ? 'Press and drag to size a new obstacle. It lands on the lit plane: pick the axis and slide the plane to set its depth. X Y Z pick the axis, [ and ] slide it.'
+                  : 'Press and drag to size a new obstacle.'),
+  predator: (m) => m === '3d' ? 'Click to release a predator on the lit plane. Pick the axis and slide the plane to choose where.' : 'Click to release a predator where you point.',
+  erase: 'Click an obstacle or predator to remove it. Right-click to clear every obstacle at once.',
 };
 function setHint(text) {
   if (text === undefined) { const h = HINTS[ctx.tool]; text = typeof h === 'function' ? h(mode) : h; }
@@ -2134,16 +2260,56 @@ function selectTool(t) {
   const tn = $('toolName'); if (tn) tn.textContent = TOOL_WORD[t] || '';
   document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
   shapesForMode();
+  placeBarUpdate();
   setHint();
 }
+
+/* ---- placing in 3D. A pointer ray hits infinitely many points, so the depth has to
+   come from somewhere: here it is a plane you choose the axis of and slide, with the
+   grid on it and a crosshair through the point, so a placement can be aimed. ---- */
+const PLACE_STEP = 40;
+function placingTool(t) { return t === 'obstacle' || t === 'predator'; }
+let planeAxis = 1, planeVal = 0, planeSnap = true;
+function planeName() { return ['x', 'y', 'z'][planeAxis]; }
+function placeBarUpdate() {
+  const on = mode === '3d' && placingTool(ctx.tool);
+  const bar = $('placebar'); if (bar) bar.hidden = !on;
+  const lo = W3.lo[planeAxis], hi = lo + W3.size[planeAxis];
+  planeVal = clamp(Math.round(planeVal / 10) * 10, lo, hi);
+  const sl = $('planeD');
+  if (sl) { sl.min = lo; sl.max = hi; sl.step = 10; sl.value = planeVal; }
+  const rd = $('planeRead'); if (rd) rd.value = planeName() + ' ' + Math.round(planeVal);
+  const at = $('planeAt'); if (at && !on) at.value = '';
+  document.querySelectorAll('#planeAxes button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.axis === planeAxis)));
+  const sn = $('planeSnap'); if (sn) sn.setAttribute('aria-pressed', String(planeSnap));
+  if (view3d) {
+    view3d.pAxis = planeAxis; view3d.pVal = planeVal; view3d.pSnap = planeSnap;
+    view3d.placeGroup.visible = on;
+    view3d.buildPlacePlane();
+  }
+  requestDraw();
+}
+function setPlaneAxis(a) { planeAxis = a; planeVal = 0; placeBarUpdate(); setHint(); }
+function nudgePlane(d) { planeVal += d * PLACE_STEP; placeBarUpdate(); }
+document.querySelectorAll('#planeAxes button').forEach(b => b.addEventListener('click', () => setPlaneAxis(+b.dataset.axis)));
+$('planeD').addEventListener('input', e => { planeVal = parseFloat(e.target.value); placeBarUpdate(); });
+$('planeSnap').addEventListener('click', () => { planeSnap = !planeSnap; placeBarUpdate(); });
 document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => selectTool(b.dataset.tool)));
 
 const pointers = new Map();
 let orbiting = false, panning = false, pinchDist = 0, pinchMid = null, lastX = 0, lastY = 0, interacting = 0;
 function worldFromEvent(e) {
   if (mode === '2d') return view2d.toWorld(e.clientX, e.clientY);
-  const p = view3d.screenToWorld((e.clientX / width) * 2 - 1, -(e.clientY / height) * 2 + 1);
+  const nx = (e.clientX / width) * 2 - 1, ny = -(e.clientY / height) * 2 + 1;
+  const p = placingTool(ctx.tool) ? view3d.placeFromScreen(nx, ny) : view3d.screenToWorld(nx, ny);
   return p ? { x: p.x, y: p.y, z: p.z } : null;
+}
+/* the crosshair and the readout follow the pointer, so you can see where it will land */
+function markPlacement(p) {
+  if (mode !== '3d' || !view3d || !placingTool(ctx.tool)) return;
+  view3d.markPlace(p);
+  const at = $('planeAt');
+  if (at) at.value = 'x ' + Math.round(p.x) + '  y ' + Math.round(p.y) + '  z ' + Math.round(p.z);
 }
 stage.addEventListener('contextmenu', e => e.preventDefault());
 stage.addEventListener('pointerdown', e => {
@@ -2157,6 +2323,7 @@ stage.addEventListener('pointerdown', e => {
     orbiting = false; panning = false; ctx.mouse.active = false; ctx.draft = null; return;
   }
   const rightButton = e.button === 2 || e.button === 1;
+  if (rightButton && ctx.tool === 'erase') { clearObstacles(); return; }
   if (mode === '3d' && (ctx.tool === 'orbit' || rightButton)) { orbiting = true; return; }
   if (mode === '2d' && rightButton) { panning = true; return; }
   const p = worldFromEvent(e); if (!p) return;
@@ -2164,7 +2331,7 @@ stage.addEventListener('pointerdown', e => {
   switch (ctx.tool) {
     case 'attract': case 'repel': m.active = true; break;
     case 'obstacle':
-      if (obShape === 'free' && mode === '2d') { penR = 16; penLast = null; layBlob(p); }
+      if (obShape === 'free' && mode === '2d') { lassoStart(p); }
       else ctx.draft = makeObstacle(p.x, p.y, p.z, 12, obShape);
       break;
     case 'predator': if (flock.countSpecies(1) < 40) { flock.addPredator(p.x, p.y, p.z); P.predators = flock.countSpecies(1); reflect('predators'); } break;
@@ -2193,20 +2360,21 @@ stage.addEventListener('pointermove', e => {
   if (mode === '3d' && !view3d) return;
   const p = worldFromEvent(e); if (!p) return;
   const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
-  if (ctx.draft) {
+  if (lasso) lassoMove(p);
+  else if (ctx.draft) {
     const d = ctx.draft, r = Math.max(12, Math.hypot(p.x - d.x, p.y - d.y, p.z - d.z));
     ctx.draft = makeObstacle(d.x, d.y, d.z, r, d.kind);
   }
-  else if (rec && ctx.tool === 'obstacle' && obShape === 'free' && mode === '2d') layBlob(p);
   else if (rec && ctx.tool === 'erase' && mode === '2d') erase(p);
+  else markPlacement(p);
 });
 function endPointer(e) {
   pointers.delete(e.pointerId);
   if (pointers.size < 2) { pinchDist = 0; pinchMid = null; }
   if (pointers.size === 0) {
     orbiting = false; panning = false; ctx.mouse.active = false;
-    if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push(d); flock.obstaclesVersion++; }
-    penLast = null;
+    if (lasso) lassoEnd();
+    else if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push(d); flock.obstaclesVersion++; }
   }
 }
 stage.addEventListener('pointerup', endPointer);
@@ -2222,15 +2390,71 @@ stage.addEventListener('dblclick', e => {
   if (e.target.closest('.tip')) return;
   if (mode === '2d') view2d.resetView(); else if (view3d) view3d.resetCamera();
 });
-/* freehand: one small round obstacle every two thirds of a brush width, so the stroke
-   comes out as a continuous wall rather than a row of beads */
-let penR = 16, penLast = null;
-function layBlob(p) {
-  if (penLast && Math.hypot(p.x - penLast.x, p.y - penLast.y) < penR * 0.66) return;
-  if (flock.obstacles.length > 400) return;
-  flock.obstacles.push({ kind: 'sphere', x: p.x, y: p.y, z: 0, r: penR });
+/* Freehand is a lasso: the stroke is collected, closed, resampled and smoothed, and
+   becomes ONE solid outline that the solver treats as a shape, not a row of beads. */
+let lasso = null;
+function lassoStart(p) { lasso = [p.x, p.y]; ctx.draft = { kind: 'poly', open: true, pts: lasso, x: p.x, y: p.y, z: 0, r: 1 }; }
+function lassoMove(p) {
+  const n = lasso.length;
+  if (Math.hypot(p.x - lasso[n - 2], p.y - lasso[n - 1]) < 5) return;
+  if (n > 2400) return;
+  lasso.push(p.x, p.y);
+  ctx.draft = { kind: 'poly', open: true, pts: lasso, x: lasso[0], y: lasso[1], z: 0, r: 1 };
+}
+/* walk the stroke at even arc length, then average each point with its neighbours, which
+   turns a shaky hand into a clean outline without losing the shape drawn */
+function tidyOutline(raw) {
+  const pts = [];
+  for (let j = 0; j < raw.length; j += 2) pts.push([raw[j], raw[j + 1]]);
+  pts.push([raw[0], raw[1]]);                                  /* close the loop */
+  const seg = [];
+  let per = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const L = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+    seg.push(L); per += L;
+  }
+  if (per < 90) return null;
+  const N = Math.max(8, Math.min(56, Math.round(per / 26)));
+  const step = per / N, out = new Float64Array(N * 2);
+  let idx = 0, walked = 0;
+  for (let m = 0; m < N; m++) {
+    const want = m * step;
+    while (idx < seg.length - 1 && walked + seg[idx] < want) { walked += seg[idx]; idx++; }
+    const t = seg[idx] < 1e-9 ? 0 : Math.min(1, (want - walked) / seg[idx]);
+    out[m * 2] = pts[idx][0] + (pts[idx + 1][0] - pts[idx][0]) * t;
+    out[m * 2 + 1] = pts[idx][1] + (pts[idx + 1][1] - pts[idx][1]) * t;
+  }
+  const sm = new Float64Array(N * 2);
+  for (let m = 0; m < N; m++) {
+    const i0 = (m - 1 + N) % N, i1 = (m + 1) % N;
+    sm[m * 2] = out[i0 * 2] * 0.25 + out[m * 2] * 0.5 + out[i1 * 2] * 0.25;
+    sm[m * 2 + 1] = out[i0 * 2 + 1] * 0.25 + out[m * 2 + 1] * 0.5 + out[i1 * 2 + 1] * 0.25;
+  }
+  return sm;
+}
+function lassoEnd() {
+  const raw = lasso; lasso = null; ctx.draft = null;
+  if (!raw || raw.length < 8) { setHint(); return; }
+  const pts = tidyOutline(raw);
+  if (!pts) { setHint('That loop was too small to become a shape.'); setTimeout(setHint, 1600); return; }
+  const n = pts.length >> 1;
+  let cx = 0, cy = 0;
+  for (let i = 0; i < n; i++) { cx += pts[i * 2]; cy += pts[i * 2 + 1]; }
+  cx /= n; cy /= n;
+  let r = 0;
+  for (let i = 0; i < n; i++) r = Math.max(r, Math.hypot(pts[i * 2] - cx, pts[i * 2 + 1] - cy));
+  flock.obstacles.push({ kind: 'poly', x: cx, y: cy, z: 0, r, pts });
   flock.obstaclesVersion++;
-  penLast = { x: p.x, y: p.y };
+  requestDraw();
+}
+function clearObstacles() {
+  if (!flock.obstacles.length) { setHint('There are no obstacles to clear.'); setTimeout(setHint, 1400); return; }
+  const k = flock.obstacles.length;
+  flock.obstacles.length = 0; flock.obstaclesVersion++;
+  ctx.draft = null; lasso = null;
+  setHint(k === 1 ? 'Obstacle cleared.' : 'All ' + k + ' obstacles cleared.');
+  setTimeout(setHint, 1600);
+  requestDraw();
 }
 function erase(p, e) {
   if (mode === '3d' && view3d && e) {
@@ -2240,8 +2464,18 @@ function erase(p, e) {
     P.predators = flock.countSpecies(1); reflect('predators');
     return;
   }
+  const inPoly = (o, x, y) => {
+    const q = o.pts; let inside = false;
+    for (let i = 0, j = (q.length >> 1) - 1; i < q.length >> 1; j = i++) {
+      const ix = q[i * 2], iy = q[i * 2 + 1], jx = q[j * 2], jy = q[j * 2 + 1];
+      if ((iy > y) !== (jy > y) && x < (jx - ix) * (y - iy) / (jy - iy) + ix) inside = !inside;
+    }
+    return inside;
+  };
   const before = flock.obstacles.length;
-  flock.obstacles = flock.obstacles.filter(o => Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z) > o.r);
+  flock.obstacles = flock.obstacles.filter(o => o.kind === 'poly'
+    ? !inPoly(o, p.x, p.y)
+    : Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z) > o.r);
   if (flock.obstacles.length !== before) flock.obstaclesVersion++;
   for (let i = flock.n - 1; i >= 0; i--) {
     if (flock.species[i] === 1 && Math.hypot(flock.px[i] - p.x, flock.py[i] - p.y, flock.pz[i] - p.z) < 40) flock.removeIndex(i);
@@ -2275,6 +2509,8 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'Escape' && document.body.classList.contains('clean')) toggleClean();
   else if (e.key >= '1' && e.key <= '9') { const pr = PRESETS[parseInt(e.key) - 1]; if (pr) applyPreset(pr.key); }
   else if (e.key === '0' && PRESETS[9]) applyPreset(PRESETS[9].key);
+  else if (mode === '3d' && placingTool(ctx.tool) && 'xyzXYZ'.includes(e.key)) setPlaneAxis('xyz'.indexOf(e.key.toLowerCase()));
+  else if (mode === '3d' && placingTool(ctx.tool) && (e.key === '[' || e.key === ']')) nudgePlane(e.key === ']' ? 1 : -1);
   else if (e.key === 'd' || e.key === 'D') diagOn = document.body.classList.toggle('diag');
 });
 // close mobile sheet when tapping the stage
@@ -2421,5 +2657,6 @@ if (url.get('mode') === '3d') setMode('3d');
 requestAnimationFrame(frame);
 </script>
 <script src="../../assets/js/explainer.js" defer></script>
+<script src="../../assets/js/colorpop.js?v=20260909a"></script>
 </body>
 </html>

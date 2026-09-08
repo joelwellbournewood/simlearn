@@ -220,8 +220,7 @@ body.clean .tapwrap{display:none}
   <p class="label">The road</p>
   <div class="toggles">
     <button class="tg" id="t-lanes" aria-pressed="false">Two lanes <kbd>L</kbd></button>
-    <button class="tg" id="t-draw" aria-pressed="false">Draw the ring <kbd>D</kbd></button>
-    <button class="tg" id="t-circle">Back to a circle</button>
+    <button class="tg" id="t-circle">Back to a circle <kbd>D</kbd></button>
   </div>
 </div>
 <div class="tapwrap" id="tapwrap">
@@ -233,7 +232,7 @@ body.clean .tapwrap{display:none}
   <div class="stat"><div class="k">Flow</div><div class="v" id="h-q">-</div></div>
   <div class="stat"><div class="k">Jam waves</div><div class="v" id="h-j" style="color:var(--danger)">0</div></div>
 </div>
-<div class="hint">B taps the brakes. Space pauses, R restarts, H hides the panels.</div>
+<div class="hint">Drag the edge of the road to stretch the loop. B taps the brakes. Space pauses, R restarts, H hides the panels.</div>
 <dialog class="about" id="about"><div class="about-inner">
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
 <h2>What am I looking at?</h2>
@@ -281,7 +280,7 @@ body.clean .tapwrap{display:none}
 <p>Because the instability belongs to the collective response, a minority of vehicles running a different control law can stabilise the whole platoon. Stern et al. (2018) repeated the ring experiment with twenty-one human drivers and one autonomous vehicle running a controller designed to damp waves, and the stop-and-go oscillations were substantially suppressed, with measured reductions in fuel consumption for every vehicle on the ring. The <b>self-driving cars</b> slider is that result. The mechanism is that a controller which refuses to over-brake, and which holds its own speed steady instead of tracking the car in front exactly, breaks the amplification chain. Real deployments complicate the picture, because many production adaptive cruise control systems are tuned for comfort at short headways and have been measured to be string-unstable themselves, so the cars already on the road are not yet the cars in this slider.</p>
 
 <h3>Limits of the model</h3>
-<p>The default road is a single lane with no junctions, so there is no bottleneck of the kind that fixes where real jams form. Switching the second lane on adds overtaking under the MOBIL rule, in which a driver pulls out when it helps them more than it costs the driver they move in front of, and never when it would force that driver to brake hard. Both lanes are treated as the same length, which a real pair of concentric lanes is not, and a drawn ring changes the length of the loop and the speed a car can hold through a bend, and nothing else about the driving. Every vehicle is identical apart from the ones you convert, and no driver makes a mistake beyond the wobble the model imposes. There is no explicit reaction-time delay either, so the lag that drives real instability enters only through the shape of the equation. A ring road is a laboratory device for holding a closed platoon at a fixed density, and a real network behaves differently in ways that matter for planning. The numbers used here sit in the right physical range without being calibrated to any particular road.</p>
+<p>The default road is a single lane with no junctions, so there is no bottleneck of the kind that fixes where real jams form. Switching the second lane on adds overtaking under the MOBIL rule, in which a driver pulls out when it helps them more than it costs the driver they move in front of, and never when it would force that driver to brake hard. Both lanes are treated as the same length, which a real pair of concentric lanes is not, and stretching the ring changes the length of the loop and the speed a car can hold through a bend, and nothing else about the driving. Every vehicle is identical apart from the ones you convert, and no driver makes a mistake beyond the wobble the model imposes. There is no explicit reaction-time delay either, so the lag that drives real instability enters only through the shape of the equation. A ring road is a laboratory device for holding a closed platoon at a fixed density, and a real network behaves differently in ways that matter for planning. The numbers used here sit in the right physical range without being calibrated to any particular road.</p>
 
 <h3>References</h3>
 <ul class="refs">
@@ -308,12 +307,15 @@ const V0=30, AMAX=0.6, BCOMF=1.6, NOISE=0.06;   /* fixed: 108 km/h, gentle pedal
 let N=38, T=1.35, AVpct=0, truckPct=0;
 let lanes=1, lcAcc=0;
 const B_SAFE=4.0, MOBIL_P=0.25, MOBIL_TH=0.2;
-/* Cornering. One radius-unit of drawn path is this many metres, so the default circle
+/* Cornering. One radius-unit of the shape is this many metres, so the default circle
    comes out at a kilometre round. The lateral acceleration budget is set just above what
    the plain circle asks for, which leaves the circle's behaviour exactly as it was and
-   makes only a tighter drawn corner hold cars back. */
+   makes only a tighter pulled corner hold cars back. */
 const M_PER_UNIT = 1000/(2*Math.PI), A_LAT = 6.0;
-const TRACK = {mode:'circle', pts:null, cum:null, perim:0, vlim:null};
+const TRACK = {mode:'circle', pts:null, cum:null, perim:0, vlim:null, fit:1, fitT:1};
+/* a stretched loop is drawn smaller so it stays in the frame; the road's length in
+   metres comes from the shape itself and is unaffected by how it is drawn */
+function RS(){ return RR*TRACK.fit; }
 function trackLen(){ return TRACK.mode==='circle' ? 1000 : TRACK.perim*M_PER_UNIT; }
 function atS(s,o){
   if(TRACK.mode==='circle'){
@@ -326,7 +328,8 @@ function atS(s,o){
   while(lo+1<hi){ const m=(lo+hi)>>1; if(C[m]<=d) lo=m; else hi=m; }
   const seg=Math.max(1e-9,C[lo+1]-C[lo]), t=(d-C[lo])/seg;
   const x0=P[2*lo],y0=P[2*lo+1],x1=P[2*lo+2],y1=P[2*lo+3];
-  o.x=RX+(x0+(x1-x0)*t)*RR; o.y=RY+(y0+(y1-y0)*t)*RR;
+  const sc=RS();
+  o.x=RX+(x0+(x1-x0)*t)*sc; o.y=RY+(y0+(y1-y0)*t)*sc;
   o.tx=(x1-x0)/seg; o.ty=(y1-y0)/seg; return o;
 }
 function vlimAt(s){
@@ -358,8 +361,8 @@ function smoothClosed(p,passes){
   return p;
 }
 /* raw is canvas pixels; it is stored in units of the ring radius so a resize moves the
-   drawing with the rest of the layout and leaves the length of the road alone */
-function setCustomTrack(raw){
+   shape with the rest of the layout and leaves the length of the road alone */
+function setCustomTrack(raw,keep){
   if(raw.length<12) return false;
   let u=[];
   for(let i=0;i<raw.length;i+=2){
@@ -375,6 +378,10 @@ function setCustomTrack(raw){
   let tot=0;
   for(let i=1;i<=K;i++){ tot+=Math.hypot(P[2*i]-P[2*i-2],P[2*i+1]-P[2*i-1]); C[i]=tot; }
   if(tot<1.2) return false;
+  let mx=0;
+  for(let i=0;i<=K;i++){ const ax=Math.abs(P[2*i]), ay=Math.abs(P[2*i+1]); if(ax>mx)mx=ax; if(ay>mx)mx=ay; }
+  TRACK.fitT=1/Math.max(1,mx*1.015);
+  if(!pulling) TRACK.fit=TRACK.fitT;
   TRACK.pts=P; TRACK.cum=C; TRACK.perim=tot; TRACK.mode='custom';
   /* corner speeds from the radius of the circle through three points a fortieth of a
      lap apart, then a minimum over a short window so a car slows before the bend */
@@ -389,14 +396,23 @@ function setCustomTrack(raw){
   const w=Math.max(2,Math.round(K/26)), vl=new Float64Array(K);
   for(let i=0;i<K;i++){ let mn=1e9; for(let j=-w;j<=w;j++) mn=Math.min(mn,raw2[(i+j+K*2)%K]); vl[i]=mn; }
   TRACK.vlim=vl;
-  onTrackChange(); return true;
+  onTrackChange(keep); return true;
 }
-function resetTrack(){ TRACK.mode='circle'; TRACK.vlim=null; onTrackChange(); }
-function onTrackChange(){
+function resetTrack(){ TRACK.mode='circle'; TRACK.vlim=null; TRACK.fitT=1; shapeR=null; onTrackChange(); }
+function onTrackChange(keep){
+  const oldL=L;
   L=trackLen();
   const sn=el('s-n'), cap=Math.max(12, Math.round(80*(L/1000)*lanes));
   sn.max=Math.min(400,cap);
   if(+sn.value>+sn.max) sn.value=sn.max;
+  if(keep){
+    /* stretching the road while it is running: every car keeps its share of the lap, so
+       the platoon is carried along by the change instead of being thrown away */
+    const k=L/(oldL||L);
+    for(const c of cars){ c.x=c.x*k; c.x-=Math.floor(c.x/L)*L; }
+    sn.dispatchEvent(new Event('input'));
+    return;
+  }
   sn.dispatchEvent(new Event('input'));
   build();
 }
@@ -582,6 +598,9 @@ function resize(){
 /* layout probe, used by the layout tests */
 window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:STY,STH:STH,narrow:narrow,W:W,H:H,
   L:L,lanes:lanes,mode:TRACK.mode,n:cars.length,lane1:cars.filter(c=>c.lane===1).length,
+  fit:TRACK.fit,perim:TRACK.perim,rmin:shapeR?Math.min.apply(null,Array.from(shapeR)):1,
+  rmax:shapeR?Math.max.apply(null,Array.from(shapeR)):1,nmax:document.getElementById('s-n').max,
+  off:cars.filter(c=>c.x<0||c.x>L).length,
   vmin:TRACK.vlim?Math.min.apply(null,Array.from(TRACK.vlim)):null,
   meanv:cars.length?cars.reduce((a,c)=>a+c.v,0)/cars.length:0};};
 function pushRow(){
@@ -600,8 +619,9 @@ function tracePath(){
   ctx.beginPath();
   if(TRACK.mode==='circle'){ ctx.arc(RX,RY,RR,0,6.28319); return; }
   const P=TRACK.pts, n=(P.length/2)|0;
-  ctx.moveTo(RX+P[0]*RR, RY+P[1]*RR);
-  for(let i=1;i<n;i++) ctx.lineTo(RX+P[2*i]*RR, RY+P[2*i+1]*RR);
+  const sc=RS();
+  ctx.moveTo(RX+P[0]*sc, RY+P[1]*sc);
+  for(let i=1;i<n;i++) ctx.lineTo(RX+P[2*i]*sc, RY+P[2*i+1]*sc);
   ctx.closePath();
 }
 function roadRing(){
@@ -622,7 +642,7 @@ function carPos(c,laneW,o){
   return o;
 }
 function drawCars(laneW){
-  const px=(TRACK.mode==='circle')?2*Math.PI*RR:TRACK.perim*RR;
+  const px=(TRACK.mode==='circle')?2*Math.PI*RR:TRACK.perim*RS();
   const cl=Math.max(4,(CARLEN/L)*px), cw=laneW*0.62;
   for(const c of cars){
     carPos(c,laneW,_pt);
@@ -670,14 +690,9 @@ function drawST(){
 }
 function draw(){
   ctx.clearRect(0,0,W,H);
+  easeFit();
   drawCars(roadRing());
-  if(drawing){
-    ctx.strokeStyle='rgba(86,224,194,.85)'; ctx.lineWidth=2; ctx.setLineDash([5,6]);
-    ctx.beginPath();
-    for(let i=0;i<pen.length;i+=2){ i?ctx.lineTo(pen[i],pen[i+1]):ctx.moveTo(pen[i],pen[i+1]); }
-    ctx.stroke(); ctx.setLineDash([]);
-    label('draw a closed loop, and let go',RX,RY,'rgba(163,188,190,.75)',13,'center');
-  }
+  drawHandles();
   drawST();
 }
 /* ---- readouts ---- */
@@ -764,36 +779,93 @@ el('b-full').addEventListener('click',()=>{
   else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); });
 el('b-tap').addEventListener('click',brakeTap);
 
-/* ---- drawing your own ring ---- */
-let drawing=false, pen=[];
-function setDrawMode(on){
-  drawing=on; pen=[];
-  el('t-draw').setAttribute('aria-pressed',String(on));
-  cv.style.cursor=on?'crosshair':'';
-  document.body.classList.toggle('drawing',on);
+/* ---- stretching the ring ----
+   The loop is a radius for every angle. Dragging near the road pulls that radius toward
+   the pointer with a smooth bump either side of where you grabbed, so the road stretches
+   like a rubber band instead of gaining a kink. Radial-only pulling cannot cross itself,
+   so every shape you can make is a legal one-way loop. */
+const SHAPE_K=192, PULL_SIG=0.34, R_MIN=0.34, R_MAX=1.85;
+let shapeR=null, pulling=false, pulledOnce=false, pullFit=1;
+/* the drawn size is held still while you drag, so the road stays under the pointer, and
+   eased to the size that fits the frame once you let go */
+function easeFit(){
+  const goal=pulling?pullFit:TRACK.fitT;
+  if(Math.abs(goal-TRACK.fit)<0.0015){ TRACK.fit=goal; return; }
+  TRACK.fit+=(goal-TRACK.fit)*0.22;
 }
-el('t-draw').addEventListener('click',()=>setDrawMode(!drawing));
-el('t-circle').addEventListener('click',()=>{ setDrawMode(false); resetTrack(); });
-el('t-lanes').addEventListener('click',()=>setLanes(lanes===2?1:2));
+function shapeInit(){ if(!shapeR){ shapeR=new Float64Array(SHAPE_K); shapeR.fill(1); } }
+function rAtAngle(th){
+  shapeInit();
+  let f=th/(2*Math.PI); f-=Math.floor(f);
+  const x=f*SHAPE_K, i=Math.floor(x)%SHAPE_K, j=(i+1)%SHAPE_K, t=x-Math.floor(x);
+  return shapeR[i]*(1-t)+shapeR[j]*t;
+}
+function applyShape(keep){
+  shapeInit();
+  const raw=[], sc=RR;
+  for(let i=0;i<SHAPE_K;i++){
+    const th=2*Math.PI*i/SHAPE_K;
+    raw.push(RX+Math.cos(th)*shapeR[i]*sc, RY+Math.sin(th)*shapeR[i]*sc);
+  }
+  setCustomTrack(raw,keep);
+}
+function pullAt(px,py){
+  shapeInit();
+  const dx=px-RX, dy=py-RY, rho=Math.hypot(dx,dy)/RS();
+  const th=Math.atan2(dy,dx);
+  const want=Math.max(R_MIN,Math.min(R_MAX,rho));
+  const d=want-rAtAngle(th);
+  const c=th/(2*Math.PI)*SHAPE_K;
+  for(let i=0;i<SHAPE_K;i++){
+    let k=i-c; k-=Math.round(k/SHAPE_K)*SHAPE_K;
+    const a=k/SHAPE_K*2*Math.PI;
+    const w=Math.exp(-(a*a)/(2*PULL_SIG*PULL_SIG));
+    if(w<0.004) continue;
+    shapeR[i]=Math.max(R_MIN,Math.min(R_MAX,shapeR[i]+d*w));
+  }
+  pulledOnce=true;
+  applyShape(true);
+}
+function onRoad(px,py){
+  const dx=px-RX, dy=py-RY, rho=Math.hypot(dx,dy);
+  if(px>COLX-14) return false;
+  const rpix=(TRACK.mode==='circle'?1:rAtAngle(Math.atan2(dy,dx)))*RS();
+  return Math.abs(rho-rpix)<Math.max(24,RR*0.14);
+}
+/* the eight dots are a promise that the road can be grabbed; the pull works anywhere on it */
+function drawHandles(){
+  if(document.body.classList.contains('clean')) return;
+  const sc=RS();
+  for(let i=0;i<8;i++){
+    const th=2*Math.PI*i/8, r=(TRACK.mode==='circle'?1:rAtAngle(th))*sc;
+    const x=RX+Math.cos(th)*r, y=RY+Math.sin(th)*r;
+    ctx.beginPath(); ctx.arc(x,y,pulling?4.6:3.6,0,6.28319);
+    ctx.fillStyle=pulling?'rgba(86,224,194,.95)':'rgba(86,224,194,.55)'; ctx.fill();
+  }
+  if(TRACK.mode!=='circle'){
+    ctx.setLineDash([3,7]); ctx.strokeStyle='rgba(163,188,190,.20)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(RX,RY,sc,0,6.28319); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if(!pulledOnce) label('drag the road to stretch it',RX,RY,'rgba(163,188,190,.6)',12.5,'center');
+}
 function penPos(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+el('t-circle').addEventListener('click',()=>{ resetTrack(); pulledOnce=true; });
+el('t-lanes').addEventListener('click',()=>setLanes(lanes===2?1:2));
 cv.addEventListener('pointerdown',e=>{
-  if(!drawing) return;
+  const q=penPos(e);
+  if(!onRoad(q[0],q[1])) return;
   e.preventDefault(); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId);
-  pen=penPos(e);
+  pulling=true; pullFit=TRACK.fit; cv.style.cursor='grabbing';
+  pullAt(q[0],q[1]);
 });
 cv.addEventListener('pointermove',e=>{
-  if(!drawing||!pen.length) return;
   const q=penPos(e);
-  if(Math.hypot(q[0]-pen[pen.length-2],q[1]-pen[pen.length-1])>2.5) pen.push(q[0],q[1]);
+  if(!pulling){ cv.style.cursor=onRoad(q[0],q[1])?'grab':''; return; }
+  pullAt(q[0],q[1]);
 });
-function penEnd(){
-  if(!drawing) return;
-  const ok = pen.length>=12 && setCustomTrack(pen);
-  setDrawMode(false);
-  if(!ok) return;
-}
-cv.addEventListener('pointerup',penEnd);
-cv.addEventListener('pointercancel',()=>{ setDrawMode(false); });
+function pullEnd(){ if(!pulling) return; pulling=false; cv.style.cursor=''; }
+cv.addEventListener('pointerup',pullEnd);
+cv.addEventListener('pointercancel',pullEnd);
 window.addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea')) return;
   const k=e.key;
@@ -801,8 +873,7 @@ window.addEventListener('keydown',e=>{
   else if(k==='r'||k==='R') build();
   else if(k==='b'||k==='B') brakeTap();
   else if(k==='l'||k==='L') setLanes(lanes===2?1:2);
-  else if(k==='d'||k==='D') setDrawMode(!drawing);
-  else if(k==='Escape'&&drawing) setDrawMode(false);
+  else if(k==='d'||k==='D') el('t-circle').click();
   else if(k==='h'||k==='H') bc.click();
   else if(k==='f'||k==='F') el('b-full').click();
   else if(k==='?'){ dlg.open?dlg.close():dlg.showModal(); }

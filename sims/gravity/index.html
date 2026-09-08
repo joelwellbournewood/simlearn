@@ -215,7 +215,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
   <p class="label">Physics</p>
   <div class="row">
-    <label><span class="nm">Collisions<button class="tip" data-tip="Off by default, because near misses and slingshots are more interesting than a body vanishing. When it is on, two bodies that touch are replaced by one, conserving mass and momentum and losing energy the way a real impact does. Cold collapse turns it on for you, since growth by accretion is the point of that scene." aria-label="What collisions does">?</button></span></label>
+    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch become a single heavier one, conserving mass and momentum." aria-label="What collisions does">?</button></span></label>
     <div class="toggles"><button class="tg" id="t-merge" aria-pressed="false">Merge on contact</button></div>
   </div>
 
@@ -614,6 +614,10 @@ function mk(x,y,vx,vy,m){ const b={id:nextId++,x,y,vx,vy,m,ax:0,ay:0,jx:0,jy:0,t
 function trailCap(){ const n=Math.max(1,bodies.length), P=PRESETS[activePreset], boost=(P&&P.tcap)||1; return Math.min(Math.round(trailPct/100*420*boost),Math.floor(70000/n)); }
 function bodyById(id){ for(const b of bodies) if(b.id===id) return b; return null; }
 function heaviest(){ let h=null; for(const b of bodies) if(!h||b.m>h.m) h=b; return h; }
+/* how many bodies are heavy enough to shape the field? anything within a twentieth of
+   the heaviest. Lagrange points are only defined for exactly two of them. */
+function heavyCount(){ let mx=0; for(const b of bodies) if(b.m>mx) mx=b.m;
+  if(!mx) return 0; let c=0, lim=mx*0.05; for(const b of bodies) if(b.m>=lim) c++; return c; }
 function twoHeaviest(){ let A=null,B=null; for(const b of bodies){ if(!A||b.m>A.m){ B=A; A=b; } else if(!B||b.m>B.m) B=b; } return [A,B]; }
 
 /* teal -> gold -> coral by mass, log scale */
@@ -1067,7 +1071,7 @@ function draw(){
     }
   }
   /* overlays: Lagrange points, selected orbit */
-  if(showLag&&n>=2) drawLagrange(z,ox,oy);
+  if(showLag){ if(heavyCount()>2) drawLagNote(); else if(n>=2) drawLagrange(z,ox,oy); }
   const sb=bodyById(selId);
   if(sb&&showOrbit) drawOrbit(sb,z,ox,oy);
   /* glow (additive) then cores */
@@ -1191,6 +1195,15 @@ function drawLagrange(z,ox,oy){
   ctx.fillStyle='rgba(86,224,194,.9)'; ctx.fillText('teal  L4 L5  stable: a body left here stays', W-20, H-86);
   ctx.fillStyle='rgba(230,195,79,.9)'; ctx.fillText('gold  L1 L2 L3  unstable: it slides away', W-20, H-70);
   ctx.textAlign='start';
+}
+function drawLagNote(){
+  const k=heavyCount();
+  ctx.save(); ctx.textAlign='end'; ctx.font='11px "Space Mono",monospace';
+  ctx.fillStyle='rgba(230,195,79,.92)';
+  ctx.fillText('Lagrange points are not defined here', W-20, H-86);
+  ctx.fillStyle='rgba(227,239,233,.6)'; ctx.font='10.5px "Space Mono",monospace';
+  ctx.fillText('they need exactly two heavy bodies, and this scene has '+k, W-20, H-70);
+  ctx.restore();
 }
 function drawOrbit(b,z,ox,oy){
   const c=attractorOf(b); if(!c) return;
