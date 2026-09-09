@@ -222,7 +222,17 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 .mapcard.in-sheet .mc-title{font-family:var(--body);font-size:12px;font-weight:400;color:var(--muted)}
 .mapcard.in-sheet #map{aspect-ratio:1/.9;max-width:340px;margin:0 auto}
 body.clean .mapcard{display:none}
-body.in-frame .mapcard{top:18px;max-height:calc(100% - 48px)}
+/* the corner icon buttons end 54px down: the map card starts below them, as it does unframed */
+body.in-frame .mapcard{top:66px;max-height:calc(100% - 86px)}
+/* Inside the player the frame is ~110px shorter than the window, so the card gets the
+   same trim it gets on a short screen: tighter padding, no legend, and it fits again. */
+@media (min-width:900px) and (max-height:900px){
+  body.in-frame .mapcard{padding:11px 13px}
+  body.in-frame .mc-sub{margin:2px 0 6px}
+  body.in-frame .mapcard .legend{display:none}
+  body.in-frame .mc-zone{min-height:0;margin:6px 0 0}
+  body.in-frame .mc-rule{margin:9px 0 2px}
+}
 .presets{grid-template-columns:1fr 1fr}
 .seg.two{grid-template-columns:1fr 1fr}
 .btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px}

@@ -120,8 +120,15 @@
   .gtoggle button{font-family:var(--mono);font-size:11px;color:var(--muted);background:transparent;border:0;padding:5px 9px;border-radius:6px;cursor:pointer;touch-action:manipulation}
   .gtoggle button.on{background:var(--line);color:var(--ink)}
   #graph{display:block;width:100%;height:auto;border-radius:8px}
-  /* the trace hangs below the readouts and the transport buttons, with air between */
-  .card.gcard{margin-top:26px}
+  /* the trace sits in its own hairline-divided section of the right panel */
+  .gsec{padding:15px 13px 16px}
+  /* heading on its own line at panel weight, mode switch full width beneath it: the
+     two never compete for the same row, so neither wraps */
+  .gsec .card-head{display:block;margin-bottom:11px}
+  .gsec .label{display:block;font-family:var(--display);font-size:16px;font-weight:600;
+    letter-spacing:-.01em;color:var(--ink);margin:0 0 9px}
+  .gsec .gtoggle{width:100%}
+  .gsec .gtoggle button{flex:1;text-align:center}
 
   /* ---------- experiment presets ---------- */
   .presets{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
@@ -211,11 +218,19 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
      hairline, not boxed one by one. Padding, heading size and gaps copy sims/boids. */
   .card.stack{padding:0;overflow:hidden}
   .card.stack > details.group{margin:0!important;padding:15px 18px;border-top:0!important;
+    border-left:0;border-right:0;border-radius:0;background:transparent;
     border-bottom:1px solid var(--line)}
   .card.stack > details.group:last-child{border-bottom:0}
   .card.stack > details.group > .group-title{font-size:16px!important;margin:0!important;padding:0}
   .card.stack > details.group[open] > .group-title{margin:0 0 12px!important}
   .card.stack .presets{margin-top:0}
+  .card.stack > section{padding:15px 18px;border-bottom:1px solid var(--line)}
+  .card.stack > section:last-child{border-bottom:0}
+  /* readouts: figures on the panel itself, not four little boxes */
+  .card.stack .status{display:grid;grid-template-columns:1fr 1fr;gap:11px 14px;margin-top:0}
+  .card.stack .stat{border:0;background:transparent;border-radius:0;padding:0;min-width:0}
+  .card.stack .status + .transport{margin-top:14px}
+  .card.stack .transport + .transport{margin-top:8px}
   .group.hare{--c:var(--hare)} .group.lynx{--c:var(--lynx)} .group.habitat{--c:#3fa066}
   .group.hare .group-title{color:var(--hare)}
   .group.lynx .group-title{color:var(--lynx)}
@@ -244,7 +259,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     h1{font-size:20px}
     .sub{font-size:12.5px;margin:5px 0 0}
     .layout{flex:1 1 auto;min-height:0;display:grid;
-            grid-template-columns:minmax(300px,340px) minmax(0,1fr) minmax(240px,272px);
+            grid-template-columns:minmax(300px,340px) minmax(0,1fr) minmax(262px,300px);
             gap:16px;align-items:stretch}
     .side{display:contents}
     .col-l{order:1} .col-c{order:2} .col-r{order:3}
@@ -310,10 +325,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   @media (min-width:1061px){
     .in-frame header, .in-frame footer{display:none}
     .in-frame body{padding-top:10px;padding-bottom:10px}
+    /* the corner icon buttons end 52px down the viewport: the right column starts below them */
+    .in-frame .col-r{padding-top:52px}
   }
   /* short laptop frames: squeeze spacing before sacrificing the hints */
   @media (min-width:1061px) and (max-height:660px){
-    .card.gcard{margin-top:14px}
     .row{margin:2px 0}
     .row .hint{line-height:1.25;margin-top:1px}
   }
@@ -325,7 +341,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     .card .group-title .tag{display:none}
   }
   @media (min-width:1061px) and (max-width:1400px){
-    .layout{grid-template-columns:minmax(280px,310px) minmax(0,1fr) minmax(220px,252px);gap:12px}
+    .layout{grid-template-columns:minmax(280px,310px) minmax(0,1fr) minmax(244px,282px);gap:12px}
   }
   @media (max-width:1060px){
     body{max-width:720px}
@@ -372,7 +388,9 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
        sliders, and the whole thing scrolls together beside the field. */
     .side{min-width:0;min-height:0;max-height:100%;
           display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
-          scrollbar-width:thin;padding-right:4px}
+          scrollbar-width:thin;padding-right:4px;
+          /* the corner icon buttons float over this pane, so it starts below them */
+          padding-top:calc(env(safe-area-inset-top,0px) + 52px)}
     .side::-webkit-scrollbar{width:6px}
     .side::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
     .col-l,.col-r{max-height:none;overflow:visible;padding-right:0}
@@ -649,6 +667,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   </div>
   <div class="col col-r">
 <button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
+<div class="card stack">
+<section>
 <div class="status">
   <div class="stat"><div class="k"><span class="dot h"></span>Hares</div><div class="v h" id="cHare">0</div></div>
   <div class="stat"><div class="k"><span class="dot l"></span>Lynx</div><div class="v l" id="cLynx">0</div></div>
@@ -666,7 +686,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     <button data-s="2">2&times;</button>
   </div>
 </div>
-<div class="card gcard">
+</section>
+<section class="gsec">
   <div class="card-head">
     <span class="label">Population trace</span>
     <div class="gtoggle" id="gmode">
@@ -675,6 +696,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     </div>
   </div>
   <canvas id="graph"></canvas>
+</section>
 </div>
   </div>
   </div>
@@ -789,7 +811,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     if(!cw) return false;
     const nw = Math.max(240, cw);
     // a short window gets a shorter trace so the right column never has to scroll
-    const tall = window.innerHeight >= 700;
+    const tall = window.innerHeight >= 720;
     const nh = Math.round(tall ? clamp(nw*0.78, 190, 280) : clamp(nw*0.62, 120, 150));
     if(nw===GW && nh===GH) return false;
     GW = nw; GH = nh; sizeCanvas(graph, gctx, GW, GH);
