@@ -120,6 +120,8 @@
   .gtoggle button{font-family:var(--mono);font-size:11px;color:var(--muted);background:transparent;border:0;padding:5px 9px;border-radius:6px;cursor:pointer;touch-action:manipulation}
   .gtoggle button.on{background:var(--line);color:var(--ink)}
   #graph{display:block;width:100%;height:auto;border-radius:8px}
+  /* the trace hangs below the readouts and the transport buttons, with air between */
+  .card.gcard{margin-top:26px}
 
   /* ---------- experiment presets ---------- */
   .presets{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
@@ -302,7 +304,6 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     .expwrap{margin-top:6px}
     .presets{gap:4px}
     .preset{padding:5px 9px}
-    #graph{max-height:88px}
   }
   /* cramped laptop heights: the hints are what overflow, so trade them for fit */
   /* inside the SimLearn player the title/description are already shown above us */
@@ -312,6 +313,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   }
   /* short laptop frames: squeeze spacing before sacrificing the hints */
   @media (min-width:1061px) and (max-height:660px){
+    .card.gcard{margin-top:14px}
     .row{margin:2px 0}
     .row .hint{line-height:1.25;margin-top:1px}
   }
@@ -581,7 +583,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   <details class="group hare">
     <summary class="group-title">Hares</summary>
     <div class="row">
-      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
+      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Hares dropped on the field, applied when you press Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
       <input type="range" id="s_startHare" min="0" max="400" step="5" value="120">
     </div>
     <div class="row">
@@ -602,7 +604,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   <details class="group lynx">
     <summary class="group-title">Lynx</summary>
     <div class="row">
-      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
+      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Lynx dropped on the field, applied when you press Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
       <input type="range" id="s_startLynx" min="0" max="150" step="2" value="28">
     </div>
     <div class="row">
@@ -623,7 +625,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   <details class="group habitat">
     <summary class="group-title">Habitat</summary>
     <div class="row">
-      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back. This sets the land's carrying capacity.">?</span></span><span class="val" id="v_plant"></span></label>
+      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back, which sets how many animals the land can carry.">?</span></span><span class="val" id="v_plant"></span></label>
       <input type="range" id="s_plant" min="1" max="10" step="1" value="6">
     </div>
     <div class="row">
@@ -660,12 +662,12 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 </div>
 <div class="transport">
   <div class="seg" id="spd" role="group" aria-label="Simulation speed">
-    <button data-s="0.5" title="Half speed">0.5&times;</button>
-    <button data-s="1" class="on" title="Normal speed">1&times;</button>
-    <button data-s="2" title="Double speed">2&times;</button>
+    <button data-s="0.5">0.5&times;</button>
+    <button data-s="1" class="on">1&times;</button>
+    <button data-s="2">2&times;</button>
   </div>
 </div>
-<div class="card">
+<div class="card gcard">
   <div class="card-head">
     <span class="label">Population trace</span>
     <div class="gtoggle" id="gmode">
@@ -780,13 +782,15 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     ctx.setTransform(dpr,0,0,dpr,0,0);
   }
   sizeCanvas(field, fctx, W, H);
-  let GW = 384, GH = 156;
+  let GW = 384, GH = 240;
   function sizeGraph(){
     const r = graph.getBoundingClientRect();
     const cw = Math.round(r.width);
     if(!cw) return false;
     const nw = Math.max(240, cw);
-    const nh = Math.round(clamp(nw*0.46, 132, 210));
+    // a short window gets a shorter trace so the right column never has to scroll
+    const tall = window.innerHeight >= 700;
+    const nh = Math.round(tall ? clamp(nw*0.78, 190, 280) : clamp(nw*0.62, 120, 150));
     if(nw===GW && nh===GH) return false;
     GW = nw; GH = nh; sizeCanvas(graph, gctx, GW, GH);
     return true;
@@ -796,9 +800,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   if(window.ResizeObserver){
     let raf=0;
     new ResizeObserver(()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(sizeGraph()) drawGraph(); }); }).observe(graph);
-  }else{
-    window.addEventListener('resize', ()=>{ if(sizeGraph()) drawGraph(); });
   }
+  window.addEventListener('resize', ()=>{ if(sizeGraph()) drawGraph(); });
 
   // ---- config (live) ----
   const cfg = {

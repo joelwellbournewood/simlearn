@@ -174,7 +174,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
     <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
   </button>
-  <button class="icon-btn" id="b-reset" title="Rebuild the arrangement with the sliders where they are now (R). Click the arrangement card again to go back to its original settings." aria-label="Rebuild the arrangement with the current settings">
+  <button class="icon-btn" id="b-reset" title="Rebuild with the sliders where they are now (R)" aria-label="Rebuild the arrangement with the current settings">
     <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
   </button>
   <button class="icon-btn" id="b-fit" title="Fit everything in view (0)" aria-label="Fit everything in view">
@@ -200,34 +200,34 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Bodies</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="Planets, disc stars, cloud members and test particles: everything light enough to be pushed around rather than do the pushing. The number shown is exactly how many are created. Above about 400 bodies the solver switches to a Barnes-Hut tree so thousands stay smooth." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="The light bodies that get pushed around rather than do the pushing." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="0" max="100" step="1" value="30">
   </div>
   <div class="row">
-    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy ones: stars, galaxy nuclei, massive seeds. Two or more are placed on a ring and given the speed that keeps that ring turning. Some arrangements are defined by their heavy bodies, so the count is fixed there." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
+    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy bodies that do the pushing: stars, galaxy nuclei, massive seeds." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
     <input type="range" id="s-nl" min="0" max="5" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling with the mouse. Drag on empty space and release like a slingshot. The dotted line shows where it will go." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
+    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging on empty space and releasing." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
     <input type="range" id="s-launch" min="0" max="100" step="1" value="42">
   </div>
   </details>
   <details class="grp">
   <summary class="grp-title">Physics</summary>
   <div class="row">
-    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair. Turn it up and orbits tighten until they collapse; turn it down and the system drifts apart. Resets the energy baseline." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
+    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair, so orbits tighten as you raise it and drift apart as you lower it." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Treats each body as a fuzzy sphere rather than a point, so the force stops growing once two bodies are closer than their sizes. Smaller is more accurate but needs more substeps during close passes." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
+    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Treats each body as a fuzzy sphere, so the force stops growing once two bodies are closer than their sizes." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
     <input type="range" id="s-soft" min="0.25" max="2" step="0.05" value="0.7">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. The integrator splits each frame into as many substeps as the closest encounter needs, so speeding up does not make orbits go wrong until it hits the substep ceiling." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with extra substeps added automatically so close passes stay accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.1" max="8" step="0.05" value="1">
   </div>
   <div class="row">
-    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch become a single heavier one, conserving mass and momentum." aria-label="What collisions does">?</button></span></label>
+    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch merge into one heavier body." aria-label="What collisions does">?</button></span></label>
     <div class="toggles"><button class="tg" id="t-merge" aria-pressed="false">Merge on contact</button></div>
   </div>
   </details>
@@ -244,7 +244,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Look</summary>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen. Trails are drawn in the current reference frame, so switch to the co-rotating view and they show the path as seen from the orbiting pair." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen, drawn in whichever reference frame you are watching from." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="55">
   </div>
   <div class="toggles">
