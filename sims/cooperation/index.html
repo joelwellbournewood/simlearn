@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>Cooperators and Competitors: spatial evolutionary games | SimLearn</title>
+<meta name="description" content="An interactive lattice of cooperators and competitors playing the prisoner's dilemma, the snowdrift game, and a public goods game with loners. Watch cooperation survive by clustering, collapse when the neighbourhood is dissolved, and cycle when opting out is allowed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c; --gold:#e6c34f;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage canvas.panning{cursor:grabbing}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:304px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.p-toggle{display:none}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
+.label:first-of-type{margin-top:0}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
+.preset small{color:var(--muted);font-size:11px;line-height:1.25}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:10px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:2px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.seg button:hover{border-color:var(--line-strong);color:var(--ink)}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.seg button:disabled{opacity:.35;cursor:default}
+.toggles{display:flex;flex-wrap:wrap;gap:5px}
+.tg{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.tg:hover{border-color:var(--line-strong);color:var(--ink)}
+.tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.tg:disabled{opacity:.35;cursor:default}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 366px)}
+.sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
+.sel.on{display:block}
+.sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sel h4 i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.sel table{border-collapse:collapse;width:100%;font-size:12.5px}
+.sel td{padding:2px 0;vertical-align:baseline}
+.sel td:first-child{color:var(--muted);padding-right:10px}
+.sel td:last-child{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.sel .kind{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
+.sel .kind.unb{color:var(--gold)}
+.sel .acts{display:flex;gap:6px;margin-top:8px}
+.sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
+.sel .acts button:hover{border-color:var(--line-strong)}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(86vh,800px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:64ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-inner kbd{font-family:var(--mono);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel-2);color:var(--ink)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
+  .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
+  .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
+    transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
+  .panel.open{transform:none;overflow-y:auto}
+  .p-toggle{display:flex;position:sticky;top:0;width:100%;height:46px;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;
+    color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
+  .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
+  .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
+  .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
+  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
+  .hint{display:none}
+  .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
+  .sel table{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+
+<style>
+/* ---- Cooperators and Competitors: its own field palette. The chrome stays on the
+   SimLearn tokens; the mosaic gets an indigo night and two argued-over colours. ---- */
+:root{
+  --field:#0b0d18;
+  --coop:#4cc9f0; --defect:#ff5d73; --loner:#9aa3bd;
+  --coop-new:#a8ecff; --defect-new:#ffb3bd;
+}
+#stage{background:var(--field)}
+#stage::after{background:radial-gradient(ellipse 76% 76% at 50% 46%,transparent 40%,rgba(0,0,0,.62) 100%)}
+#stage canvas{cursor:cell}
+.seg.three{grid-template-columns:repeat(4,1fr)}
+.seg.two{grid-template-columns:repeat(2,1fr)}
+/* readouts: top right, under the corner bar, because the bottom belongs to the strip */
+.hud{position:absolute;right:20px;top:66px;bottom:auto;z-index:6;display:flex;flex-direction:column;
+  align-items:flex-end;gap:6px;flex-wrap:nowrap;max-width:none}
+.stat{min-width:104px}
+/* the composition strip: a full history of who is winning, along the foot of the field */
+.strip{position:absolute;left:344px;right:20px;bottom:18px;height:126px;z-index:6;
+  background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:9px 11px 7px}
+.strip h4{margin:0 0 4px;font-family:var(--body);font-size:11.5px;font-weight:400;color:var(--muted);
+  display:flex;align-items:center;gap:12px}
+.strip .lg{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
+.strip .lg i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.strip canvas{display:block;width:100%;height:86px;cursor:default}
+.hint{bottom:150px;max-width:calc(100% - 380px)}
+body.clean .strip{display:none}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .hud{right:12px;top:56px;gap:4px}
+  .stat{min-width:0;padding:4px 8px}
+  .strip{left:12px;right:12px;bottom:58px;height:96px;padding:7px 9px 5px}
+  .strip canvas{height:62px}
+  .strip h4{font-size:10.5px;gap:8px}
+}
+/* a phone held sideways has no height to spare, and the field is the point,
+   so the history strip stands down and the readouts carry the numbers */
+@media (max-height:560px) and (pointer:coarse){
+  .strip{display:none}
+  #st-a{display:none}
+}
+@media (max-width:820px){ #st-a{display:none} }
+</style>
+</head>
+<body>
+<script>try{if(window.self!==window.top)document.body.className+=' in-frame';}catch(e){document.body.className+=' in-frame';}</script>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="brand">
+  <p class="kicker">Evolutionary game theory</p>
+  <h1>Cooperators &amp; Competitors</h1>
+  <p>Paying a cost to help a neighbour never pays off in the moment. Watch when it pays off anyway.</p>
+</div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Rebuild the scenario with the sliders where they are now (R). Click the scenario card again to go back to its published settings." aria-label="Rebuild the scenario">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-seed" title="Drop a single competitor in the middle (D)" aria-label="Drop a single competitor in the middle">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="hud">
+  <div class="stat"><div class="k">Cooperators</div><div class="v" id="h-c">0<small>%</small></div></div>
+  <div class="stat"><div class="k">Competitors</div><div class="v" id="h-d">0<small>%</small></div></div>
+  <div class="stat" id="st-l"><div class="k">Loners</div><div class="v" id="h-l">0<small>%</small></div></div>
+  <div class="stat" id="st-a"><div class="k">Assortment</div><div class="v" id="h-a">0</div></div>
+  <div class="stat"><div class="k">Generation</div><div class="v" id="h-g">0</div></div>
+</div>
+
+<div class="strip" id="strip">
+  <h4><span>Who holds the field</span>
+    <span class="lg"><i style="background:var(--coop)"></i>cooperate</span>
+    <span class="lg"><i style="background:var(--defect)"></i>compete</span>
+    <span class="lg" id="lg-l"><i style="background:var(--loner)"></i>opt out</span>
+    <span class="lg"><i style="background:var(--gold);height:2px;border-radius:0"></i>mean payoff</span>
+  </h4>
+  <canvas id="g"></canvas>
+</div>
+
+<p class="hint" id="hint"></p>
+
+<div class="panel" id="panel">
+  <button class="p-toggle" id="p-toggle" aria-expanded="false">Controls</button>
+  <button class="about-btn" id="b-about">What am I looking at?</button>
+
+  <p class="label">Scenario</p>
+  <div class="presets" id="presets"></div>
+
+  <p class="label">The game</p>
+  <div class="seg three" id="seg-game">
+    <button data-v="pd" aria-pressed="true">Dilemma</button>
+    <button data-v="sd" aria-pressed="false">Snowdrift</button>
+    <button data-v="pg" aria-pressed="false">Public pot</button>
+    <button data-v="mix" aria-pressed="false">No pattern</button>
+  </div>
+  <div class="row" id="row-b">
+    <label for="s-b"><span class="nm">Temptation to cheat<button class="tip" data-tip="What a competitor collects from a cooperating neighbour, where mutual cooperation pays 1. The threshold depends entirely on how habits spread: copying the best neighbour holds cooperation together right up to 2 and loses it at 2, while copying by chance loses it a little above 1. This is the b of Nowak and May's 1992 lattice." aria-label="What temptation to cheat does">?</button></span><span class="val" id="v-b"></span></label>
+    <input type="range" id="s-b" min="1" max="2.4" step="0.01" value="1.85">
+  </div>
+  <div class="row" id="row-r">
+    <label for="s-r"><span class="nm">Cost of shovelling<button class="tip" data-tip="In the snowdrift game two drivers are blocked by a drift. Clearing it alone costs you the whole effort, clearing it together costs each of you half, and being cleared for costs nothing. This slider is the cost as a fraction of the benefit." aria-label="What cost of shovelling does">?</button></span><span class="val" id="v-r"></span></label>
+    <input type="range" id="s-r" min="0.05" max="0.95" step="0.01" value="0.6">
+  </div>
+  <div class="row" id="row-mult">
+    <label for="s-mult"><span class="nm">Pot multiplier<button class="tip" data-tip="Everyone who joins in puts one unit into the pot, the pot is multiplied by this number, and the result is split equally between all who joined, contributors and free riders alike. Below the group size, contributing is individually irrational and the pot still beats going it alone." aria-label="What pot multiplier does">?</button></span><span class="val" id="v-mult"></span></label>
+    <input type="range" id="s-mult" min="1.2" max="5" step="0.05" value="3">
+  </div>
+  <div class="row" id="row-sig">
+    <label for="s-sig"><span class="nm">Value of opting out<button class="tip" data-tip="What a loner earns by refusing to play at all. It has to be worth less than a group of cooperators and more than a group of free riders, and that ordering is what makes the three strategies chase each other in a cycle." aria-label="What the value of opting out does">?</button></span><span class="val" id="v-sig"></span></label>
+    <input type="range" id="s-sig" min="0.1" max="2" step="0.05" value="1">
+  </div>
+
+  <p class="label">How strategies spread</p>
+  <div class="seg two" id="seg-rule">
+    <button data-v="best" aria-pressed="true">Copy the best</button>
+    <button data-v="fermi" aria-pressed="false">Copy by chance</button>
+  </div>
+  <div class="row" id="row-k">
+    <label for="s-k"><span class="nm">Copying noise<button class="tip" data-tip="With copy by chance, a cell compares itself with one random neighbour and switches with a probability that rises with the payoff gap. This slider is the temperature in that comparison: near zero only clear winners are copied, high up a cell will copy a loser." aria-label="What copying noise does">?</button></span><span class="val" id="v-k"></span></label>
+    <input type="range" id="s-k" min="0.01" max="1" step="0.01" value="0.1">
+  </div>
+  <div class="row">
+    <label for="s-mut"><span class="nm">Rate of stubborn mistakes<button class="tip" data-tip="Each generation, this fraction of cells adopts a strategy at random regardless of payoff. A little of it stops the field freezing into a dead pattern and stands in for mutation, misjudgement, and newcomers who know nothing." aria-label="What the rate of stubborn mistakes does">?</button></span><span class="val" id="v-mut"></span></label>
+    <input type="range" id="s-mut" min="0" max="0.05" step="0.001" value="0">
+  </div>
+
+  <p class="label">The neighbourhood</p>
+  <div class="row">
+    <label for="s-occ"><span class="nm">Occupancy<button class="tip" data-tip="How much of the lattice is filled. Empty ground is what makes moving possible, so migration needs room. At full occupancy nobody can move and only strategies spread." aria-label="What occupancy does">?</button></span><span class="val" id="v-occ"></span></label>
+    <input type="range" id="s-occ" min="0.2" max="1" step="0.01" value="1">
+  </div>
+  <div class="row">
+    <label for="s-mig"><span class="nm">Urge to move<button class="tip" data-tip="The chance per generation that a cell looks at the empty ground within reach and moves to whichever spot would have paid it best. Nobody looks at anyone's strategy, only at what a place is worth, and that alone can rescue cooperation." aria-label="What the urge to move does">?</button></span><span class="val" id="v-mig"></span></label>
+    <input type="range" id="s-mig" min="0" max="1" step="0.01" value="0">
+  </div>
+  <div class="row">
+    <label for="s-vis"><span class="nm">How far you can look<button class="tip" data-tip="The radius, in cells, of the empty ground a mover considers. Small vision keeps a move local and clusters tighten slowly; large vision lets a cooperator escape a whole region of free riders in one jump." aria-label="What how far you can look does">?</button></span><span class="val" id="v-vis"></span></label>
+    <input type="range" id="s-vis" min="1" max="10" step="1" value="5">
+  </div>
+  <div class="row">
+    <label for="s-n"><span class="nm">Lattice size<button class="tip" data-tip="Cells along one side. The side is always odd so there is an exact middle cell to drop a single competitor into. Bigger lattices are slower to settle and less prone to a lucky start deciding everything." aria-label="What lattice size does">?</button></span><span class="val" id="v-n"></span></label>
+    <input type="range" id="s-n" min="41" max="181" step="10" value="101">
+  </div>
+  <div class="toggles" style="margin-top:10px">
+    <button class="tg" id="tg-moore" aria-pressed="true" title="Eight neighbours instead of four">8 neighbours</button>
+    <button class="tg" id="tg-self" aria-pressed="true" title="Nowak and May had each cell play a round with itself as well, which is what makes the kaleidoscope symmetric">Play yourself</button>
+  </div>
+
+  <p class="label">Speed and drawing</p>
+  <div class="row">
+    <label for="s-sp"><span class="nm">Generations per second<button class="tip" data-tip="Model time, measured against the clock rather than against the frame rate, so hiding the panels does not speed the model up." aria-label="What generations per second does">?</button></span><span class="val" id="v-sp"></span></label>
+    <input type="range" id="s-sp" min="1" max="60" step="1" value="12">
+  </div>
+  <div class="toggles">
+    <button class="tg" id="tg-flip" aria-pressed="true" title="Cells that just changed sides are drawn in a pale variant (T)">Show the turncoats</button>
+    <button class="tg" id="tg-edge" aria-pressed="true" title="Ink the border between cooperators and competitors (B)">Ink the front line</button>
+    <button class="tg" id="tg-pay" aria-pressed="false" title="Shade each cell by what it earned last round (P)">Shade by payoff</button>
+  </div>
+
+  <p class="label">Paint on the field</p>
+  <div class="seg three" id="seg-tool">
+    <button data-v="0" aria-pressed="true">Cooperator</button>
+    <button data-v="1" aria-pressed="false">Competitor</button>
+    <button data-v="2" aria-pressed="false">Loner</button>
+    <button data-v="-1" aria-pressed="false">Clear</button>
+  </div>
+  <div class="row">
+    <label for="s-brush"><span class="nm">Brush<button class="tip" data-tip="Radius of the brush in cells. Drag on the field to paint, or hold the right button to clear ground back to empty." aria-label="What brush does">?</button></span><span class="val" id="v-brush"></span></label>
+    <input type="range" id="s-brush" min="0" max="12" step="1" value="2">
+  </div>
+  <div class="toggles" style="margin-top:2px">
+    <button class="tg" id="b-rand" title="Scatter strategies at random over the whole lattice">Scatter at random</button>
+  </div>
+</div>
+
+<dialog class="about" id="about">
+<div class="about-inner">
+<button class="about-close" id="about-close" aria-label="Close">&times;</button>
+<h2>Cooperators &amp; Competitors</h2>
+<p>Every cell on this lattice is a player with one habit. A <b class="hl">cooperator</b> pays a cost so that its neighbours do better. A <b class="hr">competitor</b> pays nothing and takes what is going. Each generation every player collects what its habit earned against the neighbours it has, and then the lattice updates: players look at what the people around them earned, and the habit that did best spreads into the cells around it.</p>
+<p>Held on its own, the arithmetic is bleak. Against any single neighbour, refusing to pay the cost always earns more than paying it, so competing wins every pairwise contest and cooperation should vanish. It has not vanished. Cells in a tissue divide at a rate that suits the tissue, bacteria release enzymes that feed the whole colony, and people give blood. The question this model asks is narrow and answerable: what has to be true of the neighbourhood for the expensive habit to survive?</p>
+<p>The first answer is on screen the moment you press play. Cooperators survive by <b>sticking together</b>. A cooperator in a block of cooperators is surrounded by others paying in, so it does well, while a competitor on the edge of that block feeds off it and does better still. The block is eaten at the edge and grows from the middle, and whether it grows or shrinks depends on how steep the temptation is. Drop one competitor into a full field of cooperators with <b class="hl">One cheat in Eden</b> and the fight between those two effects draws itself as a shifting fractal, which is the picture Nowak and May published in 1992.</p>
+<h3>Things to try</h3>
+<ul>
+  <li>Run <b class="hl">One cheat in Eden</b> and raise <b>Temptation to cheat</b> slowly. Somewhere just below 2 the growing cooperator blocks stop growing, and everything collapses within a few dozen generations.</li>
+  <li>Switch to <b class="hl">Nobody has neighbours</b>. Same game, same temptation, same copying rule, but every player now meets eight random strangers drawn afresh each generation instead of the cells beside it. Cooperation falls from about a third of the field to under a tenth, and what survives is luck rather than structure.</li>
+  <li>On <b class="hl">Sharing a shovel</b>, the snowdrift game, watch the shape of what survives. Cooperators hold about half the field, in filaments rather than blocks, because here it pays to be next to somebody unlike you. Then push the cost of shovelling to 0.8. A well-mixed crowd would settle at one fifth cooperators, and this lattice settles at about one eighth, so the neighbourhood has made cooperation worse, which is the Hauert and Doebeli result.</li>
+  <li>Start <b class="hl">Moving house</b> and turn <b>Urge to move</b> down to never. Cooperation collapses to well under a percent within a few hundred generations. Put it back up to always and it recovers to about half the field, without anybody ever inspecting anybody's strategy.</li>
+  <li>On <b class="hl">Loners keep them honest</b>, follow one spiral arm. Free riders chase cooperators, loners starve the free riders, and cooperators come back into the space the loners left.</li>
+  <li>Paint a solid square of cooperators about ten cells across into a field of competitors, then a thin line of the same number. The square survives and the line is eaten.</li>
+</ul>
+<h3>Keyboard</h3>
+<p><kbd>Space</kbd> pause, <kbd>R</kbd> rebuild, <kbd>1</kbd>-<kbd>9</kbd> scenarios, <kbd>D</kbd> drop one competitor in the middle, <kbd>B</kbd> front line, <kbd>T</kbd> turncoats, <kbd>P</kbd> payoff shading, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+
+<div class="more-box"><div class="more-body">
+<h3>The three games</h3>
+<p><b>The dilemma.</b> Mutual cooperation pays 1 each, a competitor meeting a cooperator collects the temptation <b>b</b>, the exploited cooperator gets nothing, and two competitors get nothing. This is the weak prisoner's dilemma used by Nowak and May, and its one parameter is the whole story on a lattice.</p>
+<p><b>Snowdrift.</b> Two drivers are stuck behind the same drift. If both dig, each pays half the effort and both drive home. If one digs, the digger pays the whole cost and both still drive home, so the passenger does best of all. If neither digs, both sit there. Because being the only cooperator still beats mutual refusal, cooperation persists without any help from structure, and Hauert and Doebeli showed in 2004 that a lattice can actively make it worse. That result matters, because it is a case where clustering hurts, and it is measurable in the laboratory: Gore and colleagues found in 2009 that budding yeast splitting sucrose play a snowdrift game rather than a prisoner's dilemma.</p>
+<p><b>The public pot.</b> Everyone who joins in contributes one unit, the pot is multiplied and shared equally among the joiners, and a loner takes a small fixed amount instead of playing. When the multiplier is smaller than the group, contributing is irrational, so free riders take over, and once nearly everyone is a free rider the pot is worth less than opting out, so loners take over, and a field of loners has nothing to exploit, so cooperators come back. Nobody wins for long. Hauert, De Monte, Hofbauer, and Sigmund named this the Red Queen mechanism in 2002.</p>
+<h3>How the update rule changes the answer</h3>
+<p><b>Copy the best</b> is deterministic, and every cell adopts the habit of whichever cell in its neighbourhood earned most, including itself. It is the rule that produces the crisp fractal patterns, and it is fragile in an instructive way, because a single very lucky cell can convert a whole neighbourhood. <b>Copy by chance</b> is the Fermi rule of Szabo and Toke, in which a cell picks one neighbour and switches with a probability that grows with the payoff gap. It is noisy, it never freezes, and it is closer to what an economist would call imitation under uncertainty. Most published phase diagrams for these games use it.</p>
+<p>The theory behind the pictures has a clean summary. Ohtsuki, Hauert, Lieberman, and Nowak showed in 2006 that on a graph where every player has k neighbours, cooperation is favoured when the benefit-to-cost ratio of the helping act exceeds k. Fewer neighbours, more cooperation. It is the sharpest statement of why the neighbourhood, and not the goodwill of the players, decides this.</p>
+<h3>Moving without judging</h3>
+<p>The <b>urge to move</b> implements success-driven migration, from Helbing and Yu in 2009. A player looks at the empty ground within reach, works out what each vacant spot would have paid it, and moves to the best one if it beats staying. No player ever asks what strategy anybody else is playing, and no player intends to build a cooperative cluster. Cooperators nevertheless end up beside cooperators, because that is where the payoff is, and a population that would collapse without movement can survive with it. The same paper showed the effect is strongest with a moderate amount of noise, which is why the scenario ships with a few stubborn mistakes turned on.</p>
+<h3>Limits of the model</h3>
+<p>Every player here has exactly one fixed habit, no memory of who did what, and no way of recognising an individual, which rules out the whole family of mechanisms built on reputation and on returning a favour. Real cooperation leans on those heavily. Payoffs are collected as a plain sum over neighbours and treated as fitness directly, with no birth, no death, and no age, so a cell "reproducing" is only a neighbour changing habit. The lattice is a torus of identical sites, which is the one geometry that no real population has, and the results are known to shift on other graphs and to shift again if the update is synchronous rather than one cell at a time. Migration here samples up to twenty vacant sites within the vision radius rather than examining every one, which keeps a large lattice responsive and makes moves slightly less optimal than in the published model. Nothing on screen is calibrated to any particular organism or market, and the numbers are payoff units, not currency. What the model does carry over is the structural claim, which is that the survival of an expensive habit is decided by who you are next to and how easily you can move.</p>
+<h3>References</h3>
+<ul class="refs">
+  <li>Nowak, M. A., &amp; May, R. M. (1992). Evolutionary games and spatial chaos. Nature. <a class="doi" href="https://doi.org/10.1038/359826a0" target="_blank" rel="noopener" title="10.1038/359826a0">DOI</a></li>
+  <li>Szab&oacute;, G., &amp; T&#337;ke, C. (1998). Evolutionary prisoner's dilemma game on a square lattice. Physical Review E. <a class="doi" href="https://doi.org/10.1103/PhysRevE.58.69" target="_blank" rel="noopener" title="10.1103/PhysRevE.58.69">DOI</a></li>
+  <li>Hauert, C., De Monte, S., Hofbauer, J., &amp; Sigmund, K. (2002). Volunteering as Red Queen mechanism for cooperation in public goods games. Science. <a class="doi" href="https://doi.org/10.1126/science.1070582" target="_blank" rel="noopener" title="10.1126/science.1070582">DOI</a></li>
+  <li>Hauert, C., &amp; Doebeli, M. (2004). Spatial structure often inhibits the evolution of cooperation in the snowdrift game. Nature. <a class="doi" href="https://doi.org/10.1038/nature02360" target="_blank" rel="noopener" title="10.1038/nature02360">DOI</a></li>
+  <li>Nowak, M. A. (2006). Five rules for the evolution of cooperation. Science. <a class="doi" href="https://doi.org/10.1126/science.1133755" target="_blank" rel="noopener" title="10.1126/science.1133755">DOI</a></li>
+  <li>Ohtsuki, H., Hauert, C., Lieberman, E., &amp; Nowak, M. A. (2006). A simple rule for the evolution of cooperation on graphs and social networks. Nature. <a class="doi" href="https://doi.org/10.1038/nature04605" target="_blank" rel="noopener" title="10.1038/nature04605">DOI</a></li>
+  <li>Szab&oacute;, G., &amp; F&aacute;th, G. (2007). Evolutionary games on graphs. Physics Reports. <a class="doi" href="https://doi.org/10.1016/j.physrep.2007.04.004" target="_blank" rel="noopener" title="10.1016/j.physrep.2007.04.004">DOI</a></li>
+  <li>Helbing, D., &amp; Yu, W. (2009). The outbreak of cooperation among success-driven individuals under noisy conditions. PNAS. <a class="doi" href="https://doi.org/10.1073/pnas.0811503106" target="_blank" rel="noopener" title="10.1073/pnas.0811503106">DOI</a></li>
+  <li>Gore, J., Youk, H., &amp; van Oudenaarden, A. (2009). Snowdrift game dynamics and facultative cheating in yeast. Nature. <a class="doi" href="https://doi.org/10.1038/nature07921" target="_blank" rel="noopener" title="10.1038/nature07921">DOI</a></li>
+  <li>Griffin, A. S., West, S. A., &amp; Buckling, A. (2004). Cooperation and competition in pathogenic bacteria. Nature. <a class="doi" href="https://doi.org/10.1038/nature02744" target="_blank" rel="noopener" title="10.1038/nature02744">DOI</a></li>
+</ul>
+</div></div>
+</div>
+</dialog>
+
+<script>
+'use strict';
+/* ================================================================
+   Cooperators and Competitors. A lattice of players, each with one
+   fixed habit, playing a two-person or group game with the cells
+   around it and then copying whoever did better. Every rule here is
+   from the literature cited in the explainer; nothing is tuned to
+   make a pretty picture.
+   ================================================================ */
+const el = id => document.getElementById(id);
+const cv = el('c'), ctx = cv.getContext('2d');
+const gcv = el('g'), gx = gcv.getContext('2d');
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+
+const C=0, D=1, LN=2, EMPTY=-1;
+let N=101, S=null, S2=null, PAY=null, FLIP=null, OLD=null;
+let NB=null, RND=null, NBK=8, TBL=null;
+let game='pd', rule='best', bT=1.85, sdR=0.6, mult=3, sigma=1, K=0.1, mut=0;
+let occ=1, migP=0, vis=5, moore=true, selfPlay=true;
+let speed=12, gens=0, paused=false;
+let showFlip=true, showEdge=true, showPay=false;
+let tool=C, brush=2;
+let hist=[], payMax=1;
+let activePreset=null;
+
+/* ---- the games ---------------------------------------------------
+   pair(a,b) is what a collects from one round against b. The dilemma
+   is the weak form used by Nowak and May: mutual cooperation pays 1,
+   defecting on a cooperator pays the temptation, and two defectors get
+   nothing at all. The snowdrift payoffs are the rescaled form of
+   Hauert and Doebeli, with one parameter, the cost of shovelling as a
+   share of the benefit. */
+function pair(a,b){
+  if(game==='sd'){
+    if(a===C) return b===C ? 1-sdR/2 : 1-sdR;
+    return b===C ? 1 : 0;
+  }
+  if(a===C) return b===C ? 1 : 0;
+  return b===C ? bT : 0;
+}
+/* what cell i would earn holding strategy s, given the field as it stands */
+function payoffAt(i,s){
+  if(s===EMPTY) return 0;
+  const st=i*NBK;
+  if(game==='pg'){
+    if(s===LN) return sigma;
+    let nc = s===C?1:0, np=1;
+    for(let k=0;k<NBK;k++){
+      const sj=S[TBL[st+k]];
+      if(sj===EMPTY||sj===LN) continue;
+      np++; if(sj===C) nc++;
+    }
+    /* a group of one has no public good to share, so the only thing on
+       offer is what a loner would have taken */
+    if(np<2) return sigma;
+    return mult*nc/np - (s===C?1:0);
+  }
+  if(s===LN) return sigma;
+  let sum=0;
+  for(let k=0;k<NBK;k++){
+    const sj=S[TBL[st+k]];
+    if(sj===EMPTY||sj===LN) continue;
+    sum+=pair(s,sj);
+  }
+  if(selfPlay) sum+=pair(s,s);
+  return sum;
+}
+
+/* ---- lattice bookkeeping ---------------------------------------- */
+const M8=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+const M4=[[0,-1],[-1,0],[1,0],[0,1]];
+function buildNB(){
+  const off = moore?M8:M4; NBK=off.length;
+  const n=N*N;
+  NB=new Int32Array(n*NBK); RND=new Int32Array(n*NBK);
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const i=y*N+x;
+    for(let k=0;k<NBK;k++){
+      const xx=(x+off[k][0]+N)%N, yy=(y+off[k][1]+N)%N;
+      NB[i*NBK+k]=yy*N+xx;
+    }
+  }
+  TBL = game==='mix' ? RND : NB;
+}
+function shuffleRND(){
+  const n=N*N, m=n*NBK;
+  for(let t=0;t<m;t++) RND[t]=(Math.random()*n)|0;
+}
+function alloc(){
+  const n=N*N;
+  S=new Int8Array(n); S2=new Int8Array(n); PAY=new Float32Array(n);
+  FLIP=new Uint8Array(n); OLD=new Int8Array(n);
+}
+function seedField(kind){
+  const n=N*N;
+  for(let i=0;i<n;i++) S[i]= Math.random()<occ ? C : EMPTY;
+  if(kind==='half'){
+    for(let i=0;i<n;i++) if(S[i]!==EMPTY) S[i]= Math.random()<0.5 ? C : D;
+  } else if(kind==='thirds'){
+    for(let i=0;i<n;i++) if(S[i]!==EMPTY){ const r=Math.random(); S[i]= r<0.34?C:(r<0.67?D:LN); }
+  } else if(kind==='one'){
+    const mid=((N-1)/2|0);
+    S[mid*N+mid]=D;
+  }
+  gens=0; hist=[]; payMax=1; FLIP.fill(0);
+  record();
+}
+
+/* ---- one generation --------------------------------------------- */
+function computePay(){
+  const n=N*N;
+  for(let i=0;i<n;i++) PAY[i] = S[i]===EMPTY ? 0 : payoffAt(i,S[i]);
+}
+/* Copy the best: synchronous, and a cell counts itself among the
+   candidates, so a winner keeps its own habit. Nowak and May's rule. */
+function updateBest(){
+  const n=N*N;
+  S2.set(S);
+  for(let i=0;i<n;i++){
+    const s=S[i]; if(s===EMPTY) continue;
+    let bp=PAY[i], bs=s;
+    const st=i*NBK;
+    for(let k=0;k<NBK;k++){
+      const j=TBL[st+k], sj=S[j];
+      if(sj===EMPTY) continue;
+      if(PAY[j]>bp+1e-12){ bp=PAY[j]; bs=sj; }
+    }
+    S2[i]=bs;
+  }
+  for(let i=0;i<n;i++){ FLIP[i]= (S2[i]!==S[i])?1:0; }
+  const t=S; S=S2; S2=t;
+}
+/* Copy by chance: the Fermi rule of Szabo and Toke, one cell at a
+   time, with payoffs recomputed at the moment of comparison because
+   the field is changing under the sweep. */
+function updateFermi(){
+  const n=N*N;
+  FLIP.fill(0);
+  for(let t=0;t<n;t++){
+    const i=(Math.random()*n)|0, s=S[i];
+    if(s===EMPTY) continue;
+    const j=TBL[i*NBK+((Math.random()*NBK)|0)], sj=S[j];
+    if(sj===EMPTY||sj===s) continue;
+    const pi=payoffAt(i,s), pj=payoffAt(j,sj);
+    if(Math.random() < 1/(1+Math.exp(-(pj-pi)/K))){ S[i]=sj; FLIP[i]=1; }
+  }
+}
+function mutate(){
+  const n=N*N, k=game==='pg'?3:2;
+  for(let i=0;i<n;i++){
+    if(S[i]===EMPTY) continue;
+    if(Math.random()<mut){ const s=(Math.random()*k)|0; if(s!==S[i]){ S[i]=s; FLIP[i]=1; } }
+  }
+}
+/* Success-driven migration (Helbing and Yu). A player values the empty
+   ground it can see by what its own habit would earn there, and moves
+   to the best of it if that beats staying put. It never looks at
+   anybody's strategy. Up to 20 vacant sites are sampled rather than
+   every one, which is what keeps a large lattice responsive. */
+function migrate(){
+  const n=N*N, span=2*vis+1;
+  for(let t=0;t<n;t++){
+    const i=(Math.random()*n)|0, s=S[i];
+    if(s===EMPTY || Math.random()>=migP) continue;
+    const x=i%N, y=(i/N)|0;
+    let bi=-1, bp=payoffAt(i,s);
+    for(let a=0;a<20;a++){
+      const dx=((Math.random()*span)|0)-vis, dy=((Math.random()*span)|0)-vis;
+      if(dx===0&&dy===0) continue;
+      const j=((y+dy+N)%N)*N+((x+dx+N)%N);
+      if(S[j]!==EMPTY) continue;
+      S[i]=EMPTY;
+      const p=payoffAt(j,s);
+      S[i]=s;
+      if(p>bp+1e-12){ bp=p; bi=j; }
+    }
+    if(bi>=0){ S[i]=EMPTY; S[bi]=s; FLIP[bi]=0; }
+  }
+}
+function step(){
+  if(game==='mix') shuffleRND();
+  if(migP>0) migrate();
+  computePay();
+  if(rule==='best') updateBest(); else updateFermi();
+  if(mut>0) mutate();
+  gens++;
+  record();
+}
+
+/* ---- what the readouts and the strip are made of ---------------- */
+let frC=0, frD=0, frL=0, meanPay=0, assort=0;
+function record(){
+  const n=N*N;
+  let nc=0, nd=0, nl=0, occN=0, sum=0;
+  for(let i=0;i<n;i++){
+    const s=S[i];
+    if(s===EMPTY) continue;
+    occN++;
+    if(s===C) nc++; else if(s===D) nd++; else nl++;
+    sum+=PAY[i];
+  }
+  frC=occN?nc/occN:0; frD=occN?nd/occN:0; frL=occN?nl/occN:0;
+  meanPay=occN?sum/occN:0;
+  /* Assortment: how much likelier a cooperator's neighbour is to be a
+     cooperator than a cell picked at random would be. This is the
+     quantity the whole theory turns on, so it is on the readout. */
+  let cc=0, cn=0;
+  for(let i=0;i<n;i++){
+    if(S[i]!==C) continue;
+    const st=i*NBK;
+    for(let k=0;k<NBK;k++){ const sj=S[NB[st+k]]; if(sj===EMPTY) continue; cn++; if(sj===C) cc++; }
+  }
+  assort = cn ? (cc/cn - frC) : 0;
+  payMax=Math.max(payMax, meanPay);
+  hist.push([frC,frD,frL,meanPay]);
+  if(hist.length>4000) hist.splice(0,1000);
+}
+
+/* ---- drawing the field -----------------------------------------
+   The mosaic is written into an N by N offscreen image and blown up
+   with smoothing off, so the cost of a frame does not depend on how
+   big the lattice is drawn. Vector work (the front line, the border)
+   goes on top. ---- */
+let off=null, offx=null, img=null;
+const RGB={};
+function readColours(){
+  const cs=getComputedStyle(document.documentElement);
+  const hx=v=>{ const h=cs.getPropertyValue(v).trim().replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; };
+  RGB.c=hx('--coop'); RGB.d=hx('--defect'); RGB.l=hx('--loner');
+  RGB.cn=hx('--coop-new'); RGB.dn=hx('--defect-new');
+  RGB.bg=hx('--field');
+}
+function ensureImg(){
+  if(off && off.width===N) return;
+  off=document.createElement('canvas'); off.width=N; off.height=N;
+  offx=off.getContext('2d'); img=offx.createImageData(N,N);
+}
+let W=0,H=0,DPR=1,CELL=8,OX=0,OY=0,SIDE=0;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  W=Math.max(320,Math.round(r.width)); H=Math.max(240,Math.round(r.height));
+  DPR=Math.min(window.devicePixelRatio||1, Math.sqrt(3.2e6/(W*H)));
+  DPR=Math.max(1,DPR);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const clean=document.body.classList.contains('clean');
+  const narrow=window.matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)').matches;
+  /* the field keeps clear of the panel on the left and the strip below,
+     and on a phone of the sheet handle and the readout column */
+  const left = clean?16:(narrow?10:344);
+  const right = clean?16:(narrow?10:20);
+  const top = clean?16:(narrow?52:106);
+  /* landscape on a phone drops the strip, so the field takes the floor */
+  const shortLand=window.matchMedia('(max-height:560px) and (pointer:coarse)').matches;
+  const bot = clean?16:(shortLand?16:(narrow?166:182));
+  const availW=Math.max(80,W-left-right), availH=Math.max(80,H-top-bot);
+  SIDE=Math.min(availW,availH);
+  CELL=SIDE/N;
+  OX=left+(availW-SIDE)/2; OY=top+(availH-SIDE)/2;
+  const gr=gcv.getBoundingClientRect();
+  gcv.width=Math.max(60,Math.round(gr.width*DPR)); gcv.height=Math.max(30,Math.round(gr.height*DPR));
+}
+function draw(){
+  ensureImg();
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--field').trim()||'#0b0d18';
+  ctx.fillRect(0,0,W,H);
+  const n=N*N, dat=img.data;
+  for(let i=0;i<n;i++){
+    const s=S[i], o=i*4;
+    let col;
+    if(s===EMPTY) col=RGB.bg;
+    else if(s===C) col=(showFlip&&FLIP[i])?RGB.cn:RGB.c;
+    else if(s===D) col=(showFlip&&FLIP[i])?RGB.dn:RGB.d;
+    else col=RGB.l;
+    let f=1;
+    if(showPay && s!==EMPTY){
+      /* brightness carries what the cell earned, on a ceiling taken from
+         the field so the scale means something as the field changes */
+      const top=Math.max(0.6, payMax*1.9);
+      f=0.34+0.66*clamp(PAY[i]/top,0,1);
+    }
+    dat[o]=col[0]*f; dat[o+1]=col[1]*f; dat[o+2]=col[2]*f;
+    dat[o+3]= s===EMPTY ? 90 : 255;
+  }
+  offx.putImageData(img,0,0);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(off,OX,OY,SIDE,SIDE);
+  ctx.imageSmoothingEnabled=true;
+  /* the front line: every edge where a cooperator meets a competitor,
+     which is the only place in the model where anything is decided */
+  if(showEdge && CELL>=2.4){
+    ctx.beginPath();
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+      const i=y*N+x, s=S[i];
+      if(s===EMPTY) continue;
+      const jx=(x+1)%N, jy=(y+1)%N;
+      if(x<N-1){ const sj=S[y*N+jx]; if(sj!==EMPTY&&sj!==s){ const px=OX+(x+1)*CELL; ctx.moveTo(px,OY+y*CELL); ctx.lineTo(px,OY+(y+1)*CELL); } }
+      if(y<N-1){ const sj=S[jy*N+x]; if(sj!==EMPTY&&sj!==s){ const py=OY+(y+1)*CELL; ctx.moveTo(OX+x*CELL,py); ctx.lineTo(OX+(x+1)*CELL,py); } }
+    }
+    ctx.strokeStyle='rgba(233,240,255,.34)'; ctx.lineWidth=Math.max(0.6,Math.min(1.4,CELL*0.12));
+    ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(150,170,210,.20)'; ctx.lineWidth=1;
+  ctx.strokeRect(OX-0.5,OY-0.5,SIDE+1,SIDE+1);
+}
+/* ---- the strip: the whole history of who holds the field -------- */
+function drawGraph(){
+  const w=gcv.width, h=gcv.height;
+  gx.setTransform(1,0,0,1,0,0);
+  gx.fillStyle='rgba(6,10,18,.55)'; gx.fillRect(0,0,w,h);
+  if(hist.length<2) return;
+  const cols=Math.max(2,Math.floor(w));
+  const from=Math.max(0,hist.length-cols);
+  const cs=getComputedStyle(document.documentElement);
+  const cc=cs.getPropertyValue('--coop').trim(), cd=cs.getPropertyValue('--defect').trim(),
+        cl=cs.getPropertyValue('--loner').trim(), cg=cs.getPropertyValue('--gold').trim()||'#e6c34f';
+  const per=w/Math.max(1,hist.length-from);
+  for(let t=from;t<hist.length;t++){
+    const e=hist[t], x=(t-from)*per, bw=Math.max(1,per+0.5);
+    let y=h;
+    const hc=e[0]*h, hl=e[2]*h, hd=e[1]*h;
+    gx.fillStyle=cc; gx.fillRect(x,y-hc,bw,hc); y-=hc;
+    gx.fillStyle=cl; gx.fillRect(x,y-hl,bw,hl); y-=hl;
+    gx.fillStyle=cd; gx.fillRect(x,y-hd,bw,hd);
+  }
+  /* mean payoff, on its own ceiling, drawn over the areas */
+  gx.beginPath();
+  for(let t=from;t<hist.length;t++){
+    const x=(t-from)*per, v=hist[t][3]/Math.max(0.4,payMax*1.15), y=h-v*h;
+    if(t===from) gx.moveTo(x,y); else gx.lineTo(x,y);
+  }
+  gx.strokeStyle=cg; gx.lineWidth=Math.max(1,DPR); gx.stroke();
+  gx.fillStyle='rgba(255,255,255,.06)';
+  for(let f=1;f<4;f++) gx.fillRect(0,Math.round(h*f/4),w,1);
+}
+
+/* ---- scenarios --------------------------------------------------
+   Every one of these is a published setting, named in the explainer.
+   The seed says how the field starts: one cheat in a perfect world,
+   an even random mix, or three strategies at random. ---- */
+const PRESETS={
+  eden:{name:'One cheat in Eden', tag:'Nowak &amp; May, 1992',
+    p:{game:'pd',bT:1.85,rule:'best',moore:true,selfPlay:true,occ:1,migP:0,mut:0,N:101,speed:8,seed:'one'}},
+  mixed:{name:'Nobody has neighbours', tag:'Strangers every round',
+    p:{game:'mix',bT:1.85,rule:'best',moore:true,selfPlay:true,occ:1,migP:0,mut:0,N:101,speed:14,seed:'half'}},
+  snow:{name:'Sharing a shovel', tag:'The snowdrift game',
+    p:{game:'sd',sdR:0.6,rule:'fermi',K:0.1,moore:false,selfPlay:false,occ:1,migP:0,mut:0,N:121,speed:24,seed:'half'}},
+  move:{name:'Moving house', tag:'Nobody judges, everybody moves',
+    p:{game:'pd',bT:1.6,rule:'best',moore:true,selfPlay:false,occ:0.6,migP:1,vis:5,mut:0.01,N:101,speed:14,seed:'half'}},
+  loners:{name:'Loners keep them honest', tag:'A pot you can refuse',
+    p:{game:'pg',mult:3,sigma:1,rule:'fermi',K:0.1,moore:true,selfPlay:false,occ:1,migP:0,mut:0.002,N:141,speed:26,seed:'thirds'}},
+  knife:{name:'On the knife edge', tag:'Cooperation at its limit',
+    p:{game:'pd',bT:1.99,rule:'best',moore:true,selfPlay:true,occ:1,migP:0,mut:0.001,N:121,speed:24,seed:'half'}}
+};
+let curSeed='half';
+function buildPresetCards(){
+  const wrap=el('presets');
+  wrap.innerHTML=Object.keys(PRESETS).map(k=>
+    '<button class="preset" data-k="'+k+'" aria-pressed="false"><b>'+PRESETS[k].name+'</b><small>'+PRESETS[k].tag+'</small></button>').join('');
+  wrap.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.k)));
+}
+function applyPreset(k){
+  const pr=PRESETS[k]; if(!pr) return;
+  activePreset=k;
+  const p=pr.p;
+  game=p.game||'pd'; rule=p.rule||'best';
+  bT=p.bT!==undefined?p.bT:bT; sdR=p.sdR!==undefined?p.sdR:sdR;
+  mult=p.mult!==undefined?p.mult:mult; sigma=p.sigma!==undefined?p.sigma:sigma;
+  K=p.K!==undefined?p.K:K; mut=p.mut!==undefined?p.mut:mut;
+  occ=p.occ!==undefined?p.occ:occ; migP=p.migP!==undefined?p.migP:migP;
+  vis=p.vis!==undefined?p.vis:vis; moore=p.moore!==undefined?p.moore:moore;
+  selfPlay=p.selfPlay!==undefined?p.selfPlay:selfPlay;
+  N=p.N||N; speed=p.speed||speed; curSeed=p.seed||'half';
+  syncControls(); rebuild(curSeed);
+  document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===k)));
+  hintFor(k);
+}
+function hintFor(k){
+  const t={eden:'One competitor, dead centre, in a field that cooperates. Drag on the field to paint.',
+    mixed:'Same game, but every player meets strangers. Watch the strip.',
+    snow:'Here it pays to stand next to somebody unlike you.',
+    move:'Nobody looks at a strategy. They only move towards a better spot.',
+    loners:'Three habits chasing each other. Follow one arm of a spiral.',
+    knife:'The temptation is nearly too high. Paint a solid block of cooperators and see if it holds.'};
+  el('hint').textContent=t[k]||'Drag on the field to paint. Right button clears ground to empty.';
+}
+function rebuild(kind){
+  N = N%2 ? N : N+1;
+  alloc(); buildNB(); if(game==='mix') shuffleRND();
+  seedField(kind||curSeed);
+  ensureImg(); resize();
+}
+
+/* ---- controls ---------------------------------------------------- */
+function bind(id,vid,fmt,setter){
+  const s=el(id), v=el(vid);
+  const show=()=>{ if(v) v.textContent=fmt(+s.value); };
+  s.addEventListener('input',()=>{ setter(+s.value); show(); releasePreset(); });
+  show();
+  return s;
+}
+function releasePreset(){ /* the cards stay lit: they are a starting point, and the
+    reset button rebuilds with whatever the sliders now say */ }
+function segment(id,cb){
+  const wrap=el(id);
+  wrap.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    wrap.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    cb(b.dataset.v);
+  }));
+}
+function toggle(id,get,set){
+  const b=el(id);
+  b.addEventListener('click',()=>{ set(!get()); b.setAttribute('aria-pressed',String(get())); syncRows(); });
+}
+function syncRows(){
+  el('row-b').style.display = (game==='pd'||game==='mix')?'':'none';
+  el('row-r').style.display = game==='sd'?'':'none';
+  el('row-mult').style.display = game==='pg'?'':'none';
+  el('row-sig').style.display = game==='pg'?'':'none';
+  el('row-k').style.display = rule==='fermi'?'':'none';
+  el('st-l').style.display = game==='pg'?'':'none';
+  el('lg-l').style.display = game==='pg'?'':'none';
+  el('tg-self').disabled = (game==='pg');
+  el('seg-tool').querySelector('[data-v="2"]').disabled = (game!=='pg');
+}
+const pct=v=>Math.round(v*100)+'%';
+function syncControls(){
+  el('s-b').value=bT; el('v-b').textContent=bT.toFixed(2);
+  el('s-r').value=sdR; el('v-r').textContent=sdR.toFixed(2);
+  el('s-mult').value=mult; el('v-mult').textContent=mult.toFixed(2)+'x';
+  el('s-sig').value=sigma; el('v-sig').textContent=sigma.toFixed(2);
+  el('s-k').value=K; el('v-k').textContent=K.toFixed(2);
+  el('s-mut').value=mut; el('v-mut').textContent=(mut*100).toFixed(1)+'%';
+  el('s-occ').value=occ; el('v-occ').textContent=pct(occ);
+  el('s-mig').value=migP; el('v-mig').textContent=migP===0?'never':pct(migP);
+  el('s-vis').value=vis; el('v-vis').textContent=vis+' cells';
+  el('s-n').value=N; el('v-n').textContent=N+' x '+N;
+  el('s-sp').value=speed; el('v-sp').textContent=speed+'/s';
+  el('s-brush').value=brush; el('v-brush').textContent=(2*brush+1)+' cells';
+  el('seg-game').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===game)));
+  el('seg-rule').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===rule)));
+  el('tg-moore').setAttribute('aria-pressed',String(moore));
+  el('tg-self').setAttribute('aria-pressed',String(selfPlay));
+  el('tg-flip').setAttribute('aria-pressed',String(showFlip));
+  el('tg-edge').setAttribute('aria-pressed',String(showEdge));
+  el('tg-pay').setAttribute('aria-pressed',String(showPay));
+  syncRows();
+}
+bind('s-b','v-b',v=>v.toFixed(2),v=>bT=v);
+bind('s-r','v-r',v=>v.toFixed(2),v=>sdR=v);
+bind('s-mult','v-mult',v=>v.toFixed(2)+'x',v=>mult=v);
+bind('s-sig','v-sig',v=>v.toFixed(2),v=>sigma=v);
+bind('s-k','v-k',v=>v.toFixed(2),v=>K=v);
+bind('s-mut','v-mut',v=>(v*100).toFixed(1)+'%',v=>mut=v);
+bind('s-occ','v-occ',pct,v=>occ=v);
+bind('s-mig','v-mig',v=>v===0?'never':pct(v),v=>migP=v);
+bind('s-vis','v-vis',v=>v+' cells',v=>vis=v);
+bind('s-sp','v-sp',v=>v+'/s',v=>speed=v);
+bind('s-brush','v-brush',v=>(2*v+1)+' cells',v=>brush=v);
+el('s-n').addEventListener('change',()=>{ N=+el('s-n').value; el('v-n').textContent=N+' x '+N; rebuild(curSeed); });
+el('s-n').addEventListener('input',()=>{ el('v-n').textContent=(+el('s-n').value)+' x '+(+el('s-n').value); });
+segment('seg-game',v=>{ game=v; buildNB(); if(game==='mix') shuffleRND(); if(game!=='pg'&&tool===LN) setTool(0); syncRows(); });
+segment('seg-rule',v=>{ rule=v; syncRows(); });
+segment('seg-tool',v=>{ tool=+v; });
+function setTool(t){ tool=t; el('seg-tool').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===t))); }
+toggle('tg-moore',()=>moore,v=>{ moore=v; buildNB(); });
+toggle('tg-self',()=>selfPlay,v=>selfPlay=v);
+toggle('tg-flip',()=>showFlip,v=>showFlip=v);
+toggle('tg-edge',()=>showEdge,v=>showEdge=v);
+toggle('tg-pay',()=>showPay,v=>showPay=v);
+el('b-rand').addEventListener('click',()=>{ curSeed = game==='pg'?'thirds':'half'; rebuild(curSeed); });
+el('b-seed').addEventListener('click',()=>dropOne());
+function dropOne(){
+  const n=N*N;
+  for(let i=0;i<n;i++) S[i]= Math.random()<occ ? C : EMPTY;
+  const mid=(N-1)/2|0; S[mid*N+mid]=D;
+  gens=0; hist=[]; payMax=1; FLIP.fill(0); computePay(); record();
+}
+
+/* ---- painting on the field -------------------------------------- */
+let painting=false, paintVal=0;
+function cellAt(e){
+  const r=cv.getBoundingClientRect();
+  const x=Math.floor((e.clientX-r.left-OX)/CELL), y=Math.floor((e.clientY-r.top-OY)/CELL);
+  if(x<0||y<0||x>=N||y>=N) return -1;
+  return y*N+x;
+}
+function paint(i,val){
+  if(i<0) return;
+  const x=i%N, y=(i/N)|0, b=brush;
+  for(let dy=-b;dy<=b;dy++) for(let dx=-b;dx<=b;dx++){
+    if(dx*dx+dy*dy>b*b+b) continue;
+    const j=((y+dy+N)%N)*N+((x+dx+N)%N);
+    S[j]=val; FLIP[j]=0;
+  }
+}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{
+  const i=cellAt(e); if(i<0) return;
+  e.preventDefault(); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId);
+  painting=true; paintVal = (e.button===2||e.buttons===2)?EMPTY:tool;
+  paint(i,paintVal); computePay(); record();
+});
+cv.addEventListener('pointermove',e=>{ if(!painting) return; paint(cellAt(e),paintVal); });
+const stopPaint=()=>{ if(!painting) return; painting=false; computePay(); record(); };
+cv.addEventListener('pointerup',stopPaint);
+cv.addEventListener('pointercancel',stopPaint);
+
+/* ---- corner bar, dialog, panel ---------------------------------- */
+function setPaused(p){ paused=p; el('b-pause').dataset.on=String(p); }
+el('b-pause').addEventListener('click',()=>setPaused(!paused));
+el('b-reset').addEventListener('click',()=>rebuild(curSeed));
+const bc=el('b-clean');
+bc.addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); resize(); });
+el('b-full').addEventListener('click',()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();
+});
+const dlg=el('about');
+el('b-about').addEventListener('click',()=>dlg.showModal());
+el('about-close').addEventListener('click',()=>dlg.close());
+dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+el('p-toggle').addEventListener('click',()=>{
+  const o=el('panel').classList.toggle('open');
+  el('p-toggle').setAttribute('aria-expanded',String(o));
+});
+document.querySelectorAll('.tip').forEach(t=>{
+  t.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation();
+    document.querySelectorAll('.tip.show').forEach(o=>{ if(o!==t) o.classList.remove('show'); });
+    t.classList.toggle('show'); });
+});
+document.addEventListener('click',()=>document.querySelectorAll('.tip.show').forEach(t=>t.classList.remove('show')));
+window.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea,select')) return;
+  const k=e.key;
+  if(k===' '){ e.preventDefault(); setPaused(!paused); }
+  else if(k==='r'||k==='R') rebuild(curSeed);
+  else if(k==='d'||k==='D') dropOne();
+  else if(k==='b'||k==='B'){ showEdge=!showEdge; syncControls(); }
+  else if(k==='t'||k==='T'){ showFlip=!showFlip; syncControls(); }
+  else if(k==='p'||k==='P'){ showPay=!showPay; syncControls(); }
+  else if(k==='h'||k==='H') bc.click();
+  else if(k==='f'||k==='F') el('b-full').click();
+  else if(k==='?') dlg.open?dlg.close():dlg.showModal();
+  else if(k>='1'&&k<='9'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) applyPreset(ks); }
+});
+
+/* ---- the loop. Model time is spent against the clock with a
+   fractional carry, so hiding the panels cannot speed the model up. */
+let last=performance.now(), carry=0, fpsT=last, frames=0, fps=0;
+function hud(){
+  el('h-c').innerHTML=(frC*100).toFixed(1)+'<small>%</small>';
+  el('h-d').innerHTML=(frD*100).toFixed(1)+'<small>%</small>';
+  el('h-l').innerHTML=(frL*100).toFixed(1)+'<small>%</small>';
+  el('h-a').textContent=(assort>=0?'+':'')+assort.toFixed(2);
+  el('h-g').textContent=gens;
+}
+function frame(now){
+  const dt=Math.min(0.25,(now-last)/1000); last=now;
+  if(!paused){
+    carry+=dt*speed;
+    let budget=Math.min(carry|0, Math.max(1,Math.ceil(speed/6)));
+    carry-=budget;
+    if(carry>4) carry=4;
+    while(budget-->0) step();
+  }
+  draw(); drawGraph(); hud();
+  frames++;
+  if(now-fpsT>500){ fps=frames*1000/(now-fpsT); frames=0; fpsT=now; }
+  requestAnimationFrame(frame);
+}
+/* probe for the layout and behaviour tests */
+window.__coop=function(){ return {N:N,game:game,rule:rule,gens:gens,frC:frC,frD:frD,frL:frL,
+  assort:assort,meanPay:meanPay,cell:CELL,side:SIDE,OX:OX,OY:OY,W:W,H:H,fps:fps,
+  moore:moore,selfPlay:selfPlay,occ:occ,migP:migP,bT:bT,speed:speed,hist:hist.length}; };
+
+readColours();
+buildPresetCards();
+applyPreset('eden');
+setPaused(false);
+window.addEventListener('resize',()=>{ resize(); });
+document.addEventListener('fullscreenchange',()=>setTimeout(resize,60));
+if(window.ResizeObserver) new ResizeObserver(()=>resize()).observe(document.getElementById('stage'));
+resize();
+requestAnimationFrame(frame);
+</script>
+<script src="../../assets/js/explainer.js" defer></script>
+</body>
+</html>
