@@ -207,6 +207,12 @@
      switch rather than leaving a 55px hole where the title used to be */
   .in-frame .panel{top:70px}
   .in-frame .about-btn{top:18px}
+  /* Phone: the panel is a bottom sheet. The desktop .in-frame rule above has the same
+     specificity, so without this it would pin the sheet at y=70 and leave part of it
+     permanently on screen inside the player. Restore the sheet's own anchoring. */
+  @media (max-width:820px), (max-height:560px) and (pointer:coarse){
+    .in-frame .panel{top:auto;bottom:0}
+  }
   /* Portrait phone: everything lives on two rows, one at the top and one at the bottom,
      so the canvas keeps the whole middle of the screen.
      TOP  - 2D/3D at the left, the icon buttons filling out the same row to the right.

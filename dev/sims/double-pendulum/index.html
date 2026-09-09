@@ -190,7 +190,6 @@ details.grp > summary + *{margin-top:0}
 <div class="hud">
   <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
   <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
-  <div class="stat"><div class="k">Energy drift</div><div class="v" id="s-e">0.000%</div></div>
 </div>
 <div class="hint">Right-drag to move the view (left-drag works too), scroll to zoom, click the field to re-release, R restarts.</div>
 
@@ -245,7 +244,7 @@ details.grp > summary + *{margin-top:0}
 <p>The behaviour survives contact with real hardware. Shinbrot et al. (1992) built a physical double pendulum, measured its divergence and its Poincare sections, and used it as a laboratory demonstration of sensitive dependence, with Levien and Tan (1993) following up on the experimental side.</p>
 
 <h3>Numerics, and how to tell physics from arithmetic</h3>
-<p>The equations here are integrated with fourth-order Runge-Kutta, with each animation frame subdivided into several substeps so the step size stays small when the arms are moving fast. Total energy is displayed live, and its drift is the diagnostic that matters: a symplectic or sufficiently small-step integrator holds it nearly constant, and any visible drift would mean the separation on screen came partly from the integrator's error. In a chaotic system, after a few seconds a single simulated pendulum has departed from the ideal one at any tolerance you care to set, because floating-point rounding is itself a perturbation and then grows as e<sup>&lambda;t</sup>. Statistical properties survive that, meaning how quickly the ensemble spreads and which regions it visits, while the exact position of copy number 37 at t = 20 s is fiction.</p>
+<p>The equations here are integrated with fourth-order Runge-Kutta, with each animation frame subdivided into several substeps so the step size stays small when the arms are moving fast. Energy drift is the diagnostic behind that choice, since an integrator with a small enough step holds total energy nearly constant, and measurable drift would mean the separation you see on screen came partly from the integrator's error rather than from the physics. Measured here, the leading copy loses under two ten-thousandths of a percent of its energy over a minute of swinging, so what you see spreading apart is the physics. In a chaotic system, after a few seconds a single simulated pendulum has departed from the ideal one at any tolerance you care to set, because floating-point rounding is itself a perturbation and then grows as e<sup>&lambda;t</sup>. Statistical properties survive that, meaning how quickly the ensemble spreads and which regions it visits, while the exact position of copy number 37 at t = 20 s is fiction.</p>
 
 <h3>Limits of the model</h3>
 <p>The bobs here are point masses on massless rigid arms, the hinges are frictionless, there is no air resistance, and the motion is confined to a plane. A real double pendulum loses energy and eventually hangs still, so chaos in hardware is a transient, albeit a long one. Adding damping and a periodic drive gives the forced damped pendulum, in which chaos is sustained indefinitely on a strange attractor instead of filling an energy shell, and that version is the closer model for machinery that keeps being fed energy, such as a crane under an operator's hand.</p>
@@ -450,8 +449,6 @@ function hud(now){
   if(now-hudT<180) return; hudT=now;
   el('s-n').textContent=arr.length;
   el('s-t').textContent=tsec.toFixed(1)+'s';
-  if(E0!==null&&arr.length){ const E=energyOf(arr[0].s); const d=Math.abs(E0)>1e-9?(E-E0)/Math.abs(E0):0;
-    el('s-e').textContent=(d>=0?'+':'')+(100*d).toFixed(3)+'%'; }
 }
 /* ---------- ui ---------- */
 const pbox=el('presets');
