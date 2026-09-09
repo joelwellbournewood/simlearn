@@ -205,6 +205,15 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
   input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+  /* BOIDS PATTERN: the left column is a single panel and its sections are divided by a
+     hairline, not boxed one by one. Padding, heading size and gaps copy sims/boids. */
+  .card.stack{padding:0;overflow:hidden}
+  .card.stack > details.group{margin:0!important;padding:15px 18px;border-top:0!important;
+    border-bottom:1px solid var(--line)}
+  .card.stack > details.group:last-child{border-bottom:0}
+  .card.stack > details.group > .group-title{font-size:16px!important;margin:0!important;padding:0}
+  .card.stack > details.group[open] > .group-title{margin:0 0 12px!important}
+  .card.stack .presets{margin-top:0}
   .group.hare{--c:var(--hare)} .group.lynx{--c:var(--lynx)} .group.habitat{--c:#3fa066}
   .group.hare .group-title{color:var(--hare)}
   .group.lynx .group-title{color:var(--lynx)}
@@ -233,7 +242,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     h1{font-size:20px}
     .sub{font-size:12.5px;margin:5px 0 0}
     .layout{flex:1 1 auto;min-height:0;display:grid;
-            grid-template-columns:minmax(240px,272px) minmax(0,1fr) minmax(300px,340px);
+            grid-template-columns:minmax(300px,340px) minmax(0,1fr) minmax(240px,272px);
             gap:16px;align-items:stretch}
     .side{display:contents}
     .col-l{order:1} .col-c{order:2} .col-r{order:3}
@@ -314,7 +323,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     .card .group-title .tag{display:none}
   }
   @media (min-width:1061px) and (max-width:1400px){
-    .layout{grid-template-columns:minmax(220px,252px) minmax(0,1fr) minmax(280px,310px);gap:12px}
+    .layout{grid-template-columns:minmax(280px,310px) minmax(0,1fr) minmax(220px,252px);gap:12px}
   }
   @media (max-width:1060px){
     body{max-width:720px}
@@ -325,6 +334,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     .field-wrap{margin-top:0}
     #field{width:100%;height:auto;max-width:100%;display:block}
     .col-l,.col-r{max-height:none;overflow:visible}
+    .col-r{order:0} .col-l{order:1}
     /* inside the SimLearn player the page already has a title bar */
     .in-frame header,.in-frame footer{display:none}
     /* With no header above it the field is the first thing in the frame, so dropping the
@@ -557,36 +567,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
        everywhere else it is display:contents and the columns lay out as before. -->
   <div class="side">
   <div class="col col-l">
-<button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
-<div class="status">
-  <div class="stat"><div class="k"><span class="dot h"></span>Hares</div><div class="v h" id="cHare">0</div></div>
-  <div class="stat"><div class="k"><span class="dot l"></span>Lynx</div><div class="v l" id="cLynx">0</div></div>
-  <div class="stat"><div class="k"><span class="dot g"></span>Grass</div><div class="v g" id="cGrass">0%</div></div>
-  <div class="stat"><div class="k">Step</div><div class="v t" id="cTick">0</div></div>
-</div>
-<div class="transport">
-  <button class="btn primary" id="play">Pause</button>
-  <button class="btn ghost" id="reset">Reset</button>
-</div>
-<div class="transport">
-  <div class="seg" id="spd" role="group" aria-label="Simulation speed">
-    <button data-s="0.5" title="Half speed">0.5&times;</button>
-    <button data-s="1" class="on" title="Normal speed">1&times;</button>
-    <button data-s="2" title="Double speed">2&times;</button>
-  </div>
-</div>
-<div class="card">
-  <div class="card-head">
-    <span class="label">Population trace</span>
-    <div class="gtoggle" id="gmode">
-      <button data-m="time" class="on">Over time</button>
-      <button data-m="phase">Phase orbit</button>
-    </div>
-  </div>
-  <canvas id="graph"></canvas>
-</div>
-<div class="expwrap">
-<div class="card">
+<div class="card stack">
   <details class="group presets-group" open>
   <summary class="group-title">Presets</summary>
   <div class="presets" id="chips">
@@ -597,12 +578,6 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
   </div>
   </details>
-</div>
-</div>
-  </div>
-  <div class="col col-r">
-<div class="card">
-  <!-- HARE -->
   <details class="group hare">
     <summary class="group-title">Hares</summary>
     <div class="row">
@@ -656,10 +631,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       <input type="range" id="s_metab" min="0.5" max="2.5" step="0.1" value="1">
     </div>
   </details>
-</div>
-<div class="card">
   <details class="group look">
-  <summary class="group-title">Look<span class="tip" role="button" tabindex="0" aria-label="What the colour palette does" data-tip="A look-up table for the field and the graph. It repaints grass, hares, and lynx and nothing else: every number, rule, and random draw is untouched, so the run carries on exactly as it was.">?</span></summary>
+  <summary class="group-title">Look</summary>
   <div class="pals" id="pals"></div>
   <div class="swatches">
     <label class="sw-item"><span>Predator</span><input type="color" id="swPred" aria-label="Predator colour"></label>
@@ -668,9 +641,39 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     <label class="sw-item"><span>Background</span><input type="color" id="swBg" aria-label="Background colour"></label>
   </div>
   <div class="pal-row">
-    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="true"><span class="ramp"></span>Brightness by energy<span class="tip" role="button" tabindex="0" aria-label="What brightness by energy does" data-tip="Each animal is drawn darker or lighter according to how much energy it is carrying, from nearly black when it is a step from starving to pale when it is full and ready to breed. Drawing only: no rule, rate, or random draw changes.">?</span></button>
+    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="false"><span class="ramp"></span>Brightness by energy</button>
   </div>
   </details>
+</div>
+  </div>
+  <div class="col col-r">
+<button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
+<div class="status">
+  <div class="stat"><div class="k"><span class="dot h"></span>Hares</div><div class="v h" id="cHare">0</div></div>
+  <div class="stat"><div class="k"><span class="dot l"></span>Lynx</div><div class="v l" id="cLynx">0</div></div>
+  <div class="stat"><div class="k"><span class="dot g"></span>Grass</div><div class="v g" id="cGrass">0%</div></div>
+  <div class="stat"><div class="k">Step</div><div class="v t" id="cTick">0</div></div>
+</div>
+<div class="transport">
+  <button class="btn primary" id="play">Pause</button>
+  <button class="btn ghost" id="reset">Reset</button>
+</div>
+<div class="transport">
+  <div class="seg" id="spd" role="group" aria-label="Simulation speed">
+    <button data-s="0.5" title="Half speed">0.5&times;</button>
+    <button data-s="1" class="on" title="Normal speed">1&times;</button>
+    <button data-s="2" title="Double speed">2&times;</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head">
+    <span class="label">Population trace</span>
+    <div class="gtoggle" id="gmode">
+      <button data-m="time" class="on">Over time</button>
+      <button data-m="phase">Phase orbit</button>
+    </div>
+  </div>
+  <canvas id="graph"></canvas>
 </div>
   </div>
   </div>
@@ -1032,8 +1035,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
      gains light that is not there. The top band is lifted a little towards white because a
      saturated colour runs out of headroom before it looks full. */
   function brightBand(base, t){
-    if(t<=0.78){ const f=0.34+0.66*(t/0.78); return mix('#000000', base, f); }
-    return mix(base, '#ffffff', (t-0.78)/0.22*0.42);
+    if(t<=0.78){ const f=0.13+0.87*(t/0.78); return mix('#000000', base, f); }
+    return mix(base, '#ffffff', (t-0.78)/0.22*0.55);
   }
   function buildRamps(){
     hareRamp=[]; lynxRamp=[];
@@ -1071,11 +1074,14 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     if(energyOn){
       eTops();
       for(let b=0;b<EBINS;b++){
+        /* brightness AND size, because brightness alone was easy to miss: a starving
+           hare is a small dark speck and a full one is a fat pale dot. Drawing only. */
+        const t=b/(EBINS-1), hr=HARE_R*(0.62+0.58*t);
         fctx.fillStyle = hareRamp[b];
         fctx.beginPath(); let any=false;
         for(let i=0;i<hares.length;i++){
           const h=hares[i]; if(ebin(h.e,eTopH)!==b) continue; any=true;
-          fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU);
+          fctx.moveTo(h.x+hr,h.y); fctx.arc(h.x,h.y,hr,0,TAU);
         }
         if(any) fctx.fill();
       }
@@ -1085,13 +1091,14 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
       fctx.fill();
     }
-    /* lynx - a lean directional dart. Deliberately minimal: two batched fills, no
-       outline, no eyes, no tail. The shape alone says predator and says heading, and
-       it stays legible down to a few pixels where the old cat silhouette turned to mush.
-       Do not add per-lynx strokes here; at 900 lynx that is 900 extra path segments. */
+    /* lynx - a cat's head, and nothing more: a chin, two cheeks, and two pointy ears
+       drawn as slim tufted spikes. Twelve straight points, no curves, no eyes, no tail,
+       so the whole population is still a handful of batched paths. The ears point the
+       way the animal is heading. Keep it this simple: every extra vertex is paid for
+       nine hundred times over. */
     const R = LYNX_R;
     /* soft halo so the hunters read as hot points against the field. Drawn in both modes
-       and at a constant strength, so brightness alone carries the energy. */
+       and at a constant strength, so the brightness of the head carries the energy. */
     {
       fctx.fillStyle = LYNX_HALO;
       fctx.beginPath();
@@ -1101,27 +1108,40 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       }
       fctx.fill();
     }
-    // the dart itself
-    const dart = (l)=>{
-      const c=Math.cos(l.dir), s=Math.sin(l.dir);
-      const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
-      fctx.moveTo(X( R*1.60, 0),        Y( R*1.60, 0));
-      fctx.lineTo(X(-R*0.78,  R*0.82),  Y(-R*0.78,  R*0.82));
-      fctx.lineTo(X(-R*0.30, 0),        Y(-R*0.30, 0));
-      fctx.lineTo(X(-R*0.78, -R*0.82),  Y(-R*0.78, -R*0.82));
+    // the head itself
+    const CATP=[[-1.05,0],[-0.55,0.85],[0.30,0.95],[0.55,1.02],[1.45,1.70],[1.05,0.60],
+                [0.70,0],[1.05,-0.60],[1.45,-1.70],[0.55,-1.02],[0.30,-0.95],[-0.55,-0.85]];
+    const dart = (l,k)=>{
+      const c=Math.cos(l.dir), s=Math.sin(l.dir), q=R*0.86*(k||1);
+      for(let j=0;j<12;j++){
+        const u=CATP[j][0]*q, v=CATP[j][1]*q;
+        const x=l.x + u*c - v*s, y=l.y + u*s + v*c;
+        if(j===0) fctx.moveTo(x,y); else fctx.lineTo(x,y);
+      }
       fctx.closePath();
     };
     if(energyOn){
+      fctx.lineJoin='round';
       for(let b=0;b<EBINS;b++){
+        const t=b/(EBINS-1);
         fctx.fillStyle = lynxRamp[b];
         fctx.beginPath(); let any=false;
-        for(let i=0;i<lynx.length;i++){ const l=lynx[i]; if(ebin(l.e,eTopL)!==b) continue; any=true; dart(l); }
-        if(any) fctx.fill();
+        for(let i=0;i<lynx.length;i++){ const l=lynx[i]; if(ebin(l.e,eTopL)!==b) continue; any=true; dart(l, 0.76+0.40*t); }
+        if(any){
+          fctx.fill();
+          /* the outline is what keeps a starving lynx findable. The fill runs almost to
+             black at the bottom of the ramp, so the darker the animal the stronger its
+             edge: the head stays clearly drawn the whole way down the fade. One stroke
+             per band, not one per animal. */
+          fctx.strokeStyle=hexa(PAL.lynx, 0.92-0.74*t);
+          fctx.lineWidth=Math.max(0.7, R*0.17);
+          fctx.stroke();
+        }
       }
     } else {
       fctx.fillStyle = PAL.lynx;
       fctx.beginPath();
-      for(let i=0;i<lynx.length;i++) dart(lynx[i]);
+      for(let i=0;i<lynx.length;i++) dart(lynx[i],1);
       fctx.fill();
     }
     // vignette
@@ -1382,7 +1402,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       if(e.target.classList.contains('tip')) return;
       setEnergyColour(!energyOn);
     });
-    setEnergyColour(true);
+    setEnergyColour(false);
     applyLook(); syncPickers();
   })();
 

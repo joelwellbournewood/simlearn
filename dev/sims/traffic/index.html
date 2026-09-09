@@ -142,6 +142,25 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   .sel table{font-size:12px}
 }
 @media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+
+/* ---------- folding sections: boids is the reference ----------
+   One hairline between sections, a 16px display heading with an 8px chevron, 12px of
+   air under an open heading. The panel got long enough to need a scrollbar, and a
+   scrollbar in a control panel is a design failure, so the sections fold instead. */
+details.grp{border-top:1px solid var(--line);margin:0;padding:12px 0 13px}
+details.grp:first-of-type{border-top:0;padding-top:2px}
+details.grp:last-of-type{padding-bottom:2px}
+details.grp > summary{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;
+  font-variation-settings:'opsz' 24;color:var(--ink);cursor:pointer;list-style:none;display:flex;
+  align-items:center;justify-content:space-between;gap:10px;margin:0;user-select:none}
+details.grp > summary:hover{color:var(--accent)}
+details.grp > summary::-webkit-details-marker{display:none}
+details.grp > summary::after{content:'';width:8px;height:8px;flex:none;
+  border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
+  transform:rotate(-45deg);transition:transform .2s;margin-right:4px}
+details.grp[open] > summary::after{transform:rotate(45deg)}
+details.grp[open] > summary{margin-bottom:12px}
+details.grp > summary + *{margin-top:0}
 </style><style>
 .tapwrap{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:6;display:flex;flex-direction:column;align-items:center;gap:7px}
 .tap-btn{display:inline-flex;align-items:center;gap:10px;padding:11px 20px;border-radius:999px;
@@ -203,9 +222,13 @@ body.clean .tapwrap{display:none}
 </div>
 <div class="panel">
   <button class="about-btn" id="b-about">What am I looking at?</button>
-  <p class="label">Try this</p>
+    <details class="grp" open>
+    <summary>Try this</summary>
   <div class="presets" id="presets"></div>
-  <p class="label">Change the road</p>
+  
+  </details>
+  <details class="grp">
+    <summary>Change the road</summary>
   <div class="row">
     <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="How many cars are on the one kilometre ring. This is the density, and it is the strongest control on whether a jam can form at all. Below about fifty the road is stable, above it jams grow on their own." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="10" max="80" step="1" value="38">
@@ -218,7 +241,10 @@ body.clean .tapwrap{display:none}
     <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="The share of cars run by a controller instead of a person: no wobble, a strictly held gap and a quicker response. Watch how large the share has to get before the waves go away." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
     <input type="range" id="s-av" min="0" max="100" step="5" value="0">
   </div>
-  <p class="label">The road</p>
+  
+  </details>
+  <details class="grp">
+    <summary>The road</summary>
   <div class="toggles">
     <button class="tg" id="t-lanes" aria-pressed="false">Two lanes <kbd>L</kbd></button>
     <button class="tg" id="t-truck" aria-pressed="false">One slow truck</button>
@@ -228,6 +254,8 @@ body.clean .tapwrap{display:none}
     <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="The cruising speed of the one truck on the loop, as a share of what a car would hold on an empty road. Everything behind it has to fit itself around that speed, so a slower truck seeds a longer queue." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
     <input type="range" id="s-truck" min="20" max="95" step="5" value="55">
   </div>
+  </details>
+
 </div>
 <div class="tapwrap" id="tapwrap">
   <button class="tap-btn" id="b-tap">Tap the brakes <kbd>B</kbd></button>
@@ -238,7 +266,6 @@ body.clean .tapwrap{display:none}
   <div class="stat"><div class="k">Flow</div><div class="v" id="h-q">-</div></div>
   <div class="stat"><div class="k">Jam waves</div><div class="v" id="h-j" style="color:var(--danger)">0</div></div>
 </div>
-<div class="hint">Drag the edge of the road to stretch the loop. B taps the brakes. Space pauses, R restarts, H hides the panels.</div>
 <dialog class="about" id="about"><div class="about-inner">
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
 <h2>What am I looking at?</h2>
@@ -610,7 +637,9 @@ function resize(){
   /* the ring must clear the brake button, which sits under it and is the thing you press */
   const tapH = tw ? Math.round(tw.getBoundingClientRect().height) : 62;
   const ringTop = land ? 12 : STY;
-  const ringBottom = land ? H-52 : narrow ? H-(121+hudH) : H-(40+tapH);
+  /* the bottom of the loop has to stay draggable, so it clears the brake button by a
+     clear margin rather than tucking in behind it */
+  const ringBottom = land ? H-52 : narrow ? H-(121+hudH) : H-(64+tapH);
   const ringH=Math.max(120, ringBottom-ringTop);
   RR=Math.max(46,Math.min(availW/2-14, ringH/2-14));
   RX=leftEdge+availW/2; RY=ringTop+ringH/2;

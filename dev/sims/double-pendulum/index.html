@@ -77,8 +77,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
-.hint{position:absolute;left:340px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 560px)}
+.hint{position:absolute;left:50%;right:auto;bottom:18px;transform:translateX(calc(-50% + 52px));
+  text-align:center;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 620px)}
+@media (max-width:1000px){.hint{left:20px;transform:none;text-align:left;max-width:calc(100% - 40px)}}
+@media (max-width:820px){.hint{display:none}}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -96,6 +99,25 @@ dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
 .about-close:hover{color:var(--ink);border-color:var(--line-strong)}
 body.in-frame .brand{display:none}
 body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+
+/* ---------- folding sections: boids is the reference ----------
+   One hairline between sections, a 16px display heading with an 8px chevron, 12px of
+   air under an open heading. The panel got long enough to need a scrollbar, and a
+   scrollbar in a control panel is a design failure, so the sections fold instead. */
+details.grp{border-top:1px solid var(--line);margin:0;padding:12px 0 13px}
+details.grp:first-of-type{border-top:0;padding-top:2px}
+details.grp:last-of-type{padding-bottom:2px}
+details.grp > summary{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;
+  font-variation-settings:'opsz' 24;color:var(--ink);cursor:pointer;list-style:none;display:flex;
+  align-items:center;justify-content:space-between;gap:10px;margin:0;user-select:none}
+details.grp > summary:hover{color:var(--accent)}
+details.grp > summary::-webkit-details-marker{display:none}
+details.grp > summary::after{content:'';width:8px;height:8px;flex:none;
+  border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
+  transform:rotate(-45deg);transition:transform .2s;margin-right:4px}
+details.grp[open] > summary::after{transform:rotate(45deg)}
+details.grp[open] > summary{margin-bottom:12px}
+details.grp > summary + *{margin-top:0}
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <link rel="stylesheet" href="../../assets/css/sim-mobile.css">
@@ -130,9 +152,13 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
 <div class="panel">
   <button class="about-btn" id="b-about">What am I looking at?</button>
-  <p class="label">Experiment</p>
+    <details class="grp" open>
+    <summary>Experiment</summary>
   <div class="presets" id="presets"></div>
-  <p class="label">Controls</p>
+  
+  </details>
+  <details class="grp">
+    <summary>Controls</summary>
   <div class="row">
     <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once. They are spread across a tiny range of starting angles, so at first they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
@@ -157,13 +183,15 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. Integration substeps scale with it, so the physics stays accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.25" max="2.5" step="0.05" value="1">
   </div>
+  </details>
+
 </div>
 
 <div class="hud">
   <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
   <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
 </div>
-<div class="hint">Drag to pan, scroll to zoom, click the field to re-release, R restarts.</div>
+<div class="hint">Right-drag to move the view (left-drag works too), scroll to zoom, click the field to re-release, R restarts.</div>
 
 <dialog class="about" id="about"><div class="about-inner">
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
@@ -245,7 +273,11 @@ let W=0,H=0,DPR=1;
    in register with the arms however far you have panned or zoomed since. */
 let zoom=1, panx=0, pany=0;
 const ZMIN=0.35, ZMAX=8;
-function baseX(){ return W/2; }
+/* The pivot is centred in the band that is actually empty: the panel takes the left
+   320px and the corner buttons and the readouts take about 216px on the right, so the
+   middle of the free space is 52px right of the middle of the window. Held constant
+   rather than tied to the clean-mode class, so hiding the panels never jumps the view. */
+function baseX(){ return W/2 + (W>=1000 ? 52 : 0); }
 function baseY(){ return H*0.43; }
 function resetView(){ zoom=1; panx=0; pany=0; }
 function toWorld(sx,sy){ return [(sx-baseX()-panx)/zoom, (sy-baseY()-pany)/zoom]; }
@@ -504,6 +536,8 @@ cv.addEventListener('wheel',e=>{
   zoomAt(x,y,Math.exp(-e.deltaY*(e.deltaMode===1?0.0125:0.0004)));
 },{passive:false});
 cv.addEventListener('dblclick',e=>{ e.preventDefault(); });
+/* a right-drag pans, so the browser's own context menu has no business appearing */
+cv.addEventListener('contextmenu',e=>{ e.preventDefault(); });
 window.addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea')) return;
   const k=e.key;

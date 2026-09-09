@@ -60,7 +60,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .grp-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em}
 .grp-title::after{content:'';width:8px;height:8px;margin-left:auto;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;opacity:.75;transform:rotate(-45deg);transition:transform .2s}
 .grp[open] > .grp-title::after{transform:rotate(45deg)}
-.grp[open] > .grp-title{padding-bottom:4px}
+.grp[open] > .grp-title{padding-bottom:11px}
 .grp > :last-child{margin-bottom:12px}
 .label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
 .label:first-of-type{margin-top:0}
@@ -250,6 +250,25 @@ details.more>summary:hover{color:var(--ink)}
   border-left:2px solid var(--accent);padding:11px 14px;margin:10px 0 14px;white-space:pre-wrap;line-height:1.9}
 .about-inner em{color:var(--ink);font-style:normal}
 .hud{max-width:calc(100% - 740px)}
+/* A short window (a zoomed-in browser) keeps the map beside the pattern rather than
+   folding it into the controls, so the card trims itself instead: tighter padding, a
+   smaller plot, and the legend goes. */
+@media (min-width:900px) and (max-height:760px){
+  .mapcard{padding:11px 13px;top:58px;max-height:calc(100% - 74px)}
+  .mc-sub{margin:2px 0 6px}
+  .mapcard .legend{display:none}
+  .mc-zone{min-height:0;margin:6px 0 0}
+  .mc-rule{margin:9px 0 2px}
+}
+@media (min-width:900px) and (max-height:640px){
+  .mapcard{width:300px}
+  #map{aspect-ratio:1/.78}
+}
+/* Fullscreen: the panels are the only furniture over the pattern, so they take up as
+   little of it as they can and hug the corners. */
+html:fullscreen .panel,html:-webkit-full-screen .panel{width:288px;padding:12px 14px}
+html:fullscreen .mapcard,html:-webkit-full-screen .mapcard{width:300px;padding:12px 14px}
+html:fullscreen .brand h1,html:-webkit-full-screen .brand h1{font-size:23px}
 @media (max-width:820px), (max-height:560px) and (pointer:coarse){
   .panel{width:100%}
   .hud{max-width:none}
@@ -1613,7 +1632,7 @@ function setPlaying(on){
    controls sheet on a phone, where a square field plus a card side by side would leave
    both too small to read. Landscape phones are only 390 tall, so they use the sheet
    too. One element, moved, so there is never a second copy to keep in sync. */
-var SIDE_MQ = matchMedia('(min-width:900px) and (min-height:620px)');
+var SIDE_MQ = matchMedia('(min-width:900px) and (min-height:470px)');
 var PHONE_MQ = matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
 /* Three homes for one element, never two copies of it. Beside the pattern on a desktop;
    docked against the pattern on a phone, on the right in landscape and underneath in
