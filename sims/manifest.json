@@ -197,21 +197,5 @@
     "status": "coming-soon",
     "hook": "Dose in, curve out",
     "visible": false
-  },
-  {
-    "id": "cooperation",
-    "title": "Cooperators & Competitors",
-    "category": "Emergent Systems",
-    "tags": [
-      "agent-based",
-      "game theory",
-      "social",
-      "evolution"
-    ],
-    "difficulty": "Intermediate",
-    "description": "A lattice of players with one habit each, playing the prisoner's dilemma, the snowdrift game, or a public pot you can refuse. Cooperation survives by clustering, collapses when the neighbourhood is dissolved, and cycles when opting out is allowed.",
-    "status": "live",
-    "hook": "When does paying a cost pay off?",
-    "visible": false
   }
 ]

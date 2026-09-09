@@ -295,13 +295,13 @@
     <h2>Presets</h2>
     <div class="presets" id="presets"></div>
   </section>
-  <details open>
-    <summary>Flock</summary>
-    <div id="secFlock"></div>
-  </details>
   <details>
     <summary>Behaviour</summary>
     <div id="secBehaviour"></div>
+  </details>
+  <details open>
+    <summary>Flock</summary>
+    <div id="secFlock"></div>
   </details>
   <details>
     <summary>Look</summary>
@@ -309,11 +309,6 @@
   </details>
   <details>
     <summary>Under the hood</summary>
-    <p class="note"><b>Two things drive all of this.</b> What a boid can see (perception, field of view, nearest neighbours) and the three rules it steers by (separation, alignment, cohesion). Everything else in this panel only tweaks the details of those behaviours.</p>
-    <p class="note">Every boid looks only at neighbours inside its <b>perception</b> radius and <b>field of view</b>, then follows three rules: <b>separation</b> (steer away from crowding), <b>alignment</b> (match neighbours' heading) and <b>cohesion</b> (drift toward their centre). Nothing is coordinating the flock; the patterns are emergent.</p>
-    <p class="note">Starlings don't watch everyone within a radius; each bird tracks its six or seven <b>nearest neighbours</b> however far away they are. That topological rule is what keeps a murmuration one body and lets a turn ripple across it, so the Murmuration preset uses it.</p>
-    <p class="note">Two more things from the field: an escape wave travels because birds copy neighbours that are turning hard (<b>startle</b>), and most flock-wide turns begin with a single bird on the edge deciding to turn (<b>initiative</b>).</p>
-    <p class="note"><b>Order</b> in the corner is the average heading agreement: 1 means the whole flock flies the same way, 0 means no shared direction at all.</p>
     <label class="toggle"><span>Show one boid's view</span><input type="checkbox" id="tgInspect"></label>
     <label class="toggle"><span>Show the neighbour grid</span><input type="checkbox" id="tgGrid"></label>
     <label class="toggle" id="rowRotate"><span>Slowly orbit the camera</span><input type="checkbox" id="tgRotate" checked></label>
@@ -668,6 +663,37 @@ class Flock {
      neighbour search reads into cell order. Scanning a cell then walks a contiguous
      run of memory instead of chasing a linked list all over the heap, which is most
      of the cost of a step. */
+  /* A uniform grid over the obstacles. Each one is written into every cell its
+     bounding box plus the avoidance reach overlaps, so a lookup is a single cell with
+     no misses and no duplicates to filter. Rebuilt only when the obstacle list or the
+     reach changes, which is why hundreds of obstacles cost a boid the same as three. */
+  buildObsIndex(reach) {
+    const obs = this.obstacles;
+    this.obsVer = this.obstaclesVersion; this.obsReach = reach;
+    if (obs.length <= 12) { this.obsMap = null; return; }
+    /* Cell size comes from the typical obstacle, not the largest, because one big shape
+       would otherwise coarsen the grid for everything. Anything that would smear across
+       more than eight cells goes on a short always-checked list instead. */
+    let sumR = 0;
+    for (let i = 0; i < obs.length; i++) sumR += obs[i].r;
+    const cs = Math.max(64, (sumR / obs.length + reach) * 0.6);
+    const map = new Map();
+    const big = [];
+    const is3 = this.dims === 3;
+    for (let i = 0; i < obs.length; i++) {
+      const o = obs[i], rr = o.r + reach;
+      if (rr * 2 > cs * 8) { big.push(i); continue; }
+      const x0 = Math.floor((o.x - rr) / cs), x1 = Math.floor((o.x + rr) / cs);
+      const y0 = Math.floor((o.y - rr) / cs), y1 = Math.floor((o.y + rr) / cs);
+      const z0 = is3 ? Math.floor((o.z - rr) / cs) : 0, z1 = is3 ? Math.floor((o.z + rr) / cs) : 0;
+      for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) for (let gz = z0; gz <= z1; gz++) {
+        const k = (gx + 512) * 1048576 + (gy + 512) * 1024 + (is3 ? gz + 512 : 512);
+        const a = map.get(k);
+        if (a) a.push(i); else map.set(k, [i]);
+      }
+    }
+    this.obsMap = map; this.obsCS = cs; this.obsBig = big.length ? big : null;
+  }
   buildGrid(cell) {
     const W = this.W;
     this.cell = cell;
@@ -748,6 +774,10 @@ class Flock {
     const mouseOn = mouse.active && (mouse.mode === 'attract' || mouse.mode === 'repel');
     const mouseSign = mouse.mode === 'attract' ? 1 : -1;
     const obs = this.obstacles;
+    const reach = margin * 0.9;
+    if (this.obsVer !== this.obstaclesVersion || this.obsReach !== reach) this.buildObsIndex(reach);
+    const obsMap = this.obsMap, obsCS = this.obsCS, obsBig = this.obsBig;
+    const obsKey = (x, y, z) => (Math.floor(x / obsCS) + 512) * 1048576 + (Math.floor(y / obsCS) + 512) * 1024 + (is3 ? Math.floor(z / obsCS) + 512 : 512);
     const flowOn = P.flow > 0, fo = this.flowOut, flow = this.flow, flowScale = P.flowScale;
     const attract = P.attractor, swirl = P.swirl;
     const c0 = lo0 + s0 / 2, c1 = lo1 + s1 / 2, c2 = dims === 3 ? lo2 + s2 / 2 : 0;
@@ -850,10 +880,18 @@ class Flock {
       NRM[0] = dx / dd; NRM[1] = dy / dd; NRM[2] = is3 ? dz / dd : 0; NRM[3] = dd - ob.r;
     }
     function environment(i, x, y, z, vx0, vy0, vz0, ux, uy, uz, top, force) {
-      // obstacles
-      const reach = margin * 0.9;
-      for (let o = 0; o < obs.length; o++) {
-        const ob = obs[o];
+      /* Obstacles. Every obstacle is registered in each grid cell its avoidance range
+         covers, so a boid only has to read the one cell it is standing in. Without that
+         index the cost is boids x obstacles, which is what used to put a ceiling on how
+         much you could build. Below a dozen obstacles the plain loop is cheaper. */
+      let list = null, cnt = obs.length, nbig = 0;
+      if (obsMap) {
+        list = obsMap.get(obsKey(x, y, z));
+        nbig = obsBig ? obsBig.length : 0;
+        cnt = nbig + (list ? list.length : 0);
+      }
+      for (let o = 0; o < cnt; o++) {
+        const ob = obsMap ? obs[o < nbig ? obsBig[o] : list[o - nbig]] : obs[o];
         const bx = x - ob.x, by = y - ob.y, bz = is3 ? z - ob.z : 0, br = ob.r + reach;
         if (bx * bx + by * by + bz * bz > br * br) continue;
         obField(ob, x, y, z);
@@ -1386,8 +1424,7 @@ class View2D {
       o.stroke();
     }
     // obstacles
-    const obPath = (ob) => {
-      o.beginPath();
+    const obSub = (ob) => {
       if (ob.kind === 'box') o.rect(ob.x - ob.hx, ob.y - ob.hy, ob.hx * 2, ob.hy * 2);
       else if (ob.kind === 'poly') {
         const q = ob.pts; o.moveTo(q[0], q[1]);
@@ -1396,13 +1433,17 @@ class View2D {
       }
       else o.arc(ob.x, ob.y, ob.kind === 'cyl' ? ob.hx : ob.r, 0, TAU);
     };
-    for (const ob of flock.obstacles) {
-      obPath(ob);
+    /* One path for every obstacle, then a single fill and a single stroke. A fill and a
+       stroke each, with the colour strings rebuilt per shape, is what made a field of a
+       few hundred obstacles expensive to draw. */
+    if (flock.obstacles.length) {
+      o.beginPath();
+      for (const ob of flock.obstacles) obSub(ob);
       o.fillStyle = `rgba(${ink},0.06)`; o.fill();
       o.strokeStyle = `rgba(${ink},0.4)`; o.lineWidth = 1.2; o.stroke();
     }
     if (ctx.draft) {
-      obPath(ctx.draft);
+      o.beginPath(); obSub(ctx.draft);
       o.setLineDash([4, 5]); o.strokeStyle = `rgba(${ink},0.6)`; o.stroke(); o.setLineDash([]);
     }
     // pointer field
@@ -1803,10 +1844,14 @@ class View3D {
       if (ob.kind === 'cyl') return new THREE.CylinderGeometry(ob.hx, ob.hx, ob.hy * 2, coarse ? 10 : 22, 1);
       return new THREE.SphereGeometry(ob.r, coarse ? 12 : 24, coarse ? 8 : 16);
     };
+    /* Each obstacle normally gets a solid plus a coarse wireframe over it. Past a few
+       dozen that doubles the draw calls for decoration nobody can pick out, so the
+       wireframe is dropped and the solids get coarser geometry instead. */
+    const crowded = flock.obstacles.length > 48;
     const add = (ob, wire) => {
-      const m = new THREE.Mesh(geoFor(ob, false), wire ? this.obstacleWire : this.obstacleMat);
+      const m = new THREE.Mesh(geoFor(ob, crowded && !wire), wire ? this.obstacleWire : this.obstacleMat);
       m.position.set(ob.x, ob.y, ob.z); g.add(m);
-      if (!wire) { const w = new THREE.Mesh(geoFor(ob, true), this.obstacleWire); w.position.copy(m.position); g.add(w); }
+      if (!wire && !crowded) { const w = new THREE.Mesh(geoFor(ob, true), this.obstacleWire); w.position.copy(m.position); g.add(w); }
     };
     for (const ob of flock.obstacles) add(ob, false);
     if (draft) add(draft, true);
@@ -1910,7 +1955,7 @@ const TIPS = {
 
 const CONTROLS = {
   flock: [
-    { key: 'count', label: 'Boids', min: 10, max: 3000, step: 10 },
+    { key: 'count', label: 'Boids', min: 10, max: 6000, step: 10 },
     { key: 'predators', label: 'Predators', min: 0, max: 12, step: 1 },
     { key: 'maxSpeed', label: 'Top speed', min: 0.5, max: 8, step: 0.1, fmt: v => v.toFixed(1) },
     { key: 'agility', label: 'Agility', min: 0.01, max: 0.3, step: 0.01, fmt: v => v.toFixed(2) },
