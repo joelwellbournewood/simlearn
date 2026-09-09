@@ -47,6 +47,18 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
   font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
   border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
 .about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.grp{border-top:1px solid var(--line);margin:0}
+.grp:first-of-type{border-top:0}
+.grp-title{
+  display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;user-select:none;
+  font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;
+  color:var(--ink);padding:10px 0;margin:0
+}
+.grp-title::-webkit-details-marker{display:none}
+.grp-title::after{content:'';width:8px;height:8px;margin-left:auto;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;opacity:.75;transform:rotate(-45deg);transition:transform .2s}
+.grp[open] > .grp-title::after{transform:rotate(45deg)}
+.grp[open] > .grp-title{padding-bottom:11px}
+.grp > :last-child{margin-bottom:12px}
 .label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:0 0 8px}
 .presets{display:grid;gap:6px;margin-bottom:14px}
 .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
@@ -133,9 +145,12 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 </div>
 <div class="panel">
   <button class="about-btn" id="b-about">What am I looking at?</button>
-  <p class="label">Experiment</p>
+  <details class="grp" open>
+  <summary class="grp-title">Experiment</summary>
   <div class="presets" id="presets"></div>
-  <p class="label">The equations</p>
+  </details>
+  <details class="grp">
+  <summary class="grp-title">The equations</summary>
   <div class="row">
     <label for="s-rho"><span class="nm">&rho; Rayleigh<button class="tip" data-tip="How hard the fluid is heated from below, and above about 24.7 it never settles." aria-label="What rho does">?</button></span><span class="val" id="v-rho"></span></label>
     <input type="range" id="s-rho" min="0.5" max="120" step="0.5" value="28">
@@ -148,7 +163,9 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <label for="s-beta"><span class="nm">&beta; Geometry<button class="tip" data-tip="Set by the width to height shape of the convection cell, which Lorenz took as about 2.67." aria-label="What beta does">?</button></span><span class="val" id="v-beta"></span></label>
     <input type="range" id="s-beta" min="0.4" max="6" step="0.05" value="2.65">
   </div>
-  <p class="label">Display</p>
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Display</summary>
   <div class="row">
     <label for="s-copies"><span class="nm">Trajectories<button class="tip" data-tip="How many starts are released at once, so close together that they begin as one line." aria-label="What trajectories does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="80" step="1" value="1">
@@ -171,6 +188,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-speed" min="0.25" max="3" step="0.05" value="1">
   </div>
   </div>
+  </details>
 </div>
 <div class="hud">
   <div class="stat"><div class="k">Paths</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>

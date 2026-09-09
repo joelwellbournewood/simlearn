@@ -47,6 +47,18 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
   font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
   border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
 .about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.grp{border-top:1px solid var(--line);margin:0}
+.grp:first-of-type{border-top:0}
+.grp-title{
+  display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;user-select:none;
+  font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;
+  color:var(--ink);padding:10px 0;margin:0
+}
+.grp-title::-webkit-details-marker{display:none}
+.grp-title::after{content:'';width:8px;height:8px;margin-left:auto;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;opacity:.75;transform:rotate(-45deg);transition:transform .2s}
+.grp[open] > .grp-title::after{transform:rotate(45deg)}
+.grp[open] > .grp-title{padding-bottom:11px}
+.grp > :last-child{margin-bottom:12px}
 .label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:0 0 8px}
 .presets{display:grid;gap:6px;margin-bottom:14px}
 .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
@@ -138,10 +150,13 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     What am I looking at?
   </button>
 
-  <p class="label">Presets</p>
+  <details class="grp" open>
+  <summary class="grp-title">Presets</summary>
   <div class="presets" id="presets"></div>
 
-  <p class="label">The lens</p>
+  </details>
+  <details class="grp">
+  <summary class="grp-title">The lens</summary>
   <div class="row">
     <label><span class="nm">Focal length <button class="tip" data-tip="How strongly the lens bends light, a short focal length forming a small image close behind it." aria-label="What is this?">?</button></span><span class="val" id="v-f">60 mm</span></label>
     <input type="range" id="s-f" min="-200" max="240" step="2" value="60">
@@ -155,7 +170,9 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-sph" min="0" max="1" step="0.02" value="0">
   </div>
 
-  <p class="label">The bench</p>
+  </details>
+  <details class="grp">
+  <summary class="grp-title">The bench</summary>
   <div class="row">
     <label><span class="nm">Object distance <button class="tip" data-tip="How far the object stands in front of the lens." aria-label="What is this?">?</button></span><span class="val" id="v-u">180 mm</span></label>
     <input type="range" id="s-u" min="20" max="270" step="1" value="180">
@@ -169,7 +186,9 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-sd" min="10" max="400" step="1" value="90">
   </div>
 
-  <p class="label">Display</p>
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Display</summary>
   <div class="row">
     <label><span class="nm">Rays drawn <button class="tip" data-tip="How many rays are traced from the tip of the arrow across the aperture." aria-label="What is this?">?</button></span><span class="val" id="v-n">28</span></label>
     <input type="range" id="s-n" min="3" max="80" step="1" value="28">
@@ -177,6 +196,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <div class="row"><label class="chk"><input type="checkbox" id="k-cons" checked><span class="nm">Construction rays <button class="tip" data-tip="Picks out the three textbook rays in teal, any two of which locate the image." aria-label="What is this?">?</button></span></label></div>
   <div class="row"><label class="chk"><input type="checkbox" id="k-base"><span class="nm">Fan from the arrow base <button class="tip" data-tip="Traces a second, dimmer fan from the foot of the arrow so you can see the whole image being built rather than one point of it." aria-label="What is this?">?</button></span></label></div>
   <div class="row"><label class="chk"><input type="checkbox" id="k-auto"><span class="nm">Keep the sensor in focus <button class="tip" data-tip="Locks the screen to the image plane, so it tracks whatever the thin lens equation says as you move the object or change the focal length." aria-label="What is this?">?</button></span></label></div>
+  </details>
 </div>
 
 <div class="hud">
