@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>SimLearn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/theme-lock.css?v=20260908f">
+<script src="assets/js/theme-guard.js?v=20260908g" defer></script>
+</head>
+<body class="sim-page">
+<header class="site-header">
+  <a href="index.html" class="logo">Sim<span>Learn</span></a>
+  <span class="chrome-note">Runs best on Google Chrome</span>
+  <nav>
+    <a href="index.html" class="is-active">Simulations</a>
+    <a href="about.html">About</a>
+  </nav>
+</header>
+
+<div class="sim-header">
+  <a class="back" href="index.html"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>All simulations</span></a>
+  <h1 id="sim-title">Loading&#8230;</h1>
+</div>
+
+<div class="sim-frame-wrap">
+  <iframe id="sim-frame" class="sim-frame" title="Simulation" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+</div>
+
+<script>
+  if ('onpagereveal' in window) document.documentElement.classList.add('vt');
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const frame = document.getElementById('sim-frame');
+
+  fetch('sims/manifest.json', { cache: 'no-cache' })
+    .then(r => r.json())
+    .then(sims => {
+      const sim = sims.find(s => s.id === id);
+      if (!sim) {
+        document.getElementById('sim-title').textContent = 'Simulation not found';
+        return;
+      }
+      /* the title text lives in its own span so it can be the only thing that gets
+         clipped when the header has to fit on one line next to the explainer pill */
+      var tt = document.createElement('span');
+      tt.className = 't';
+      tt.textContent = sim.title;
+      var th = document.getElementById('sim-title');
+      th.textContent = '';
+      th.appendChild(tt);
+      /* the banner carries the title and the explainer pill and nothing else:
+         the description belongs on the card, not over the simulation. */
+      document.title = sim.title + ' \u2014 SimLearn';
+      if (sim.status && sim.status !== 'live') {
+        frame.remove();
+        var ph = document.createElement('div');
+        ph.className = 'sim-placeholder';
+        ph.innerHTML = '<p class="eyebrow">In development</p>' +
+          '<p>This simulation is not published yet.</p>' +
+          '<p><a href="index.html">Browse the published simulations</a></p>';
+        document.querySelector('.sim-frame-wrap').appendChild(ph);
+        return;
+      }
+      frame.src = 'sims/' + sim.id + '/index.html';
+    });
+
+  /* Every simulation's explainer moves out here, next to the title, on every screen
+     size: the top of a canvas is the wrong place for a block of prose. The frame is
+     same-origin, so the pill just clicks the simulation's own button, and a style
+     injected into the frame hides that button while it is framed. It comes back if the
+     simulation goes fullscreen, where this header is not on screen. */
+  frame.addEventListener('load', function () {
+    var pill = document.querySelector('.host-about');
+    if (pill) pill.remove();
+    var doc;
+    try { doc = frame.contentDocument; } catch (e) { return; }
+    if (!doc) return;
+    var btn = doc.querySelector('.about-btn');
+    var title = document.getElementById('sim-title');
+    if (!btn || !title) return;
+    doc.documentElement.classList.add('hosted-about');
+    if (!doc.getElementById('hosted-about-css')) {
+      var st = doc.createElement('style');
+      st.id = 'hosted-about-css';
+      st.textContent = 'html:not(:fullscreen) .about-btn{display:none!important}';
+      doc.head.appendChild(st);
+    }
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'host-about';
+    b.textContent = (btn.textContent || '').trim() || 'What am I looking at?';
+    b.addEventListener('click', function () { btn.click(); });
+    title.appendChild(b);
+  });
+</script>
+</body>
+</html>

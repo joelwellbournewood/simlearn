@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>Hare &amp; Lynx — a living model of predator–prey cycles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1512;
+    --field:#07120f;
+    --panel:#0f1f1a;
+    --panel-2:#13261f;
+    --line:rgba(130,170,150,.14);
+    --line-strong:rgba(130,170,150,.28);
+    --ink:#e3efe9;
+    --muted:#88a397;
+    --hare:#56e0c2;
+    --hare-dim:rgba(86,224,194,.14);
+    --lynx:#ff7d5c;
+    --lynx-dim:rgba(255,125,92,.14);
+    --grass:#34905c;
+    --display:"Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono:"Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --body:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+  body{
+    font-family:var(--body);
+    line-height:1.5;
+    padding:18px 14px calc(40px + env(safe-area-inset-bottom));
+    max-width:680px;margin:0 auto;
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgba(86,224,194,.06), transparent 60%),
+      var(--bg);
+  }
+
+  /* ---------- header ---------- */
+  header{margin-bottom:14px}
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.01em;text-transform:none;
+    color:var(--muted);margin:0 0 6px
+  }
+  h1{
+    font-family:var(--display);font-weight:600;font-size:24px;line-height:1.1;margin:0;
+    letter-spacing:.005em
+  }
+  h1 .amp{color:var(--muted);font-weight:400}
+  h1 .a{color:var(--hare)} h1 .b{color:var(--lynx)}
+  .sub{color:var(--muted);font-size:13.5px;margin:8px 0 0;max-width:46ch}
+
+  /* ---------- the field ---------- */
+  .field-wrap{
+    position:relative;margin-top:16px;border-radius:16px;overflow:hidden;
+    border:1px solid var(--line);background:var(--field);
+    box-shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 20px 40px -28px rgba(0,0,0,.9)
+  }
+  #field{display:block;width:100%;height:auto}
+  .field-tag{
+    position:absolute;top:10px;left:12px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.01em;text-transform:none;color:var(--muted);
+    background:rgba(7,18,15,.55);padding:3px 7px;border-radius:6px;backdrop-filter:blur(3px)
+  }
+  .extinct{
+    position:absolute;left:0;right:0;bottom:0;padding:9px 12px;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;
+    background:linear-gradient(transparent, rgba(7,18,15,.92));color:var(--ink);
+    opacity:0;transition:opacity .3s
+  }
+  .extinct.show{opacity:1}
+
+  /* ---------- status strip ---------- */
+  .status{
+    display:flex;gap:6px;margin-top:10px;flex-wrap:wrap
+  }
+  .stat{
+    flex:1;min-width:72px;background:var(--panel);border:1px solid var(--line);
+    border-radius:11px;padding:8px 10px
+  }
+  .stat .k{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.01em;color:var(--muted);font-family:var(--body)}
+  .stat .v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+  .dot.h{background:var(--hare)} .dot.l{background:var(--lynx);width:10px;height:10px;border-radius:1px;clip-path:polygon(100% 50%,18% 100%,36% 50%,18% 0)} .dot.g{background:var(--grass)}
+  .v.h{color:var(--hare)} .v.l{color:var(--lynx)} .v.g{color:#5cc585} .v.t{color:var(--ink)}
+
+  /* ---------- transport ---------- */
+  .transport{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+  .btn{
+    font-family:var(--display);font-size:14.5px;font-weight:500;color:var(--ink);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:11px 14px;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;
+    justify-content:center;gap:8px;transition:transform .08s ease, background .15s ease, border-color .15s
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--hare);color:#04201a;border-color:transparent;font-weight:600;flex:1}
+  .btn.ghost{flex:1}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+  #spd{flex:1}
+  #spd button{flex:1;justify-content:center;text-align:center;font-variant-numeric:tabular-nums}
+  .seg button{
+    font-family:var(--mono);font-size:13px;color:var(--muted);background:transparent;border:0;
+    padding:7px 11px;border-radius:9px;cursor:pointer;touch-action:manipulation
+  }
+  .seg button.on{background:var(--hare-dim);color:var(--hare)}
+
+  /* ---------- graph ---------- */
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:13px;margin-top:14px
+  }
+  .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+  .gtoggle{display:flex;gap:2px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .gtoggle button{font-family:var(--mono);font-size:11px;color:var(--muted);background:transparent;border:0;padding:5px 9px;border-radius:6px;cursor:pointer;touch-action:manipulation}
+  .gtoggle button.on{background:var(--line);color:var(--ink)}
+  #graph{display:block;width:100%;height:auto;border-radius:8px}
+
+  /* ---------- experiment presets ---------- */
+  .presets{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
+  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);
+    border-radius:10px;background:transparent;text-align:left;color:var(--ink);cursor:pointer;
+    font-family:var(--body);transition:border-color .18s, background .18s}
+  .preset b{font-family:var(--display);font-weight:600;font-size:13px}
+  .preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+  .preset:hover{border-color:var(--line-strong)}
+  .preset[aria-pressed="true"]{border-color:var(--hare);background:var(--hare-dim)}
+
+  /* ---------- "?" tooltips ---------- */
+  .row{position:relative}
+  .row .nm{display:inline-flex;align-items:center;gap:6px}
+  .tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;
+    color:var(--muted);font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;
+    display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+  .tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+  .tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);
+    padding:8px 10px;border-radius:8px;background:#13261f;border:1px solid var(--line-strong);
+    color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;opacity:0;pointer-events:none;
+    transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.45);
+    font-family:var(--body);letter-spacing:normal;text-transform:none}
+  .tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+
+  /* ---------- "what am I looking at?" ---------- */
+  .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--display);font-size:14px;font-weight:600;color:var(--hare);
+    background:var(--hare-dim);border:1px solid rgba(86,224,194,.34);border-radius:12px;
+    padding:11px 14px;cursor:pointer;margin-bottom:10px;transition:border-color .18s, background .18s}
+  .about-btn:hover{border-color:var(--hare);background:rgba(86,224,194,.2)}
+  dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);
+    padding:0;width:min(620px,calc(100vw - 32px));max-height:min(82vh,760px);overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  dialog.about::backdrop{background:rgba(4,10,8,.62);backdrop-filter:blur(4px)}
+  .about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(82vh,760px);position:relative}
+  .about-inner h2{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+  .about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:20px 0 6px}
+  .about-inner p{margin:0 0 10px;color:#b9d0c6;font-size:14px;line-height:1.58;max-width:62ch}
+  .about-inner p b{color:var(--ink);font-weight:600}
+  .about-inner ul{margin:0 0 10px;padding-left:18px;color:#b9d0c6;font-size:14px;line-height:1.58}
+  .about-inner li{margin:0 0 5px}
+  .about-inner .hl{color:var(--hare)} .about-inner .hr{color:var(--lynx)}
+  .about-inner kbd{font-family:var(--mono);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel-2);color:var(--ink)}
+  .about-inner .keys{color:var(--muted);font-size:13px;margin-top:12px}
+  .about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-size:16px;
+    line-height:1;cursor:pointer;display:grid;place-items:center}
+  .about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+
+  /* ---------- slider groups ---------- */
+  .group{margin-top:12px}
+  .group-title{
+    display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;
+    font-size:13px;letter-spacing:.01em;text-transform:none;margin:0 0 4px
+  }
+  .group-title{
+    cursor:pointer;list-style:none;justify-content:flex-start;font-size:15px;
+    padding:4px 0;margin:0;user-select:none
+  }
+  .group-title::-webkit-details-marker{display:none}
+  .group-title::after{
+    content:'';width:7px;height:7px;margin-left:auto;
+    border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;
+    opacity:.65;transform:rotate(-45deg);transition:transform .2s
+  }
+  details.group[open] > .group-title::after{transform:rotate(45deg)}
+  details.group[open] > .group-title{margin-bottom:6px}
+  .group.look .group-title{color:var(--ink)}
+  details.group{margin-top:12px}
+  details.group + details.group{border-top:1px solid var(--line);padding-top:6px}
+  .group-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em;text-transform:none}
+  .row{margin:13px 0}
+  .row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;color:var(--ink);margin-bottom:6px}
+  .row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .row .hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;
+    cursor:pointer;accent-color:var(--c);touch-action:pan-y
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+  input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--c);border:3px solid var(--panel);box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-9px}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--c);border:3px solid var(--panel);box-shadow:0 1px 6px rgba(0,0,0,.5)}
+  .group.hare{--c:var(--hare)} .group.lynx{--c:var(--lynx)} .group.habitat{--c:#3fa066}
+  .group.hare .group-title{color:var(--hare)}
+  .group.lynx .group-title{color:var(--lynx)}
+  .group.habitat .group-title{color:#52b87e}
+
+  /* ---------- explainer ---------- */
+  details{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  summary{font-family:var(--display);font-weight:600;font-size:14px;padding:13px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--muted);font-family:var(--mono)}
+  details[open] summary::after{content:"–"}
+  .explain{padding:0 13px 14px;font-size:13.5px;color:#bcd2c7;line-height:1.62}
+  .explain p{margin:0 0 11px}
+  .explain b{color:var(--ink);font-weight:600}
+  .explain .hl{color:var(--hare)} .explain .hr{color:var(--lynx)}
+  footer{text-align:center;color:var(--muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;margin-top:18px}
+
+  @media (prefers-reduced-motion: reduce){
+    .btn,.chip{transition:none}
+  }
+  /* ---------- desktop: everything on one screen, no page scroll (2026-09-04b) ---------- */
+  @media (min-width:1061px){
+    html{height:100%}
+    body{max-width:1640px;padding:12px 20px 10px;height:100%;display:flex;flex-direction:column;overflow:hidden}
+    header{margin-bottom:8px;flex:none}
+    h1{font-size:20px}
+    .sub{font-size:12.5px;margin:5px 0 0}
+    .layout{flex:1 1 auto;min-height:0;display:grid;
+            grid-template-columns:minmax(240px,272px) minmax(0,1fr) minmax(300px,340px);
+            gap:16px;align-items:stretch}
+    .side{display:contents}
+    .col-l{order:1} .col-c{order:2} .col-r{order:3}
+    .col{min-width:0;min-height:0}
+    .col-l,.col-r{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+                  padding-right:4px}
+    .col-l{scrollbar-width:none;padding-right:0}
+    .col-l::-webkit-scrollbar{width:0;height:0;display:none}
+    .col-l.needs-scroll{scrollbar-width:thin;padding-right:4px}
+    .col-l.needs-scroll::-webkit-scrollbar{width:8px;height:8px;display:block}
+    .col-l.needs-scroll::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+    .col-r::-webkit-scrollbar{width:8px}
+    .col-r::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+    .col-r{position:static}
+    .col-c{display:flex;justify-content:center;align-items:stretch;overflow:hidden}
+    .field-wrap{margin-top:0;flex:0 1 auto;height:100%;min-height:0;
+                display:flex;align-items:center;justify-content:center}
+    #field{width:auto;height:auto;max-width:100%;max-height:100%;display:block}
+    .status{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:0}
+    .stat{min-width:0}
+    .transport{flex-wrap:wrap}
+    .transport .seg{flex:1;justify-content:center}
+    .card{margin-top:12px}
+    .col-l > .card:first-child,.col-r > .card:first-child{margin-top:0}
+    .expwrap{margin-top:14px}
+    .group{display:block}
+    .row{margin:4px 0}
+    .row label{font-size:11.5px}
+    .row .hint{font-size:10.5px;line-height:1.32;margin-top:2px}
+    .group{margin-top:9px}
+    .group-title{font-size:11px;margin-bottom:2px}
+    .card{margin-top:10px;padding:12px 13px}
+    input[type=range]{margin:3px 0}
+    details{margin-top:12px}
+    footer{flex:none;margin-top:8px}
+    /* left column must hold: about button, counters, transport, graph, presets - all without scrolling */
+    .about-btn{padding:9px 12px;font-size:13.5px;margin-bottom:8px}
+    .status{gap:5px}
+    .stat{padding:6px 9px;border-radius:9px}
+    .stat .v{font-size:17px}
+    .transport{margin-top:8px}
+    .transport .btn{padding:9px 12px;font-size:13.5px}
+    .card-head{margin-bottom:8px}
+    .expwrap{margin-top:10px}
+    .presets{gap:5px;margin-top:0}
+    .preset{padding:6px 10px}
+    .preset b{font-size:12.5px}
+    .preset small{font-size:11px;line-height:1.25}
+    /* the left column has to fit without a scrollbar (2026-09-06) */
+    .stat{padding:5px 8px}
+    .stat .v{font-size:15px}
+    .about-btn{margin-bottom:6px}
+    .transport{margin-top:6px}
+    .card{margin-top:8px}
+    .expwrap{margin-top:6px}
+    .presets{gap:4px}
+    .preset{padding:5px 9px}
+    #graph{max-height:112px}
+  }
+  /* cramped laptop heights: the hints are what overflow, so trade them for fit */
+  /* inside the SimLearn player the title/description are already shown above us */
+  @media (min-width:1061px){
+    .in-frame header, .in-frame footer{display:none}
+    .in-frame body{padding-top:10px;padding-bottom:10px}
+  }
+  /* short laptop frames: squeeze spacing before sacrificing the hints */
+  @media (min-width:1061px) and (max-height:660px){
+    .row{margin:2px 0}
+    .row .hint{line-height:1.25;margin-top:1px}
+  }
+  @media (min-width:1061px) and (max-height:520px){
+    .row .hint{display:none}
+    .row{margin:5px 0}
+    .row label{font-size:11px}
+    input[type=range]{margin:1px 0}
+    .card .group-title .tag{display:none}
+  }
+  @media (min-width:1061px) and (max-width:1400px){
+    .layout{grid-template-columns:minmax(220px,252px) minmax(0,1fr) minmax(280px,310px);gap:12px}
+  }
+  @media (max-width:1060px){
+    body{max-width:720px}
+    /* single column: the simulation itself goes first, controls underneath */
+    .layout{display:flex;flex-direction:column}
+    .col-c{order:-1;margin-bottom:14px;position:sticky;top:0;z-index:6;
+           background:var(--bg);padding:6px 0 8px;box-shadow:0 10px 18px -12px rgba(0,0,0,.9)}
+    .field-wrap{margin-top:0}
+    #field{width:100%;height:auto;max-width:100%;display:block}
+    .col-l,.col-r{max-height:none;overflow:visible}
+    /* inside the SimLearn player the page already has a title bar */
+    .in-frame header,.in-frame footer{display:none}
+    /* With no header above it the field is the first thing in the frame, so dropping the
+       body's top padding leaves it already at y=0: it sticks without ever moving, and
+       only the controls underneath scroll. */
+    .in-frame body{padding-top:0}
+    .in-frame .col-c{padding-top:8px;top:0}
+    .side{display:contents}
+    /* Fullscreen on a phone puts the field under the camera cutout, so it gets the
+       safe-area inset plus a little air of its own. */
+    html:fullscreen .col-c,html:-webkit-full-screen .col-c,body.is-full .col-c{
+      padding-top:calc(env(safe-area-inset-top,0px) + 18px)}
+  }
+  /* ---------- landscape phone ----------
+     A portrait-style single column is unusable here: the field is sized from the width,
+     so on an 844x390 screen it would be twice the height of the viewport. Landscape gets
+     the desktop's shape instead, scaled down: the field fills the height on the left and
+     the two control columns sit beside it, each scrolling on its own. */
+  @media (max-width:1060px) and (orientation:landscape) and (max-height:620px){
+    html{height:100%}
+    body{max-width:none;height:100%;overflow:hidden;display:flex;flex-direction:column;
+         padding:8px calc(10px + env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom))
+                 calc(10px + env(safe-area-inset-left,0px))}
+    header,footer{display:none}
+    /* grid, not flex: the field is a canvas at height:100%, and only a grid row gives it
+       a definite height to resolve its width against */
+    .layout{flex:1 1 auto;min-height:0;display:grid;
+            grid-template-columns:auto minmax(190px,340px);gap:10px;align-items:stretch}
+    .col{min-width:0;min-height:0}
+    .col-c{order:-1;margin-bottom:0;position:static;padding:0;box-shadow:none;
+           display:flex;justify-content:center;align-items:center;overflow:hidden}
+    /* One pane, not two: readouts, speed and experiments run straight on into the
+       sliders, and the whole thing scrolls together beside the field. */
+    .side{min-width:0;min-height:0;max-height:100%;
+          display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+          scrollbar-width:thin;padding-right:4px}
+    .side::-webkit-scrollbar{width:6px}
+    .side::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+    .col-l,.col-r{max-height:none;overflow:visible;padding-right:0}
+    .col-r > .card:first-child{margin-top:8px}
+    .field-wrap{margin-top:0;height:100%;display:flex;align-items:center;justify-content:center}
+    #field{width:auto;height:100%;max-width:100%;max-height:100%;display:block}
+    /* short viewport: the same trims the desktop layout makes when it runs out of height */
+    .about-btn{padding:8px 11px;font-size:13px;margin-bottom:6px}
+    .status{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:0}
+    .stat{padding:5px 8px;border-radius:9px}
+    .stat .v{font-size:15px}
+    .transport{margin-top:6px;flex-wrap:wrap}
+    .transport .seg{flex:1;justify-content:center}
+    .card{margin-top:8px;padding:11px 12px}
+    .col-l > .card:first-child,.col-r > .card:first-child{margin-top:0}
+    .card-head{margin-bottom:6px}
+    .expwrap{margin-top:6px}
+    .presets{gap:4px}
+    .preset{padding:5px 9px}
+    .preset b{font-size:12.5px}
+    .preset small{font-size:11px;line-height:1.25}
+    .group{display:block;margin-top:8px}
+    .group-title{font-size:11px;margin-bottom:2px}
+    .row{margin:4px 0}
+    .row label{font-size:11.5px}
+    .row .hint{display:none}
+    input[type=range]{margin:2px 0}
+    details{margin-top:10px}
+    #graph{max-height:104px}
+  }
+  /* ---------- fullscreen: the field and nothing else ----------
+     Fullscreen is for watching, so everything that is a menu goes: the two control
+     columns, the heading and the footer. The field is centred and fills the height.
+     A small bar in the corner brings the controls back, pauses, or leaves; it fades
+     out after a few seconds of stillness and comes back on the first movement, so
+     the default state really is an empty field. Escape also leaves, as always. */
+  .fsbar{position:fixed;z-index:60;display:none;gap:8px;flex-wrap:nowrap;
+    top:calc(env(safe-area-inset-top,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 16px);
+    transition:opacity .35s ease}
+  .fsbar .btn{font-size:12.5px;padding:7px 12px;white-space:nowrap;background:rgba(10,24,20,.72);backdrop-filter:blur(8px)}
+  body.is-full .fsbar{display:flex}
+  body.is-full .fsbar.idle{opacity:0;pointer-events:none}
+  body.is-full{max-width:none;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column}
+  body.is-full header,body.is-full footer{display:none}
+  body.is-full:not(.menus) .side{display:none}
+  body.is-full .layout{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;gap:0}
+  body.is-full .col-c{order:0;flex:1 1 auto;min-width:0;height:100%;display:flex;align-items:center;
+    justify-content:center;padding:0;margin:0;position:static;box-shadow:none;background:transparent}
+  body.is-full .field-wrap{margin:0;width:100%;height:100%;border-radius:0;border:0;background:transparent;
+    box-shadow:none}
+  /* object-fit rather than an aspect ratio: the canvas then fits inside whatever
+     shape the screen is, in both directions, without a max-width flattening it */
+  body.is-full #field{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+  body.is-full:not(.menus) .field-tag{display:none}
+  /* Calling the controls back must not shuffle the picture around. Both columns
+     arrive as one glass drawer pinned to the right edge, and the field simply gives
+     up that strip and stays centred in what is left. On a narrow or short screen the
+     drawer is a bottom sheet instead. */
+  body.is-full.menus .side{display:block;position:fixed;z-index:55;top:0;right:0;bottom:0;
+    width:min(340px,40vw);
+    padding:calc(env(safe-area-inset-top,0px) + 56px) 14px calc(env(safe-area-inset-bottom,0px) + 16px) 14px;
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+    background:rgba(8,20,17,.88);backdrop-filter:blur(10px);
+    border-left:1px solid var(--line-strong);box-shadow:-24px 0 60px rgba(0,0,0,.45)}
+  body.is-full.menus .side::-webkit-scrollbar{width:8px}
+  body.is-full.menus .side::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:8px}
+  body.is-full.menus .col-l,body.is-full.menus .col-r{max-height:none;overflow:visible;padding-right:0;height:auto}
+  body.is-full.menus .side > .col + .col{margin-top:12px}
+  body.is-full.menus .layout{padding-right:min(340px,40vw)}
+  @media (max-width:900px),(max-height:520px){
+    body.is-full.menus .side{top:auto;left:0;width:auto;height:min(58vh,400px);
+      padding-top:14px;border-left:0;border-top:1px solid var(--line-strong);
+      box-shadow:0 -24px 60px rgba(0,0,0,.45)}
+    body.is-full.menus .layout{padding-right:0;padding-bottom:min(58vh,400px)}
+  }
+  /* A landscape phone has no height to give away. The bottom sheet above took 58% of a
+     390px screen and left the field 160px tall, so in landscape the drawer stays beside
+     the field, exactly as it does on a desktop, only narrower. */
+  @media (orientation:landscape) and (max-height:620px){
+    body.is-full.menus .side{top:0;left:auto;right:0;bottom:0;height:auto;width:min(300px,44vw);
+      padding:calc(env(safe-area-inset-top,0px) + 52px) 12px calc(env(safe-area-inset-bottom,0px) + 12px) 12px;
+      border-top:0;border-left:1px solid var(--line-strong);
+      box-shadow:-24px 0 60px rgba(0,0,0,.45)}
+    body.is-full.menus .layout{padding-right:min(300px,44vw);padding-bottom:0}
+    /* the corner bar sits above the drawer, not under it */
+    body.is-full .actions,body.is-full .fsbar{right:calc(min(300px,44vw) + 10px)}
+    body.is-full:not(.menus) .actions,body.is-full:not(.menus) .fsbar{right:calc(env(safe-area-inset-right,0px) + 10px)}
+  }
+
+  /* ---------- corner action bar (2026-09-08) ----------
+     Same shape, same icons, and the same keys as every other module on the site:
+     round glass buttons top right for play, reset, hide the panels, and fullscreen. */
+  .actions{position:fixed;z-index:60;display:flex;gap:8px;
+    top:calc(env(safe-area-inset-top,0px) + 14px);
+    right:calc(env(safe-area-inset-right,0px) + 16px);
+    transition:opacity .35s ease}
+  .icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);
+    background:rgba(15,31,26,.82);backdrop-filter:blur(10px);display:grid;place-items:center;
+    color:var(--ink);cursor:pointer;padding:0;transition:border-color .18s}
+  .icon-btn:hover{border-color:var(--line-strong)}
+  .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  .icon-btn .alt{display:none}
+  .icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+  .actions.idle{opacity:0;pointer-events:none}
+  @media (max-width:820px){ .actions{top:calc(env(safe-area-inset-top,0px) + 10px);
+    right:calc(env(safe-area-inset-right,0px) + 10px);gap:6px} .icon-btn{width:34px;height:34px} }
+
+  /* ---------- panels hidden outside fullscreen (the eye button, H) ----------
+     Inside fullscreen the existing body.is-full rules already do this; these are the
+     equivalents for an ordinary window, so the button means the same thing in both. */
+  body.bare:not(.is-full) header,
+  body.bare:not(.is-full) footer,
+  body.bare:not(.is-full) .side,
+  body.bare:not(.is-full) .field-tag{display:none}
+  @media (min-width:1061px){
+    body.bare:not(.is-full) .layout{grid-template-columns:minmax(0,1fr)}
+    body.bare:not(.is-full) .field-wrap{width:100%;height:100%}
+    body.bare:not(.is-full) #field{width:100%;height:100%;max-width:100%;max-height:100%;
+      object-fit:contain}
+  }
+
+  /* ---------- colour palette (LUT) ---------- */
+  .card-head{position:relative}
+  .pals{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .pal{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);
+    border-radius:10px;background:transparent;color:var(--ink);font-family:var(--body);
+    font-size:12px;text-align:left;cursor:pointer;min-width:0;
+    transition:border-color .18s, background .18s}
+  .pal:hover{border-color:var(--line-strong)}
+  .pal[aria-pressed="true"]{border-color:var(--hare);background:var(--hare-dim)}
+  .pal .sw{display:inline-flex;gap:2px;flex:none}
+  .pal .sw i{width:9px;height:9px;border-radius:2px;display:block}
+  .pal .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .swatches{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .sw-item{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:5px 7px 5px 9px;border:1px solid var(--line);border-radius:10px;
+    font-family:var(--body);font-size:12px;color:var(--ink);min-width:0}
+  .sw-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sw-item input[type=color]{-webkit-appearance:none;appearance:none;width:24px;height:22px;
+    padding:0;border:1px solid var(--line-strong);border-radius:6px;background:transparent;
+    cursor:pointer;flex:none}
+  .sw-item input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  .sw-item input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
+  .sw-item input[type=color]::-moz-color-swatch{border:0;border-radius:5px}
+  .pal-row{display:flex;gap:6px;margin-top:6px}
+  .pal-btn{flex:1 1 0;display:flex;align-items:center;gap:7px;padding:7px 9px;
+    border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);
+    font-family:var(--body);font-size:12px;text-align:left;cursor:pointer;min-width:0;
+    transition:border-color .18s, background .18s}
+  .pal-btn:hover{border-color:var(--line-strong)}
+  .pal-btn[aria-pressed="true"]{border-color:var(--hare);background:var(--hare-dim)}
+  .pal-btn .ramp{flex:none;width:34px;height:9px;border-radius:2px;
+    background:linear-gradient(90deg,var(--e0),var(--e1))}
+</style>
+<script>try{if(window.self!==window.top)document.documentElement.className+=' in-frame';}catch(e){document.documentElement.className+=' in-frame';}</script>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Agent-based ecology · population dynamics</p>
+  <h1><span class="a">Hare</span> <span class="amp">&amp;</span> <span class="b">Lynx</span></h1>
+  <p class="sub">A living model. Every dot is one animal moving, grazing, hunting, and breeding on its own energy budget — and the population cycles emerge from those simple rules.</p>
+</header>
+
+<div class="actions" id="fsbar">
+  <button class="icon-btn" id="fsPlay" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="fsReset" title="Reset the field (R)" aria-label="Reset the field">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="fsMenus" aria-pressed="false" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="fs" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+  </button>
+</div>
+<div class="layout">
+  <div class="col col-c">
+<div class="field-wrap">
+  <canvas id="field"></canvas>
+  <div class="field-tag">The field</div>
+  <div class="extinct" id="extinct"></div>
+</div>
+  </div>
+  <!-- On a landscape phone .side becomes one single scrolling control pane;
+       everywhere else it is display:contents and the columns lay out as before. -->
+  <div class="side">
+  <div class="col col-l">
+<button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
+<div class="status">
+  <div class="stat"><div class="k"><span class="dot h"></span>Hares</div><div class="v h" id="cHare">0</div></div>
+  <div class="stat"><div class="k"><span class="dot l"></span>Lynx</div><div class="v l" id="cLynx">0</div></div>
+  <div class="stat"><div class="k"><span class="dot g"></span>Grass</div><div class="v g" id="cGrass">0%</div></div>
+  <div class="stat"><div class="k">Step</div><div class="v t" id="cTick">0</div></div>
+</div>
+<div class="transport">
+  <button class="btn primary" id="play">Pause</button>
+  <button class="btn ghost" id="reset">Reset</button>
+</div>
+<div class="transport">
+  <div class="seg" id="spd" role="group" aria-label="Simulation speed">
+    <button data-s="0.5" title="Half speed">0.5&times;</button>
+    <button data-s="1" class="on" title="Normal speed">1&times;</button>
+    <button data-s="2" title="Double speed">2&times;</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head">
+    <span class="label">Population trace</span>
+    <div class="gtoggle" id="gmode">
+      <button data-m="time" class="on">Over time</button>
+      <button data-m="phase">Phase orbit</button>
+    </div>
+  </div>
+  <canvas id="graph"></canvas>
+</div>
+<div class="expwrap">
+<div class="card">
+  <details class="group presets-group" open>
+  <summary class="group-title">Presets <span class="tag">try an experiment</span></summary>
+  <div class="presets" id="chips">
+    <button class="preset" data-p="balance" aria-pressed="true"><b>Balanced cycle</b><small>Textbook out-of-phase oscillation</small></button>
+    <button class="preset" data-p="boom" aria-pressed="false"><b>Boom &amp; bust</b><small>Fast breeders overshoot their food</small></button>
+    <button class="preset" data-p="enrich" aria-pressed="false"><b>Paradox of enrichment</b><small>More grass, wilder swings</small></button>
+    <button class="preset" data-p="overhunt" aria-pressed="false"><b>Overhunting collapse</b><small>Too many lynx, too good at it</small></button>
+    <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
+  </div>
+  </details>
+</div>
+</div>
+  </div>
+  <div class="col col-r">
+<div class="card">
+  <!-- HARE -->
+  <details class="group hare">
+    <summary class="group-title">Hares <span class="tag">prey · herbivore</span></summary>
+    <div class="row">
+      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
+      <input type="range" id="s_startHare" min="0" max="400" step="5" value="120">
+    </div>
+    <div class="row">
+      <label for="s_hareBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed hare reproduces.">?</span></span><span class="val" id="v_hareBirth"></span></label>
+      <input type="range" id="s_hareBirth" min="0" max="15" step="1" value="4">
+    </div>
+    <div class="row">
+      <label for="s_grassEnergy"><span class="nm">Energy from grass<span class="tip" role="button" tabindex="0" aria-label="What energy from grass means" data-tip="Food value of one grazed patch.">?</span></span><span class="val" id="v_grassEnergy"></span></label>
+      <input type="range" id="s_grassEnergy" min="1" max="12" step="1" value="4">
+    </div>
+    <div class="row">
+      <label for="s_hareVision"><span class="nm">Eyesight<span class="tip" role="button" tabindex="0" aria-label="What eyesight means" data-tip="How far hares spot grass to graze and lynx to flee.">?</span></span><span class="val" id="v_hareVision"></span></label>
+      <input type="range" id="s_hareVision" min="1" max="6" step="1" value="3">
+    </div>
+  </details>
+
+  <!-- LYNX -->
+  <details class="group lynx">
+    <summary class="group-title">Lynx <span class="tag">predator · carnivore</span></summary>
+    <div class="row">
+      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
+      <input type="range" id="s_startLynx" min="0" max="150" step="2" value="28">
+    </div>
+    <div class="row">
+      <label for="s_lynxBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed lynx reproduces.">?</span></span><span class="val" id="v_lynxBirth"></span></label>
+      <input type="range" id="s_lynxBirth" min="0" max="15" step="1" value="5">
+    </div>
+    <div class="row">
+      <label for="s_preyEnergy"><span class="nm">Energy from a kill<span class="tip" role="button" tabindex="0" aria-label="What energy from a kill means" data-tip="Food value of catching one hare.">?</span></span><span class="val" id="v_preyEnergy"></span></label>
+      <input type="range" id="s_preyEnergy" min="5" max="40" step="1" value="20">
+    </div>
+    <div class="row">
+      <label for="s_lynxVision"><span class="nm">Hunting range<span class="tip" role="button" tabindex="0" aria-label="What hunting range means" data-tip="How far lynx detect and chase hares.">?</span></span><span class="val" id="v_lynxVision"></span></label>
+      <input type="range" id="s_lynxVision" min="1" max="8" step="1" value="4">
+    </div>
+  </details>
+
+  <!-- HABITAT -->
+  <details class="group habitat">
+    <summary class="group-title">Habitat <span class="tag">environment</span></summary>
+    <div class="row">
+      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back. This sets the land's carrying capacity.">?</span></span><span class="val" id="v_plant"></span></label>
+      <input type="range" id="s_plant" min="1" max="10" step="1" value="6">
+    </div>
+    <div class="row">
+      <label for="s_metab"><span class="nm">Metabolic cost<span class="tip" role="button" tabindex="0" aria-label="What metabolic cost means" data-tip="Energy every animal burns each step just to stay alive.">?</span></span><span class="val" id="v_metab"></span></label>
+      <input type="range" id="s_metab" min="0.5" max="2.5" step="0.1" value="1">
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details class="group look">
+  <summary class="group-title">Look <span class="tag">colour palette</span><span class="tip" role="button" tabindex="0" aria-label="What the colour palette does" data-tip="A look-up table for the field and the graph. It repaints grass, hares, and lynx and nothing else: every number, rule, and random draw is untouched, so the run carries on exactly as it was.">?</span></summary>
+  <div class="pals" id="pals"></div>
+  <div class="swatches">
+    <label class="sw-item"><span>Predator</span><input type="color" id="swPred" aria-label="Predator colour"></label>
+    <label class="sw-item"><span>Prey</span><input type="color" id="swPrey" aria-label="Prey colour"></label>
+    <label class="sw-item"><span>Grass</span><input type="color" id="swGrass" aria-label="Grass colour"></label>
+    <label class="sw-item"><span>Background</span><input type="color" id="swBg" aria-label="Background colour"></label>
+  </div>
+  <div class="pal-row">
+    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="true"><span class="ramp"></span>Brightness by energy<span class="tip" role="button" tabindex="0" aria-label="What brightness by energy does" data-tip="Each animal is drawn darker or lighter according to how much energy it is carrying, from nearly black when it is a step from starving to pale when it is full and ready to breed. Drawing only: no rule, rate, or random draw changes.">?</span></button>
+  </div>
+  </details>
+</div>
+  </div>
+  </div>
+</div>
+
+<footer>BUILT AS A TEACHING MODEL · ADJUST · OBSERVE · EXPLAIN</footer>
+
+<dialog class="about" id="about" aria-labelledby="aboutTitle"><div class="about-inner">
+<button class="about-close" id="btnAboutClose" aria-label="Close">&#10005;</button>
+<h2 id="aboutTitle">What am I looking at?</h2>
+<p>Every dot on the field is a single animal with its own energy budget. Hares graze the green patches. Lynx hunt hares. Nobody has written a rule saying the two populations should rise and fall together, and yet the two curves in the graph chase each other for as long as you let it run. The cycle emerges from the animals, and no part of the code contains it.</p>
+<p>Each animal repeats the same short list of decisions, every step of its life.</p>
+<ul>
+  <li><b>Look.</b> It senses only inside its own radius: <b>eyesight</b> for a hare finding grass, <b>hunting range</b> for a lynx finding a hare. Finding nothing, it wanders.</li>
+  <li><b>Eat.</b> A hare that reaches a green patch gains the <b>energy from grass</b> in it, and the patch is grazed bare until it regrows. A lynx that catches a hare gains the <b>energy from a kill</b>.</li>
+  <li><b>Spend.</b> Being alive costs the <b>metabolic cost</b> every step. An animal whose energy reaches zero dies.</li>
+  <li><b>Breed.</b> An animal holding energy above a threshold spends half of it on one offspring, at the <b>birth rate</b> you set.</li>
+</ul>
+<p>That is enough to produce the cycle. Plenty of grass means fat hares, and fat hares breed, so the hare curve climbs. A field full of hares is easy hunting, so lynx start to eat well and breed too, but they do it later, because they had to wait for the hares to arrive first. Once there are many lynx the hares are eaten faster than they can breed and the hare curve falls, and the lynx, with nothing left to catch, starve after them. Grass regrows on the empty field and it all begins again. The delay between each cause and its effect is what turns a simple negative feedback into an oscillation.</p>
+<p>That lag is worth carrying around, because it explains a great deal outside this field. Fisheries collapse and recover on the same shape of curve, and quotas set from last season's catch arrive a year too late to help. Beef and pork prices have swung on a multi-year cycle since the nineteenth century, for the reason that a farmer's decision to breed pays off long after the price that prompted it. Anything that responds to a signal it can only measure in arrears tends to overshoot in both directions.</p>
+<p>The sliders fall into three groups. <b>Energy from grass</b>, <b>energy from a kill</b>, and <b>plant regrowth</b> decide how much energy enters the system, which sets the ceiling on how many animals it can carry. <b>Metabolic cost</b> and <b>birth rate</b> decide how fast that energy is turned into animals and lost again, which sets how violent the swings are. <b>Eyesight</b> and <b>hunting range</b> decide how easily the two species find each other. Rich grass with sharp-eyed lynx gives tall, spiky booms that often end with one side extinct, and a lean field gives a flatter, duller, and much more durable world.</p>
+<h3>Things to try</h3>
+    <ul>
+      <li>Switch the trace to <b>Phase orbit</b> and watch the loop close on itself.</li>
+      <li>Run <b>Paradox of enrichment</b> and watch the swings widen until one of them hits the floor.</li>
+      <li>Raise <b>Hunting range</b> in the middle of a run and see how few steps it takes to empty the field.</li>
+      <li>Set <b>Plant regrowth</b> to 1 and count how few animals the land can carry.</li>
+      <li>Remove the lynx entirely with <b>Starting lynx</b> at 0, then watch the hares stop at the grass ceiling instead of growing without limit.</li>
+    </ul>
+  
+<div class="more-box"><div class="more-body">
+<h3>Why the two curves chase each other</h3>
+    <p><span class="hl">Hares</span> breed quickly when grass is easy to find, so they climb first. A field crowded with hares is easy hunting, so the <span class="hr">lynx</span> feed well and climb afterwards. Once there are enough lynx, hares are being caught faster than they are being born, and the hare population turns over and falls. The lynx are then hunting an empty field, and they starve back. Grass regrows, the surviving hares find it, and the whole thing starts again.</p>
+    <p>Each population is driven by the size of the other one, and that delay is why the lynx peak always arrives after the hare peak rather than with it, by roughly a quarter of a cycle. Alfred Lotka and Vito Volterra described the same lag with a pair of differential equations in the 1920s. Switch the trace to <b>Phase orbit</b> to watch it directly: the graph drops time and plots hares against lynx, so the state of the whole field becomes one point tracing a loop.</p>
+    <h3>Energy sets the ceiling</h3>
+    <p>Follow the energy and the numbers stop being mysterious. Sunlight is stored in grass, some of that reaches a hare, and a smaller share again reaches a lynx, because every animal burns energy simply staying alive. That loss at each step is why any healthy field holds far more hares than lynx. It is also why food chains are short, why top predators are rare enough to be the first thing a shrinking habitat loses, and why a given area of land feeds many more people growing crops than grazing cattle.</p>
+    <p>The <b>Plant regrowth</b> slider is the carrying capacity of the land, the ceiling on how many hares it can feed. Turn it down, as the Sparse habitat preset does, and you get a small population living close to the edge. Turning it up is riskier than it sounds. Rich land lets the hares boom higher, which lets the lynx boom higher, and the swings grow until one of the crashes reaches zero. Michael Rosenzweig named this the paradox of enrichment in 1971, and the preset of that name sets it up for you. The same warning applies to nutrient runoff into a lake, where fertilising the bottom of a food web has repeatedly destabilised everything above it.</p>
+    <h3>How it compares with the real record</h3>
+    <p>Snowshoe hares and Canadian lynx cycle with a period of about ten years. The Hudson's Bay Company recorded the pelts it bought for well over a century, and those ledgers became one of the longest population datasets in ecology. Field studies since have shown that the real cycle is driven by food supply and predation together, which is close to what this model contains. What you get here is the same shape of behaviour from a much simpler world.</p>
+    <h3>Where individual animals matter</h3>
+    <p>The classic equations treat a population as a smooth quantity that can fall to a fraction of an animal and recover. This model counts whole animals instead, so two things appear that the equations cannot show. The period wanders from run to run, and a population that gets low enough can disappear for good, because the last few animals never happen to meet. Extinction by bad luck is a real feature of small populations, and it is a large part of why conservation biologists talk about a minimum viable population rather than simply keeping the number above zero.</p>
+    <h3>The textbook model, and how this one differs</h3>
+<p>The classical description is the Lotka-Volterra system, derived independently by Lotka (1925) and Volterra (1926), with prey N and predators P:</p>
+<span class="eq">dN/dt = rN &minus; aNP<br>dP/dt = &epsilon;aNP &minus; mP</span>
+<p>Prey grow exponentially, predators meet prey by mass action at rate aNP, convert them to offspring with efficiency &epsilon;, and die at rate m. The system has a neutrally stable centre, so it produces closed cycles whose amplitude is fixed entirely by the initial conditions, with a period of about 2&pi;/&radic;(rm) near the equilibrium, and predators peaking a quarter of a cycle behind prey. That quarter-period lag is the one prediction from the model that survives essentially every later modification. The neutral stability is an artefact, and any small change to the functional form turns the cycles into either a spiral into equilibrium or a growing oscillation.</p>
+<p>The Rosenzweig-MacArthur model repairs the two worst assumptions by giving prey logistic self-limitation and predators a saturating Holling type II functional response, a/(1 + ahN). This has a stable equilibrium that loses stability through a Hopf bifurcation as prey carrying capacity rises, producing a genuine limit cycle whose amplitude grows until the trough of the cycle is low enough for extinction. Rosenzweig (1971) named the consequence the paradox of enrichment: adding resources to a predator-prey system can destabilise it and drive both species extinct. The <b>energy from grass</b> and <b>plant regrowth</b> sliders in this simulation are that experiment, and they reproduce the effect.</p>
+
+<h3>What individual-based means here</h3>
+<p>Nothing in this code integrates those equations, and there is no aNP term anywhere in it. Encounters happen because one animal is inside another's search radius, so the effective attack rate emerges from movement speed, sensing radius, and the spatial arrangement of both populations. Three things follow that the differential equations cannot express. Populations are integers, so a trough of two animals behaves quite differently from a trough of 0.4 and the system can go extinct by chance, which is demographic stochasticity. Animals are individuals with unequal energy, so selection and variance in reproductive success exist. And the field has space, so populations decorrelate locally: prey survive in patches the predators have not reached, and you can watch waves travel across the arena while the population as a whole does something else. Spatial refuges of exactly this kind were what allowed Huffaker (1958) to keep a predatory mite and its prey coexisting in the laboratory, where a simple homogeneous arena, as in Gause's (1934) experiments, gave rapid extinction. The practical descendant of that result is the refuge strategy in pest control, where a deliberately untreated patch of crop is left standing to stop the pest population from being pushed through the bottleneck that selects for resistance.</p>
+
+<h3>The famous data, and what it can support</h3>
+<p>The hare and lynx pelt records of the Hudson's Bay Company, popularised by Elton and Nicholson (1942), show a cycle of roughly ten years over more than a century, and they appear in every textbook next to these equations. The modern interpretation is more complicated than predation alone. The Kluane project, a decade of large-scale field manipulations summarised by Krebs et al. (1995), found that excluding predators roughly doubled hare density, adding food roughly tripled it, and doing both together increased it far more than the sum of the two, so food supply and predation interact rather than acting independently. Pelt records also measure trapping effort alongside animal abundance. The cycle you see here is genuine behaviour of this model, and it should be read as an illustration of the mechanism rather than as evidence about Canadian lynx.</p>
+
+<h3>Limits of the model</h3>
+<p>The world here contains one prey species, one predator species, and one resource. Animals have no age, no territory, no disease, and no capacity to evolve the parameters you set, and energy serves as a single currency for movement, survival, and reproduction alike. The arena is also closed, so a population that reaches zero can never recover, whereas real local extinctions are usually refilled from neighbouring populations, which is the whole argument for wildlife corridors. Treat this as a demonstration of where cycles and extinctions come from, and of what changes once averaged rates are replaced by countable individuals.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Lotka, A. J. (1925). Elements of Physical Biology. Williams &amp; Wilkins.</li>
+  <li>Volterra, V. (1926). Fluctuations in the abundance of a species considered mathematically. Nature. <a class="doi" href="https://doi.org/10.1038/118558a0" target="_blank" rel="noopener" title="10.1038/118558a0">DOI</a></li>
+  <li>Gause, G. F. (1934). The Struggle for Existence. Williams &amp; Wilkins.</li>
+  <li>Huffaker, C. B. (1958). Experimental studies on predation: dispersion factors and predator-prey oscillations. Hilgardia. <a class="doi" href="https://doi.org/10.3733/hilg.v27n14p343" target="_blank" rel="noopener" title="10.3733/hilg.v27n14p343">DOI</a></li>
+  <li>Elton, C., &amp; Nicholson, M. (1942). The ten-year cycle in numbers of the lynx in Canada. Journal of Animal Ecology. <a class="doi" href="https://doi.org/10.2307/1358" target="_blank" rel="noopener" title="10.2307/1358">DOI</a></li>
+  <li>Rosenzweig, M. L. (1971). Paradox of enrichment: destabilization of exploitation ecosystems in ecological time. Science. <a class="doi" href="https://doi.org/10.1126/science.171.3969.385" target="_blank" rel="noopener" title="10.1126/science.171.3969.385">DOI</a></li>
+  <li>Krebs, C. J., et al. (1995). Impact of food and predation on the snowshoe hare cycle. Science. <a class="doi" href="https://doi.org/10.1126/science.269.5227.1112" target="_blank" rel="noopener" title="10.1126/science.269.5227.1112">DOI</a></li>
+</ul>
+</div></div>
+<p class="keys"><kbd>Space</kbd> pause, <kbd>R</kbd> reset the field, <kbd>1</kbd>-<kbd>5</kbd> scenarios, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+</div>
+</dialog>
+
+
+<script>
+(function(){
+  "use strict";
+  const TAU = Math.PI*2;
+  const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
+  const map = (v,a,b,c,d)=> c + (v-a)*(d-c)/(b-a);
+  const rand = (a,b)=> a + Math.random()*(b-a);
+
+  // ---- world (fixed logical size, CSS scales it to fit any phone) ----
+  const W = 504, H = 384, CELL = 12;
+  const COLS = Math.floor(W/CELL), ROWS = Math.floor(H/CELL);
+  const NCELL = COLS*ROWS;
+
+  // speeds & agility (px / step)
+  const HARE_SPD = 1.4, LYNX_SPD = 2.35;
+  const HARE_TURN = 0.40, LYNX_TURN = 0.62;
+  const HARE_R = 3.0, LYNX_R = 5.0;
+  const CATCH = 6.5;               // lynx eats hare within this distance
+  const DIGEST = 4;               // steps a lynx must digest before it can catch again
+  const MAX_HARE = 2600, MAX_LYNX = 900;
+
+  // ---- canvases ----
+  const field = document.getElementById('field');
+  const fctx = field.getContext('2d');
+  const graph = document.getElementById('graph');
+  const gctx = graph.getContext('2d');
+  const dpr = Math.min(Math.max(window.devicePixelRatio||1, 2), 3);
+
+  function sizeCanvas(cv, ctx, w, h){
+    cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+    cv.style.aspectRatio = w + " / " + h;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  sizeCanvas(field, fctx, W, H);
+  let GW = 384, GH = 156;
+  function sizeGraph(){
+    const r = graph.getBoundingClientRect();
+    const cw = Math.round(r.width);
+    if(!cw) return false;
+    const nw = Math.max(240, cw);
+    const nh = Math.round(clamp(nw*0.46, 132, 210));
+    if(nw===GW && nh===GH) return false;
+    GW = nw; GH = nh; sizeCanvas(graph, gctx, GW, GH);
+    return true;
+  }
+  sizeCanvas(graph, gctx, GW, GH);
+  requestAnimationFrame(()=>{ if(sizeGraph()) drawGraph(); });
+  if(window.ResizeObserver){
+    let raf=0;
+    new ResizeObserver(()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(sizeGraph()) drawGraph(); }); }).observe(graph);
+  }else{
+    window.addEventListener('resize', ()=>{ if(sizeGraph()) drawGraph(); });
+  }
+
+  // ---- config (live) ----
+  const cfg = {
+    startHare:120, startLynx:28,
+    hareBirth:4, grassEnergy:4, hareVision:3,
+    lynxBirth:5, preyEnergy:20, lynxVision:4,
+    plant:6, metab:1, speed:1   // fixed: 60 sim steps/s (was the old 4× preset)
+  };
+  const regrowthTime = ()=> Math.round(map(cfg.plant,1,10,60,6));
+
+  // ---- state ----
+  let grass = new Int16Array(NCELL);   // 0 = grown, >0 = steps until regrown
+  const shade = new Uint8Array(NCELL); // visual texture 0..2
+  for(let i=0;i<NCELL;i++) shade[i] = (Math.random()*3)|0;
+  let hares = [], lynx = [], tick = 0, stepAcc = 0;
+  let history = []; const HIST_MAX = 900;
+  let running = true;
+  let graphMode = 'time';
+
+  const cellIdx = (x,y)=> clamp((y/CELL)|0,0,ROWS-1)*COLS + clamp((x/CELL)|0,0,COLS-1);
+
+  function spawn(type){
+    return { x:rand(4,W-4), y:rand(4,H-4), dir:rand(0,TAU),
+             e: type==='hare' ? rand(0,2*cfg.grassEnergy) : rand(0,2*cfg.preyEnergy) };
+  }
+
+  function reset(){
+    const rt = regrowthTime();
+    grass = new Int16Array(NCELL);
+    for(let i=0;i<NCELL;i++) grass[i] = Math.random()<0.5 ? 0 : (1 + (Math.random()*rt|0));
+    hares = []; lynx = [];
+    for(let i=0;i<cfg.startHare;i++) hares.push(spawn('hare'));
+    for(let i=0;i<cfg.startLynx;i++) lynx.push(spawn('lynx'));
+    tick = 0; history = [];
+    sample();
+    render(); drawGraph(); updateStatus();
+  }
+
+  // ---- spatial buckets for fast sensing ----
+  function bucket(arr){
+    const g = new Array(NCELL);
+    for(let k=0;k<arr.length;k++){
+      const a = arr[k], idx = cellIdx(a.x,a.y);
+      (g[idx] || (g[idx]=[])).push(a);
+    }
+    return g;
+  }
+  function nearest(px,py,g,maxD){
+    const r = Math.ceil(maxD/CELL);
+    const cx = clamp((px/CELL)|0,0,COLS-1), cy = clamp((py/CELL)|0,0,ROWS-1);
+    let best=null, bestD2 = maxD*maxD;
+    for(let gy=cy-r; gy<=cy+r; gy++){
+      if(gy<0||gy>=ROWS) continue;
+      for(let gx=cx-r; gx<=cx+r; gx++){
+        if(gx<0||gx>=COLS) continue;
+        const list = g[gy*COLS+gx]; if(!list) continue;
+        for(let m=0;m<list.length;m++){
+          const it=list[m]; if(it.dead) continue;
+          const dx=it.x-px, dy=it.y-py, d2=dx*dx+dy*dy;
+          if(d2<bestD2){bestD2=d2;best=it;}
+        }
+      }
+    }
+    return best;
+  }
+  function nearestGrass(px,py,maxD){
+    const r = Math.ceil(maxD/CELL);
+    const cx = clamp((px/CELL)|0,0,COLS-1), cy = clamp((py/CELL)|0,0,ROWS-1);
+    let bx=0,by=0,bestD2=maxD*maxD,found=false;
+    for(let gy=cy-r; gy<=cy+r; gy++){
+      if(gy<0||gy>=ROWS) continue;
+      for(let gx=cx-r; gx<=cx+r; gx++){
+        if(gx<0||gx>=COLS) continue;
+        if(grass[gy*COLS+gx]!==0) continue;
+        const ccx=gx*CELL+CELL/2, ccy=gy*CELL+CELL/2;
+        const dx=ccx-px, dy=ccy-py, d2=dx*dx+dy*dy;
+        if(d2<bestD2){bestD2=d2;bx=ccx;by=ccy;found=true;}
+      }
+    }
+    return found ? {x:bx,y:by} : null;
+  }
+
+  function steer(a, desired, maxTurn){
+    let diff = Math.atan2(Math.sin(desired-a.dir), Math.cos(desired-a.dir));
+    diff = clamp(diff, -maxTurn, maxTurn);
+    a.dir += diff + (Math.random()-0.5)*0.12;
+  }
+  function moveAgent(a, spd, r){
+    a.x += Math.cos(a.dir)*spd; a.y += Math.sin(a.dir)*spd;
+    if(a.x<r){a.x=r; a.dir=Math.PI-a.dir;} else if(a.x>W-r){a.x=W-r; a.dir=Math.PI-a.dir;}
+    if(a.y<r){a.y=r; a.dir=-a.dir;} else if(a.y>H-r){a.y=H-r; a.dir=-a.dir;}
+  }
+
+  function step(){
+    const rt = regrowthTime();
+    const visH = cfg.hareVision*CELL, visL = cfg.lynxVision*CELL;
+    const metab = cfg.metab * 0.25;   // energy burned per step (scaled so hares can actually break even between grazings)
+
+    // sense lynx (for hare flee)
+    const lynxGrid = bucket(lynx);
+    for(let i=0;i<hares.length;i++){
+      const h = hares[i];
+      const w = nearest(h.x,h.y,lynxGrid,visH);
+      if(w){
+        steer(h, Math.atan2(h.y-w.y, h.x-w.x), HARE_TURN);     // flee
+      } else {
+        const g = nearestGrass(h.x,h.y,visH);
+        if(g) steer(h, Math.atan2(g.y-h.y, g.x-h.x), HARE_TURN); // graze
+        else  h.dir += (Math.random()-0.5)*0.5;                  // wander
+      }
+      moveAgent(h, HARE_SPD, HARE_R); h.e -= metab;
+    }
+
+    // move lynx (chase nearest hare)
+    const hareGrid1 = bucket(hares);
+    for(let i=0;i<lynx.length;i++){
+      const l = lynx[i];
+      const prey = nearest(l.x,l.y,hareGrid1,visL);
+      if(prey) steer(l, Math.atan2(prey.y-l.y, prey.x-l.x), LYNX_TURN);
+      else     l.dir += (Math.random()-0.5)*0.5;
+      moveAgent(l, LYNX_SPD, LYNX_R); l.e -= metab;
+    }
+
+    // lynx eat (post-move positions)
+    const hareGrid2 = bucket(hares);
+    for(let i=0;i<lynx.length;i++){
+      const l = lynx[i];
+      if(l.cool>0){ l.cool--; continue; }
+      const prey = nearest(l.x,l.y,hareGrid2,CATCH);
+      if(prey){ prey.dead = true; l.e += cfg.preyEnergy; l.cool = DIGEST; }
+    }
+    if(hares.some(h=>h.dead)) hares = hares.filter(h=>!h.dead);
+
+    // hares graze the patch they stand on
+    for(let i=0;i<hares.length;i++){
+      const h = hares[i], idx = cellIdx(h.x,h.y);
+      if(grass[idx]===0){ grass[idx]=rt; h.e += cfg.grassEnergy; }
+    }
+
+    // deaths (starvation)
+    hares = hares.filter(h=>h.e>0);
+    lynx  = lynx.filter(l=>l.e>0);
+
+    // reproduction (split energy)
+    const pH = cfg.hareBirth/100, pL = cfg.lynxBirth/100;
+    const babiesH=[], babiesL=[];
+    for(let i=0;i<hares.length;i++){
+      const h=hares[i];
+      if(h.e>1 && Math.random()<pH){ h.e/=2; babiesH.push({x:h.x,y:h.y,dir:rand(0,TAU),e:h.e}); }
+    }
+    for(let i=0;i<lynx.length;i++){
+      const l=lynx[i];
+      if(l.e>1 && Math.random()<pL){ l.e/=2; babiesL.push({x:l.x,y:l.y,dir:rand(0,TAU),e:l.e}); }
+    }
+    if(hares.length<MAX_HARE) hares = hares.concat(babiesH);
+    if(lynx.length<MAX_LYNX)  lynx  = lynx.concat(babiesL);
+
+    // grass regrows
+    for(let i=0;i<NCELL;i++){ if(grass[i]>0) grass[i]--; }
+
+    tick++; sample();
+  }
+
+  function grownFraction(){
+    let n=0; for(let i=0;i<NCELL;i++) if(grass[i]===0) n++;
+    return n/NCELL;
+  }
+  function sample(){
+    history.push({h:hares.length, l:lynx.length});
+    if(history.length>HIST_MAX) history.shift();
+  }
+
+  // ---- rendering: the field ----
+  /* ---- colour palettes (LUTs) ------------------------------------------------
+     Only the drawing colours live here. The palette never touches a rule, a rate,
+     or the random stream, so switching mid-run leaves the same field, repainted.  */
+  const hexa = (h,a) => {
+    const n = parseInt(h.slice(1),16);
+    return 'rgba(' + (n>>16&255) + ',' + (n>>8&255) + ',' + (n&255) + ',' + a + ')';
+  };
+  const PALETTES = {
+    field: {name:'Field', grass:['#236b45','#2c7f51','#36945f'], hare:'#56e0c2', lynx:'#ff7d5c',
+      bg:'#07120f', vig:'0,0,0', va:0.45, gbg:'#0c1c17', gink:'#6f8a7e', gline:'130,170,150',
+      mark:'#ffffff', note:'The house palette: cool prey, hot predator, on live grass.'},
+    safe: {name:'Colour-safe', grass:['#2f4f45','#3a5f53','#456f61'], hare:'#56b4e9', lynx:'#e69f00',
+      bg:'#081210', vig:'0,0,0', va:0.45, gbg:'#0c1a17', gink:'#7f9188', gline:'140,170,160',
+      mark:'#ffffff', note:'Blue and orange from the Okabe-Ito set, which stays separable for red-green and for blue-yellow colour blindness. The grass drops in saturation so the animals carry the contrast.'},
+    ember: {name:'Dry season', grass:['#4d3b1d','#5f4a25','#71592c'], hare:'#ffd479', lynx:'#ff5b4a',
+      bg:'#150f0a', vig:'20,8,0', va:0.5, gbg:'#1a120c', gink:'#96836b', gline:'190,160,110',
+      mark:'#ffffff', note:'A parched field. Worth a look to see how much of your reading of the scene came from the colour green rather than from the animals.'},
+    slate: {name:'Value only', grass:['#1f2a33','#27333d','#2f3d49'], hare:'#e8eef4', lynx:'#ff4d6d',
+      bg:'#0c1015', vig:'0,0,0', va:0.4, gbg:'#101720', gink:'#7b8794', gline:'140,160,180',
+      mark:'#ffffff', note:'Hue taken out of the habitat. The cycle stays perfectly legible, which is the point: the shape of the swing does the work, not the colour.'},
+    thermal: {name:'Thermal', grass:['#2a1a4d','#36225f','#432b73'], hare:'#00e5ff', lynx:'#ff2fb0',
+      bg:'#090614', vig:'0,0,0', va:0.5, gbg:'#0e0a1c', gink:'#8b83a8', gline:'150,140,200',
+      mark:'#ffffff', note:'A false-colour ramp of the kind used for heat maps. Nothing here is a temperature, it is simply a different look-up table over the same three quantities.'}
+  };
+  const clampU = t => t<0?0:(t>1?1:t);
+  const rgbOf = h => { const n=parseInt(h.slice(1),16); return [n>>16&255, n>>8&255, n&255]; };
+  const hexOf = c => '#' + c.map(v=>Math.round(v<0?0:(v>255?255:v)).toString(16).padStart(2,'0')).join('');
+  const mix = (a,b,t) => { const A=rgbOf(a), B=rgbOf(b); return hexOf([0,1,2].map(i=>A[i]+(B[i]-A[i])*t)); };
+  /* three grass shades from one picked colour, keeping the preset's own spread */
+  const grassShades = c => [mix(c,'#000000',0.24), mix(c,'#000000',0.10), c];
+
+  let PAL = Object.assign({}, PALETTES.field);
+  let palKey = 'field';
+  /* energy colouring: agents are bucketed into bands and each band is one batched fill,
+     so the whole field still costs a handful of paths however many animals there are */
+  let energyOn = false;
+  const EBINS = 6;
+  /* The top of the ramp has to be a real number, not a guess: energy here is in food
+     units, and how much a well-fed animal carries depends on the grass, the kill value
+     and the metabolic cost, so a fixed ceiling made every animal land in one band and
+     the effect was invisible. Instead each species carries its own ceiling, an
+     exponential average of the highest energy alive, floored so a lone survivor cannot
+     make itself dim. Death is at zero, so the bottom of the ramp is fixed and true. */
+  let eTopH = 8, eTopL = 24;
+  function eTops(){
+    /* the top of the ramp is set from the mean rather than the maximum: one very fat
+       animal is an outlier, and letting it define the scale pushed the whole field into
+       the dimmest band, which is what made the old version look like it did nothing */
+    let sh=0, sl=0;
+    for(let i=0;i<hares.length;i++) sh+=hares[i].e;
+    for(let i=0;i<lynx.length;i++) sl+=lynx[i].e;
+    const fh=Math.max(2*cfg.grassEnergy, hares.length?2.6*sh/hares.length:0);
+    const fl=Math.max(1.5*cfg.preyEnergy, lynx.length?2.6*sl/lynx.length:0);
+    eTopH += (fh-eTopH)*0.06; eTopL += (fl-eTopL)*0.06;
+  }
+  /* a little gamma so the starving end is not all crushed into one band */
+  const ebin = (e,top) => { let b=(Math.pow(clampU(e/top),0.72)*EBINS)|0; return b>EBINS-1?EBINS-1:b; };
+  let hareRamp = [], lynxRamp = [];
+  /* Brightness, not glow. Each band is the species colour at a fixed fraction of its own
+     brightness, so the ramp is one quantity moving in one direction and the field never
+     gains light that is not there. The top band is lifted a little towards white because a
+     saturated colour runs out of headroom before it looks full. */
+  function brightBand(base, t){
+    if(t<=0.78){ const f=0.34+0.66*(t/0.78); return mix('#000000', base, f); }
+    return mix(base, '#ffffff', (t-0.78)/0.22*0.42);
+  }
+  function buildRamps(){
+    hareRamp=[]; lynxRamp=[];
+    for(let i=0;i<EBINS;i++){
+      const t=i/(EBINS-1);
+      hareRamp.push(brightBand(PAL.hare,t));
+      lynxRamp.push(brightBand(PAL.lynx,t));
+    }
+  }
+  buildRamps();
+  let GREENS = PAL.grass, LYNX_HALO = hexa(PAL.lynx,0.13);
+  let HARE_FILL = hexa(PAL.hare,0.10), LYNX_FILL = hexa(PAL.lynx,0.10);
+  let vignette = null;
+  function buildVignette(){
+    vignette = fctx.createRadialGradient(W/2,H/2, H*0.25, W/2,H/2, H*0.72);
+    vignette.addColorStop(0,'rgba(' + PAL.vig + ',0)');
+    vignette.addColorStop(1,'rgba(' + PAL.vig + ',' + PAL.va + ')');
+  }
+  buildVignette();
+
+  function render(){
+    fctx.fillStyle = PAL.bg;
+    fctx.fillRect(0,0,W,H);
+    // grass, batched by shade
+    for(let s=0;s<3;s++){
+      fctx.fillStyle = GREENS[s];
+      for(let i=0;i<NCELL;i++){
+        if(grass[i]===0 && shade[i]===s){
+          const gx=(i%COLS)*CELL, gy=((i/COLS)|0)*CELL;
+          fctx.fillRect(gx+0.5, gy+0.5, CELL-1, CELL-1);
+        }
+      }
+    }
+    // hares: one batched fill, or one fill per energy band
+    if(energyOn){
+      eTops();
+      for(let b=0;b<EBINS;b++){
+        fctx.fillStyle = hareRamp[b];
+        fctx.beginPath(); let any=false;
+        for(let i=0;i<hares.length;i++){
+          const h=hares[i]; if(ebin(h.e,eTopH)!==b) continue; any=true;
+          fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU);
+        }
+        if(any) fctx.fill();
+      }
+    } else {
+      fctx.fillStyle = PAL.hare;
+      fctx.beginPath();
+      for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
+      fctx.fill();
+    }
+    /* lynx - a lean directional dart. Deliberately minimal: two batched fills, no
+       outline, no eyes, no tail. The shape alone says predator and says heading, and
+       it stays legible down to a few pixels where the old cat silhouette turned to mush.
+       Do not add per-lynx strokes here; at 900 lynx that is 900 extra path segments. */
+    const R = LYNX_R;
+    /* soft halo so the hunters read as hot points against the field. Drawn in both modes
+       and at a constant strength, so brightness alone carries the energy. */
+    {
+      fctx.fillStyle = LYNX_HALO;
+      fctx.beginPath();
+      for(let i=0;i<lynx.length;i++){
+        const l=lynx[i];
+        fctx.moveTo(l.x + R*1.45, l.y); fctx.arc(l.x, l.y, R*1.45, 0, TAU);
+      }
+      fctx.fill();
+    }
+    // the dart itself
+    const dart = (l)=>{
+      const c=Math.cos(l.dir), s=Math.sin(l.dir);
+      const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
+      fctx.moveTo(X( R*1.60, 0),        Y( R*1.60, 0));
+      fctx.lineTo(X(-R*0.78,  R*0.82),  Y(-R*0.78,  R*0.82));
+      fctx.lineTo(X(-R*0.30, 0),        Y(-R*0.30, 0));
+      fctx.lineTo(X(-R*0.78, -R*0.82),  Y(-R*0.78, -R*0.82));
+      fctx.closePath();
+    };
+    if(energyOn){
+      for(let b=0;b<EBINS;b++){
+        fctx.fillStyle = lynxRamp[b];
+        fctx.beginPath(); let any=false;
+        for(let i=0;i<lynx.length;i++){ const l=lynx[i]; if(ebin(l.e,eTopL)!==b) continue; any=true; dart(l); }
+        if(any) fctx.fill();
+      }
+    } else {
+      fctx.fillStyle = PAL.lynx;
+      fctx.beginPath();
+      for(let i=0;i<lynx.length;i++) dart(lynx[i]);
+      fctx.fill();
+    }
+    // vignette
+    fctx.fillStyle = vignette; fctx.fillRect(0,0,W,H);
+  }
+
+  // ---- rendering: graph ----
+  function drawGraph(){
+    gctx.fillStyle = PAL.gbg; gctx.fillRect(0,0,GW,GH);
+    if(graphMode==='time') drawTime(); else drawPhase();
+  }
+  function niceMax(v){
+    if(v<=10) return 10;
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    const n = v/p;
+    const step = n<=1?1:n<=2?2:n<=5?5:10;
+    return step*p;
+  }
+  function drawTime(){
+    const pad={l:8,r:42,t:12,b:24};
+    const w = GW-pad.l-pad.r, h = GH-pad.t-pad.b;
+    let mx=10; for(let i=0;i<history.length;i++){ mx=Math.max(mx,history[i].h,history[i].l); }
+    mx = niceMax(mx);
+    const X = i => pad.l + (history.length<=1?0:i/(history.length-1))*w;
+    const Y = v => pad.t + h - (v/mx)*h;
+    // gridlines
+    gctx.font = '12px "Space Mono", monospace'; gctx.textBaseline='middle';
+    for(let k=0;k<=2;k++){
+      const gy = pad.t + (h*k/2), val = Math.round(mx*(1-k/2));
+      gctx.strokeStyle='rgba(' + PAL.gline + ',.10)'; gctx.lineWidth=1;
+      gctx.beginPath(); gctx.moveTo(pad.l,gy); gctx.lineTo(pad.l+w,gy); gctx.stroke();
+      gctx.fillStyle=PAL.gink; gctx.textAlign='left';
+      gctx.fillText(String(val), pad.l+w+6, gy);
+    }
+    // line + soft fill helper
+    function line(key,color,fill){
+      if(history.length<2) return;
+      gctx.beginPath();
+      for(let i=0;i<history.length;i++){ const x=X(i),y=Y(history[i][key]); i?gctx.lineTo(x,y):gctx.moveTo(x,y); }
+      gctx.lineTo(X(history.length-1), Y(0)); gctx.lineTo(X(0), Y(0)); gctx.closePath();
+      gctx.fillStyle=fill; gctx.fill();
+      gctx.beginPath();
+      for(let i=0;i<history.length;i++){ const x=X(i),y=Y(history[i][key]); i?gctx.lineTo(x,y):gctx.moveTo(x,y); }
+      gctx.strokeStyle=color; gctx.lineWidth=2; gctx.lineJoin='round'; gctx.stroke();
+    }
+    line('h',PAL.hare,HARE_FILL);
+    line('l',PAL.lynx,LYNX_FILL);
+    // baseline + x label
+    gctx.strokeStyle='rgba(' + PAL.gline + ',.22)'; gctx.beginPath();
+    gctx.moveTo(pad.l,pad.t+h); gctx.lineTo(pad.l+w,pad.t+h); gctx.stroke();
+    gctx.fillStyle=PAL.gink; gctx.textAlign='left';
+    gctx.textBaseline='alphabetic'; gctx.fillText('time →', pad.l, GH-7);
+  }
+  function drawPhase(){
+    const pad={l:42,r:14,t:14,b:30};
+    const w=GW-pad.l-pad.r, h=GH-pad.t-pad.b;
+    let mxh=10,mxl=10;
+    for(let i=0;i<history.length;i++){ mxh=Math.max(mxh,history[i].h); mxl=Math.max(mxl,history[i].l); }
+    mxh=niceMax(mxh); mxl=niceMax(mxl);
+    const X=v=>pad.l+(v/mxh)*w, Y=v=>pad.t+h-(v/mxl)*h;
+    // frame
+    gctx.strokeStyle='rgba(' + PAL.gline + ',.18)'; gctx.lineWidth=1;
+    gctx.strokeRect(pad.l,pad.t,w,h);
+    gctx.font='12px "Space Mono", monospace';
+    gctx.fillStyle=PAL.hare; gctx.textAlign='center'; gctx.textBaseline='top';
+    gctx.fillText('hares →', pad.l+w/2, GH-15);
+    gctx.save(); gctx.translate(13,pad.t+h/2); gctx.rotate(-Math.PI/2);
+    gctx.fillStyle=PAL.lynx; gctx.textBaseline='middle'; gctx.fillText('lynx →',0,0); gctx.restore();
+    gctx.fillStyle=PAL.gink; gctx.textAlign='right'; gctx.textBaseline='middle';
+    gctx.fillText(String(mxh), pad.l+w, pad.t+h+11);
+    gctx.fillText(String(mxl), pad.l-5, pad.t);
+    // orbit trail (older = fainter), then current marker
+    const n=history.length, lo=Math.max(0,n-280);
+    for(let i=lo+1;i<n;i++){
+      const a=(i-lo)/(n-lo);
+      gctx.strokeStyle='rgba(' + PAL.gline + ',' + (0.05+a*0.5) + ')';
+      gctx.lineWidth=1.4; gctx.beginPath();
+      gctx.moveTo(X(history[i-1].h),Y(history[i-1].l));
+      gctx.lineTo(X(history[i].h),Y(history[i].l)); gctx.stroke();
+    }
+    if(n){
+      const c=history[n-1];
+      gctx.fillStyle=PAL.mark; gctx.beginPath(); gctx.arc(X(c.h),Y(c.l),3.2,0,TAU); gctx.fill();
+    }
+  }
+
+  // ---- status ----
+  const el = id => document.getElementById(id);
+  const extEl = el('extinct');
+  function updateStatus(){
+    el('cHare').textContent = hares.length;
+    el('cLynx').textContent = lynx.length;
+    el('cGrass').textContent = Math.round(grownFraction()*100)+'%';
+    el('cTick').textContent = tick;
+    let msg='';
+    if(lynx.length===0 && hares.length>0) msg='Lynx extinct — with no predator, watch hares climb to the plant ceiling.';
+    else if(hares.length===0 && lynx.length>0) msg='Hares extinct — the lynx have nothing left to eat and will starve.';
+    else if(hares.length===0 && lynx.length===0) msg='Total collapse. Try slower predators or faster plant regrowth, then Reset.';
+    if(msg){ extEl.textContent=msg; extEl.classList.add('show'); }
+    else extEl.classList.remove('show');
+  }
+
+  // ---- main loop ----
+  function frame(){
+    if(running){ stepAcc += cfg.speed; if(stepAcc>3) stepAcc=3;
+      while(stepAcc>=1){ step(); stepAcc-=1; } }
+    render(); drawGraph(); updateStatus();
+    requestAnimationFrame(frame);
+  }
+
+  // ---- controls wiring ----
+  const sliders = [
+    ['s_startHare','v_startHare','startHare', v=>v],
+    ['s_hareBirth','v_hareBirth','hareBirth', v=>v+'%'],
+    ['s_grassEnergy','v_grassEnergy','grassEnergy', v=>'+'+v],
+    ['s_hareVision','v_hareVision','hareVision', v=>v+' cells'],
+    ['s_startLynx','v_startLynx','startLynx', v=>v],
+    ['s_lynxBirth','v_lynxBirth','lynxBirth', v=>v+'%'],
+    ['s_preyEnergy','v_preyEnergy','preyEnergy', v=>'+'+v],
+    ['s_lynxVision','v_lynxVision','lynxVision', v=>v+' cells'],
+    ['s_plant','v_plant','plant', v=>v+' / 10'],
+    ['s_metab','v_metab','metab', v=>Number(v).toFixed(1)]
+  ];
+  sliders.forEach(([sid,vid,key,fmt])=>{
+    const s=el(sid), v=el(vid);
+    const sync=()=>{ const num=parseFloat(s.value); cfg[key]=num; v.textContent=fmt(num); };
+    s.addEventListener('input', sync); sync();
+  });
+
+  const playBtn = el('play');
+  playBtn.addEventListener('click', ()=>{
+    running=!running; playBtn.textContent = running ? 'Pause' : 'Play';
+  });
+  el('reset').addEventListener('click', ()=>{
+    reset(); if(!running){ running=true; playBtn.textContent='Pause'; }
+  });
+
+  el('spd').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    cfg.speed=parseFloat(b.dataset.s);
+    [...e.currentTarget.children].forEach(c=>c.classList.toggle('on', c===b));
+  });
+
+  el('gmode').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    graphMode=b.dataset.m;
+    [...e.currentTarget.children].forEach(c=>c.classList.toggle('on', c===b));
+    drawGraph();
+  });
+
+  // ---- experiment presets ----
+  const PRESETS = {
+    balance:  {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,plant:6,metab:1},
+    boom:     {startHare:90, startLynx:14,hareBirth:9,grassEnergy:5,hareVision:3,lynxBirth:3,preyEnergy:18,lynxVision:3,plant:9,metab:1},
+    enrich:   {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,plant:10,metab:1},
+    overhunt: {startHare:110,startLynx:80,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:6,preyEnergy:26,lynxVision:7,plant:6,metab:1},
+    desert:   {startHare:90, startLynx:18,hareBirth:5,grassEnergy:4,hareVision:4,lynxBirth:4,preyEnergy:22,lynxVision:4,plant:1,metab:1}
+  };
+  const presetBtns = [...document.querySelectorAll('.preset')];
+  function applyPreset(key){
+    const p = PRESETS[key]; if(!p) return;
+    sliders.forEach(([sid,,k])=>{ if(k in p){ const s=el(sid); s.value=p[k]; s.dispatchEvent(new Event('input')); }});
+    presetBtns.forEach(b=> b.setAttribute('aria-pressed', String(b.dataset.p===key)));
+    reset(); running=true; playBtn.textContent='Pause';
+  }
+  el('chips').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(b) applyPreset(b.dataset.p);
+  });
+  // a slider moved by hand means we are no longer on a named preset
+  sliders.forEach(([sid])=> el(sid).addEventListener('input', ()=>{
+    presetBtns.forEach(b=> b.setAttribute('aria-pressed','false'));
+  }));
+
+  // ---- "?" tooltips ----
+  function closeTips(){ document.querySelectorAll('.tip.show').forEach(t=>t.classList.remove('show')); }
+  document.addEventListener('pointerdown', e=>{ if(!e.target.closest('.tip')) closeTips(); });
+  document.querySelectorAll('.tip').forEach(t=>{
+    t.addEventListener('click', e=>{
+      e.preventDefault(); e.stopPropagation();
+      const on=t.classList.contains('show'); closeTips(); if(!on) t.classList.add('show');
+    });
+    t.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); t.click(); } });
+  });
+
+  // ---- what am I looking at? ----
+  const dlg = el('about');
+  el('btnAbout').addEventListener('click', ()=>{ dlg.showModal ? dlg.showModal() : dlg.setAttribute('open',''); });
+  el('btnAboutClose').addEventListener('click', ()=> dlg.close());
+  dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
+
+  window.__pp=function(){
+    const bins=[0,0,0,0,0,0];
+    for(let i=0;i<hares.length;i++) bins[ebin(hares[i].e,eTopH)]++;
+    return {energyOn:energyOn, eTopH:eTopH, eTopL:eTopL, hares:hares.length, lynx:lynx.length,
+            bins:bins, ramp:hareRamp.slice(), lramp:lynxRamp.slice(),
+            emax:hares.reduce((a,h)=>Math.max(a,h.e),0), emin:hares.reduce((a,h)=>Math.min(a,h.e),99)};
+  };
+  // ---- colour palette menu, custom colours, energy colouring ----
+  (function(){
+    const wrap=el('pals');
+    if(!wrap) return;
+    const pickers={lynx:el('swPred'), hare:el('swPrey'), grass:el('swGrass'), bg:el('swBg')};
+    const eBtn=el('tEnergy');
+
+    function applyLook(){
+      GREENS=PAL.grass;
+      LYNX_HALO=hexa(PAL.lynx,0.13); HARE_FILL=hexa(PAL.hare,0.10); LYNX_FILL=hexa(PAL.lynx,0.10);
+      const r=document.documentElement.style;
+      r.setProperty('--hare',PAL.hare); r.setProperty('--hare-dim',hexa(PAL.hare,0.14));
+      r.setProperty('--lynx',PAL.lynx); r.setProperty('--lynx-dim',hexa(PAL.lynx,0.14));
+      r.setProperty('--grass',PAL.grass[2]); r.setProperty('--field',PAL.bg);
+      buildRamps(); buildVignette();
+      r.setProperty('--e0',hareRamp[0]); r.setProperty('--e1',hareRamp[EBINS-1]);
+      render(); drawGraph();
+    }
+    function syncPickers(){
+      pickers.lynx.value=PAL.lynx; pickers.hare.value=PAL.hare;
+      pickers.grass.value=PAL.grass[2]; pickers.bg.value=PAL.bg;
+    }
+    Object.keys(PALETTES).forEach(k=>{
+      const p=PALETTES[k];
+      const b=document.createElement('button');
+      b.className='pal'; b.dataset.pal=k; b.type='button';
+      b.setAttribute('aria-pressed', String(k===palKey));
+      b.innerHTML='<span class="sw"><i style="background:'+p.grass[2]+'"></i>'+
+                  '<i style="background:'+p.hare+'"></i>'+
+                  '<i style="background:'+p.lynx+'"></i></span>'+
+                  '<span class="pn"></span>';
+      b.querySelector('.pn').textContent=p.name;
+      b.addEventListener('click',()=>setPalette(k));
+      wrap.appendChild(b);
+    });
+    /* a preset is a starting point: it replaces every custom colour, and the pickers follow */
+    window.setPalette=function(k){
+      const p=PALETTES[k]; if(!p) return;
+      PAL=Object.assign({},p); PAL.grass=p.grass.slice(); palKey=k;
+    applyLook(); syncPickers();
+      [...wrap.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pal===k)));
+    };
+    /* one picked colour edits the live palette and leaves every other colour alone */
+    function custom(which,c){
+      if(which==='grass') PAL.grass=grassShades(c);
+      else if(which==='bg'){ PAL.bg=c; PAL.gbg=mix(c,'#ffffff',0.07); }
+      else PAL[which]=c;
+      palKey='';
+      [...wrap.children].forEach(b=>b.setAttribute('aria-pressed','false'));
+      applyLook();
+    }
+    Object.keys(pickers).forEach(which=>{
+      pickers[which].addEventListener('input',e=>custom(which,e.target.value));
+    });
+    window.setEnergyColour=function(on){
+      energyOn=!!on;
+      eBtn.setAttribute('aria-pressed',String(energyOn));
+      render();
+    };
+    eBtn.addEventListener('click',e=>{
+      if(e.target.classList.contains('tip')) return;
+      setEnergyColour(!energyOn);
+    });
+    setEnergyColour(true);
+    applyLook(); syncPickers();
+  })();
+
+  // ---- corner bar: play, reset, hide the panels, fullscreen ----
+  (function(){
+    const bar=el('fsbar'), eye=el('fsMenus'), fsPlay=el('fsPlay'), fsReset=el('fsReset');
+    let idleT=0;
+    const isFull=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+    const hidden=()=>document.body.classList.contains('bare');
+    function wake(){
+      bar.classList.remove('idle');
+      clearTimeout(idleT);
+      /* in fullscreen with the panels away, the bar itself gets out of the way too */
+      if(isFull() && hidden()) idleT=setTimeout(()=>bar.classList.add('idle'), 2600);
+    }
+    /* one meaning for the eye in both modes: chrome on or chrome off. The existing
+       fullscreen rules key off .menus, so both classes are kept in step. */
+    function setChrome(on){
+      document.body.classList.toggle('menus', on);
+      document.body.classList.toggle('bare', !on);
+      eye.dataset.on=String(!on);
+      eye.setAttribute('aria-pressed', String(!on));
+      const t = on ? 'Hide the panels (H)' : 'Show the panels (H)';
+      eye.title=t; eye.setAttribute('aria-label', t);
+      wake();
+    }
+    window.ppToggleChrome=()=>setChrome(hidden());
+    const sync=()=>{
+      const on=isFull();
+      document.body.classList.toggle('is-full',on);
+      el('fs').dataset.on=String(on);
+      el('fs').title = on ? 'Leave fullscreen (F)' : 'Fullscreen (F)';
+      setChrome(true);     /* both modes open with the panels up; the eye hides them */
+    };
+    document.addEventListener('fullscreenchange',sync);
+    document.addEventListener('webkitfullscreenchange',sync);
+    ['pointermove','pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,wake,{passive:true}));
+    eye.addEventListener('click',()=>setChrome(hidden()));
+    fsPlay.addEventListener('click',()=>{ el('play').click(); wake(); });
+    fsReset.addEventListener('click',()=>{ el('reset').click(); wake(); });
+    /* the corner button mirrors the transport's own state */
+    const mirror=()=>{ fsPlay.dataset.on = String(el('play').textContent.trim()==='Play'); };
+    new MutationObserver(mirror).observe(el('play'),{childList:true,characterData:true,subtree:true});
+    mirror(); sync();
+  })();
+
+  // ---- the left column only shows a scrollbar when it actually has to scroll ----
+  (function(){
+    const col=document.querySelector('.col-l'); if(!col) return;
+    const sync=()=>col.classList.toggle('needs-scroll', col.scrollHeight>col.clientHeight+2);
+    if(window.ResizeObserver){ const ro=new ResizeObserver(sync); ro.observe(col); }
+    window.addEventListener('resize',sync); setTimeout(sync,80); sync();
+  })();
+
+  // ---- fullscreen ----
+  const fsBtn = el('fs');
+  function toggleFs(){
+    const d = document;
+    if(d.fullscreenElement || d.webkitFullscreenElement){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); }
+    else { const e = d.documentElement; (e.requestFullscreen||e.webkitRequestFullscreen).call(e); }
+  }
+  fsBtn.addEventListener('click', toggleFs);
+
+  // ---- keyboard: 1-5 pick a preset, space plays/pauses, R resets ----
+  const ORDER = ['balance','boom','enrich','overhunt','desert'];
+  document.addEventListener('keydown', e=>{
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    const t=e.target; if(t && (t.tagName==='INPUT'||t.tagName==='SELECT')) return;
+    if(dlg.open){ return; }
+    if(e.key>='1' && e.key<='5'){ applyPreset(ORDER[+e.key-1]); }
+    else if(e.key===' '){ e.preventDefault(); playBtn.click(); }
+    else if(e.key==='r'||e.key==='R'){ el('reset').click(); }
+    else if(e.key==='f'||e.key==='F'){ toggleFs(); }
+    else if(e.key==='h'||e.key==='H'){ window.ppToggleChrome && window.ppToggleChrome(); }
+    else if(e.key==='?'){ el('btnAbout').click(); }
+  });
+
+  // go
+  reset();
+  requestAnimationFrame(frame);
+})();
+</script>
+<script src="../../assets/js/explainer.js" defer></script>
+<script src="../../assets/js/colorpop.js?v=20260909a"></script>
+</body>
+</html>

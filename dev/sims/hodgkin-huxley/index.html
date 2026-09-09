@@ -1,0 +1,3140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>Hodgkin-Huxley Axon: how a nerve impulse builds itself | SimLearn</title>
+<meta name="description" content="The 1952 squid axon equations, running live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c; --gold:#e6c34f;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage canvas.panning{cursor:grabbing}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.theatre .icon-btn.gold{position:absolute;left:14px;top:14px;z-index:7;
+  background:linear-gradient(160deg,#f6d97a 0%,#d8a53a 42%,#8f6412 100%);
+  border:1px solid #f0d99a;color:#2a1c04;
+  box-shadow:0 2px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.55)}
+.theatre .icon-btn.gold svg{fill:#2a1c04;stroke:none}
+.theatre .icon-btn.gold:hover{background:linear-gradient(160deg,#fde9a4 0%,#e6b747 42%,#a2731a 100%)}
+.theatre .icon-btn.gold:active{transform:translateY(1px)}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:304px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.p-toggle{display:none}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
+.label:first-of-type{margin-top:0}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
+.preset small{color:var(--muted);font-size:11px;line-height:1.25}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:10px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:2px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.seg button:hover{border-color:var(--line-strong);color:var(--ink)}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.seg button:disabled{opacity:.35;cursor:default}
+.toggles{display:flex;flex-wrap:wrap;gap:5px}
+.tg{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.tg:hover{border-color:var(--line-strong);color:var(--ink)}
+.tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.tg:disabled{opacity:.35;cursor:default}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:min(46ch,calc(100% - 700px));line-height:1.5}
+.sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
+.sel.on{display:block}
+.sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sel h4 i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.sel table{border-collapse:collapse;width:100%;font-size:12.5px}
+.sel td{padding:2px 0;vertical-align:baseline}
+.sel td:first-child{color:var(--muted);padding-right:10px}
+.sel td:last-child{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.sel .kind{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
+.sel .kind.unb{color:var(--gold)}
+.sel .acts{display:flex;gap:6px;margin-top:8px}
+.sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
+.sel .acts button:hover{border-color:var(--line-strong)}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(86vh,800px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:64ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-inner kbd{font-family:var(--mono);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel-2);color:var(--ink)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .brand{left:14px;top:12px;max-width:calc(100vw - 252px)} .brand h1{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .brand p{display:none} .brand .kicker{margin-bottom:3px}
+  .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
+  .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
+    transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
+  .panel.open{transform:none;overflow-y:auto}
+  .p-toggle{display:flex;position:sticky;top:0;width:100%;height:46px;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;
+    color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
+  .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
+  .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
+  .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
+  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
+  .hint{display:none}
+  .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
+  .sel table{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+</style>
+<style>
+/* ---- Hodgkin-Huxley: the picture ---------------------------------- */
+:root{
+  --sea:#0b2029; --cyto:#22161a; --live:#7ce0b0;
+  --na:#ff9a3c; --k:#a58bff;
+}
+[hidden]{display:none!important}
+/* The panel is a little wider than the house default and the picture takes everything
+   else: there are no stat chips in the corner any more, so the stage runs to the bottom
+   of the window. sizeViews() then draws both canvases at one canvas unit per CSS pixel,
+   which is what makes the labels on them full size. */
+.panel{width:338px}
+#views{position:absolute;left:378px;right:18px;top:14px;bottom:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:2}
+body.side #views{flex-direction:row}
+body.clean #views{left:14px;right:14px;bottom:14px}
+.theatre{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#06141b;flex:none}
+.plots{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0d1a16;flex:none}
+.theatre canvas,.plots canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.note{position:absolute;left:0;top:0;max-width:min(70%,660px);padding:11px 34px 12px 14px;
+  font-size:14px;line-height:1.5;color:var(--muted);pointer-events:none;
+  background:linear-gradient(105deg,rgba(4,12,10,.86) 60%,rgba(4,12,10,0));text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.note b{color:var(--ink);font-weight:600}
+.note .live{margin-top:5px;font-family:var(--mono);font-size:12.5px;color:var(--gold);letter-spacing:.02em}
+.legend{position:absolute;right:12px;bottom:11px;display:flex;gap:14px;flex-wrap:wrap;padding:8px 13px;border-radius:10px;
+  background:var(--panel);backdrop-filter:blur(7px);border:1px solid var(--line);font-size:13px;color:var(--muted);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ---- panel sections ------------------------------------------------ */
+.block > .grp-title{position:relative;display:flex;align-items:center;gap:7px;cursor:pointer;
+  list-style:none;user-select:none;font-family:var(--display);font-size:15px;font-weight:600;
+  letter-spacing:.01em;color:var(--ink);margin:0;padding:2px 0 4px}
+.block > .grp-title::-webkit-details-marker{display:none}
+.block > .grp-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.block > .grp-title::after{content:'';width:7px;height:7px;margin-left:auto;border-right:1.6px solid currentColor;
+  border-bottom:1.6px solid currentColor;opacity:.6;transform:rotate(-45deg);transition:transform .2s}
+.block[open] > .grp-title::after{transform:rotate(45deg)}
+.block[open] > .grp-title{margin-bottom:9px}
+.block[hidden]{display:none}
+.sublabel{font-family:var(--body);font-size:13.5px;font-weight:400;color:var(--muted);margin:14px 0 9px;display:flex;align-items:center;gap:7px}
+.sub .ctl:last-child{margin-bottom:0}
+.block{border-top:1px solid var(--line);padding-top:12px;margin-top:13px}
+.block:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.block > h2{position:relative;display:flex;align-items:center;gap:7px;
+  font-family:var(--body);font-size:13.5px;font-weight:400;letter-spacing:.01em;color:var(--muted);margin:0 0 9px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg.two button{font-size:13.5px}
+.label{font-size:13.5px}
+.ctl{position:relative;margin:0 0 13px}
+.ctl:last-child{margin-bottom:0}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 3px;position:static}
+.ctl label{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;color:var(--ink)}
+.ctl .num{font-family:var(--mono);font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ctl .num em{font-style:normal;font-size:11.5px;margin-left:2px}
+/* Anything that used to be a native title is a bubble over the group it belongs to.
+   The bubble is anchored to .chips, not to the chip, so it gets the full panel width
+   to put the sentence on instead of the width of one button. */
+.chips{display:flex;flex-wrap:wrap;gap:6px;position:relative}
+.chip[data-tip]::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% + 7px);
+  padding:9px 11px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);
+  font-size:12.5px;line-height:1.45;font-weight:400;opacity:0;pointer-events:none;transition:opacity .12s;
+  z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.chip[data-tip]:hover::after,.chip[data-tip]:focus-visible::after{opacity:1}
+.chip{font-family:var(--body);font-size:13px;display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 10px;
+  border-radius:999px;cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--muted);
+  transition:border-color .18s,background .18s,color .18s}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--line-strong);display:inline-block;flex:none}
+.chip:hover{color:var(--ink);border-color:var(--line-strong)}
+.chip[aria-pressed="true"]{color:var(--dc,var(--accent));border-color:currentColor;
+  background:color-mix(in srgb, currentColor 13%, transparent)}
+.chip[aria-pressed="true"] i{background:currentColor;box-shadow:0 0 8px currentColor}
+.chip.on[aria-pressed="true"]{--dc:var(--accent)}
+/* firing the electrode is the one thing everybody does, so it is the biggest control
+   in the panel and it is lit */
+.fire{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap}
+.fire button{font-family:var(--display);font-size:13.5px;font-weight:600;padding:10px 14px;border-radius:11px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--ink);flex:none;transition:border-color .18s,background .18s}
+.fire button:hover{border-color:var(--line-strong)}
+.fire .go{flex:1 1 100%;background:var(--accent);color:#05201a;border-color:var(--accent);
+  font-size:17px;letter-spacing:.005em;padding:15px 16px;border-radius:13px;
+  box-shadow:0 0 0 0 rgba(86,224,194,.45);transition:box-shadow .18s,background .18s,transform .1s}
+.fire .go:hover{background:#7ff0d6;border-color:#7ff0d6;box-shadow:0 0 26px rgba(86,224,194,.34)}
+.fire .go:active{transform:translateY(1px)}
+.fire .go + button{flex:1 1 0}
+.foot{font-size:12.5px;color:var(--muted);margin:9px 0 0;line-height:1.5}
+.readout{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:13.5px;margin:3px 0 0}
+.readout dt{color:var(--muted)}
+.readout dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.readout dd.warn{color:var(--danger)}
+.readout dd.good{color:var(--accent)}
+.verdict{margin-top:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;
+  background:rgba(86,224,194,.07);border:1px solid var(--line);color:var(--muted)}
+.verdict b{color:var(--ink);font-weight:600}
+
+/* ---- explainer ----------------------------------------------------- */
+dialog.about{width:min(760px,calc(100vw - 28px))}
+.about-inner h3{margin:20px 0 6px}
+.about-inner .kicker{font-size:14px;color:var(--accent);margin:-6px 0 16px}
+.about-inner .eq{font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--panel-2);
+  border-left:2px solid var(--line-strong);padding:10px 13px;border-radius:0 8px 8px 0;margin:0 0 13px;
+  overflow-x:auto;white-space:nowrap}
+.about-inner code{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--panel-2);padding:1px 5px;border-radius:4px}
+.about-inner .dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:baseline}
+.about-inner .close{display:block;margin:22px 0 0;padding:12px;width:100%;font-family:var(--display);font-size:13.5px;font-weight:600;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);cursor:pointer}
+.about-inner .close:hover{border-color:var(--line-strong)}
+
+/* ---- phones -------------------------------------------------------- */
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  #views{left:10px;right:10px;top:52px;bottom:62px}
+  .note{position:static;max-width:none;padding:9px 11px;background:rgba(4,12,10,.7)}
+  .legend{right:8px;bottom:7px;gap:9px;padding:5px 9px;font-size:10px}
+  .fire button{font-size:13px;padding:9px 12px}
+  .fire .go{font-size:16px;padding:14px}
+  .panel{width:100%}
+}
+
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head>
+<body>
+<div id="stage">
+  <div id="views">
+    <div class="theatre">
+      <canvas id="theatre" width="1120" height="560"></canvas>
+      <button class="icon-btn gold" id="b-fire" title="Fire the electrode (space)" aria-label="Fire the electrode">
+        <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg>
+      </button>
+      <div class="note" id="drugNote" hidden></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="plots"><canvas id="plots" width="1120" height="470"></canvas></div>
+  </div>
+</div>
+
+<div class="brand">
+  <p class="kicker">Squid giant axon, 1952</p>
+  <h1>Hodgkin-Huxley Axon</h1>
+  <p>Watch a nerve impulse build itself out of two ion gradients.</p>
+</div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (P)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Reset the membrane (R)" aria-label="Reset the membrane">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel" id="panel">
+  <button class="p-toggle" id="p-toggle" aria-expanded="false">Controls</button>
+  <button class="about-btn" id="openExplainer">What am I looking at?</button>
+
+  <div class="blocks">
+      <details class="block grp" open>
+        <summary class="grp-title">Setup <span class="tag">preparation and recording</span></summary>
+        <div class="seg two" id="modes">
+    <button id="modePatch" aria-pressed="true">Membrane patch</button>
+    <button id="modeCable" aria-pressed="false">Whole axon</button>
+  </div>
+        <div class="sub" id="recBlock">
+        <p class="sublabel">Recording electrode <span class="tip" tabindex="0" data-tip="How the voltage is measured, and what the amplifier is doing while it measures. A sharp microelectrode only watches. A clamp takes control: current clamp holds a current you choose and lets the voltage do what it likes, voltage clamp holds a voltage and reports the current the membrane draws, which is the experiment the equations were fitted to. Hover a button to see what that one records.">?</span></p>
+
+        
+        <div class="chips" id="recChips"></div>
+        <div class="ctl" id="icmdCtl" hidden style="margin-top:13px">
+          <div class="row">
+            <label for="icmd" title="The current the amplifier pushes in during the step. Below about 2.5 µA/cm² nothing happens; above it you get one spike, then two, then three, and eventually the membrane jams.">Command current</label>
+            <span class="num" id="icmdV"></span>
+          </div>
+          <input type="range" id="icmd" min="-30" max="200" step="0.5" value="8">
+        </div>
+        <div class="ctl" id="vcmdCtl" hidden style="margin-top:13px">
+          <div class="row">
+            <label for="vcmd" title="The potential the amplifier holds the membrane at during the step. The classic experiment steps from a resting hold to each of these in turn.">Command voltage</label>
+            <span class="num" id="vcmdV"></span>
+          </div>
+          <input type="range" id="vcmd" min="-90" max="60" step="5" value="0">
+        </div>
+        <div class="fire" id="sweepCtl" hidden>
+          <button class="go" id="sweep">Run a sweep</button>
+          <button id="clearSweeps">Clear</button>
+        </div>
+        <div class="chips" id="repeatCtl" hidden style="margin-top:9px">
+          <button class="chip on" id="repeat" aria-pressed="false"><i></i>Repeat automatically</button>
+        </div>
+              </div>
+      </details>
+
+      <details class="block grp" id="axonBlock" hidden>
+        <summary class="grp-title">Axon <span class="tag">how the cable is built</span></summary>
+
+        
+        <div class="chips" style="margin-bottom:13px">
+          <button class="chip on" id="myelinOn" aria-pressed="false"><i></i>Myelin sheath</button>
+          <button class="chip" id="lesionOn" aria-pressed="false"><i></i>Stripped patch</button>
+        </div>
+        <div class="ctl">
+          <div class="row">
+            <label for="wraps" title="Layers of membrane wrapped around the axon. Each layer adds resistance and divides the capacitance, so less charge leaks away between nodes.">Sheath layers</label>
+            <span class="num" id="wrapsV"></span>
+          </div>
+          <input type="range" id="wraps" min="5" max="200" step="5" value="80" disabled>
+        </div>
+        <div class="ctl">
+          <div class="row">
+            <label for="inode" title="Distance between nodes of Ranvier — the bare gaps where the channels live. Longer jumps are faster, until the signal arrives too weak to fire the next node.">Node spacing</label>
+            <span class="num" id="inodeV"></span>
+          </div>
+          <input type="range" id="inode" min="0.9" max="4.8" step="0.3" value="2.4" disabled>
+        </div>
+        <div class="ctl">
+          <div class="row">
+            <label for="lesion" title="Length of sheath stripped away mid-axon. The bare membrane soaks up charge and exposes potassium channels that were hidden under the wrap.">Stripped length</label>
+            <span class="num" id="lesionV"></span>
+          </div>
+          <input type="range" id="lesion" min="1.2" max="12" step="0.6" value="6" disabled>
+        </div>
+        <dl class="readout" id="cableOut"></dl>
+            </details>
+
+      <details class="block grp" id="stimBlock">
+        <summary class="grp-title">Stimulation <span class="tag">the electrode that fires it</span></summary>
+
+        
+        <div class="ctl">
+          <div class="row">
+            <label for="amp" title="Current forced across the membrane by the electrode. Positive current pushes charge in and depolarises.">Pulse strength</label>
+            <span class="num" id="ampV"></span>
+          </div>
+          <input type="range" id="amp" min="-60" max="150" step="0.5" value="10.5">
+        </div>
+        <div class="ctl" id="durCtl">
+          <div class="row">
+            <label for="dur" id="durLabel" title="How long the pulse lasts. Brief pulses need much more current: the membrane capacitance has to be charged before the sodium channels notice.">Pulse length</label>
+            <span class="num" id="durV"></span>
+          </div>
+          <input type="range" id="dur" min="0.1" max="40" step="0.1" value="1">
+        </div>
+        <div class="ctl" id="npulseCtl">
+          <div class="row">
+            <label for="npulse" title="Fire one pulse, or a pair. A pair lets you find the refractory period: how soon after a spike a second one can be triggered.">Pulses</label>
+            <span class="num" id="npulseV"></span>
+          </div>
+          <input type="range" id="npulse" min="1" max="2" step="1" value="1">
+        </div>
+        <div class="ctl" id="gapCtl">
+          <div class="row">
+            <label for="gap" title="Delay between the first and second pulse. Shorten it until the second spike fails.">Gap between pulses</label>
+            <span class="num" id="gapV"></span>
+          </div>
+          <input type="range" id="gap" min="1" max="40" step="0.5" value="16" disabled>
+        </div>
+        <div class="ctl" id="holdCtl">
+          <div class="row">
+            <label for="hold" title="A steady current left on throughout. Between about 8 and 15 the axon fires over and over; past about 200 it jams at a depolarised plateau. Arrow keys give fine steps.">Steady background current</label>
+            <span class="num" id="holdV"></span>
+          </div>
+          <input type="range" id="hold" min="-20" max="240" step="0.5" value="0">
+        </div>
+        <div class="fire">
+          <button class="go" id="fire">Fire pulse</button>
+          <button id="reset">Reset</button>
+        </div>
+        <div class="verdict" id="verdict" hidden></div>
+        <p class="foot">Space fires the electrode, R resets it, P pauses, H hides the panels, F is fullscreen.</p>
+            </details>
+
+      <details class="block grp">
+        <summary class="grp-title">Drugs <span class="tag">in the bath</span></summary>
+
+        
+        <div class="chips" id="drugChips"></div>
+        <div class="fire" style="margin-top:11px">
+          <button id="washout" style="flex:1">Wash out everything</button>
+        </div>
+            </details>
+
+      <details class="block grp">
+        <summary class="grp-title">Display <span class="tag">what is drawn, and how fast</span></summary>
+
+        
+        <div class="ctl">
+          <div class="row">
+            <label for="speed" title="How much model time passes per second of real time. A real spike lasts about two milliseconds, so it has to be slowed right down to be watchable.">Playback</label>
+            <span class="num" id="speedV"></span>
+          </div>
+          <input type="range" id="speed" min="0.01" max="1" step="0.01" value="0.10">
+        </div>
+        <div class="chips">
+          <button class="chip on" id="showIons" aria-pressed="true"><i></i>Ions</button>
+          <button class="chip on" id="showCharge" aria-pressed="true"><i></i>Charge layer</button>
+          <button class="chip on" id="playing" aria-pressed="true"><i></i>Running</button>
+        </div>
+        <p class="foot">Point at anything in the picture to find out what it is.</p>
+        <p class="foot">Squid giant axon, Hodgkin and Huxley 1952 parameters, at 6.3 &#176;C.</p>
+            </details>
+  </div>
+</div>
+</div>
+
+<dialog class="about" id="explainer"><div class="about-inner sheet">
+
+<h2>What am I looking at?</h2>
+<p>A patch of nerve membrane, magnified, running the equations Alan Hodgkin and Andrew Huxley fitted to the giant axon of the squid in 1952. The picture on the left is the membrane itself, with the channels sitting in it and the ions on either side of it. The trace on the right is the voltage across that membrane, measured in millivolts, as it changes.</p>
+<p>Three things set that voltage, and only three.</p>
+<ul>
+  <li><b>The gradients.</b> There is more sodium outside the cell than inside, and more potassium inside than outside. Each ion therefore has a voltage it would drag the membrane to if it were the only one that could cross: about +50 mV for sodium, about &minus;77 mV for potassium.</li>
+  <li><b>The gates.</b> Sodium and potassium cross through separate channels, and those channels open and close depending on the voltage they currently sit at. Sodium opens fast, then closes itself off. Potassium opens slowly and stays open.</li>
+  <li><b>The pump.</b> The Na/K pump spends energy putting the ions back where they started, which is what keeps the gradients from running down.</li>
+</ul>
+<p>Everything you see follows from those. At rest, potassium leaks out and holds the membrane near &minus;65 mV. Push the voltage up far enough with the electrode and sodium channels open, sodium floods in, and the voltage those channels are responding to is the same voltage they are changing. The rise feeds itself, and the spike goes all the way to the top with no further help from you. Sodium then shuts itself off while the slow potassium channels are still opening, so the voltage overshoots downward before settling. The whole event takes about two milliseconds.</p>
+<p>That two milliseconds is the unit every nervous system is built from. Every thought, every sensation, and every muscle you move is carried by this event repeated along billions of fibres, which is why so much of medicine ends up interfering with it deliberately. The injection at the dentist works by blocking the sodium channel in this model. Pufferfish poisoning blocks the same channel with a toxin, and the patient stays awake and paralysed. Several drugs for epilepsy, for heart rhythm, and for chronic pain act on close relatives of these gates, and the reason a nerve conduction test in a clinic can locate an injury is that the speed of this spike along a nerve is measurable to the metre per second.</p>
+<p><b>Fire pulse</b> injects current at the strength and duration set in the panel. The interesting settings are the ones near the edge: just under threshold gives nothing at all, just over gives a full-height spike, and a second pulse arriving too early gives nothing however hard you push, because the sodium channels have not reset yet. The electrode chips change what the apparatus is doing rather than what the axon is doing. Current clamp injects current and lets the voltage move, while voltage clamp holds the voltage where you put it and measures the current needed, which is the experiment the equations were fitted to. The drug chips block one channel type each, and each chip explains itself if you hover it.</p>
+<h3>Keys</h3>
+    <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+    
+<div class="more-box"><div class="more-body">
+<h3>The three gates</h3>
+    <p>Hodgkin and Huxley described the whole thing with three numbers between 0 and 1, plotted under the voltage trace:</p>
+    <ul>
+      <li><b>m</b>, the sodium activation gate. Fast, and it opens on depolarisation. Sodium conductance goes as m&sup3;, so three of these have to line up.</li>
+      <li><b>h</b>, the sodium inactivation gate. Slow, and it works backwards, since depolarisation <i>shuts</i> it. This is what ends the spike, and it is why you cannot fire again immediately.</li>
+      <li><b>n</b>, the potassium gate. Slow, opens on depolarisation, and its conductance goes as n&#8308;. Potassium leaving pulls the voltage back down and overshoots past rest.</li>
+    </ul>
+    <p>A sodium channel conducts only when all three m subunits and the h gate are open at once. In the theatre the individual channels flicker independently, sampled from the same rate constants that drive the smooth curves below. Real channels are stochastic, and the smooth curve is what you get by averaging thousands of them.</p>
+
+    <div class="eq">C dV/dt = I<sub>stim</sub> &minus; g&#772;<sub>Na</sub>&middot;m&sup3;h&middot;(V&minus;50) &minus; g&#772;<sub>K</sub>&middot;n&#8308;&middot;(V+77) &minus; 0.3&middot;(V+54.4)</div>
+
+    <h3>Why it is all-or-none</h3>
+    <p>Below threshold the leak wins and the voltage sags back. Above threshold the sodium feedback wins and the spike goes to the same height however hard you pushed. Nudge the pulse strength half a unit at a time through 7 &micro;A/cm&sup2; and watch the trace snap from one behaviour to the other. There is no half-spike. This is also why a nerve carries intensity as a firing rate: a single fibre cannot make a bigger spike to signal a harder pinch, so it makes more of them.</p>
+
+    <h3>Why you have to wait</h3>
+    <p>Straight after a spike, h is near zero, which means the sodium channels are inactivated, plugged from the inside by their own ball-and-chain, and n is still high, so potassium is still pouring out. Set the sharp electrode to two pulses and shorten the gap. At 16 milliseconds the second spike fires normally. Below about 8 milliseconds nothing works at any strength, which is the absolute refractory period, and it is why a spike only ever travels forwards down an axon. In between, the second spike is possible and costs more current.</p>
+
+    <h3>Four ways to put an electrode on it</h3>
+    <p>The recording configuration decides what the traces are able to show you, because each one is a physically different experiment.</p>
+    <ul>
+      <li><b>Sharp microelectrode.</b> A fine tip through the membrane, running freely. You set the current with a second electrode and the membrane picks its own voltage. This is the only way to watch an action potential happen by itself.</li>
+      <li><b>Whole-cell current clamp.</b> A blunt pipette sealed on and the patch broken through, passing a set current for a set time, one sweep at a time. Raise the command a step at a time and the sweeps stack up behind each other: nothing below about 2.5 &micro;A/cm&sup2;, then one spike, then a train, then the membrane jams.</li>
+      <li><b>Whole-cell voltage clamp.</b> The amplifier holds the voltage wherever you put it and reports the current it has to supply to keep it there. This is the experiment the equations came from. Step to a few different voltages and the family builds up: a fast inward sodium current that grows, peaks around 0 mV, and vanishes at +50 mV, which is E<sub>Na</sub>, and a slow outward potassium current that just keeps growing. Add TEA or TTX to take one of them away.</li>
+      <li><b>Cell-attached patch.</b> The seal is left intact, so you record only the three sodium channels under the tip. Openings are square steps of about one picoamp, one protein at a time. Most sweeps show nothing at all, which is exactly why you have to average. Leave it repeating and the average of the flickering turns into the smooth macroscopic current from the voltage-clamp trace.</li>
+    </ul>
+    <p>On the whole axon the choice is between microelectrodes pushed inside, which give clean monophasic spikes, and electrodes resting on the surface, which is what a clinical nerve conduction study actually records: much smaller, biphasic, and with the same delay between the two sites.</p>
+
+    <h3>The drugs</h3>
+    <p>Five things to put in the bath. Blocked channels go grey and show the drug molecule lodged in the pore, and the partial blockers take out a fraction of the channels, which is what a partial block physically is.</p>
+    <ul>
+      <li><b>TTX</b> plugs the sodium pore from outside, completely. The membrane can still be charged by the electrode, and it cannot make a spike of its own.</li>
+      <li><b>Lidocaine</b> takes out about 40% of the sodium channels from inside. That alone raises threshold roughly eightfold. Push the pulse to 100 &micro;A/cm&sup2; and a normal spike comes back, which is the difference between an anaesthetic and a poison.</li>
+      <li><b>TEA</b> blocks the delayed rectifier from inside. The background potassium channels that hold the resting potential are a different, TEA-insensitive population and stay open, so the membrane still sits at &minus;65 mV. The spike fires taller and repolarisation is left to the slow leak.</li>
+      <li><b>4-AP</b> is a milder potassium block. Try it on a stripped patch in the axon view.</li>
+      <li><b>Pronase</b> digests the inactivation gate off most sodium channels. Nothing shuts the sodium current off, so the spike becomes a permanent plateau near +20 mV. Wash it out to recover.</li>
+    </ul>
+
+    <h3>The whole axon</h3>
+    <p>Switch to <b>Whole axon</b> and the same equations run at two hundred points along a cable, coupled by the resistance of the cytoplasm. A spike at one end charges its neighbour, which spikes and charges the next. Two recording electrodes sit 4.2 cm apart, and that distance divided by the delay between their traces is the conduction velocity.</p>
+    <p>Bare, the model axon runs at roughly 12 m/s. Wrap it in myelin and the internode barely stores charge, so current from one node reaches the next almost undiminished and the spike jumps node to node three times faster. Strip the sheath off a patch and two things go wrong: the bare stretch soaks up charge, and potassium channels that were sequestered under the wrap are now exposed and shunt the signal away. Past a few millimetres, conduction stops dead. Now add 4-AP or TEA. The exposed potassium channels are blocked and conduction comes back, and that is the logic behind giving 4-aminopyridine to some people with multiple sclerosis.</p>
+
+    <h3>The equations</h3>
+<p>The membrane is treated as a capacitor in parallel with three conductances, giving one current-balance equation and three gating equations:</p>
+<span class="eq">C<sub>m</sub> dV/dt = I &minus; g&#772;<sub>Na</sub> m&sup3;h (V &minus; E<sub>Na</sub>) &minus; g&#772;<sub>K</sub> n&#8308; (V &minus; E<sub>K</sub>) &minus; g<sub>L</sub> (V &minus; E<sub>L</sub>)<br>dx/dt = &alpha;<sub>x</sub>(V)(1 &minus; x) &minus; &beta;<sub>x</sub>(V) x&nbsp;&nbsp;for x = m, h, n</span>
+<p>m is sodium activation, h is sodium inactivation, and n is potassium activation. Each is a probability between 0 and 1, relaxing toward a voltage-dependent steady state with a voltage-dependent time constant. The exponents carry real content. Hodgkin and Huxley chose m&sup3;h and n&#8308; because those powers fitted the sigmoid onset of the measured conductances, and the numbers were later read as the count of independent gating particles that must be in place for a channel to conduct. In the original paper the maximal conductances are 120 mS/cm&sup2; for sodium and 36 mS/cm&sup2; for potassium, with a leak of 0.3, at 6.3 &deg;C. Rate constants scale steeply with temperature, roughly a factor of 3 per 10 &deg;C, which is why a squid axon at room temperature fires a much narrower spike.</p>
+
+<h3>Where the numbers came from</h3>
+<p>The measurement problem was that membrane current depends on voltage while voltage depends on current. Cole and Marmont's feedback amplifier, the voltage clamp, broke the loop by holding the voltage at a commanded value and recording the current the amplifier had to supply. Hodgkin and Huxley combined that with ion substitution to separate the sodium and potassium components, published the analysis as a series of papers in the Journal of Physiology in 1952, and integrated the resulting equations by hand on a mechanical calculator, which took weeks per simulated spike. The predicted action potential shape, threshold, and conduction velocity all matched recordings that had not been used in the fit. They shared the 1963 Nobel Prize in Physiology or Medicine with John Eccles. The voltage clamp mode in this simulation is that experiment, and the current traces it produces are the ones the model was built from.</p>
+
+<h3>Threshold emerges from the dynamics</h3>
+<p>There is no comparator in these equations and no value written down as a firing level. The apparent threshold is where the inward sodium current begins to exceed the outward potassium and leak currents, so that the positive feedback loop wins. In the space-clamped model it is a very steep boundary rather than a mathematically sharp one, and in dynamical terms it corresponds to the boundary between the basins of attraction around the resting state, with the transition to repetitive firing under steady current occurring through a Hopf bifurcation. Izhikevich (2007) sets out the classification. This is why threshold in this simulation is measured by running the model instead of being looked up, since adding a channel blocker to the bath moves it a long way.</p>
+
+<h3>Refractoriness, blockers, and propagation</h3>
+<p>The absolute refractory period is h, sodium inactivation, sitting near zero, and no stimulus of any size can recruit channels that are inactivated. The relative refractory period that follows is h recovering while n is still elevated, so a larger stimulus is required and the resulting spike is smaller. Tetrodotoxin, the pufferfish toxin, binds the outer pore of the voltage-gated sodium channel and abolishes the spike while leaving the potassium current intact, a selectivity that made it a standard tool for dissecting the two currents (Narahashi, Moore, &amp; Scott, 1964). Tetraethylammonium does the reverse and blocks the potassium channel, broadening the spike.</p>
+<p>Propagation along an axon needs one more ingredient, the cable equation, in which local circuit current from an active patch depolarises the patch ahead of it. In an unmyelinated fibre conduction velocity scales with the square root of diameter, which is the reason the squid evolved a millimetre-wide axon to work its escape jet and the reason Hodgkin and Huxley could get an electrode inside one. Myelin raises membrane resistance and lowers capacitance between nodes, so the depolarisation jumps from node to node, which Huxley and Stampfli (1949) demonstrated in single frog fibres. The myelinated axon in this simulation is a chain of Hodgkin-Huxley nodes coupled by axial resistance, and stripping the sheath slows or blocks it in the way a demyelinating lesion does.</p>
+
+<h3>Limits of the model</h3>
+<p>The concentration gradients are held fixed here. A real spike moves about one sodium ion in a hundred thousand and the pump carries it back out over the following seconds, so nothing in this model runs the gradients down. Blocking the pump in a real preparation shrinks the spike over minutes of firing, and that is an experiment this simulation does not offer. The pump drawn on screen runs far too fast, and the drawn channels are far too few and far too large, since a square micrometre of real axon holds hundreds of them. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities have the right shape and only roughly the right size.</p>
+<p>The equations themselves are deterministic, while real channels are stochastic, so this model has no channel noise and no spontaneous firing. These are also the 1952 squid equations at 6.3 &deg;C, held there throughout, and a mammalian axon at body temperature uses faster kinetics and additional channel types. Real neurons carry a dozen or more channel types, including calcium and several potassium variants that the squid axon largely lacks, and the shapes of spikes in mammalian cortex depend on them. Later structural work also showed that inactivation is a separate mechanism from activation rather than a fourth identical gating particle. Within the range they were fitted to, the equations remain accurate, and they are the foundation of every conductance-based neuron model since.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Hodgkin, A. L., &amp; Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. Journal of Physiology, 117, 500-544. (Last of a series of five papers that year.) <a class="doi" href="https://doi.org/10.1113/jphysiol.1952.sp004764" target="_blank" rel="noopener" title="10.1113/jphysiol.1952.sp004764">DOI</a></li>
+  <li>Huxley, A. F., &amp; Stampfli, R. (1949). Evidence for saltatory conduction in peripheral myelinated nerve fibres. Journal of Physiology. <a class="doi" href="https://doi.org/10.1113/jphysiol.1949.sp004335" target="_blank" rel="noopener" title="10.1113/jphysiol.1949.sp004335">DOI</a></li>
+  <li>Narahashi, T., Moore, J. W., &amp; Scott, W. R. (1964). Tetrodotoxin blockage of sodium conductance increase in lobster giant axons. Journal of General Physiology. <a class="doi" href="https://doi.org/10.1085/jgp.47.5.965" target="_blank" rel="noopener" title="10.1085/jgp.47.5.965">DOI</a></li>
+  <li>Cole, K. S. (1949). Dynamic electrical characteristics of the squid axon membrane. Archives des Sciences Physiologiques.</li>
+  <li>Izhikevich, E. M. (2007). Dynamical Systems in Neuroscience. MIT Press. <a class="doi" href="https://doi.org/10.7551/mitpress/2526.001.0001" target="_blank" rel="noopener" title="10.7551/mitpress/2526.001.0001">DOI</a></li>
+</ul>
+</div></div>
+<button class="close" id="closeExplainer">Close</button>
+
+  </dialog>
+
+
+<script>
+"use strict";
+/* ============================================================
+   Hodgkin & Huxley (1952) squid giant axon.
+   V in mV, t in ms, C in uF/cm2, g in mS/cm2, I in uA/cm2.
+   ============================================================ */
+const CM = 1.0, GNA = 120, GK = 36, GL = 0.3;
+const EL = -54.387, VREST = -65;
+/* E_Na and E_K are constants, as they are in the 1952 equations: one spike moves
+   about one sodium ion in a hundred thousand, so the gradients do not measurably
+   change and the pump puts back what the spike spent. */
+const ENA = 50, EK = -77;
+/* peak of the spike in progress */
+let curPeak=-1e9;
+
+/* x/(1-e^-x) with the removable singularity handled */
+function lin(x){ return Math.abs(x) < 1e-7 ? 1 - x/2 : x/(1 - Math.exp(-x)); }
+function a_m(V){ return lin((V+40)/10); }
+function b_m(V){ return 4*Math.exp(-(V+65)/18); }
+function a_h(V){ return 0.07*Math.exp(-(V+65)/20); }
+function b_h(V){ return 1/(1+Math.exp(-(V+35)/10)); }
+function a_n(V){ return 0.1*lin((V+55)/10); }
+function b_n(V){ return 0.125*Math.exp(-(V+65)/80); }
+function phiOf(T){ return Math.pow(3, (T-6.3)/10); }   // Q10 = 3
+
+/* Blocker strengths. TTX at saturating concentration is effectively complete.
+   TEA is concentration dependent and never total: past ~95% the model membrane
+   sticks at a depolarised steady state held up by the sodium window current,
+   which is not what the classic experiment shows.                            */
+const DRUGS = {
+  ttx:      {short:'sodium pore plugged from outside — no spike at any strength', label:'TTX',       target:'na',   block:1.00, mouth:'out',
+             tip:'Tetrodotoxin, from pufferfish. Plugs the sodium pore from outside. Complete block: no spike at any stimulus.'},
+  lidocaine:{short:'about 40% of sodium channels blocked — threshold rises roughly eightfold', label:'Lidocaine', target:'na',   block:0.40, mouth:'in',
+             tip:'Local anaesthetic. Blocks about 40% of sodium channels from inside — enough to raise threshold roughly eightfold. Push the pulse harder and the spike comes back.'},
+  tea:      {short:'delayed-rectifier potassium blocked from inside — the spike broadens', label:'TEA',       target:'k',    block:0.90, mouth:'in',
+             tip:'Tetraethylammonium. Plugs the delayed-rectifier potassium channel from inside. The spike gets taller and lasts about three times as long.'},
+  fap:      {short:'potassium partly blocked — a milder version of TEA', label:'4-AP',      target:'k',    block:0.60, mouth:'in',
+             tip:'4-aminopyridine, a milder potassium blocker. Prescribed to some people with multiple sclerosis — try it on a stripped patch in the axon view.'},
+  pronase:  {short:'inactivation gate digested off most sodium channels — the spike never shuts itself off', label:'Pronase',   target:'h',    block:0.70, mouth:null,
+             tip:'A protease. Digests the inactivation gate off most sodium channels, so the spike never switches itself off and the membrane locks up depolarised.'}
+};
+/* Two blockers on the same channel act independently. Potassium block is
+   capped: above ~93% the model membrane latches at a depolarised steady state
+   held up by the sodium window current, which the real experiment does not do. */
+function naBlock(d){ return 1-(1-(d.ttx?DRUGS.ttx.block:0))*(1-(d.lidocaine?DRUGS.lidocaine.block:0)); }
+function kBlock(d){ return Math.min(0.92, 1-(1-(d.tea?DRUGS.tea.block:0))*(1-(d.fap?DRUGS.fap.block:0))); }
+function hFree(d){ return d.pronase?DRUGS.pronase.block:0; }
+
+const M0 = a_m(VREST)/(a_m(VREST)+b_m(VREST));
+const H0 = a_h(VREST)/(a_h(VREST)+b_h(VREST));
+const N0 = a_n(VREST)/(a_n(VREST)+b_n(VREST));
+const N04 = N0*N0*N0*N0;
+
+/* TEA blocks the voltage-gated delayed rectifier. The background K+ conductance
+   present at rest is a different, TEA-insensitive population, so blocking only
+   the part that activates above rest leaves the resting potential where it was.
+   Blocking all of it would send the model into spontaneous firing.            */
+function gK_of(n, bK){
+  const x = n*n*n*n;
+  return GK*( Math.min(x,N04) + Math.max(0, x-N04)*(1-bK) );
+}
+
+/* ---------------- single compartment ---------------- */
+function newPatch(){
+  return { V:VREST, m:M0, h:H0, n:N0, t:0,
+           iNa:0, iK:0, iL:0, iStim:0, iClamp:0, dVdt:0, gNa:0, gK:0 };
+}
+function stepPatch(s, dt, I, phi, bNa, bK, hf){
+  const V = s.V;
+  const am=a_m(V), bm=b_m(V), ah=a_h(V), bh=b_h(V), an=a_n(V), bn=b_n(V);
+  const hEff = s.h + (hf||0)*(1-s.h);
+  const gna = GNA*(1-bNa)*s.m*s.m*s.m*hEff;
+  const gk  = gK_of(s.n, bK);
+  const gt  = gna + gk + GL;
+  const Vinf = (gna*ENA + gk*EK + GL*EL + I)/gt;
+  const Vn = Vinf + (V-Vinf)*Math.exp(-dt*gt/CM);
+  s.dVdt = (Vn-V)/dt;
+  s.iNa = gna*(V-ENA); s.iK = gk*(V-EK); s.iL = GL*(V-EL);
+  s.gNa = gna; s.gK = gk; s.iStim = I;
+  s.V = Vn;
+  const relax=(x,a,b)=>{ const inf=a/(a+b); return inf + (x-inf)*Math.exp(-dt*phi*(a+b)); };
+  s.m = relax(s.m,am,bm); s.h = relax(s.h,ah,bh); s.n = relax(s.n,an,bn);
+  s.t += dt;
+  return s;
+}
+
+/* ---------------- voltage clamp ----------------
+   The electrode holds the membrane at a commanded potential and reports the
+   current it has to supply. This is the experiment the equations came from.
+   Capacity transients are left out, as they are subtracted in practice.   */
+function stepClamp(s, dt, Vcmd, phi, bNa, bK, hf){
+  const V = Vcmd;
+  const am=a_m(V), bm=b_m(V), ah=a_h(V), bh=b_h(V), an=a_n(V), bn=b_n(V);
+  const hEff = s.h + (hf||0)*(1-s.h);
+  const gna = GNA*(1-bNa)*s.m*s.m*s.m*hEff;
+  const gk  = gK_of(s.n, bK);
+  s.gNa=gna; s.gK=gk;
+  s.iNa = gna*(V-ENA); s.iK = gk*(V-EK); s.iL = GL*(V-EL);
+  s.iClamp = s.iNa + s.iK + s.iL;
+  s.iStim = s.iClamp;
+  s.dVdt = (V-s.V)/dt;
+  s.V = V;
+  const relax=(x,a,b)=>{ const inf=a/(a+b); return inf + (x-inf)*Math.exp(-dt*phi*(a+b)); };
+  s.m = relax(s.m,am,bm); s.h = relax(s.h,ah,bh); s.n = relax(s.n,an,bn);
+  s.t += dt;
+  return s;
+}
+/* one open channel, 20 pS, in picoamps */
+const GAMMA_PS = 20;
+function singleChannelPA(V, E){ return GAMMA_PS*1e-12*(V-E)*1e-3*1e12; }
+
+/* ---------------- stimulus train ---------------- */
+function makeTrain(t0, amp, dur, n, gap){
+  const p=[]; for(let i=0;i<n;i++) p.push({t0:t0+i*gap, amp, dur});
+  return p;
+}
+function trainAt(train, t){
+  let I=0; for(let i=0;i<train.length;i++){ const p=train[i];
+    if(t>=p.t0 && t<p.t0+p.dur) I+=p.amp; } return I;
+}
+
+/* ---------------- headless probe (used by the refractory scan) ---------- */
+/* A spike is a regenerative sodium event, not merely a depolarised membrane:
+   a big enough electrode current can drive V past zero with the sodium system
+   dead (TTX), and that must not count. Require the sodium conductance itself
+   to have taken over.                                                        */
+const SPIKE_G = 20;   // mS/cm2
+const SPIKE_V = -10;  // mV
+function isSpiking(s){ return s.V > SPIKE_V && s.gNa >= SPIKE_G; }
+function spikeOver(s){ return s.V < -40 || s.gNa < SPIKE_G*0.4; }
+
+function probeSpikes(train, phi, bNa, bK, hold, tstop, dt, hf){
+  const s=newPatch(); let n=0, up=false, first=-1, second=-1;
+  const steps=Math.round(tstop/dt);
+  for(let i=0;i<steps;i++){
+    const t=i*dt;
+    stepPatch(s, dt, trainAt(train,t)+hold, phi, bNa, bK, hf);
+    if(!up && isSpiking(s)){ up=true; n++; if(n===1) first=t; else if(n===2) second=t; }
+    if(up && spikeOver(s)) up=false;
+  }
+  return {n, first, second};
+}
+
+/* ============================================================
+   Cable: 200 compartments of squid axon.
+   dV/dt = [ gax*(Vl - 2V + Vr) + Iion + Istim ] / C_i
+   axial term solved implicitly (Thomas) so the myelinated case,
+   where C drops 80-fold, stays stable at a usable dt.
+   ============================================================ */
+const CAB_N = 200;
+const CAB_LEN = 6.0;              // cm
+const CAB_DX = CAB_LEN/CAB_N;     // cm
+const AXIAL_K = 0.339;            // a/(2*Ra*Cm) cm^2/ms  (a=120um, Ra=35.4 ohm-cm)
+const GAX = AXIAL_K/(CAB_DX*CAB_DX);
+const GK_EXPOSED = 3.0;           // juxtaparanodal K+ uncovered by demyelination
+
+function newCable(){
+  const N=CAB_N, F=()=>new Float64Array(N);
+  const c={ N, t:0, V:F(), m:F(), h:F(), n:F(),
+    gNa:F(), gK:F(), gL:F(), gKx:F(), C:F(), kind:new Uint8Array(N),
+    iNa:F(), iK:F(),
+    a:F(), b:F(), cc:F(), d:F(), cp:F(), dp:F() };
+  c.V.fill(VREST); c.m.fill(M0); c.h.fill(H0); c.n.fill(N0);
+  return c;
+}
+/* kind: 0 = bare excitable, 1 = node of Ranvier, 2 = myelinated internode,
+         3 = stripped (demyelinated) internode                            */
+function buildCable(c, opt){
+  const {myelin, wraps, internodeMM, lesion, lesionMM} = opt;
+  const nodeEvery = Math.max(2, Math.round((internodeMM/10)/CAB_DX));
+  const half = Math.round((lesionMM/10)/CAB_DX/2);
+  const mid = Math.round(c.N*0.55);
+  const l0 = mid-half, l1 = mid+half;
+  const f = 1 + wraps*0.6;                 // capacitance / leak divisor
+  for(let i=0;i<c.N;i++){
+    const inLesion = lesion && myelin && i>=l0 && i<l1;
+    if(!myelin){
+      c.kind[i]=0; c.gNa[i]=GNA; c.gK[i]=GK; c.gL[i]=GL; c.gKx[i]=0; c.C[i]=1;
+    } else if(i % nodeEvery === 0 && !inLesion){
+      c.kind[i]=1; c.gNa[i]=GNA; c.gK[i]=GK; c.gL[i]=GL; c.gKx[i]=0; c.C[i]=1;
+    } else if(inLesion){
+      c.kind[i]=3; c.gNa[i]=0; c.gK[i]=0; c.gL[i]=GL; c.gKx[i]=GK_EXPOSED; c.C[i]=1;
+    } else {
+      c.kind[i]=2; c.gNa[i]=0; c.gK[i]=0; c.gL[i]=GL/f; c.gKx[i]=0; c.C[i]=1/f;
+    }
+  }
+  c.nodeEvery=nodeEvery; c.l0=l0; c.l1=l1; c.lesionOn=(lesion&&myelin);
+  return c;
+}
+function resetCable(c){
+  c.V.fill(VREST); c.m.fill(M0); c.h.fill(H0); c.n.fill(N0);
+  c.iNa.fill(0); c.iK.fill(0); c.t=0;
+}
+function stepCable(c, dt, stimI, stimSpan, phi, bNa, bK, hf){
+  const N=c.N;
+  let qNa=0, qK=0;   /* summed over the cable, so the run-down follows the whole axon */
+  for(let i=0;i<N;i++){
+    const V=c.V[i];
+    if(c.gNa[i]>0 || c.gK[i]>0){
+      const am=a_m(V),bm=b_m(V),ah=a_h(V),bh=b_h(V),an=a_n(V),bn=b_n(V);
+      let inf=am/(am+bm); c.m[i]=inf+(c.m[i]-inf)*Math.exp(-dt*phi*(am+bm));
+      inf=ah/(ah+bh);     c.h[i]=inf+(c.h[i]-inf)*Math.exp(-dt*phi*(ah+bh));
+      inf=an/(an+bn);     c.n[i]=inf+(c.n[i]-inf)*Math.exp(-dt*phi*(an+bn));
+    }
+    const hEff=c.h[i]+(hf||0)*(1-c.h[i]);
+    const gna=c.gNa[i]*(1-bNa)*c.m[i]*c.m[i]*c.m[i]*hEff;
+    const gk =(c.gK[i]>0 ? gK_of(c.n[i], bK)*(c.gK[i]/GK) : 0) + c.gKx[i]*(1-bK);
+    const gl =c.gL[i];
+    const I = (i>=stimSpan[0] && i<=stimSpan[1]) ? stimI : 0;
+    c.iNa[i]=gna*(V-ENA); c.iK[i]=gk*(V-EK);
+    qNa += c.iNa[i]; qK += c.iK[i];
+    const gt=gna+gk+gl;
+    const Vinf=(gna*ENA + gk*EK + gl*EL + I)/gt;
+    c.d[i]=Vinf + (V-Vinf)*Math.exp(-dt*gt/c.C[i]);
+  }
+  for(let i=0;i<N;i++){
+    const r=dt*GAX/c.C[i], nb=(i>0?1:0)+(i<N-1?1:0);
+    c.a[i]= i>0 ? -r : 0;
+    c.b[i]= 1 + r*nb;
+    c.cc[i]= i<N-1 ? -r : 0;
+  }
+  c.cp[0]=c.cc[0]/c.b[0]; c.dp[0]=c.d[0]/c.b[0];
+  for(let i=1;i<N;i++){
+    const den=c.b[i]-c.a[i]*c.cp[i-1];
+    c.cp[i]=c.cc[i]/den;
+    c.dp[i]=(c.d[i]-c.a[i]*c.dp[i-1])/den;
+  }
+  c.V[N-1]=c.dp[N-1];
+  for(let i=N-2;i>=0;i--) c.V[i]=c.dp[i]-c.cp[i]*c.V[i+1];
+  c.t+=dt;
+}
+
+/* ============================================================
+   canvas plumbing
+   ============================================================ */
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+function fit(cv, LW, LH){
+  cv.width = Math.round(LW*DPR); cv.height = Math.round(LH*DPR);
+  cv.style.aspectRatio = LW + ' / ' + LH;
+  const g = cv.getContext('2d');
+  g.setTransform(DPR,0,0,DPR,0,0);
+  g.LW = LW; g.LH = LH;
+  return g;
+}
+function rr(g,x,y,w,h,r){
+  r = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+  g.beginPath(); g.moveTo(x+r,y);
+  g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath();
+}
+function mix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function rgb(c,al){ return 'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+(al===undefined?1:al)+')'; }
+function clamp(x,a,b){ return x<a?a:(x>b?b:x); }
+function ease(cur,tgt,dt,tau){ return cur + (tgt-cur)*(1-Math.exp(-dt/tau)); }
+
+const VSTOPS = [[-95,[40,104,186]],[-80,[44,94,152]],[-70,[46,58,76]],[-65,[42,46,55]],
+                [-52,[96,76,58]],[-20,[208,112,50]],[10,[255,152,52]],[52,[255,228,164]]];
+function vColor(V){
+  if(V<=VSTOPS[0][0]) return VSTOPS[0][1];
+  for(let i=1;i<VSTOPS.length;i++){
+    if(V<=VSTOPS[i][0]){
+      const a=VSTOPS[i-1], b=VSTOPS[i];
+      return mix(a[1],b[1],(V-a[0])/(b[0]-a[0]));
+    }
+  }
+  return VSTOPS[VSTOPS.length-1][1];
+}
+
+/* ---------------- ion sprites ---------------- */
+const ION = {
+  na:{ col:[255,154,60],  r:6.2, dim:1.00 },
+  k :{ col:[165,139,255], r:6.4, dim:1.00 },
+  cl:{ col:[52,132,116],  r:4.4, dim:0.62 },
+  an:{ col:[74,86,106],   r:5.8, dim:0.58 }
+};
+const SPRITE = {};
+function buildSprites(){
+  for(const key in ION){
+    for(const hot of [0,1]){
+      const c=ION[key], R=c.r, pad=hot?12:5, S=Math.ceil((R+pad)*2);
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(S*DPR); cv.height=Math.round(S*DPR);
+      const g=cv.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
+      const cx=S/2, cy=S/2, a=c.dim;
+      const halo=g.createRadialGradient(cx,cy,R*0.6,cx,cy,R+pad);
+      halo.addColorStop(0, rgb(c.col, (hot?0.55:0.16)*a));
+      halo.addColorStop(1, rgb(c.col, 0));
+      g.fillStyle=halo; g.beginPath(); g.arc(cx,cy,R+pad,0,6.284); g.fill();
+      g.globalAlpha=a;
+      const bg=g.createRadialGradient(cx-R*0.35,cy-R*0.4,R*0.12,cx,cy,R);
+      bg.addColorStop(0, rgb(mix(c.col,[255,255,255],hot?0.75:0.55),1));
+      bg.addColorStop(0.62, rgb(c.col,1));
+      bg.addColorStop(1, rgb(mix(c.col,[0,0,0],0.42),1));
+      g.fillStyle=bg; g.beginPath(); g.arc(cx,cy,R,0,6.284); g.fill();
+      SPRITE[key+(hot?'_h':'')] = {cv, S, R};
+    }
+  }
+}
+function blit(g, key, x, y, hot, alpha){
+  const s = SPRITE[key+(hot?'_h':'')];
+  if(alpha!==undefined && alpha<1){
+    if(alpha<=0.02) return;
+    g.globalAlpha=alpha; g.drawImage(s.cv, x-s.S/2, y-s.S/2, s.S, s.S); g.globalAlpha=1;
+  } else g.drawImage(s.cv, x-s.S/2, y-s.S/2, s.S, s.S);
+}
+
+/* ============================================================
+   membrane theatre
+   ============================================================ */
+/* Concentrations in mM. The Na and K ratios are not decoration: they are the
+   ones this model's reversal potentials imply at 6.3 C, E = (RT/F)ln(out/in)
+   with RT/F = 24.08 mV. Na out/in = e^(50/24.08) = 7.97.
+   K in/out = e^(77/24.08) = 24.4. Chloride and the organic anions make each
+   side electrically neutral. Dots are drawn in proportion to all of it. */
+const CONC = {
+  out:{ na:145.0, k:5.74, cl:150.74 },
+  in :{ k:140.0, na:18.19, an:158.19 }
+};
+const TH = {
+  LW:1120, LH:560, memTop:0, memBot:0, memH:90, chanL:0, chanR:0,
+  channels:[], parts:[], transits:[], drugMol:[],
+  naIn:0, naIn0:0, kOut:0, kOut0:0, pumpPhase:0,
+  pump:{phase:0, stage:null, frac:0, cargo:[]}, pumpCh:null, patchCh:[], rec:'sharp', naDebt:0, kDebt:0, lDebt:0,
+  gw:22, gh:4, gOut:null, gIn:null, setW:0, setH:0,
+  mx:null, my:null, hits:[], recV:VREST
+};
+
+function layoutTheatre(narrow){
+  /* relayout() hands the picture its size in CSS pixels; the fallbacks are the sizes
+     the drawing code was originally written against. */
+  TH.LW = Math.round(TH.setW || (narrow ? 620 : 1120));
+  TH.LH = Math.round(TH.setH || (narrow ? 640 : 560));
+  const k = clamp(TH.LW/(narrow ? 620 : 1120), 0.9, 1.3);
+  TH.memH = Math.round((narrow ? 80 : 92) * clamp(TH.LH/(narrow ? 640 : 560), 0.85, 1.25));
+  /* on a phone the picture is short and the recording electrode hangs below the
+     membrane, so the whole scene sits a little higher and the electrode drops a
+     little less far: it then clears the ion key in the corner. */
+  TH.memTop = Math.round(TH.LH*(narrow ? 0.39 : 0.42));
+  TH.memBot = TH.memTop + TH.memH;
+  TH.chanL = Math.round((narrow ? 62 : 90)*k);
+  TH.chanR = TH.LW - Math.round((narrow ? 84 : 130)*k);
+
+  /* How many channels the membrane holds is decided by the width it actually has, not
+     by a fixed list. A phone used to be handed seven channels 47px wide in slots 34px
+     apart, so they sat on top of each other. Rosters are tried largest first and the
+     first one that leaves a real gap between neighbours wins; the drawn width is then
+     scaled so the widest channel still clears its slot. */
+  const BASE = t => t==='pump' ? 64 : (t==='leak' ? 30 : (narrow?52:58));
+  const ROSTERS = narrow
+    ? [['na','k','leak','pump','k','na','na'],
+       ['na','k','leak','pump','na','na'],
+       ['na','k','pump','na','na'],
+       ['na','k','pump','na']]
+    : [['na','k','leak','pump','k','na','na','na']];
+  const span = TH.chanR-TH.chanL, GAP = 16, MINS = 0.62;
+  let roster = ROSTERS[ROSTERS.length-1], sc0 = MINS;
+  for(const cand of ROSTERS){
+    const wide = Math.max(...cand.map(BASE));
+    const sc = Math.min(k, (span/cand.length - GAP)/wide);
+    if(sc >= MINS || cand === ROSTERS[ROSTERS.length-1]){
+      roster = cand; sc0 = Math.min(k, Math.max(sc, MINS)); break;
+    }
+  }
+  const n = roster.length, slot = span/n;
+  TH.channels = roster.map((type,i)=>({
+    type, cx: Math.round(TH.chanL + slot*(i+0.5)),
+    w: Math.round(BASE(type)*sc0),
+    mS:[0,0,0], hS:1, nS:[0,0,0,0],
+    act:0, inact:1, gate:0, glow:0, cond:false, blk:null, noH:false,
+    sway:Math.random()*6.28
+  }));
+
+  /* ion pools, sized straight off the concentration table */
+  /* One ion per ~1080 square pixels, which is the density the wide picture was drawn
+     at. Fixing the COUNT instead filled a phone's smaller picture solid. */
+  const total = narrow ? clamp(Math.round(TH.LW*TH.LH/1080), 110, 250) : 440;
+  let sum=0; for(const k in CONC.out) sum+=CONC.out[k];
+  for(const k in CONC.in) sum+=CONC.in[k];
+  const f = total/sum;
+  TH.parts = [];
+  const spawn=(type,side,count)=>{
+    for(let i=0;i<count;i++){
+      const y = side<0 ? 14 + Math.random()*(TH.memTop-28)
+                       : TH.memBot+14 + Math.random()*(TH.LH-TH.memBot-28);
+      TH.parts.push({ type, side, x:10+Math.random()*(TH.LW-20), y,
+        vx:(Math.random()-.5)*30, vy:(Math.random()-.5)*30, tr:null, fade:1, dying:false, inPump:null });
+    }
+  };
+  const R=Math.round;
+  spawn('na',-1, R(CONC.out.na*f));
+  spawn('k' ,-1, R(CONC.out.k *f));
+  spawn('cl',-1, R(CONC.out.cl*f));
+  spawn('k' , 1, R(CONC.in.k  *f));
+  spawn('na', 1, R(CONC.in.na *f));
+  spawn('an', 1, R(CONC.in.an *f));
+  TH.counts = { naOut:R(CONC.out.na*f), naIn:R(CONC.in.na*f),
+                kOut:R(CONC.out.k*f),   kIn:R(CONC.in.k*f) };
+  TH.transits=[]; TH.naIn=TH.counts.naIn; TH.naIn0=TH.naIn;
+  TH.kOut=TH.counts.kOut; TH.kOut0=TH.kOut;
+  /* A real spike moves about one ion in a hundred thousand: the gradients do
+     not visibly change. The dots crossing a pore show the RATE of current, so
+     the drawn pools are held at these counts by exchanging with the bath off
+     each side of the frame, rather than being drained by what crosses. */
+  TH.target = { nao:R(CONC.out.na*f), nai:R(CONC.in.na*f),
+                ko :R(CONC.out.k *f), ki :R(CONC.in.k *f),
+                clo:R(CONC.out.cl*f), ani:R(CONC.in.an*f) };
+  TH.naDebt=0; TH.kDebt=0; TH.lDebt=0; TH.pumpPhase=0;
+  TH.pump={phase:0, stage:null, frac:0, cargo:[]};
+  TH.pumpCh = TH.channels.find(c=>c.type==='pump');
+  TH.patchCh = (()=>{                       // the trailing run of Na+ channels
+    const out=[];
+    for(let i=TH.channels.length-1;i>=0 && TH.channels[i].type==='na';i--) out.unshift(TH.channels[i]);
+    return out.length?out:TH.channels.slice(-2);
+  })();
+
+  TH.gw = narrow ? 14 : 22; TH.gh = 4;
+  TH.gOut = new Int16Array(TH.gw*TH.gh);
+  TH.gIn  = new Int16Array(TH.gw*TH.gh);
+}
+
+/* ---------------- which channels a drug has taken out ---------------- */
+function assignBlocks(drugs){
+  const na = TH.channels.filter(c=>c.type==='na');
+  const k  = TH.channels.filter(c=>c.type==='k');
+  const naDrug = drugs.ttx ? 'ttx' : (drugs.lidocaine ? 'lidocaine' : null);
+  const kDrug  = drugs.tea ? 'tea' : (drugs.fap ? 'fap' : null);
+  const nb = Math.round(naBlock(drugs)*na.length);
+  const kb = Math.round(kBlock(drugs)*k.length);
+  na.forEach((c,i)=>{ c.blk = i<nb ? naDrug : null;
+                      c.noH = drugs.pronase && i >= Math.round((1-DRUGS.pronase.block)*na.length); });
+  k.forEach((c,i)=>{ c.blk = i<kb ? kDrug : null; });
+
+  /* a few loose drug molecules drifting on the side they act from */
+  TH.drugMol = [];
+  for(const key in DRUGS){
+    if(!drugs[key]) continue;
+    const d=DRUGS[key];
+    const side = d.mouth==='out' ? -1 : 1;
+    for(let i=0;i<7;i++){
+      const y = side<0 ? 16+Math.random()*(TH.memTop-40)
+                       : TH.memBot+22+Math.random()*(TH.LH-TH.memBot-40);
+      TH.drugMol.push({key, x:14+Math.random()*(TH.LW-28), y,
+        vx:(Math.random()-.5)*16, vy:(Math.random()-.5)*16, side, spin:Math.random()*6.28});
+    }
+  }
+}
+const DRUGCOL = { ttx:'#ff5a4a', lidocaine:'#ffd166', tea:'#b9a2ff',
+                  fap:'#6fd0ff', pronase:'#7ce0b0' };
+
+/* ---------------- stochastic single channels ---------------- */
+function tickChannels(V, dtModel, phi, dtWall){
+  const am=a_m(V)*phi, bm=b_m(V)*phi, ah=a_h(V)*phi, bh=b_h(V)*phi,
+        an=a_n(V)*phi, bn=b_n(V)*phi;
+  const P=r=>1-Math.exp(-r*dtModel);
+  const pmo=P(am), pmc=P(bm), pho=P(ah), phc=P(bh), pno=P(an), pnc=P(bn);
+  for(const ch of TH.channels){
+    if(ch.type==='na'){
+      let open=0;
+      for(let i=0;i<3;i++){
+        if(ch.mS[i]){ if(Math.random()<pmc) ch.mS[i]=0; }
+        else        { if(Math.random()<pmo) ch.mS[i]=1; }
+        open+=ch.mS[i];
+      }
+      if(ch.noH) ch.hS=1;
+      else if(ch.hS){ if(Math.random()<phc) ch.hS=0; }
+      else if(Math.random()<pho) ch.hS=1;
+      ch.cond = (open===3 && ch.hS===1 && !ch.blk);
+      ch.act   = ease(ch.act,   ch.blk?0:open/3, dtWall, 0.030);
+      ch.inact = ease(ch.inact, ch.hS,           dtWall, 0.045);
+    } else if(ch.type==='k'){
+      let open=0;
+      for(let i=0;i<4;i++){
+        if(ch.nS[i]){ if(Math.random()<pnc) ch.nS[i]=0; }
+        else        { if(Math.random()<pno) ch.nS[i]=1; }
+        open+=ch.nS[i];
+      }
+      ch.cond = (open===4 && !ch.blk);
+      ch.gate = ease(ch.gate, ch.blk?0:open/4, dtWall, 0.035);
+    } else if(ch.type==='leak'){ ch.cond=true; ch.gate=1; }
+    ch.glow = ease(ch.glow, ch.cond?1:0, dtWall, 0.05);
+    ch.sway += dtWall*1.7;
+  }
+}
+
+/* ---------------- ion transit ---------------- */
+function sendThrough(ch, kind, count, dirDown){
+  const srcSide = dirDown ? -1 : 1;
+  for(let i=0;i<count;i++){
+    if(TH.transits.length>95) return;
+    /* sample a handful at random and take the nearest of those, so the pool
+       near a busy channel does not get hollowed out into a visible hole */
+    let best=null, bd=Infinity;
+    const mouthY = dirDown ? TH.memTop : TH.memBot;
+    for(let k=0;k<10;k++){
+      const p = TH.parts[(Math.random()*TH.parts.length)|0];
+      if(!p || p.tr || p.type!==kind || p.side!==srcSide) continue;
+      const d=(p.x-ch.cx)*(p.x-ch.cx)+(p.y-mouthY)*(p.y-mouthY);
+      if(d<bd){ bd=d; best=p; }
+    }
+    if(!best) continue;
+    best.tr = { ch, u:0, down:dirDown, x0:best.x, y0:best.y,
+                wob:(Math.random()-.5)*7, out:(Math.random()-.5)*96 };
+    TH.transits.push(best);
+    if(kind==='na') TH.naIn += dirDown?1:-1;
+    if(kind==='k')  TH.kOut += dirDown?-1:1;
+  }
+}
+function pushFlux(kind, count, dirDown){
+  if(kind==='leak_cl'){                       // the always-open background trickle
+    const lk = TH.channels.filter(c=>c.type==='leak');
+    if(!lk.length) return;
+    for(let i=0;i<count;i++) sendThrough(lk[(Math.random()*lk.length)|0], 'cl', 1, dirDown);
+    return;
+  }
+  const open = TH.channels.filter(c=>c.type===kind && c.cond);
+  if(!open.length) return;                    // blocked or shut: nothing crosses
+  for(let i=0;i<count;i++)
+    sendThrough(open[(Math.random()*open.length)|0], kind, 1, dirDown);
+}
+
+const POOLKEY = { 'na-1':'nao', 'na1':'nai', 'k-1':'ko', 'k1':'ki',
+                  'cl-1':'clo', 'an1':'ani' };
+const POOLINFO = { nao:['na',-1], nai:['na',1], ko:['k',-1], ki:['k',1],
+                   clo:['cl',-1], ani:['an',1] };
+function randomSpot(side){
+  const y = side<0 ? 14 + Math.random()*(TH.memTop-30)
+                   : TH.memBot+16 + Math.random()*(TH.LH-TH.memBot-30);
+  return { x: 12+Math.random()*(TH.LW-24), y };
+}
+/* The frame is a two-dimensional slice of a three-dimensional bath, so ions
+   drift into and out of it all the time. That is what holds each pool at the
+   count it was built with, however much current crosses the membrane, because
+   a real spike moves about one ion in a hundred thousand and the gradients do
+   not visibly change. */
+function balancePools(dtWall){
+  if(!TH.target) return;
+  const have={};
+  for(const p of TH.parts){
+    if(p.tr || p.dying || p.inPump) continue;
+    const k=POOLKEY[p.type+p.side]; if(k) have[k]=(have[k]||0)+1;
+  }
+  for(const k in TH.target){
+    const tgt = TH.target[k];
+    const d=(have[k]||0)-tgt;
+    if(!d) continue;
+    const n=Math.min(9, Math.ceil(Math.abs(d)/5));
+    const [type,side]=POOLINFO[k];
+    if(d>0){
+      /* retire the ones furthest from the membrane, so the ions actually
+         doing something near a pore stay on screen */
+      let picked=0, guard=0;
+      while(picked<n && guard++<400){
+        const p=TH.parts[(Math.random()*TH.parts.length)|0];
+        if(!p||p.tr||p.dying||p.inPump||p.type!==type||p.side!==side) continue;
+        const dm = side<0 ? TH.memTop-p.y : p.y-TH.memBot;
+        if(dm < 60 && guard < 260) continue;
+        p.dying=true; picked++;
+      }
+    } else {
+      for(let i=0;i<n;i++){
+        const s0=randomSpot(side);
+        TH.parts.push({type, side, x:s0.x, y:s0.y,
+          vx:(Math.random()-.5)*30, vy:(Math.random()-.5)*30,
+          tr:null, fade:0, dying:false});
+      }
+    }
+  }
+}
+
+function tickParticles(dtWall, V){
+  balancePools(dtWall);
+  const inTop=TH.memTop, inBot=TH.memBot;
+
+  /* coarse density grid -> a drift down the gradient. This is what stops the
+     ions bunching up wherever a channel last pulled a few out. */
+  const gw=TH.gw, gh=TH.gh, gO=TH.gOut, gI=TH.gIn;
+  gO.fill(0); gI.fill(0);
+  const cellW=TH.LW/gw, outH=inTop/gh, inH=(TH.LH-inBot)/gh;
+  for(const p of TH.parts){
+    if(p.tr||p.inPump) continue;
+    const gx=clamp((p.x/cellW)|0,0,gw-1);
+    if(p.side<0){ const gy=clamp((p.y/outH)|0,0,gh-1); gO[gy*gw+gx]++; }
+    else        { const gy=clamp(((p.y-inBot)/inH)|0,0,gh-1); gI[gy*gw+gx]++; }
+  }
+  const at=(g,x,y)=> (x<0||x>=gw||y<0||y>=gh) ? -1 : g[y*gw+x];
+  const DIFF=34, jit=46, drag=1.7;
+
+  const gone=[];
+  for(let pi=0;pi<TH.parts.length;pi++){
+    const p=TH.parts[pi];
+    if(p.inPump){
+      if(p.fade<1) p.fade=Math.min(1,p.fade+dtWall/0.42);
+      continue;
+    }
+    if(p.dying){
+      p.fade -= dtWall/0.42;
+      if(p.fade<=0){ gone.push(pi); continue; }
+    } else if(p.fade<1){
+      p.fade = Math.min(1, p.fade + dtWall/0.42);
+    }
+    if(p.tr){
+      const t=p.tr;
+      t.u += dtWall/0.32;
+      const mouthY = t.down ? inTop-13 : inBot+13;
+      const exitY  = t.down ? inBot+15 : inTop-15;
+      if(t.u<0.30){
+        const k=t.u/0.30, e=k*k*(3-2*k);
+        p.x = t.x0 + (t.ch.cx - t.x0)*e;
+        p.y = t.y0 + (mouthY - t.y0)*e;
+      } else if(t.u<0.72){
+        const k=(t.u-0.30)/0.42;
+        p.x = t.ch.cx + Math.sin(k*Math.PI)*t.wob;
+        p.y = mouthY + (exitY-mouthY)*k;
+      } else if(t.u<1){
+        const k=(t.u-0.72)/0.28, e=k*k*(3-2*k);
+        p.x = t.ch.cx + t.wob + t.out*e;          // fan out on release
+        p.y = exitY + (t.down?1:-1)*e*(30+Math.abs(t.out)*0.35);
+      } else {
+        p.side = t.down ? 1 : -1;
+        const ang=(Math.random()-.5)*2.8;
+        const sp=30+Math.random()*34;
+        p.vx=Math.sin(ang)*sp; p.vy=(t.down?1:-1)*Math.cos(ang)*sp;
+        p.tr=null;
+        const i=TH.transits.indexOf(p); if(i>=0) TH.transits.splice(i,1);
+      }
+      continue;
+    }
+    const g = p.side<0 ? gO : gI;
+    const gx=clamp((p.x/cellW)|0,0,gw-1);
+    const gy = p.side<0 ? clamp((p.y/outH)|0,0,gh-1)
+                        : clamp(((p.y-inBot)/inH)|0,0,gh-1);
+    const l=at(g,gx-1,gy), r=at(g,gx+1,gy), u=at(g,gx,gy-1), d=at(g,gx,gy+1);
+    if(l>=0 && r>=0) p.vx += (l-r)*DIFF*dtWall;
+    if(u>=0 && d>=0) p.vy += (u-d)*DIFF*dtWall;
+
+    p.vx += (Math.random()-.5)*jit; p.vy += (Math.random()-.5)*jit;
+    const dp=Math.exp(-drag*dtWall); p.vx*=dp; p.vy*=dp;
+    const sp=Math.hypot(p.vx,p.vy), mx=56;
+    if(sp>mx){ p.vx*=mx/sp; p.vy*=mx/sp; }
+    p.x += p.vx*dtWall; p.y += p.vy*dtWall;
+    if(p.x<8){p.x=8;p.vx=Math.abs(p.vx);} if(p.x>TH.LW-8){p.x=TH.LW-8;p.vx=-Math.abs(p.vx);}
+    if(p.side<0){
+      if(p.y<8){p.y=8;p.vy=Math.abs(p.vy);}
+      if(p.y>inTop-9){p.y=inTop-9;p.vy=-Math.abs(p.vy);}
+    } else {
+      if(p.y<inBot+9){p.y=inBot+9;p.vy=Math.abs(p.vy);}
+      if(p.y>TH.LH-8){p.y=TH.LH-8;p.vy=-Math.abs(p.vy);}
+    }
+  }
+  for(let i=gone.length-1;i>=0;i--) TH.parts.splice(gone[i],1);
+  for(const d of TH.drugMol){
+    d.vx+=(Math.random()-.5)*22; d.vy+=(Math.random()-.5)*22;
+    const dp=Math.exp(-1.9*dtWall); d.vx*=dp; d.vy*=dp;
+    d.x+=d.vx*dtWall; d.y+=d.vy*dtWall; d.spin+=dtWall*0.8;
+    if(d.x<12){d.x=12;d.vx=Math.abs(d.vx);} if(d.x>TH.LW-12){d.x=TH.LW-12;d.vx=-Math.abs(d.vx);}
+    if(d.side<0){ if(d.y<12){d.y=12;d.vy=Math.abs(d.vy);}
+                  if(d.y>inTop-16){d.y=inTop-16;d.vy=-Math.abs(d.vy);} }
+    else        { if(d.y<inBot+16){d.y=inBot+16;d.vy=Math.abs(d.vy);}
+                  if(d.y>TH.LH-12){d.y=TH.LH-12;d.vy=-Math.abs(d.vy);} }
+  }
+}
+
+/* The pump, one full turn per cycle: it opens to the cytoplasm and takes up
+   three Na+, closes around them, opens to the bath and lets them go, takes up
+   two K+, closes, and opens inward again to release them. The ions are held
+   in the cavity the whole way across, so there is always something to watch. */
+const PUMP_STAGES = [
+  ['inLoad',    0.00, 0.22],
+  ['occludeNa', 0.22, 0.36],
+  ['outRelease',0.36, 0.52],
+  ['outLoad',   0.52, 0.72],
+  ['occludeK',  0.72, 0.84],
+  ['inRelease', 0.84, 1.00]
+];
+function pumpStageAt(ph){
+  for(const st of PUMP_STAGES) if(ph>=st[1] && ph<st[2]) return st;
+  return PUMP_STAGES[0];
+}
+function pumpSlot(i, n, where){
+  const cx=TH.pumpCh.cx, dx=(i-(n-1)/2)*9.5;
+  if(where==='inner')  return {x:cx+dx,     y:TH.memBot-13};
+  if(where==='outer')  return {x:cx+dx,     y:TH.memTop+13};
+  return {x:cx+dx*0.8, y:(TH.memTop+TH.memBot)/2};
+}
+function pumpCapture(kind, side, n){
+  const pump=TH.pumpCh, mouthY = side<0 ? TH.memTop : TH.memBot;
+  const cands=[];
+  for(const p of TH.parts){
+    if(p.tr||p.inPump||p.dying||p.type!==kind||p.side!==side) continue;
+    cands.push([Math.abs(p.x-pump.cx) + Math.abs(p.y-mouthY)*0.7, p]);
+  }
+  cands.sort((a,b)=>a[0]-b[0]);
+  const out=[];
+  for(let i=0;i<n;i++){
+    let p = cands[i] && cands[i][1];
+    if(!p){                       // the inside pool is small; never go empty-handed
+      p = {type:kind, side,
+           x:pump.cx+(Math.random()-.5)*54,
+           y: side<0 ? TH.memTop-26-Math.random()*34 : TH.memBot+26+Math.random()*34,
+           vx:0, vy:0, tr:null, fade:1, dying:false};
+      TH.parts.push(p);
+    }
+    p.inPump={slot:i, x0:p.x, y0:p.y}; p.vx=0; p.vy=0;
+    out.push(p);
+  }
+  return out;
+}
+function pumpRelease(cargo, side){
+  for(const p of cargo){
+    p.inPump=null; p.side=side;
+    p.x += (Math.random()-.5)*34;
+    p.y = side<0 ? TH.memTop-17 : TH.memBot+17;
+    p.vx=(Math.random()-.5)*54; p.vy=(side<0?-1:1)*(32+Math.random()*30);
+    if(p.type==='na') TH.naIn += side>0?1:-1;
+    if(p.type==='k')  TH.kOut += side<0?1:-1;
+  }
+  cargo.length=0;
+}
+function tickPump(dtWall){
+  const pump = TH.pumpCh || (TH.pumpCh = TH.channels.find(c=>c.type==='pump'));
+  if(!pump) return;
+  const P=TH.pump;
+  const load = Math.max(0, TH.naIn - TH.naIn0);
+  P.phase += dtWall*(0.20 + load*0.035);
+  if(P.phase>=1) P.phase-=1;
+  const st = pumpStageAt(P.phase);
+  if(st[0]!==P.stage){
+    if(st[0]==='inLoad'){   pumpRelease(P.cargo, 1);  P.cargo=pumpCapture('na', 1, 3); }
+    if(st[0]==='outLoad'){  pumpRelease(P.cargo, -1); P.cargo=pumpCapture('k', -1, 2); }
+    P.stage=st[0];
+  }
+  TH.pumpPhase = P.phase;
+  const frac = (P.phase-st[1])/(st[2]-st[1]), e = frac*frac*(3-2*frac);
+  P.frac = e;
+  const n=P.cargo.length;
+  P.cargo.forEach((p,i)=>{
+    const S=k=>pumpSlot(i,n,k);
+    let a,b;
+    switch(st[0]){
+      case 'inLoad':     a={x:p.inPump.x0,y:p.inPump.y0}; b=S('inner'); break;
+      case 'occludeNa':  a=S('inner'); b=S('mid'); break;
+      case 'outRelease': a=S('mid');   b=S('outer'); break;
+      case 'outLoad':    a={x:p.inPump.x0,y:p.inPump.y0}; b=S('outer'); break;
+      case 'occludeK':   a=S('outer'); b=S('mid'); break;
+      default:           a=S('mid');   b=S('inner'); break;
+    }
+    p.x = a.x+(b.x-a.x)*e; p.y = a.y+(b.y-a.y)*e;
+  });
+}
+
+/* ---------------- fields, bilayer, charge ---------------- */
+function drawFields(g, V){
+  const {LW,LH,memTop,memBot}=TH;
+  let s=g.createLinearGradient(0,0,0,memTop);
+  s.addColorStop(0,'#061219'); s.addColorStop(1,'#0e2a37');
+  g.fillStyle=s; g.fillRect(0,0,LW,memTop);
+  let c=g.createLinearGradient(0,memBot,0,LH);
+  c.addColorStop(0,'#2b1c22'); c.addColorStop(1,'#130c10');
+  g.fillStyle=c; g.fillRect(0,memBot,LW,LH-memBot);
+  const vc=vColor(V), exc=clamp((V-VREST)/95,0,1);
+  let halo=g.createLinearGradient(0,memTop-64,0,memTop);
+  halo.addColorStop(0,rgb(vc,0)); halo.addColorStop(1,rgb(vc,0.10+0.26*exc));
+  g.fillStyle=halo; g.fillRect(0,memTop-64,LW,64);
+  halo=g.createLinearGradient(0,memBot,0,memBot+64);
+  halo.addColorStop(0,rgb(vc,0.10+0.26*exc)); halo.addColorStop(1,rgb(vc,0));
+  g.fillStyle=halo; g.fillRect(0,memBot,LW,64);
+}
+
+function drawBilayer(g, V){
+  const {LW,memTop,memBot,memH}=TH;
+  const core=g.createLinearGradient(0,memTop,0,memBot);
+  core.addColorStop(0,'#4a3d2b'); core.addColorStop(.5,'#241d15'); core.addColorStop(1,'#4a3d2b');
+  g.fillStyle=core;
+  if(TH.rupture){
+    g.fillRect(0,memTop,TH.rupture[0],memH);
+    g.fillRect(TH.rupture[1],memTop,LW-TH.rupture[1],memH);
+  } else g.fillRect(0,memTop,LW,memH);
+  const gaps = TH.channels.map(c=>[c.cx-c.w/2-4, c.cx+c.w/2+4]);
+  if(TH.rupture) gaps.push(TH.rupture);
+  const blocked=x=>{ for(const gp of gaps) if(x>gp[0]&&x<gp[1]) return true; return false; };
+  const step=13, hr=5.2;
+  for(let x=step/2;x<LW;x+=step){
+    if(blocked(x)) continue;
+    for(const side of [0,1]){
+      const hy = side ? memBot-hr-1.5 : memTop+hr+1.5;
+      const dir = side ? -1 : 1;
+      g.strokeStyle='rgba(108,92,68,.85)'; g.lineWidth=1.7; g.lineCap='round';
+      for(const off of [-2.1,2.1]){
+        g.beginPath(); g.moveTo(x+off, hy+dir*hr*0.7);
+        g.quadraticCurveTo(x+off+dir*2.4, hy+dir*(memH/2-9)*0.55, x+off*0.5, hy+dir*(memH/2-7));
+        g.stroke();
+      }
+      const gr=g.createRadialGradient(x-1.6,hy-1.8,0.5,x,hy,hr);
+      gr.addColorStop(0,'#f6ead0'); gr.addColorStop(.7,'#e8d5ac'); gr.addColorStop(1,'#9d8a63');
+      g.fillStyle=gr; g.beginPath(); g.arc(x,hy,hr,0,6.284); g.fill();
+    }
+  }
+  const vc=vColor(V);
+  g.strokeStyle=rgb(vc,0.34); g.lineWidth=1;
+  g.beginPath(); g.moveTo(0,memTop+0.5); g.lineTo(LW,memTop+0.5);
+  g.moveTo(0,memBot-0.5); g.lineTo(LW,memBot-0.5); g.stroke();
+}
+
+function drawChargeLayer(g, V){
+  const {LW,memTop,memBot}=TH;
+  const q = clamp(V/72, -1.25, 1.25);
+  const nq = Math.round(Math.abs(q)*30);
+  if(nq<1) return;
+  const outerPos = V<0;
+  const al = clamp(Math.abs(q)*0.9, 0, 0.85);
+  const step = LW/(nq+1);
+  g.lineWidth=1.9; g.lineCap='round';
+  for(let i=1;i<=nq;i++){
+    const x = step*i + Math.sin(i*2.3)*4;
+    for(const side of [0,1]){
+      const y = side ? memBot+11 : memTop-11;
+      const pos = side ? !outerPos : outerPos;
+      g.strokeStyle = pos ? 'rgba(255,186,120,'+al+')' : 'rgba(120,190,255,'+al+')';
+      g.beginPath(); g.moveTo(x-4,y); g.lineTo(x+4,y);
+      if(pos){ g.moveTo(x,y-4); g.lineTo(x,y+4); }
+      g.stroke();
+    }
+  }
+}
+
+/* ---------------- channel proteins ---------------- */
+function drugPlug(g, x, y, key){
+  const col=DRUGCOL[key]||'#ff5a4a';
+  g.fillStyle=col;
+  g.beginPath();
+  for(let i=0;i<7;i++){
+    const a=i/7*6.283-1.57, r=i%2?4.6:8.4;
+    const px=x+Math.cos(a)*r, py=y+Math.sin(a)*r*0.82;
+    i?g.lineTo(px,py):g.moveTo(px,py);
+  }
+  g.closePath(); g.fill();
+  g.strokeStyle='rgba(0,0,0,.4)'; g.lineWidth=1; g.stroke();
+}
+function drugSpeck(g, x, y, key, spin){
+  const col=DRUGCOL[key]||'#fff';
+  g.save(); g.translate(x,y); g.rotate(spin);
+  g.fillStyle=col; g.globalAlpha=.65;
+  g.beginPath();
+  for(let i=0;i<7;i++){ const a=i/7*6.283, r=5.4+Math.sin(i*2.1)*1.1;
+    const px=Math.cos(a)*r, py=Math.sin(a)*r; i?g.lineTo(px,py):g.moveTo(px,py); }
+  g.closePath(); g.fill();
+  g.globalAlpha=.9; g.strokeStyle='rgba(0,0,0,.35)'; g.lineWidth=1; g.stroke();
+  g.globalAlpha=1; g.restore();
+}
+
+function naChannel(g, ch){
+  const {memTop,memBot}=TH, H=memBot-memTop, cx=ch.cx;
+  const halfBody = ch.w/2, dead = !!ch.blk;
+  const poreOpen = (3.2 + ch.act*6.6)*(H/74);
+  const bodyTop = memTop-7, bodyBot = memBot+7, bodyH = bodyBot-bodyTop;
+  const base=g.createLinearGradient(0,bodyTop,0,bodyBot);
+  if(dead){ base.addColorStop(0,'#4a4640'); base.addColorStop(.42,'#332f2b'); base.addColorStop(1,'#514c45'); }
+  else    { base.addColorStop(0,'#7c5230'); base.addColorStop(.42,'#5d3c24'); base.addColorStop(1,'#8a5e37'); }
+  for(const s of [-1,1]){
+    g.fillStyle=base;
+    rr(g, cx + s*poreOpen, bodyTop, s*(halfBody-poreOpen), bodyH, 6); g.fill();
+    g.strokeStyle = dead?'rgba(220,220,220,.14)':'rgba(255,190,120,.20)'; g.lineWidth=1; g.stroke();
+  }
+  const fy = memTop + H*0.26;
+  g.fillStyle = dead?'rgba(210,210,210,.45)':'rgba(255,206,150,.75)';
+  for(const s of [-1,1]){
+    g.beginPath(); g.moveTo(cx+s*poreOpen, fy-6); g.lineTo(cx+s*(poreOpen+1.2), fy);
+    g.lineTo(cx+s*poreOpen, fy+6); g.closePath(); g.fill();
+  }
+  if(ch.glow>0.02 && !dead){
+    const gl=g.createLinearGradient(cx-poreOpen,0,cx+poreOpen,0);
+    gl.addColorStop(0,'rgba(255,154,60,0)');
+    gl.addColorStop(.5,'rgba(255,180,90,'+(0.30*ch.glow)+')');
+    gl.addColorStop(1,'rgba(255,154,60,0)');
+    g.fillStyle=gl; g.fillRect(cx-poreOpen, bodyTop, poreOpen*2, bodyH);
+  }
+  const hy = memTop + H*0.56, ang = (1-ch.act)*0.92;
+  g.strokeStyle = dead?'#6d675e':'#c98d4e'; g.lineWidth=H*0.085; g.lineCap='round';
+  for(const s of [-1,1]){
+    g.save(); g.translate(cx+s*poreOpen, hy); g.rotate(s*(0.35+ang));
+    g.beginPath(); g.moveTo(0,0); g.lineTo(0, H*0.19); g.stroke(); g.restore();
+  }
+  if(ch.noH){
+    /* pronase: the chain is cut, the ball is gone */
+    g.strokeStyle='rgba(124,224,176,.7)'; g.lineWidth=2; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(cx-halfBody+5, memBot+7); g.lineTo(cx-halfBody-4, memBot+20); g.stroke();
+    g.setLineDash([]);
+  } else {
+    const plugged = 1-ch.inact;
+    const bx = cx - (1-plugged)*(halfBody+7) + Math.sin(ch.sway)*(1-plugged)*3;
+    const by = memBot + 20 - plugged*24 + Math.cos(ch.sway*1.3)*(1-plugged)*2.5;
+    g.strokeStyle = dead?'rgba(190,190,190,.5)':'rgba(210,150,95,.75)'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(cx-halfBody+5, memBot+7);
+    g.quadraticCurveTo(cx-halfBody-4, by-6, bx, by); g.stroke();
+    const bg=g.createRadialGradient(bx-2.4,by-3,0.5,bx,by,8.6);
+    if(dead){ bg.addColorStop(0,'#c9c5bd'); bg.addColorStop(1,'#66625b'); }
+    else    { bg.addColorStop(0,'#ffd9a8'); bg.addColorStop(1,'#a8632f'); }
+    g.fillStyle=bg; g.beginPath(); g.arc(bx,by,8.6,0,6.284); g.fill();
+  }
+  if(ch.blk) drugPlug(g, cx, DRUGS[ch.blk].mouth==='out'?memTop-13:memBot+15, ch.blk);
+}
+
+function kChannel(g, ch){
+  const {memTop,memBot}=TH, H=memBot-memTop, cx=ch.cx;
+  const halfBody=ch.w/2, dead=!!ch.blk;
+  const poreOpen = (2.6 + ch.gate*5.4)*(H/74);
+  const bodyTop=memTop-7, bodyBot=memBot+7, bodyH=bodyBot-bodyTop;
+  const base=g.createLinearGradient(0,bodyTop,0,bodyBot);
+  if(dead){ base.addColorStop(0,'#4b4854'); base.addColorStop(.45,'#343240'); base.addColorStop(1,'#54505f'); }
+  else    { base.addColorStop(0,'#5b4a92'); base.addColorStop(.45,'#3e3169'); base.addColorStop(1,'#6a55a8'); }
+  for(const s of [-1,1]){
+    g.fillStyle=base;
+    g.beginPath();
+    g.moveTo(cx + s*(poreOpen*0.55+2.0), bodyTop);
+    g.lineTo(cx + s*halfBody, bodyTop);
+    g.lineTo(cx + s*halfBody, bodyBot);
+    g.lineTo(cx + s*(poreOpen+1), bodyBot);
+    g.lineTo(cx + s*(poreOpen*0.7+1), memTop + H*0.55);
+    g.closePath(); g.fill();
+    g.strokeStyle = dead?'rgba(220,220,220,.14)':'rgba(200,180,255,.20)'; g.lineWidth=1; g.stroke();
+  }
+  g.fillStyle = dead?'rgba(210,210,210,.45)':'rgba(214,200,255,.85)';
+  for(let i=0;i<4;i++){
+    const y=memTop+7+i*5.2;
+    for(const s of [-1,1]){ g.beginPath(); g.arc(cx+s*(poreOpen*0.55+1.4), y, 1.5, 0, 6.284); g.fill(); }
+  }
+  if(ch.glow>0.02 && !dead){
+    const gl=g.createLinearGradient(cx-poreOpen,0,cx+poreOpen,0);
+    gl.addColorStop(0,'rgba(165,139,255,0)');
+    gl.addColorStop(.5,'rgba(190,170,255,'+(0.32*ch.glow)+')');
+    gl.addColorStop(1,'rgba(165,139,255,0)');
+    g.fillStyle=gl; g.fillRect(cx-poreOpen,bodyTop,poreOpen*2,bodyH);
+  }
+  const ang=(1-ch.gate)*0.85;
+  g.strokeStyle = dead?'#6b6878':'#a58bff'; g.lineWidth=H*0.085; g.lineCap='round';
+  for(const s of [-1,1]){
+    g.save(); g.translate(cx+s*(poreOpen+1), memBot+2); g.rotate(-s*(0.30+ang));
+    g.beginPath(); g.moveTo(0,0); g.lineTo(0,H*0.20); g.stroke(); g.restore();
+  }
+  if(ch.blk) drugPlug(g, cx, memBot+16, ch.blk);
+}
+
+function leakChannel(g, ch){
+  const {memTop,memBot}=TH, cx=ch.cx;
+  const bodyTop=memTop-4, bodyH=(memBot+4)-bodyTop;
+  g.fillStyle='#3d4a52';
+  for(const s of [-1,1]){ rr(g, cx+s*3.4, bodyTop, s*(ch.w/2-3.4), bodyH, 4); g.fill(); }
+  g.strokeStyle='rgba(160,190,205,.16)'; g.lineWidth=1; g.stroke();
+}
+
+function pumpProtein(g, ch){
+  const {memTop,memBot}=TH, cx=ch.cx;
+  const bodyTop=memTop-12, bodyBot=memBot+12, bodyH=bodyBot-bodyTop;
+  const stage = TH.pump.stage||'inLoad';
+  const e = TH.pump.frac||0;
+  /* the cavity closes around the ions as they arrive and opens as they leave,
+     rather than snapping between shapes */
+  let oi=0, oo=0;
+  switch(stage){
+    case 'inLoad':     oi=1;   break;
+    case 'occludeNa':  oi=1-e; break;
+    case 'outRelease': oo=e;   break;
+    case 'outLoad':    oo=1;   break;
+    case 'occludeK':   oo=1-e; break;
+    case 'inRelease':  oi=e;   break;
+  }
+  const base=g.createLinearGradient(0,bodyTop,0,bodyBot);
+  base.addColorStop(0,'#2f5a5f'); base.addColorStop(.5,'#1d4046'); base.addColorStop(1,'#33625f');
+  g.fillStyle=base; rr(g, cx-ch.w/2, bodyTop, ch.w, bodyH, 9); g.fill();
+  g.strokeStyle = 'rgba(140,220,215,.22)'; g.lineWidth=1; g.stroke();
+  /* the cavity: a funnel open to one side, or a sealed pocket in the middle */
+  const mid=(memTop+memBot)/2;
+  const cavTop = (mid-17) + (bodyTop+3-(mid-17))*oo;
+  const cavBot = (mid+17) + (bodyBot-3-(mid+17))*oi;
+  g.fillStyle='rgba(5,14,16,.92)';
+  g.beginPath();
+  const wTop = 13+6*oo, wBot = 13+6*oi;
+  g.moveTo(cx-wTop, cavTop); g.lineTo(cx+wTop, cavTop);
+  g.quadraticCurveTo(cx+13, (cavTop+cavBot)/2, cx+wBot, cavBot);
+  g.lineTo(cx-wBot, cavBot);
+  g.quadraticCurveTo(cx-13, (cavTop+cavBot)/2, cx-wTop, cavTop);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(140,220,215,.32)'; g.lineWidth=1; g.stroke();
+  {
+    const open=Math.max(oi,oo);
+    g.strokeStyle='rgba(150,225,215,'+(0.2+0.35*open)+')'; g.lineWidth=1.7; g.lineCap='round';
+    if(open>0.15){
+      const ay = oo>oi ? bodyTop-7 : bodyBot+7, dir = oo>oi ? -1 : 1;
+      g.beginPath(); g.moveTo(cx-5, ay+dir*5); g.lineTo(cx, ay); g.lineTo(cx+5, ay+dir*5); g.stroke();
+    }
+    if(open<0.85){
+      g.globalAlpha=1-open;
+      g.beginPath(); g.arc(cx, mid, 21, -0.5, 0.5); g.stroke();
+      g.beginPath(); g.arc(cx, mid, 21, Math.PI-0.5, Math.PI+0.5); g.stroke();
+      g.globalAlpha=1;
+    }
+  }
+}
+
+/* ---------------- electrodes ---------------- */
+function pipette(g, tipX, tipY, fromX, fromY, lit, col){
+  g.lineCap='round';
+  g.strokeStyle='rgba(200,216,232,.14)'; g.lineWidth=13;
+  g.beginPath(); g.moveTo(fromX,fromY); g.lineTo(tipX,tipY); g.stroke();
+  g.strokeStyle='rgba(232,242,252,.44)'; g.lineWidth=5;
+  g.beginPath(); g.moveTo(fromX,fromY); g.lineTo(tipX,tipY); g.stroke();
+  g.fillStyle = lit?col:'rgba(200,214,228,.42)';
+  g.beginPath(); g.arc(tipX,tipY,5.6,0,6.284); g.fill();
+  if(lit){ g.strokeStyle=col; g.lineWidth=1.6; g.globalAlpha=.5;
+    g.beginPath(); g.arc(tipX,tipY,10,0,6.284); g.stroke(); g.globalAlpha=1; }
+}
+function stimElectrode(g, amp, setLabel){
+  const {memBot,LH}=TH;
+  const tipX=46, tipY=memBot+54, active=Math.abs(amp)>0.01;
+  pipette(g, tipX, tipY, -18, LH+20, active, amp>0?'rgba(124,224,176,.95)':'rgba(120,190,255,.95)');
+  if(active){
+    const up=amp>0;
+    g.strokeStyle = up?'rgba(124,224,176,.9)':'rgba(120,190,255,.9)';
+    g.lineWidth=2.4; g.lineCap='round';
+    for(let i=0;i<3;i++){
+      const yy = tipY - 16 - i*11 - (performance.now()/70 % 11);
+      if(yy < memBot+4) continue;
+      g.globalAlpha = 0.75 - i*0.2;
+      g.beginPath();
+      if(up){ g.moveTo(tipX-6, yy+6); g.lineTo(tipX, yy); g.lineTo(tipX+6, yy+6); }
+      else  { g.moveTo(tipX-6, yy);   g.lineTo(tipX, yy+6); g.lineTo(tipX+6, yy); }
+      g.stroke();
+    }
+    g.globalAlpha=1;
+  }
+  g.textAlign='left'; g.font='500 13px "Space Grotesk",sans-serif';
+  g.fillStyle = active ? 'rgba(150,235,195,.95)' : 'rgba(190,205,220,.7)';
+  g.fillText(setLabel, tipX+16, tipY+5);
+  g.fillStyle='rgba(150,190,210,.55)'; g.font='500 11px "Space Grotesk",sans-serif';
+  g.fillText(active ? 'passing current' : 'set to fire', tipX+16, tipY+20);
+  return {tipX, tipY};
+}
+function sealSpan(){
+  const cs=TH.patchCh;
+  const cx=(cs[0].cx+cs[cs.length-1].cx)/2;
+  const half=(cs[cs.length-1].cx-cs[0].cx)/2 + 36;
+  return {cx, half};
+}
+/* a sharp microelectrode: a fine tip pushed through the membrane */
+function sharpElectrode(g, V){
+  const {LW,memTop,memBot}=TH;
+  const tipX=LW-58, tipY=memBot+(narrow?46:62), fromX=LW-26, fromY=-38;
+  const t0=(memTop-fromY)/(tipY-fromY), t1=(memBot-fromY)/(tipY-fromY);
+  const xa=fromX+(tipX-fromX)*t0, xb=fromX+(tipX-fromX)*t1;
+  pipette(g, tipX, tipY, fromX, fromY, true, 'rgba(255,214,150,.95)');
+  g.strokeStyle='rgba(232,213,172,.55)'; g.lineWidth=2;
+  g.beginPath(); g.ellipse((xa+xb)/2, (memTop+memBot)/2, 13, (memBot-memTop)/2+5, 0, 0, 6.284); g.stroke();
+  g.fillStyle='rgba(255,232,190,.95)'; g.font='500 14px "Space Grotesk",sans-serif';
+  g.textAlign='right'; g.fillText(V.toFixed(1)+' mV', tipX-12, tipY+5);
+  return {tipX, tipY, w:52, h:60,
+    title:'Sharp microelectrode',
+    note:'A fine tip pushed through the membrane, reading the potential inside against the bath. Now '+V.toFixed(1)+' mV. Current is passed by the stimulating electrode, so the voltage is free to do what it likes.'};
+}
+/* a blunt patch pipette sealed onto the surface */
+function patchPipette(g, cfg, V, cmdText){
+  const {memTop}=TH;
+  const {cx,half}=sealSpan();
+  void V;
+  const topY=-30, tipY=memTop+2, flare=half+78;
+  const glass=g.createLinearGradient(cx-flare,0,cx+flare,0);
+  glass.addColorStop(0,'rgba(206,226,244,.05)');
+  glass.addColorStop(.5,'rgba(206,226,244,.14)');
+  glass.addColorStop(1,'rgba(206,226,244,.05)');
+  g.fillStyle=glass;
+  g.beginPath();
+  g.moveTo(cx-flare,topY); g.lineTo(cx-half,tipY);
+  g.lineTo(cx+half,tipY);  g.lineTo(cx+flare,topY);
+  g.closePath(); g.fill();
+  g.strokeStyle='rgba(226,240,252,.62)'; g.lineWidth=5; g.lineCap='round';
+  g.beginPath(); g.moveTo(cx-flare,topY); g.lineTo(cx-half,tipY); g.stroke();
+  g.beginPath(); g.moveTo(cx+flare,topY); g.lineTo(cx+half,tipY); g.stroke();
+  g.strokeStyle='rgba(255,255,255,.22)'; g.lineWidth=1.6;
+  g.beginPath(); g.moveTo(cx-flare+7,topY); g.lineTo(cx-half+5,tipY-3); g.stroke();
+
+  const whole = (cfg==='cc'||cfg==='vc');
+  if(whole){
+    /* patch ruptured: the pipette is now continuous with the cytoplasm */
+    const cy=g.createLinearGradient(0,topY,0,tipY);
+    cy.addColorStop(0,'rgba(43,28,34,.55)'); cy.addColorStop(1,'rgba(43,28,34,.85)');
+    g.fillStyle=cy;
+    g.beginPath();
+    g.moveTo(cx-flare+8,topY); g.lineTo(cx-half+5,tipY);
+    g.lineTo(cx+half-5,tipY);  g.lineTo(cx+flare-8,topY);
+    g.closePath(); g.fill();
+    /* torn lipid edges curling up into the mouth */
+    g.strokeStyle='rgba(232,213,172,.8)'; g.lineWidth=3; g.lineCap='round';
+    for(const sgn of [-1,1]){
+      g.beginPath(); g.moveTo(cx+sgn*(half+6), memTop+8);
+      g.quadraticCurveTo(cx+sgn*(half-4), memTop-8, cx+sgn*(half-16), memTop-22);
+      g.stroke();
+    }
+    g.fillStyle='rgba(200,220,240,.75)'; g.font='500 11.5px "Space Grotesk",sans-serif';
+    g.textAlign='center'; g.fillText('patch ruptured — whole cell', cx, memTop-40);
+  } else {
+    /* seal intact: the membrane bulges into the tip, channels trapped under it */
+    g.strokeStyle='rgba(124,224,176,.5)'; g.lineWidth=2; g.setLineDash([4,4]);
+    g.beginPath(); g.moveTo(cx-half, memTop-3);
+    g.quadraticCurveTo(cx, memTop-22, cx+half, memTop-3); g.stroke();
+    g.setLineDash([]);
+    for(const c of TH.patchCh){
+      g.strokeStyle='rgba(124,224,176,.55)'; g.lineWidth=1.6;
+      rr(g, c.cx-c.w/2-7, TH.memTop-13, c.w+14, (TH.memBot-TH.memTop)+34, 8); g.stroke();
+    }
+    g.fillStyle='rgba(150,225,190,.8)'; g.font='500 11.5px "Space Grotesk",sans-serif';
+    g.textAlign='center'; g.fillText('seal intact — '+TH.patchCh.length+' sodium channels under the tip', cx, memTop-40);
+  }
+  g.textAlign='center';
+  g.fillStyle='rgba(255,232,190,.95)'; g.font='500 15px "Space Grotesk",sans-serif';
+  g.fillText(cmdText[0], cx, 24);
+  g.fillStyle='rgba(190,205,220,.75)'; g.font='500 12px "Space Grotesk",sans-serif';
+  g.fillText(cmdText[1], cx, 42);
+  return {tipX:cx, tipY:memTop-30, w:half*2, h:90,
+    title: whole ? 'Whole-cell patch pipette' : 'Cell-attached patch pipette',
+    note: cfg==='vc'
+      ? 'A blunt pipette sealed to the surface, then the patch under it broken through. It holds the whole membrane at the commanded voltage and reports the current it has to supply.'
+      : cfg==='cc'
+      ? 'The same pipette, but passing a set current instead of holding a set voltage. The membrane is free to make its own action potentials.'
+      : 'The seal is left intact, so only the handful of channels under the tip are recorded. Each opening is one protein, and the trace steps between shut and open.'};
+}
+/* ---------------- hover ---------------- */
+/* On a phone there is no room for a paragraph over the picture, so a tap on a channel
+   names it and stops there; the detail is in the explainer and the panel tooltips. */
+const PHONE_MQ = matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
+function hitPush(x,y,w,h,title,note,rad){
+  TH.hits.push({x:Math.min(x,x+w), y:Math.min(y,y+h),
+                w:Math.abs(w), h:Math.abs(h), title, note, rad:rad===undefined?9:rad});
+}
+function setHover(x,y){ TH.mx=x; TH.my=y; }
+function findHit(){
+  if(TH.mx===null) return null;
+  for(let i=TH.hits.length-1;i>=0;i--){
+    const r=TH.hits[i];
+    if(TH.mx>=r.x && TH.mx<=r.x+r.w && TH.my>=r.y && TH.my<=r.y+r.h) return r;
+  }
+  return null;
+}
+function wrapText(g, text, maxW){
+  const words=text.split(' '), lines=[]; let cur='';
+  for(const w of words){
+    const t=cur?cur+' '+w:w;
+    if(g.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t;
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+function drawHover(g){
+  const hit=findHit();
+  if(!hit) return;
+  /* highlight */
+  g.save();
+  g.strokeStyle='rgba(255,244,220,.85)'; g.lineWidth=1.6;
+  g.setLineDash([]);
+  rr(g, hit.x-2, hit.y-2, hit.w+4, hit.h+4, hit.rad); g.stroke();
+  g.fillStyle='rgba(255,240,210,.07)'; g.fill();
+  g.restore();
+
+  const phone = PHONE_MQ.matches;
+  const padX=phone?11:14, padY=phone?9:12, maxW=phone?Math.min(240,TH.LW-40):320;
+  g.font='600 17px "Space Grotesk",sans-serif';
+  const tw=Math.min(maxW, g.measureText(hit.title).width);
+  g.font='400 14.5px "Space Grotesk",sans-serif';
+  const lines = (hit.note && !phone) ? wrapText(g, hit.note, maxW) : [];
+  let bw=Math.max(tw, ...lines.map(l=>g.measureText(l).width), 60)+padX*2;
+  const bh = padY*2 + (lines.length?22:14) + lines.length*19;
+  let bx = TH.mx+16, by = TH.my+16;
+  if(bx+bw > TH.LW-8) bx = TH.mx-16-bw;
+  if(by+bh > TH.LH-8) by = TH.my-16-bh;
+  bx=clamp(bx,8,TH.LW-bw-8); by=clamp(by,8,TH.LH-bh-8);
+  g.fillStyle='rgba(10,14,19,.93)';
+  rr(g,bx,by,bw,bh,10); g.fill();
+  g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1; g.stroke();
+  g.textAlign='left';
+  g.fillStyle='#f4efe4'; g.font='600 17px "Space Grotesk",sans-serif';
+  g.fillText(hit.title, bx+padX, by+padY+15);
+  g.fillStyle='#c6bdac'; g.font='400 14.5px "Space Grotesk",sans-serif';
+  lines.forEach((l,i)=> g.fillText(l, bx+padX, by+padY+37+i*19));
+}
+
+/* ---------------- compose ---------------- */
+function naState(ch){
+  if(ch.blk) return DRUGS[ch.blk].label+' is in the pore — this one is out of action.';
+  const m=ch.mS[0]+ch.mS[1]+ch.mS[2];
+  if(ch.noH) return 'Inactivation gate digested away. '+m+' of 3 m gates open.';
+  if(!ch.hS) return 'Inactivated: the ball is plugging it from inside. It cannot reopen until h recovers.';
+  return m===3 ? 'All three m gates open and h is clear, so it is conducting right now.'
+               : m+' of 3 m gates open. It needs all three at once.';
+}
+function renderTheatre(g, s, opt){
+  const {LW,LH,memTop,memBot}=TH;
+  TH.hits.length=0;
+  g.clearRect(0,0,LW,LH);
+  drawFields(g, s.V);
+
+  hitPush(0,0,LW,memTop,'Extracellular fluid',
+    'Na⁺ 145 mM, K⁺ 4 mM, Cl⁻ 110 mM. Sodium is piled up out here, which is the battery the spike spends.',12);
+  hitPush(0,memBot,LW,LH-memBot,'Cytoplasm',
+    'K⁺ 140 mM, Na⁺ 18 mM, and large organic anions that cannot cross at all. Every dot is drawn in proportion.',12);
+
+  if(opt.ions) for(const p of TH.parts){ if(!p.tr && !p.inPump) blit(g,p.type,p.x,p.y,false,p.fade); }
+  for(const d of TH.drugMol) drugSpeck(g, d.x, d.y, d.key, d.spin);
+  TH.rupture = (opt.rec==='cc'||opt.rec==='vc') ? (()=>{const q=sealSpan();return [q.cx-q.half,q.cx+q.half];})() : null;
+  if(opt.charge) drawChargeLayer(g, s.V);
+  drawBilayer(g, s.V);
+  hitPush(0,memTop,LW,memBot-memTop,'Lipid bilayer',
+    'Five nanometres of fat, and a capacitor. Charge piles up on both faces — the + and − marks — which is why voltage takes time to change.',4);
+
+  const whole = (opt.rec==='cc'||opt.rec==='vc');
+  const hidden = whole ? TH.patchCh : [];
+  for(const ch of TH.channels){
+    if(hidden.indexOf(ch)>=0) continue;
+    if(ch.type==='na') naChannel(g,ch);
+    else if(ch.type==='k') kChannel(g,ch);
+    else if(ch.type==='leak') leakChannel(g,ch);
+    else if(ch.type==='pump') pumpProtein(g,ch);
+  }
+  /* hit boxes go on last so they sit above the compartments */
+  for(const ch of TH.channels){
+    if(hidden.indexOf(ch)>=0) continue;
+    const w=ch.w+14, x=ch.cx-w/2, y=memTop-18, h=(memBot-memTop)+52;
+    if(ch.type==='na') hitPush(x,y,w,h,'Voltage-gated Na⁺ channel', naState(ch));
+    else if(ch.type==='k') hitPush(x,y,w,h,'Voltage-gated K⁺ channel',
+      ch.blk ? DRUGS[ch.blk].label+' is plugging it from the inside.'
+             : 'The delayed rectifier. Four n gates, slow to open and slow to shut, so it keeps letting K⁺ out after the spike has peaked.');
+    else if(ch.type==='leak') hitPush(x,y,w,h,'Leak channels',
+      'Always open, no gates. A background mixture, mostly K⁺ and Cl⁻. Together with the pump this is what sets the resting potential.');
+    else if(ch.type==='pump') hitPush(x,y,w,h,'Na⁺/K⁺ pump',
+      'Three Na⁺ out, two K⁺ in, one ATP per turn. It rebuilds the gradients the spike spends, and speeds up as sodium builds inside.');
+  }
+
+  for(const p of TH.parts){ if(p.inPump) blit(g,p.type,p.x,p.y,true,p.fade); }
+  if(opt.ions) for(const p of TH.parts){ if(p.tr) blit(g,p.type,p.x,p.y,true,p.fade); }
+
+  if(opt.rec==='sharp'){
+    const st=stimElectrode(g, s.iStim, opt.stimText||'');
+    hitPush(st.tipX-22, st.tipY-22, 44, 60, 'Stimulating electrode',
+      'Forces current across the membrane. Right now '+s.iStim.toFixed(1)+' µA/cm².');
+  }
+  const re = opt.rec==='sharp' ? sharpElectrode(g, s.V)
+                               : patchPipette(g, opt.rec, s.V, opt.cmdText||['','']);
+  hitPush(re.tipX-re.w/2, re.tipY-re.h/2, re.w, re.h, re.title, re.note);
+
+  g.font='500 11.5px "Space Grotesk",sans-serif';
+  g.fillStyle='rgba(150,190,210,.55)'; g.textAlign='left';
+  g.fillText('outside', 14, memTop-26);
+  g.fillStyle='rgba(215,165,175,.55)';
+  g.fillText('inside', 14, memBot+32);
+
+  drawHover(g);
+}
+
+/* ============================================================
+   whole-axon theatre
+   ============================================================ */
+const CB = {
+  parts:[], sparks:[], cy:0, R:0, x0:0, x1:0,
+  probeA:0.25, probeB:0.88, tA:-1, tB:-1, vel:0, blocked:false,
+  peak:-100, front:-1, spawnDebt:0
+};
+
+function layoutCable(){
+  CB.cy = Math.round(TH.LH*(narrow ? 0.46 : 0.50));
+  CB.R  = Math.round(TH.LH*0.105);
+  CB.x0 = 54; CB.x1 = TH.LW - 34;
+  const n = TH.LW>900 ? 150 : 90;
+  CB.parts = [];
+  for(let i=0;i<n;i++){
+    const inside = Math.random()<0.42;
+    CB.parts.push({
+      type: inside?'k':(Math.random()<0.75?'na':'cl'),
+      inside,
+      x: CB.x0 + Math.random()*(CB.x1-CB.x0),
+      y: inside ? CB.cy + (Math.random()-.5)*CB.R*1.5
+                : CB.cy + (Math.random()<.5?-1:1)*(CB.R+14+Math.random()*(TH.LH*0.22)),
+      vx:(Math.random()-.5)*22, vy:(Math.random()-.5)*22
+    });
+  }
+  CB.sparks=[];
+}
+function idxToX(i){ return CB.x0 + (i/(CAB_N-1))*(CB.x1-CB.x0); }
+
+function resetCableRun(){
+  CB.tA=-1; CB.tB=-1; CB.vel=0; CB.blocked=false; CB.peak=-100; CB.front=-1;
+  CB.sparks.length=0; CB.spawnDebt=0;
+}
+
+function tickCableVisual(c, dtWall, dtModel, showIons){
+  let pk=-100, front=-1;
+  for(let i=0;i<CAB_N;i++){ if(c.V[i]>pk){pk=c.V[i];} if(c.V[i]>0) front=i; }
+  CB.peak=pk; CB.front=front;
+  if(CB.tA>=0 && CB.tB<0 && c.t-CB.tA>12) CB.blocked=true;
+
+  if(!showIons) return;
+  // soup
+  for(const p of CB.parts){
+    p.vx+=(Math.random()-.5)*40; p.vy+=(Math.random()-.5)*40;
+    const d=Math.exp(-1.8*dtWall); p.vx*=d; p.vy*=d;
+    p.x+=p.vx*dtWall; p.y+=p.vy*dtWall;
+    if(p.x<CB.x0){p.x=CB.x0;p.vx=Math.abs(p.vx);}
+    if(p.x>CB.x1){p.x=CB.x1;p.vx=-Math.abs(p.vx);}
+    if(p.inside){
+      if(p.y<CB.cy-CB.R+7){p.y=CB.cy-CB.R+7;p.vy=Math.abs(p.vy);}
+      if(p.y>CB.cy+CB.R-7){p.y=CB.cy+CB.R-7;p.vy=-Math.abs(p.vy);}
+    } else {
+      const above=p.y<CB.cy;
+      if(above){ if(p.y>CB.cy-CB.R-11){p.y=CB.cy-CB.R-11;p.vy=-Math.abs(p.vy);} if(p.y<8){p.y=8;p.vy=Math.abs(p.vy);} }
+      else     { if(p.y<CB.cy+CB.R+11){p.y=CB.cy+CB.R+11;p.vy=Math.abs(p.vy);} if(p.y>TH.LH-8){p.y=TH.LH-8;p.vy=-Math.abs(p.vy);} }
+    }
+  }
+  // flux sparks at active compartments
+  let sumNa=0, sumK=0;
+  for(let i=0;i<CAB_N;i++){ sumNa+=Math.abs(c.iNa[i]); sumK+=Math.abs(c.iK[i]); }
+  CB.spawnDebt += (sumNa+sumK)*dtModel*0.00035;
+  let make = Math.min(9, Math.floor(CB.spawnDebt));
+  CB.spawnDebt -= make;
+  while(make-- > 0 && CB.sparks.length<170){
+    const useNa = Math.random() < sumNa/(sumNa+sumK+1e-9);
+    let best=-1, bv=0;
+    for(let k=0;k<26;k++){
+      const i=(Math.random()*CAB_N)|0;
+      const v=Math.abs(useNa?c.iNa[i]:c.iK[i]);
+      if(v>bv){bv=v;best=i;}
+    }
+    if(best<0 || bv<4) continue;
+    const x=idxToX(best), top=Math.random()<0.5;
+    const yMem = CB.cy + (top?-CB.R:CB.R);
+    CB.sparks.push({
+      type: useNa?'na':'k',
+      x, x0:x, y: useNa ? yMem + (top?-24:24) : yMem + (top?-2:2),
+      x1: x+(Math.random()-.5)*16,
+      y0: useNa ? yMem + (top?-24:24) : yMem,
+      y1: useNa ? yMem + (top?18:-18) : yMem + (top?-26:26),
+      u:0
+    });
+  }
+  for(let i=CB.sparks.length-1;i>=0;i--){
+    const s=CB.sparks[i];
+    s.u += dtWall/0.34;
+    if(s.u>=1){ CB.sparks.splice(i,1); continue; }
+    const e=s.u*s.u*(3-2*s.u);
+    s.x = s.x0 + (s.x1-s.x0)*e;
+    s.y = s.y0 + (s.y1-s.y0)*e;
+  }
+}
+
+function renderCableTheatre(g, c, opt){
+  const {LW,LH}=TH, cy=CB.cy, R=CB.R, x0=CB.x0, x1=CB.x1;
+  TH.hits.length=0;
+  g.clearRect(0,0,LW,LH);
+  let bath=g.createLinearGradient(0,0,0,LH);
+  bath.addColorStop(0,'#061219'); bath.addColorStop(.42,'#102a37'); bath.addColorStop(1,'#08171f');
+  g.fillStyle=bath; g.fillRect(0,0,LW,LH);
+
+  hitPush(0,0,LW,LH,'Extracellular bath',
+    'Seawater around the axon. Current that leaves the membrane at one point returns to it at another, through here.',12);
+  if(opt.ions) for(const p of CB.parts) if(!p.inside) blit(g,p.type,p.x,p.y,false);
+
+  // axoplasm, coloured by local membrane potential
+  const seg=(x1-x0)/CAB_N;
+  for(let i=0;i<CAB_N;i++){
+    const col=vColor(c.V[i]);
+    g.fillStyle=rgb(mix(col,[26,16,20],0.42),1);
+    g.fillRect(idxToX(i)-seg*0.5-0.6, cy-R, seg+1.2, R*2);
+  }
+  // inner sheen
+  let sh=g.createLinearGradient(0,cy-R,0,cy+R);
+  sh.addColorStop(0,'rgba(0,0,0,.30)'); sh.addColorStop(.30,'rgba(255,255,255,.13)');
+  sh.addColorStop(.62,'rgba(255,255,255,0)'); sh.addColorStop(1,'rgba(0,0,0,.34)');
+  g.fillStyle=sh; g.fillRect(x0,cy-R,x1-x0,R*2);
+
+  hitPush(x0,cy-R,x1-x0,R*2,'Axoplasm',
+    'The conducting core, 240 µm across. Its resistance is what limits how far current spreads from each active point, and so how fast the spike travels.',6);
+  if(opt.ions) for(const p of CB.parts) if(p.inside) blit(g,p.type,p.x,p.y,false);
+
+  // membrane walls
+  for(const s of [-1,1]){
+    const y=cy+s*R;
+    g.strokeStyle='rgba(232,213,172,.62)'; g.lineWidth=2.4;
+    g.beginPath(); g.moveTo(x0,y); g.lineTo(x1,y); g.stroke();
+    g.strokeStyle='rgba(108,92,68,.55)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(x0,y+s*2.2); g.lineTo(x1,y+s*2.2); g.stroke();
+  }
+
+  // sheath / nodes / lesion
+  if(opt.myelin){
+    const ne=c.nodeEvery, wrapT=Math.round(R*0.62);
+    for(let i=0;i<CAB_N;i+=ne){
+      const a=idxToX(i)+1.6, b=idxToX(Math.min(CAB_N-1,i+ne))-1.6;
+      if(b<=a) continue;
+      const lesioned = c.lesionOn && i>=c.l0-ne && i<c.l1;
+      for(const s of [-1,1]){
+        const yTop = s<0 ? cy-R-wrapT : cy+R;
+        if(lesioned){
+          g.fillStyle='rgba(120,104,78,.18)';
+          rr(g,a,yTop,b-a,wrapT,3); g.fill();
+          g.strokeStyle='rgba(255,120,90,.42)'; g.lineWidth=1.4; g.setLineDash([4,5]);
+          g.beginPath(); g.moveTo(a, s<0?yTop:yTop+wrapT); g.lineTo(b, s<0?yTop:yTop+wrapT); g.stroke();
+          g.setLineDash([]);
+        } else {
+          const grd=g.createLinearGradient(0,yTop,0,yTop+wrapT);
+          if(s<0){ grd.addColorStop(0,'#5f5138'); grd.addColorStop(.72,'#ddc9a1'); grd.addColorStop(1,'#efdfba'); }
+          else   { grd.addColorStop(0,'#efdfba'); grd.addColorStop(.28,'#ddc9a1'); grd.addColorStop(1,'#5f5138'); }
+          g.fillStyle=grd; rr(g,a,yTop,b-a,wrapT,2.5); g.fill();
+          g.strokeStyle='rgba(72,58,38,.34)'; g.lineWidth=0.9;
+          const lines=Math.max(3,Math.min(7,Math.round(wrapT/4.5)));
+          for(let L=1;L<lines;L++){
+            const yy=yTop+wrapT*L/lines;
+            g.beginPath(); g.moveTo(a+1.5,yy); g.lineTo(b-1.5,yy); g.stroke();
+          }
+        }
+      }
+      if(!lesioned){
+        hitPush(a, cy-R-wrapT, b-a, wrapT, 'Myelin sheath',
+          Math.round((1+ (opt.wraps||0)*0.6))+'-fold drop in capacitance and leak. Charge from the last node runs down the inside of this stretch instead of leaking out of it.',3);
+      } else {
+        hitPush(a, cy-R-wrapT, b-a, wrapT*2+R*2, 'Stripped patch',
+          'Sheath gone. Bare membrane soaks up charge, and potassium channels that were sequestered under the wrap now shunt the signal away. TEA or 4-AP blocks them and conduction returns.',3);
+      }
+      // node of Ranvier at i
+      const nx=idxToX(i);
+      if(!lesioned) hitPush(nx-9, cy-R-6, 18, R*2+12, 'Node of Ranvier',
+        'A bare gap about a micrometre wide, packed with sodium channels. The spike is regenerated here and nowhere else, which is why it appears to jump.',3);
+      const active = c.V[i] > -40;
+      for(const s of [-1,1]){
+        g.fillStyle = active ? 'rgba(255,190,105,.98)' : 'rgba(210,178,132,.75)';
+        g.fillRect(nx-2.6, cy+s*R-(s<0?5:0), 5.2, 5);
+      }
+      if(active){
+        const gl=g.createRadialGradient(nx,cy,2,nx,cy,R*1.9);
+        gl.addColorStop(0,'rgba(255,190,110,.34)'); gl.addColorStop(1,'rgba(255,190,110,0)');
+        g.fillStyle=gl; g.beginPath(); g.arc(nx,cy,R*1.9,0,6.284); g.fill();
+      }
+    }
+    if(c.lesionOn){
+      const a=idxToX(c.l0), b=idxToX(c.l1-1);
+      g.fillStyle='rgba(255,90,60,.07)'; g.fillRect(a,cy-R-R*0.7,b-a,R*2+R*1.4);
+      g.fillStyle='rgba(255,140,110,.8)';
+      g.font='500 11.5px "Space Grotesk",sans-serif'; g.textAlign='center';
+      g.fillText('sheath stripped', (a+b)/2, cy-R-R*0.7-8);
+    }
+  } else {
+    hitPush(x0, cy-R-8, x1-x0, 16, 'Bare axon membrane',
+      'Channels along the whole length, so every point has to regenerate the spike for itself. That is slow: about 12 m/s here.',3);
+    hitPush(x0, cy+R-8, x1-x0, 16, 'Bare axon membrane',
+      'Channels along the whole length, so every point has to regenerate the spike for itself. That is slow: about 12 m/s here.',3);
+    for(let x=x0+6;x<x1;x+=17){
+      const i=Math.min(CAB_N-1,Math.round((x-x0)/(x1-x0)*(CAB_N-1)));
+      const active=c.V[i]>-40;
+      for(const s of [-1,1]){
+        g.fillStyle = active ? 'rgba(255,180,90,.9)' : 'rgba(190,160,120,.42)';
+        g.fillRect(x-2, cy+s*R-(s<0?3:0), 4, 3);
+      }
+    }
+  }
+
+  if(opt.ions) for(const s of CB.sparks) blit(g,s.type,s.x,s.y,true);
+
+  // V(x) trace riding above the axon
+  const trTop=62, trBot=cy-R-(opt.myelin?R*0.62:0)-14;
+  if(trBot-trTop>40){
+    const yv=(V)=>trBot-(clamp(V,-90,55)+90)/145*(trBot-trTop);
+    g.strokeStyle='rgba(255,255,255,.10)'; g.lineWidth=1; g.setLineDash([3,5]);
+    g.beginPath(); g.moveTo(x0,yv(0)); g.lineTo(x1,yv(0)); g.stroke(); g.setLineDash([]);
+    g.beginPath();
+    for(let i=0;i<CAB_N;i++){ const X=idxToX(i), Y=yv(c.V[i]); i?g.lineTo(X,Y):g.moveTo(X,Y); }
+    g.strokeStyle='rgba(255,214,150,.95)'; g.lineWidth=2.2; g.lineJoin='round';
+    g.shadowColor='rgba(255,170,80,.55)'; g.shadowBlur=10; g.stroke(); g.shadowBlur=0;
+    g.fillStyle='rgba(150,190,210,.55)'; g.font='500 11px "Space Grotesk",sans-serif';
+    g.textAlign='right'; g.fillText('membrane voltage along the axon', x1, trTop-5);
+    g.fillText('0 mV', x0-6, yv(0)+4);
+  }
+
+  // stimulator + recording electrodes
+  const sheathT = opt.myelin ? Math.round(R*0.62) : 0;
+  const below = cy+R+sheathT;
+  pipette(g, x0+4, below+4, x0-34, below+58, !!opt.stimOn, 'rgba(124,224,176,.95)');
+  hitPush(x0-18, below-16, 44, 56, 'Stimulating electrode',
+    'Injects current into the left-hand end of the axon. Everything after that is the axon doing it by itself.');
+  g.fillStyle='rgba(160,200,215,.6)'; g.font='500 11px "Space Grotesk",sans-serif'; g.textAlign='left';
+  g.fillText('stimulus', x0-30, below+74);
+
+  const extra = opt.rec==='extra';
+  for(const [frac,name,tt] of [[CB.probeA,'A',CB.tA],[CB.probeB,'B',CB.tB]]){
+    const px=idxToX(Math.round(CAB_N*frac));
+    const tipY = extra ? below+16 : cy+R*0.45;
+    pipette(g, px, tipY, px+34, below+62, tt>=0, 'rgba(255,206,140,.95)');
+    if(!extra){
+      g.strokeStyle='rgba(232,213,172,.5)'; g.lineWidth=1.6;
+      g.beginPath(); g.ellipse(px, cy+R+sheathT/2, 9, sheathT/2+5, 0, 0, 6.284); g.stroke();
+    }
+    hitPush(px-20, Math.min(tipY,below)-16, 44, 70,
+      (extra?'Surface electrode ':'Intracellular microelectrode ')+name,
+      (extra
+        ? 'Resting on the outside of the axon, like a clinical nerve conduction study. It sees the current flowing in and out of nearby membrane, so the waveform is biphasic and much smaller. '
+        : 'Pushed through the membrane, reading the potential inside against the bath — a clean monophasic spike. ')
+      + (tt>=0 ? 'The impulse passed here at '+tt.toFixed(2)+' ms. ' : 'Nothing has passed here yet. ')
+      + 'A and B sit '+((CB.probeB-CB.probeA)*CAB_LEN).toFixed(1)+' cm apart; that distance over the delay between them is the conduction velocity.');
+    g.fillStyle='rgba(230,238,246,.85)'; g.font='500 12.5px "Space Grotesk",sans-serif'; g.textAlign='center';
+    g.fillText(name, px+40, below+76);
+    if(tt>=0){
+      g.fillStyle='rgba(255,214,150,.9)'; g.font='500 11.5px "Space Grotesk",sans-serif';
+      g.textAlign='left'; g.fillText(tt.toFixed(2)+' ms', px+52, below+76);
+    }
+  }
+
+  // ruler
+  g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=1;
+  const yr=LH-30;
+  g.beginPath(); g.moveTo(x0,yr); g.lineTo(x1,yr); g.stroke();
+  g.fillStyle='rgba(150,190,210,.5)'; g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='center';
+  for(let cm=0;cm<=CAB_LEN;cm+=1){
+    const X=x0+(cm/CAB_LEN)*(x1-x0);
+    g.beginPath(); g.moveTo(X,yr-4); g.lineTo(X,yr+4); g.stroke();
+    g.textAlign = cm===CAB_LEN ? 'right' : 'center';
+    g.fillText(cm+(cm===CAB_LEN?' cm':''), X + (cm===CAB_LEN?4:0), yr+16);
+  }
+
+  drawHover(g);
+}
+
+/* ============================================================
+   traces
+   ============================================================ */
+const PL = { LW:1120, LH:470 };
+const HIST = { t:[], V:[], m:[], h:[], n:[], iNa:[], iK:[], iL:[], iSt:[] };
+const WIN_PATCH = 46;
+const SAMPLE_MS = 0.04;
+const CWIN = 18;
+const CHIST = { t:[], a:[], b:[], ea:[], eb:[], m:[], h:[], n:[] };
+const PHI = 1;
+const VHOLD = -65;
+
+/* one sweep of a clamp protocol; y is current for voltage clamp,
+   voltage for current clamp, picoamps for a cell-attached patch */
+const CLAMP = { t:[], y:[], m:[], h:[], n:[] };
+const SWEEPS = [];
+const SC = { t:[], i:[] };
+const SCBIN = 0.1;
+let SCAVG = { sum:null, cnt:null, sweeps:0 };
+let clampT = 0, clampRunning = false;
+
+function clampWindow(){ return 2 + S.dur + 8; }
+function resetAvg(){
+  const n = Math.ceil(clampWindow()/SCBIN)+2;
+  SCAVG = { sum:new Float64Array(n), cnt:new Int32Array(n), sweeps:0 };
+}
+function clearSweeps(){ SWEEPS.length=0; resetAvg(); }
+function clearClamp(){
+  for(const k in CLAMP) CLAMP[k].length=0;
+  SC.t.length=0; SC.i.length=0; clampT=0; clampRunning=false;
+}
+
+function pushHist(s){
+  HIST.t.push(s.t); HIST.V.push(s.V); HIST.m.push(s.m); HIST.h.push(s.h); HIST.n.push(s.n);
+  HIST.iNa.push(s.iNa); HIST.iK.push(s.iK); HIST.iL.push(s.iL); HIST.iSt.push(s.iStim);
+  const cut=s.t-WIN_PATCH-2;
+  let k=0; while(k<HIST.t.length && HIST.t[k]<cut) k++;
+  if(k>200) for(const key in HIST) HIST[key].splice(0,k);
+}
+function clearHist(){ for(const k in HIST) HIST[k].length=0; }
+function clearCHist(){ for(const k in CHIST) CHIST[k].length=0; }
+
+function gridPanel(g,x,y,w,h,title){
+  g.fillStyle='#0d1015'; g.fillRect(x,y,w,h);
+  g.strokeStyle='#22262e'; g.lineWidth=1;
+  g.strokeRect(x+.5,y+.5,w-1,h-1);
+  if(title){
+    g.fillStyle='#7d766b'; g.font='500 11px "Space Grotesk",sans-serif'; g.textAlign='right';
+    g.fillText(title, x+w-10, y+15);
+  }
+}
+function gatesPanel(g, L, y, pw, h, tArr, mArr, hArr, nArr, X, t0){
+  const Y=v=>y+h-clamp(v,0,1)*(h-8)-4;
+  g.strokeStyle='rgba(255,255,255,.10)'; g.setLineDash([2,4]);
+  g.beginPath(); g.moveTo(L,Y(0.5)); g.lineTo(L+pw,Y(0.5)); g.stroke(); g.setLineDash([]);
+  const gates=[[mArr,'m','Na⁺ activation','#ff9a3c'],
+               [hArr,'h','Na⁺ inactivation','#ff6f91'],
+               [nArr,'n','K⁺ activation','#a58bff']];
+  for(const [arr,,,col] of gates){
+    if(tArr.length<2) break;
+    g.beginPath();
+    for(let i=0;i<tArr.length;i++){ if(tArr[i]<t0) continue; g.lineTo(X(tArr[i]), Y(arr[i])); }
+    g.strokeStyle=col; g.lineWidth=1.8; g.stroke();
+  }
+  /* each gate is named with the ion it belongs to. The long form is dropped for the
+     bare letters only if the plot is too narrow to hold it. */
+  g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
+  let need=0;
+  for(const [,key,what] of gates) need += 27+g.measureText(key+' ('+what+')').width;
+  const wordy = need < pw-30;
+  let lx=L+10;
+  for(const [,key,what,col] of gates){
+    const lab = wordy ? key+' ('+what+')' : key;
+    g.fillStyle=col; g.fillRect(lx,y+9,9,3); g.fillText(lab, lx+13, y+14);
+    lx += 27+g.measureText(lab).width;
+  }
+  /* the scale is a probability, read as a percentage of channels of that kind open */
+  g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+  g.fillText('100', L-6, Y(1)+4); g.fillText('0', L-6, Y(0)+4);
+}
+/* The four reference levels share a 48px gutter to the left of the plot. On a narrow
+   plot the labels drop their numbers rather than hanging off the edge, and a label that
+   would land on the one above it is left out instead of being drawn over it. */
+/* a reference line is labelled with the value it is actually at: block the pump and
+   E_Na and E_K move, and a label that still said +50 would be a lie. */
+/* Axis maxima are rounded up to a round number, so an autoscaling axis carries a
+   label that holds still between frames instead of flickering through 823, 809, 783. */
+function niceMax(v){
+  const e=Math.pow(10, Math.floor(Math.log10(Math.max(v,1e-9))));
+  for(const m of [1,1.2,1.5,2,2.5,3,4,5,6,8]) if(v <= m*e*1.0001) return m*e;
+  return 10*e;
+}
+function lvl(name, v){
+  const r=Math.round(v);
+  return name+' '+(r>0?'+':(r<0?'−':''))+Math.abs(r);
+}
+function levelLabel(g, lab, col, L, y, used){
+  const txt = PL.LW < 560 ? lab.split(' ')[0] : lab;
+  for(const u of used) if(Math.abs(u-y) < 11) return;
+  used.push(y);
+  g.fillStyle = col.replace(/[\d.]+\)$/,'.85)');
+  g.fillText(txt, Math.max(L-6, g.measureText(txt).width+2), y+3.5);
+}
+function timeAxis(g, L, pw, yBase, H, t0, t1, step){
+  g.textAlign='center'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+  for(let tk=Math.ceil(t0/step)*step; tk<=t1-step*0.4; tk+=step){
+    const x=L+(tk-t0)/(t1-t0)*pw;
+    g.strokeStyle='rgba(255,255,255,.08)';
+    g.beginPath(); g.moveTo(x,yBase); g.lineTo(x,yBase+4); g.stroke();
+    g.fillText(tk.toFixed(0), x, H-9);
+  }
+  g.textAlign='right'; g.fillText('ms', L+pw+12, H-9);
+}
+/* the step waveform the amplifier is commanding, with earlier sweeps behind */
+function commandPanel(g, L, y, h, pw, X, win, base, val, fmt){
+  let m=Math.max(Math.abs(base), Math.abs(val));
+  for(const sw of SWEEPS) m=Math.max(m, Math.abs(sw.cmd));
+  const lo=Math.min(base,-m*0.15)-m*0.25, hi=m*1.25;
+  const Y=v=>y+h-((clamp(v,lo,hi)-lo)/(hi-lo))*(h-6)-3;
+  g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=1; g.setLineDash([2,4]);
+  g.beginPath(); g.moveTo(L,Y(base)); g.lineTo(L+pw,Y(base)); g.stroke(); g.setLineDash([]);
+  const step=(cmd,dur)=>{
+    g.beginPath();
+    g.moveTo(X(0),Y(base)); g.lineTo(X(2),Y(base)); g.lineTo(X(2),Y(cmd));
+    g.lineTo(X(2+dur),Y(cmd)); g.lineTo(X(2+dur),Y(base)); g.lineTo(X(win),Y(base));
+    g.stroke();
+  };
+  g.strokeStyle='rgba(124,224,176,.28)'; g.lineWidth=1.4;
+  for(const sw of SWEEPS) step(sw.cmd, sw.dur);
+  g.strokeStyle='#7ce0b0'; g.lineWidth=2; step(val, S.dur);
+  g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+  g.fillText(fmt(val), L-6, Y(val)+4);
+  g.fillText(fmt(base), L-6, Y(base)+4);
+}
+
+/* ---------------- sharp microelectrode: free running ---------------- */
+/* The two current axes grow the instant a trace needs the room and give it back
+   slowly, so the scale does not snap back and forth around a spike. */
+let iHold=60, sHold=8;
+function drawCurrentClamp(g, train){
+  const W=PL.LW, H=PL.LH, L=54, R=W<620?30:40, T=8, B=26;
+  g.clearRect(0,0,W,H);
+  g.fillStyle='#101318'; g.fillRect(0,0,W,H);
+  const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.47), h2=Math.round(ph*0.24), h3=ph-h1-h2-8;
+  const y1=T, y2=T+h1+4, y3=y2+h2+4;
+  const tN = HIST.t.length ? HIST.t[HIST.t.length-1] : 0;
+  const t0 = Math.max(0, tN-WIN_PATCH), t1 = Math.max(WIN_PATCH, tN);
+  const X = t => L + (t-t0)/(t1-t0)*pw;
+
+  gridPanel(g,L,y1,pw,h1,'membrane potential · mV');
+  gridPanel(g,L,y2,pw,h2,'opening likelihood · %');
+  const tight = pw<620;
+  gridPanel(g,L,y3,pw,h3, tight ? 'ionic µA/cm²' : 'ionic current · µA/cm²');
+
+  g.fillStyle='rgba(124,224,176,.10)';
+  for(const p of train){
+    if(p.t0>t1 || p.t0+p.dur<t0) continue;
+    const xa=X(Math.max(t0,p.t0)), xb=X(Math.min(t1,p.t0+p.dur));
+    g.fillRect(xa,y1,Math.max(1.2,xb-xa),y3+h3-y1);
+  }
+  const vLo=-95, vHi=58, Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
+  g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
+  for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.5)'],[0,'0','rgba(255,255,255,.14)'],
+                            [VREST,'rest −65','rgba(255,255,255,.16)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.5)']]){
+    const y=Y1(v);
+    g.strokeStyle=col; g.lineWidth=1; g.setLineDash(v===0?[2,4]:[4,5]);
+    g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
+    levelLabel(g, lab, col, L, y, used);
+  }
+  if(HIST.t.length>1){
+    g.beginPath();
+    for(let i=0;i<HIST.t.length;i++){ if(HIST.t[i]<t0) continue; g.lineTo(X(HIST.t[i]), Y1(HIST.V[i])); }
+    g.strokeStyle='#f4efe4'; g.lineWidth=2; g.lineJoin='round'; g.lineCap='round';
+    g.shadowColor='rgba(255,220,170,.45)'; g.shadowBlur=8; g.stroke(); g.shadowBlur=0;
+  }
+  gatesPanel(g, L, y2, pw, h2, HIST.t, HIST.m, HIST.h, HIST.n, X, t0);
+
+  /* Two vertical scales in this panel. The ionic currents run to hundreds of
+     µA/cm² and the electrode pulse to tens, so on one shared axis the pulse
+     collapses into the zero line. The Na and K traces are read against the left
+     gutter, the electrode against the right one. Both are µA/cm²; only the
+     scale differs. Zero is common to the two. */
+  let iMax=60, sMax=8;
+  for(let i=0;i<HIST.t.length;i++){
+    if(HIST.t[i]<t0) continue;
+    iMax=Math.max(iMax, Math.abs(HIST.iNa[i]), Math.abs(HIST.iK[i]));
+    sMax=Math.max(sMax, Math.abs(HIST.iSt[i]));
+  }
+  iHold=Math.max(iMax*1.06, iHold*0.97); sHold=Math.max(sMax*1.18, sHold*0.97);
+  iMax=niceMax(iHold); sMax=niceMax(sHold);
+  const zy=y3+h3/2, half=h3/2-4;
+  const Y3  = v=>zy-clamp(v,-iMax,iMax)/iMax*half;
+  const Y3s = v=>zy-clamp(v,-sMax,sMax)/sMax*half;
+  g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(L,zy); g.lineTo(L+pw,zy); g.stroke();
+  for(const [key,fill,stroke] of [['iNa','rgba(255,154,60,.30)','#ff9a3c'],
+                                  ['iK','rgba(165,139,255,.26)','#a58bff']]){
+    if(HIST.t.length<2) break;
+    g.beginPath(); g.moveTo(X(Math.max(t0,HIST.t[0])), zy);
+    let any=false;
+    for(let i=0;i<HIST.t.length;i++){ if(HIST.t[i]<t0) continue; g.lineTo(X(HIST.t[i]), Y3(HIST[key][i])); any=true; }
+    if(!any) continue;
+    g.lineTo(X(HIST.t[HIST.t.length-1]), zy); g.closePath();
+    g.fillStyle=fill; g.fill();
+    g.beginPath();
+    for(let i=0;i<HIST.t.length;i++){ if(HIST.t[i]<t0) continue; g.lineTo(X(HIST.t[i]), Y3(HIST[key][i])); }
+    g.strokeStyle=stroke; g.lineWidth=1.6; g.stroke();
+  }
+  if(HIST.t.length>1){
+    g.beginPath();
+    for(let i=0;i<HIST.t.length;i++){ if(HIST.t[i]<t0) continue; g.lineTo(X(HIST.t[i]), Y3s(HIST.iSt[i])); }
+    g.strokeStyle='#7ce0b0'; g.lineWidth=1.6; g.stroke();
+  }
+  g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
+  let lx=L+10;
+  for(const [lab,col] of [['Na⁺','#ff9a3c'],['K⁺','#a58bff'],[tight?'stim (right)':'electrode · right scale','#7ce0b0']]){
+    g.fillStyle=col; g.fillRect(lx,y3+9,9,3); g.fillText(lab,lx+13,y3+14);
+    lx += 27+g.measureText(lab).width;
+  }
+  /* the numbers live in the gutters, clear of the traces: grey on the left for the
+     ionic currents, electrode green on the right for the pulse */
+  g.font='500 10.5px "Space Grotesk",sans-serif';
+  const iT=iMax, sT=+sMax.toFixed(sMax<10?1:0);
+  g.textAlign='right'; g.fillStyle='#7d766b';
+  g.fillText(iT, L-6, Y3(iMax)+9);
+  g.fillText('−'+iT, L-6, Y3(-iMax)-3);
+  g.fillStyle='rgba(125,118,107,.72)';
+  g.fillText('out', L-6, Y3(iMax*0.40)+4);
+  g.fillText('in',  L-6, Y3(-iMax*0.40)+4);
+  g.textAlign='left'; g.fillStyle='rgba(124,224,176,.85)';
+  g.fillText('+'+sT, L+pw+5, Y3s(sMax)+9);
+  g.fillText('−'+sT, L+pw+5, Y3s(-sMax)-3);
+  timeAxis(g, L, pw, y3+h3, H, t0, t1, (t1-t0)>30?10:5);
+}
+
+/* ---------------- whole-cell current clamp: a family of spikes ---------------- */
+function drawCCSweeps(g){
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=8, B=26;
+  g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
+  const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.22), h2=Math.round(ph*0.52), h3=ph-h1-h2-8;
+  const y1=T, y2=T+h1+4, y3=y2+h2+4;
+  const win=clampWindow(), X=t=>L+clamp(t/win,0,1)*pw;
+
+  gridPanel(g,L,y1,pw,h1,'current injected · µA/cm²');
+  commandPanel(g, L, y1, h1, pw, X, win, 0, S.icmd, v=>v.toFixed(1));
+
+  gridPanel(g,L,y2,pw,h2,'membrane potential · mV');
+  const vLo=-95, vHi=58, Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
+  g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
+  for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.45)'],[0,'0','rgba(255,255,255,.13)'],
+                            [VREST,'rest −65','rgba(255,255,255,.15)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.45)']]){
+    const y=Y2(v);
+    g.strokeStyle=col; g.lineWidth=1; g.setLineDash([4,5]);
+    g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
+    levelLabel(g, lab, col, L, y, used);
+  }
+  for(const sw of SWEEPS){
+    g.strokeStyle='rgba(244,239,228,.26)'; g.lineWidth=1.3;
+    g.beginPath();
+    for(let i=0;i<sw.t.length;i++) g.lineTo(X(sw.t[i]), Y2(sw.y[i]));
+    g.stroke();
+  }
+  if(CLAMP.t.length>1){
+    g.beginPath();
+    for(let i=0;i<CLAMP.t.length;i++) g.lineTo(X(CLAMP.t[i]), Y2(CLAMP.y[i]));
+    g.strokeStyle='#f4efe4'; g.lineWidth=2; g.lineJoin='round';
+    g.shadowColor='rgba(255,220,170,.4)'; g.shadowBlur=7; g.stroke(); g.shadowBlur=0;
+  }
+  g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
+  g.fillStyle='rgba(185,176,160,.9)';
+  g.fillText(SWEEPS.length ? SWEEPS.length+' earlier sweep'+(SWEEPS.length>1?'s':'')+' kept behind'
+                           : 'turn the command current up a step at a time and run again', L+10, y2+15);
+
+  gridPanel(g,L,y3,pw,h3,'opening likelihood · %');
+  gatesPanel(g, L, y3, pw, h3, CLAMP.t, CLAMP.m, CLAMP.h, CLAMP.n, X, -1);
+  timeAxis(g, L, pw, y3+h3, H, 0, win, win>25?10:5);
+}
+
+/* ---------------- whole-cell voltage clamp ---------------- */
+function drawVoltageClamp(g){
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=8, B=26;
+  g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
+  const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.24), h2=Math.round(ph*0.50), h3=ph-h1-h2-8;
+  const y1=T, y2=T+h1+4, y3=y2+h2+4;
+  const win=clampWindow(), X=t=>L+clamp(t/win,0,1)*pw;
+
+  gridPanel(g,L,y1,pw,h1,'command voltage · mV');
+  commandPanel(g, L, y1, h1, pw, X, win, VHOLD, S.vcmd, v=>(v>0?'+':'')+v.toFixed(0));
+
+  gridPanel(g,L,y2,pw,h2,'current the amplifier must supply · µA/cm²');
+  let iMax=300;
+  for(const arr of [CLAMP.y].concat(SWEEPS.map(s=>s.y)))
+    for(const v of arr) iMax=Math.max(iMax, Math.abs(v));
+  iMax*=1.1;
+  const zy=y2+h2/2, Y2=v=>zy-clamp(v,-iMax,iMax)/iMax*(h2/2-6);
+  g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(L,zy); g.lineTo(L+pw,zy); g.stroke();
+  for(const sw of SWEEPS){
+    g.strokeStyle='rgba(244,239,228,.26)'; g.lineWidth=1.3;
+    g.beginPath();
+    for(let i=0;i<sw.t.length;i++) g.lineTo(X(sw.t[i]), Y2(sw.y[i]));
+    g.stroke();
+  }
+  if(CLAMP.t.length>1){
+    g.beginPath();
+    for(let i=0;i<CLAMP.t.length;i++) g.lineTo(X(CLAMP.t[i]), Y2(CLAMP.y[i]));
+    g.strokeStyle='#f4efe4'; g.lineWidth=2; g.lineJoin='round';
+    g.shadowColor='rgba(255,220,170,.4)'; g.shadowBlur=7; g.stroke(); g.shadowBlur=0;
+  }
+  g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+  g.fillText('outward', L-6, Y2(iMax*0.7)+4);
+  g.fillText('inward',  L-6, Y2(-iMax*0.7)+4);
+  g.fillText(Math.round(iMax/1.1), L-6, Y2(iMax/1.1)+4);
+  g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
+  g.fillStyle='rgba(185,176,160,.9)';
+  g.fillText(SWEEPS.length ? SWEEPS.length+' earlier sweep'+(SWEEPS.length>1?'s':'')+' kept behind'
+                           : 'step to a different voltage and run again to build the family', L+10, y2+15);
+
+  gridPanel(g,L,y3,pw,h3,'opening likelihood · %');
+  gatesPanel(g, L, y3, pw, h3, CLAMP.t, CLAMP.m, CLAMP.h, CLAMP.n, X, -1);
+  timeAxis(g, L, pw, y3+h3, H, 0, win, win>25?10:5);
+}
+
+/* ---------------- cell-attached: single channels ---------------- */
+function drawSingleChannel(g){
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=8, B=26;
+  g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
+  const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.18), h2=Math.round(ph*0.42), h3=ph-h1-h2-8;
+  const y1=T, y2=T+h1+4, y3=y2+h2+4;
+  const win=clampWindow(), X=t=>L+clamp(t/win,0,1)*pw;
+
+  gridPanel(g,L,y1,pw,h1,'command voltage · mV');
+  commandPanel(g, L, y1, h1, pw, X, win, VHOLD, S.vcmd, v=>(v>0?'+':'')+v.toFixed(0));
+
+  /* one open channel sets the scale of the raw record — a single opening should
+     be a large step, not a scratch near the baseline */
+  const unit = Math.abs(singleChannelPA(S.vcmd, ENA)) || 1;
+  let pMax = unit*1.55;
+  for(const v of SC.i) pMax = Math.max(pMax, Math.abs(v)*1.12);
+  gridPanel(g,L,y2,pw,h2,'current through the channels under the tip · pA');
+  const zy=y2+h2/2, Y2=v=>zy-clamp(v,-pMax,pMax)/pMax*(h2/2-8);
+  g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1; g.setLineDash([2,4]);
+  g.beginPath(); g.moveTo(L,zy); g.lineTo(L+pw,zy); g.stroke();
+  g.strokeStyle='rgba(127,227,255,.30)';
+  g.beginPath(); g.moveTo(L,Y2(-unit)); g.lineTo(L+pw,Y2(-unit)); g.stroke();
+  g.setLineDash([]);
+  g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+  g.fillText('shut', L-6, zy+4);
+  g.fillStyle='rgba(127,227,255,.7)';
+  g.fillText('1 open', L-6, Y2(-unit)+4);
+  if(SC.t.length>1){
+    g.beginPath();
+    for(let i=0;i<SC.t.length;i++){          // a real record steps, it does not slope
+      const x=X(SC.t[i]), y=Y2(SC.i[i]);
+      if(i===0) g.moveTo(x,y); else { g.lineTo(x, Y2(SC.i[i-1])); g.lineTo(x,y); }
+    }
+    g.strokeStyle='#7fe3ff'; g.lineWidth=1.7; g.lineJoin='miter'; g.stroke();
+  }
+
+  /* the average gets its own scale: it is tens of times smaller than one
+     opening, and on a shared axis it would be a flat line */
+  let aMax=unit*0.06, aMin=0;
+  if(SCAVG.sum) for(let i=0;i<SCAVG.cnt.length;i++){
+    if(!SCAVG.cnt[i]) continue;
+    const v=SCAVG.sum[i]/SCAVG.cnt[i];
+    aMax=Math.max(aMax,Math.abs(v)*1.3);
+  }
+  void aMin;
+  gridPanel(g,L,y3,pw,h3,'average of every sweep so far · pA');
+  const zy3=y3+h3/2, Y3=v=>zy3-clamp(v,-aMax,aMax)/aMax*(h3/2-8);
+  g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(L,zy3); g.lineTo(L+pw,zy3); g.stroke();
+  g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+  g.fillText('0', L-6, zy3+4);
+  g.fillText('−'+(aMax/1.3).toFixed(2), L-6, Y3(-aMax/1.3)+4);
+  if(SCAVG.sweeps>0){
+    g.beginPath(); let started=false;
+    for(let i=0;i<SCAVG.cnt.length;i++){
+      if(!SCAVG.cnt[i]) continue;
+      const x=X(i*SCBIN), y=Y3(SCAVG.sum[i]/SCAVG.cnt[i]);
+      if(!started){ g.moveTo(x,y); started=true; } else g.lineTo(x,y);
+    }
+    g.strokeStyle='#ffb45c'; g.lineWidth=2.2; g.lineJoin='round';
+    g.shadowColor='rgba(255,180,90,.35)'; g.shadowBlur=6; g.stroke(); g.shadowBlur=0;
+  }
+  g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
+  g.fillStyle='rgba(185,176,160,.9)';
+  g.fillText(SCAVG.sweeps
+    ? SCAVG.sweeps+' sweep'+(SCAVG.sweeps>1?'s':'')+' averaged — the shape of the macroscopic sodium current'
+    : 'run sweeps and the average of the flickering builds the smooth current', L+10, y3+15);
+  timeAxis(g, L, pw, y3+h3, H, 0, win, win>25?10:5);
+}
+
+/* ---------------- whole axon ---------------- */
+function drawCablePlots(g){
+  /* out of fullscreen the corner buttons sit over the top of this panel, so the
+     heading starts lower down and the plot follows it */
+  const full = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=full?8:34, B=26;
+  g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
+  const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.64), h2=ph-h1-6;
+  const y1=T, y2=T+h1+6;
+  const X = t => L + clamp(t/CWIN,0,1)*pw;
+  const extra = S.recCable==='extra';
+
+  gridPanel(g,L,y1,pw,h1, extra ? 'potential just outside the membrane · arbitrary scale'
+                                : 'membrane potential at the two electrodes · mV');
+  let Y1, keys;
+  if(extra){
+    let m=1e-6;
+    for(const k of ['ea','eb']) for(const v of CHIST[k]) m=Math.max(m,Math.abs(v));
+    m*=1.2;
+    Y1=v=>y1+h1/2-clamp(v,-m,m)/m*(h1/2-8);
+    keys=[['ea','#f4efe4'],['eb','#ffb45c']];
+    g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(L,y1+h1/2); g.lineTo(L+pw,y1+h1/2); g.stroke();
+    g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
+    g.fillText('0', L-6, y1+h1/2+4);
+  } else {
+    const vLo=-95,vHi=58; Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
+    keys=[['a','#f4efe4'],['b','#ffb45c']];
+    g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right';
+    for(const [v,lab] of [[0,'0'],[VREST,'−65']]){
+      const y=Y1(v);
+      g.strokeStyle='rgba(255,255,255,.13)'; g.lineWidth=1; g.setLineDash([2,4]);
+      g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.setLineDash([]);
+      g.fillStyle='#7d766b'; g.fillText(lab, L-6, y+4);
+    }
+  }
+  for(const [key,col] of keys){
+    if(CHIST.t.length<2) break;
+    g.beginPath();
+    for(let i=0;i<CHIST.t.length;i++) g.lineTo(X(CHIST.t[i]), Y1(CHIST[key][i]));
+    g.strokeStyle=col; g.lineWidth=2.2; g.lineJoin='round';
+    g.shadowColor=col==='#f4efe4'?'rgba(255,220,170,.3)':'rgba(255,180,90,.3)';
+    g.shadowBlur=7; g.stroke(); g.shadowBlur=0;
+  }
+  g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
+  let lx=L+10;
+  for(const [lab,col] of [['electrode A','#f4efe4'],['electrode B','#ffb45c']]){
+    g.fillStyle=col; g.fillRect(lx,y1+9,9,3); g.fillText(lab,lx+13,y1+14); lx+=92;
+  }
+  if(CB.tA>=0 && CB.tB>=0 && CB.vel){
+    const xa=X(CB.tA), xb=X(CB.tB), ay=y1+h1*0.17;
+    g.strokeStyle='rgba(124,224,176,.85)'; g.lineWidth=1.4; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(xa,y1+h1-4); g.lineTo(xa,ay); g.moveTo(xb,y1+h1-4); g.lineTo(xb,ay); g.stroke();
+    g.setLineDash([]);
+    g.beginPath(); g.moveTo(xa,ay); g.lineTo(xb,ay); g.stroke();
+    for(const [x,d] of [[xa,1],[xb,-1]]){
+      g.beginPath(); g.moveTo(x+d*7,ay-4); g.lineTo(x,ay); g.lineTo(x+d*7,ay+4); g.stroke();
+    }
+    const dist=((CB.probeB-CB.probeA)*CAB_LEN);
+    const lab=(CB.tB-CB.tA).toFixed(2)+' ms over '+dist.toFixed(1)+' cm  =  '+CB.vel.toFixed(1)+' m/s';
+    g.font='500 12px "Space Grotesk",sans-serif'; g.textAlign='center';
+    const tw=g.measureText(lab).width;
+    g.fillStyle='rgba(13,16,21,.9)'; rr(g,(xa+xb)/2-tw/2-8, ay-24, tw+16, 18, 6); g.fill();
+    g.fillStyle='#7ce0b0'; g.fillText(lab, (xa+xb)/2, ay-11);
+  } else if(CB.blocked){
+    g.font='500 12.5px "Space Grotesk",sans-serif'; g.textAlign='center';
+    g.fillStyle='rgba(255,140,110,.9)';
+    g.fillText('The impulse never reaches electrode B.', L+pw*0.62, y1+h1*0.28);
+  }
+  gridPanel(g,L,y2,pw,h2, pw<620 ? 'opening likelihood · %'
+                                : 'opening likelihood at electrode A · %');
+  gatesPanel(g, L, y2, pw, h2, CHIST.t, CHIST.m, CHIST.h, CHIST.n, X, -1);
+  timeAxis(g, L, pw, y2+h2, H, 0, CWIN, 3);
+}
+
+/* ============================================================
+   state
+   ============================================================ */
+const el = id => document.getElementById(id);
+const S = {
+  mode:'patch', rec:'sharp', recCable:'intra',
+  amp:10.5, dur:1, npulse:1, gap:16, hold:0, speed:0.10, vcmd:0, icmd:8,
+  ions:true, charge:true, playing:true, repeat:false,
+  drugs:{ ttx:false, lidocaine:false, tea:false, fap:false, pronase:false },
+  myelin:false, wraps:80, inode:2.4, lesion:false, lesionLen:6
+};
+let patch=newPatch(), train=[], cable=newCable(), cableStim={t0:1e9,amp:0,dur:0};
+let sampleAcc=0, chistAcc=0, narrow=false;
+let gT=null, gP=null;
+let spikeTimes=[], spikeUp=false;
+let THR1 = 7.0;
+
+const bNa = ()=>naBlock(S.drugs), bK = ()=>kBlock(S.drugs), bH = ()=>hFree(S.drugs);
+const isClamp = ()=> S.mode==='patch' && S.rec!=='sharp';
+const isWhole = ()=> S.rec==='cc' || S.rec==='vc';
+
+function singleThreshold(dur){
+  const hi0=250;
+  if(probeSpikes(makeTrain(2,hi0,dur,1,0), PHI,bNa(),bK(),0, 4+dur+28, 0.01, bH()).n===0) return null;
+  let lo=0, hi=hi0;
+  for(let k=0;k<24;k++){
+    const mid=(lo+hi)/2;
+    if(probeSpikes(makeTrain(2,mid,dur,1,0), PHI,bNa(),bK(),0, 4+dur+28, 0.01, bH()).n>0) hi=mid; else lo=mid;
+  }
+  return hi;
+}
+function rebuildCable(){
+  buildCable(cable, {myelin:S.myelin, wraps:S.wraps, internodeMM:S.inode,
+                     lesion:S.lesion, lesionMM:S.lesionLen});
+}
+function resetAll(){
+  if(S.mode==='patch'){
+    patch=newPatch(); train=[]; clearHist(); spikeTimes=[]; spikeUp=false; clearClamp();
+    layoutTheatre(narrow); assignBlocks(S.drugs);
+    el('verdict').hidden=true;
+  } else {
+    resetCable(cable); rebuildCable(); resetCableRun();
+    clearCHist(); cableStim={t0:1e9,amp:0,dur:0};
+    layoutCable();
+  }
+}
+function fire(){
+  if(S.mode==='patch'){
+    if(isClamp()){
+      patch=newPatch(); clearClamp(); clampRunning=true;
+    } else {
+      train = makeTrain(patch.t+0.3, S.amp, S.dur, S.npulse, S.gap);
+      spikeTimes=[]; spikeUp=false; el('verdict').hidden=true;
+    }
+  } else {
+    resetCable(cable); rebuildCable(); resetCableRun();
+    clearCHist(); chistAcc=0;
+    cableStim={t0:0.4, amp:S.amp, dur:S.dur};
+  }
+  setPlaying(true);
+}
+
+/* ---------------- inputs ---------------- */
+function setChip(id,on){ const e=el(id); if(e) e.setAttribute('aria-pressed', on?'true':'false'); }
+function chip(id,key,after){
+  el(id).onclick=()=>{ S[key]=!S[key]; setChip(id,S[key]); if(after) after(); };
+}
+function slider(id, key, fmt, after){
+  const inp=el(id), out=el(id+'V');
+  const upd=()=>{ S[key]=parseFloat(inp.value); out.innerHTML=fmt(S[key]); if(after) after(); };
+  inp.addEventListener('input', upd);
+  inp._sync=()=>{ inp.value=S[key]; out.innerHTML=fmt(S[key]); };
+  upd();
+}
+function syncInputs(){
+  for(const id of ['amp','dur','npulse','gap','hold','speed','vcmd','icmd','wraps','inode','lesion']){
+    const inp=el(id); if(inp && inp._sync) inp._sync();
+  }
+  setChip('myelinOn',S.myelin); setChip('lesionOn',S.lesion);
+  el('wraps').disabled=!S.myelin; el('inode').disabled=!S.myelin;
+  el('lesion').disabled=!(S.myelin&&S.lesion);
+  el('gap').disabled=(S.npulse<2);
+  for(const k in S.drugs) setChip('drug_'+k, S.drugs[k]);
+  setChip('repeat', S.repeat);
+  for(const k of ['sharp','cc','vc','attached','intra','extra']) setChip('rec_'+k,
+    S.mode==='patch' ? S.rec===k : S.recCable===k);
+  drugNote();
+}
+
+/* the drug description belongs on the picture, where the blocked channels are */
+function drugNote(){
+  const box=el('drugNote');
+  const on=Object.keys(DRUGS).filter(k=>S.drugs[k]);
+  if(!on.length){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false;
+  box.innerHTML = on.map(k=>'<div><b>'+DRUGS[k].label+'</b> — '+DRUGS[k].short+'</div>').join('');
+}
+/* ---------------- recording configurations ---------------- */
+const RECS = {
+  patch:[
+    {key:'sharp', label:'Sharp microelectrode',
+     tip:'A fine tip through the membrane. You set the current and the membrane decides its own voltage — this is how you see an action potential at all.',
+     defs:()=>({dur:1, npulse:1, hold:0, speed:0.10, amp:+(THR1*1.5).toFixed(1)})},
+    {key:'cc', label:'Whole-cell current clamp',
+     tip:'A blunt pipette sealed on and the patch broken through, passing a set current for a set time. Raise the command a step at a time: nothing, then one spike, then a train, then the membrane jams.',
+     defs:()=>({dur:30, icmd:8, speed:0.30, repeat:false})},
+    {key:'vc', label:'Whole-cell voltage clamp',
+     tip:'The amplifier holds the voltage where you put it and reports the current it needs. This is the experiment the equations came from.',
+     defs:()=>({dur:12, vcmd:0, speed:0.16, repeat:false})},
+    {key:'attached', label:'Cell-attached patch',
+     tip:'The seal is left intact, so you record only the channels under the tip. Openings appear as square steps, one protein at a time.',
+     defs:()=>({dur:20, vcmd:0, speed:0.30, repeat:true})}
+  ],
+  cable:[
+    {key:'intra', label:'Intracellular',
+     tip:'Microelectrodes pushed into the axon at A and B. Clean monophasic spikes.', defs:()=>({})},
+    {key:'extra', label:'Surface electrodes',
+     tip:'Electrodes resting on the outside, as in a clinical nerve conduction study. Much smaller, biphasic, but the delay is identical.', defs:()=>({})}
+  ]
+};
+function recList(){ return RECS[S.mode==='patch'?'patch':'cable']; }
+function buildRecs(){
+  const host=el('recChips'); host.innerHTML='';
+  for(const r of recList()){
+    const b=document.createElement('button');
+    b.className='chip'; b.id='rec_'+r.key; b.setAttribute('aria-pressed','false');
+    b.innerHTML='<i></i>'+r.label;
+    /* what this electrode records is a bubble over the group, not a paragraph beside it */
+    b.setAttribute('data-tip', r.tip);
+    b.onclick=()=>{
+      if(S.mode==='patch') S.rec=r.key; else S.recCable=r.key;
+      Object.assign(S, r.defs());
+      clearSweeps(); applyRecUI(); syncInputs(); resetAll(); assignBlocks(S.drugs);
+      if(S.mode==='cable') fire();
+    };
+    host.appendChild(b);
+  }
+}
+function applyRecUI(){
+  const cur = S.mode==='patch' ? S.rec : S.recCable;
+  const found = recList().find(r=>r.key===cur);
+  const clampMode = isClamp();
+  el('stimBlock').hidden = clampMode;
+  el('vcmdCtl').hidden = !(S.mode==='patch' && (S.rec==='vc'||S.rec==='attached'));
+  el('icmdCtl').hidden = !(S.mode==='patch' && S.rec==='cc');
+  el('sweepCtl').hidden = !clampMode;
+  el('repeatCtl').hidden = !clampMode;
+  const durCtl=el('durCtl');
+  if(clampMode){
+    if(durCtl.parentElement!==el('recBlock')) el('recBlock').insertBefore(durCtl, el('sweepCtl'));
+    el('durLabel').textContent='Step length';
+    el('dur').min=1; el('dur').max=40;
+  } else {
+    if(durCtl.parentElement!==el('stimBlock')) el('stimBlock').insertBefore(durCtl, el('npulseCtl'));
+    el('durLabel').textContent='Pulse length';
+    el('dur').min=0.1; el('dur').max=20;
+  }
+  el('fire').textContent = S.mode==='cable' ? 'Launch impulse' : 'Fire pulse';
+  resetAvg();
+}
+
+/* ---------------- drugs ---------------- */
+function buildDrugs(){
+  const host=el('drugChips'); host.innerHTML='';
+  for(const key in DRUGS){
+    const d=DRUGS[key];
+    const b=document.createElement('button');
+    b.className='chip'; b.id='drug_'+key; b.setAttribute('aria-pressed','false');
+    b.innerHTML='<i></i>'+d.label;
+    b.style.setProperty('--dc', DRUGCOL[key]);
+    b.setAttribute('data-tip', d.tip);
+    b.onclick=()=>{
+      S.drugs[key]=!S.drugs[key];
+      setChip('drug_'+key, S.drugs[key]);
+      assignBlocks(S.drugs); clearSweeps(); drugNote();
+    };
+    host.appendChild(b);
+  }
+  el('washout').onclick=()=>{
+    for(const k in S.drugs) S.drugs[k]=false;
+    syncInputs(); assignBlocks(S.drugs); clearSweeps();
+  };
+}
+
+function setMode(m){
+  S.mode=m;
+  el('modePatch').setAttribute('aria-pressed', m==='patch');
+  el('modeCable').setAttribute('aria-pressed', m==='cable');
+  el('axonBlock').hidden = (m!=='cable');
+  el('holdCtl').hidden = el('npulseCtl').hidden = el('gapCtl').hidden = (m!=='patch');
+  if(m!=='patch') el('verdict').hidden=true;
+  const amp=el('amp');
+  if(m==='cable'){ amp.min=0; amp.max=800; amp.step=10; if(S.amp<100) S.amp=400; }
+  else { amp.min=-60; amp.max=150; amp.step=0.5; if(S.amp>150) S.amp=+(THR1*1.5).toFixed(1); }
+  clearSweeps();
+  buildRecs(); applyRecUI(); syncInputs();
+  relayout(); resetAll(); assignBlocks(S.drugs); buildLegend();
+  if(m==='cable') fire();
+}
+function buildLegend(){
+  const items = S.mode==='patch'
+    ? [['Na⁺','#ff9a3c'],['K⁺','#a58bff'],['Cl⁻','#348474'],['organic anions','#4a566a']]
+    : [['Na⁺','#ff9a3c'],['K⁺','#a58bff'],['Cl⁻','#348474']];
+  el('legend').innerHTML = items.map(([n,c])=>'<span><i style="background:'+c+'"></i>'+n+'</span>').join('');
+  /* the whole-axon view puts recording electrode B, its timing label and the end of
+     the ruler in the bottom right corner, which is where the key sits. On a picture
+     this small there is no room for both, and the electrodes are the point. */
+  el('legend').hidden = narrow && S.mode==='cable';
+}
+
+/* ---------------- layout + pointer ---------------- */
+function wirePointer(){
+  const cv=el('theatre');
+  const to=e=>{
+    const r=cv.getBoundingClientRect();
+    setHover((e.clientX-r.left)/r.width*TH.LW, (e.clientY-r.top)/r.height*TH.LH);
+  };
+  cv.addEventListener('mousemove', to);
+  cv.addEventListener('mouseleave', ()=>setHover(null,null));
+  cv.addEventListener('pointerdown', e=>{ if(e.pointerType!=='mouse') to(e); });
+  cv.addEventListener('pointerup',  e=>{ if(e.pointerType!=='mouse') setTimeout(()=>setHover(null,null),2200); });
+}
+
+/* ---------------- stepping ---------------- */
+function advancePatch(dtModel, dtWall){
+  const DT=0.005, kNa=bNa(), kK=bK(), kH=bH();
+  const steps=Math.min(2400, Math.max(1, Math.round(dtModel/DT)));
+  const dt=dtModel/steps;
+  for(let i=0;i<steps;i++){
+    stepPatch(patch, dt, trainAt(train, patch.t)+S.hold, PHI, kNa, kK, kH);
+    if(!spikeUp && isSpiking(patch)){ spikeUp=true; spikeTimes.push(patch.t); curPeak=-1e9; }
+    if(spikeUp){
+      if(patch.V>curPeak) curPeak=patch.V;
+      if(spikeOver(patch)) spikeUp=false;
+    }
+    sampleAcc+=dt;
+    if(sampleAcc>=SAMPLE_MS){ pushHist(patch); sampleAcc=0; }
+  }
+  finishPatchFrame(dtModel, dtWall, null);
+  updateVerdict();
+}
+function stepInProgress(){ return clampRunning && clampT>=2 && clampT<2+S.dur; }
+function advanceClamp(dtModel, dtWall){
+  const DT=0.005, kNa=bNa(), kK=bK(), kH=bH();
+  const win=clampWindow();
+  const steps=Math.min(2400, Math.max(1, Math.round(dtModel/DT)));
+  const dt=dtModel/steps;
+  const t0=clampT;
+  for(let i=0;i<steps;i++){
+    const inStep = clampRunning && clampT>=2 && clampT<2+S.dur;
+    if(S.rec==='cc') stepPatch(patch, dt, inStep?S.icmd:0, PHI, kNa, kK, kH);
+    else             stepClamp(patch, dt, inStep?S.vcmd:VHOLD, PHI, kNa, kK, kH);
+    if(clampRunning){
+      clampT+=dt; sampleAcc+=dt;
+      if(sampleAcc>=SAMPLE_MS){
+        sampleAcc=0;
+        CLAMP.t.push(clampT);
+        CLAMP.y.push(S.rec==='cc' ? patch.V : patch.iClamp);
+        CLAMP.m.push(patch.m); CLAMP.h.push(patch.h); CLAMP.n.push(patch.n);
+      }
+      if(clampT>=win){
+        clampRunning=false;
+        if(S.rec==='cc' || S.rec==='vc'){
+          SWEEPS.push({cmd:(S.rec==='cc'?S.icmd:S.vcmd), dur:S.dur,
+                       t:CLAMP.t.slice(), y:CLAMP.y.slice()});
+          if(SWEEPS.length>6) SWEEPS.shift();
+        } else if(SC.t.length) SCAVG.sweeps++;
+        if(S.repeat) setTimeout(fire, 260);
+        break;
+      }
+    }
+  }
+  /* the record is read straight off the stochastic channel states, one sample
+     per kinetic sub-step, which is what a real digitiser does */
+  finishPatchFrame(dtModel, dtWall,
+    (S.rec==='attached' && clampRunning) ? (frac)=>{
+      let pA=0;
+      for(const c of TH.patchCh){
+        if(!c.cond) continue;
+        if(c.type==='na') pA += singleChannelPA(patch.V, ENA);
+        else if(c.type==='k') pA += singleChannelPA(patch.V, EK);
+      }
+      const tt=t0+(clampT-t0)*frac;
+      SC.t.push(tt); SC.i.push(pA);
+      const b=Math.floor(tt/SCBIN);
+      if(SCAVG.sum && b>=0 && b<SCAVG.sum.length){ SCAVG.sum[b]+=pA; SCAVG.cnt[b]++; }
+    } : null);
+}
+function finishPatchFrame(dtModel, dtWall, sampler){
+  const nsub = Math.min(48, Math.max(1, Math.ceil(dtModel/0.05)));
+  for(let i=0;i<nsub;i++){
+    tickChannels(patch.V, dtModel/nsub, PHI, dtWall/nsub);
+    if(sampler) sampler((i+1)/nsub);
+  }
+  if(S.ions){
+    const k=0.075;
+    TH.naDebt += Math.abs(patch.iNa)*dtModel*k;
+    TH.kDebt  += Math.abs(patch.iK )*dtModel*k;
+    TH.lDebt  += Math.abs(patch.iL )*dtModel*k*0.5;
+    let na=Math.min(8, Math.floor(TH.naDebt)); TH.naDebt-=na;
+    let kk=Math.min(8, Math.floor(TH.kDebt));  TH.kDebt -=kk;
+    let ll=Math.min(2, Math.floor(TH.lDebt));  TH.lDebt -=ll;
+    if(na) pushFlux('na', na, patch.iNa<0);
+    if(kk) pushFlux('k',  kk, patch.iK <0);
+    if(ll) pushFlux('leak_cl', ll, patch.iL>0);
+  }
+  tickParticles(dtWall, patch.V);
+  tickPump(dtWall);
+}
+function updateVerdict(){
+  if(S.mode!=='patch' || isClamp() || S.npulse<2 || !train.length) return;
+  const last=train[train.length-1];
+  if(patch.t < last.t0+14) return;
+  const v=el('verdict');
+  if(!v.hidden) return;
+  const after=spikeTimes.filter(t=>t>=last.t0-0.2).length;
+  const before=spikeTimes.filter(t=>t<last.t0-0.2).length;
+  v.hidden=false;
+  v.innerHTML = before===0
+    ? 'Neither pulse reached threshold. <b>Turn the pulse up.</b>'
+    : (after>0
+      ? 'Second pulse fired after a <b>'+S.gap.toFixed(1)+' ms</b> gap. Shorten the gap until it stops working.'
+      : 'Second pulse <b>failed</b> at a '+S.gap.toFixed(1)+' ms gap — the membrane is still refractory. Lengthen the gap, or push harder.');
+}
+const ELEC_H = 0.05;
+function extraAt(c, e){
+  let sum=0;
+  for(let i=1;i<CAB_N-1;i++){
+    const im = c.V[i-1] - 2*c.V[i] + c.V[i+1];
+    if(im===0) continue;
+    const dx=(i-e)*CAB_DX;
+    sum += im/Math.sqrt(dx*dx + ELEC_H*ELEC_H);
+  }
+  return -sum*CAB_DX;
+}
+function advanceCable(dtModel, dtWall){
+  const DT=0.01, kNa=bNa(), kK=bK(), kH=bH();
+  const steps=Math.min(900, Math.max(1, Math.round(dtModel/DT)));
+  const dt=dtModel/steps;
+  const pA=Math.round(CAB_N*CB.probeA), pB=Math.round(CAB_N*CB.probeB);
+  let on=false;
+  for(let i=0;i<steps;i++){
+    const act = cable.t>=cableStim.t0 && cable.t<cableStim.t0+cableStim.dur;
+    if(act) on=true;
+    const va=cable.V[pA], vb=cable.V[pB];
+    stepCable(cable, dt, act?cableStim.amp:0, [0,2], PHI, kNa, kK, kH);
+    if(CB.tA<0 && va<=0 && cable.V[pA]>0)
+      CB.tA = cable.t - dt*(cable.V[pA]/(cable.V[pA]-va));
+    if(CB.tB<0 && vb<=0 && cable.V[pB]>0){
+      CB.tB = cable.t - dt*(cable.V[pB]/(cable.V[pB]-vb));
+      if(CB.tA>=0 && CB.tB>CB.tA)
+        CB.vel = ((pB-pA)*CAB_DX)/(CB.tB-CB.tA)*10;
+    }
+    if(cable.t<=CWIN){
+      chistAcc+=dt;
+      if(chistAcc>=0.03){
+        CHIST.t.push(cable.t); CHIST.a.push(cable.V[pA]); CHIST.b.push(cable.V[pB]);
+        CHIST.ea.push(extraAt(cable,pA)); CHIST.eb.push(extraAt(cable,pB));
+        CHIST.m.push(cable.m[pA]); CHIST.h.push(cable.h[pA]); CHIST.n.push(cable.n[pA]);
+        chistAcc=0;
+      }
+    }
+  }
+  cableStim.on=on;
+  tickCableVisual(cable, dtWall, dtModel, S.ions);
+}
+
+/* what the electrode is being told to do, shown on the picture */
+function cmdText(){
+  const stepping = stepInProgress();
+  if(S.rec==='cc')
+    return [(S.icmd>0?'+':'')+S.icmd.toFixed(1)+' µA/cm²',
+            stepping ? 'passing current' : (clampRunning?'before the step':'ready — run a sweep')];
+  return [(S.vcmd>0?'+':'')+S.vcmd.toFixed(0)+' mV',
+          stepping ? 'stepped to command' : 'holding at −65 mV'];
+}
+
+let lastT=performance.now(), outAcc=0;
+function frame(now){
+  const dtWall=Math.min(0.05,(now-lastT)/1000); lastT=now;
+  if(S.playing){
+    const dtModel=S.speed*60*dtWall;
+    if(S.mode==='cable') advanceCable(dtModel,dtWall);
+    else if(isClamp())  advanceClamp(dtModel,dtWall);
+    else                advancePatch(dtModel,dtWall);
+  }
+  const opt={ions:S.ions, charge:S.charge, drugs:S.drugs, rec:S.rec, recCable:S.recCable,
+             myelin:S.myelin, wraps:S.wraps, stimOn:!!cableStim.on,
+             cmdText:isClamp()?cmdText():['',''],
+             stimText:(S.amp>0?'+':'')+S.amp.toFixed(1)+' µA/cm²'};
+  if(S.mode==='patch'){
+    renderTheatre(gT, patch, opt);
+    if(S.rec==='vc') drawVoltageClamp(gP);
+    else if(S.rec==='cc') drawCCSweeps(gP);
+    else if(S.rec==='attached') drawSingleChannel(gP);
+    else drawCurrentClamp(gP, train);
+  } else {
+    opt.rec=S.recCable;
+    renderCableTheatre(gT, cable, opt);
+    drawCablePlots(gP);
+  }
+  outAcc+=dtWall;
+  if(outAcc>0.12 && S.mode==='cable'){
+    outAcc=0;
+    const rows=[['Conduction velocity', CB.vel?CB.vel.toFixed(1)+' m/s':(CB.blocked?'no conduction':'measuring…'),
+                 CB.blocked?'warn':(CB.vel?'good':'')],
+                ['Reaches electrode B', CB.tB>=0?'yes':(CB.blocked?'no':'…'), CB.blocked?'warn':(CB.tB>=0?'good':'')]];
+    el('cableOut').innerHTML=rows.map(([a,b,c])=>'<dt>'+a+'</dt><dd class="'+c+'">'+b+'</dd>').join('');
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- boot ---------------- */
+function boot(){
+  buildSprites();
+  relayout();
+  buildDrugs();
+
+  slider('amp','amp', v=> (S.mode==='cable'?v.toFixed(0):v.toFixed(1))+' <em>µA/cm²</em>');
+  slider('dur','dur', v=> v.toFixed(1)+' <em>ms</em>', resetAvg);
+  slider('npulse','npulse', v=> v===1?'one':'two', ()=>{ el('gap').disabled=S.npulse<2; });
+  slider('gap','gap', v=> v.toFixed(1)+' <em>ms</em>');
+  slider('hold','hold', v=> v.toFixed(1)+' <em>µA/cm²</em>');
+  slider('vcmd','vcmd', v=> (v>0?'+':'')+v.toFixed(0)+' <em>mV</em>');
+  slider('icmd','icmd', v=> (v>0?'+':'')+v.toFixed(1)+' <em>µA/cm²</em>');
+  slider('speed','speed', v=> (v*60).toFixed(1)+' <em>ms per second</em>');
+  slider('wraps','wraps', v=> v.toFixed(0)+' <em>layers</em>', ()=>{ rebuildCable(); });
+  slider('inode','inode', v=> v.toFixed(1)+' <em>mm</em>', ()=>{ rebuildCable(); });
+  slider('lesion','lesionLen', v=> v.toFixed(1)+' <em>mm</em>', ()=>{ rebuildCable(); });
+
+  chip('showIons','ions'); chip('showCharge','charge'); chip('playing','playing');
+  chip('repeat','repeat', ()=>{ if(S.repeat && !clampRunning) fire(); });
+  chip('myelinOn','myelin', ()=>{ syncInputs(); rebuildCable(); fire(); });
+  chip('lesionOn','lesion', ()=>{
+    if(S.lesion && !S.myelin) S.myelin=true;
+    syncInputs(); rebuildCable(); fire();
+  });
+
+  el('fire').onclick=fire;
+  el('sweep').onclick=fire;
+  el('clearSweeps').onclick=()=>{ clearSweeps(); };
+  el('reset').onclick=()=>{ resetAll(); };
+  el('modePatch').onclick=()=>setMode('patch');
+  el('modeCable').onclick=()=>setMode('cable');
+  el('openExplainer').onclick=()=>el('explainer').showModal();
+  el('closeExplainer').onclick=()=>el('explainer').close();
+
+  document.addEventListener('keydown', e=>{
+    const tag=(e.target&&e.target.tagName)||'';
+    if(tag==='INPUT'||tag==='TEXTAREA') return;
+    if(tag==='BUTTON' && (e.code==='Space'||e.code==='Enter')) return;
+    if(el('explainer').open) return;
+    const k=e.key;
+    if(e.code==='Space'){ e.preventDefault(); fire(); }
+    else if(k==='r'||k==='R'){ resetAll(); }
+    else if(k==='p'||k==='P'){ setPlaying(!S.playing); }
+    else if(k==='h'||k==='H'){ el('b-clean').click(); }
+    else if(k==='f'||k==='F'){ el('b-full').click(); }
+    else if(k==='?'||k==='/'){ el('explainer').showModal(); }
+  });
+
+  wirePointer();
+  shell();
+
+  const t=singleThreshold(1); if(t) THR1=t;
+  S.amp=+(THR1*1.5).toFixed(1);
+  buildRecs(); applyRecUI(); buildLegend(); syncInputs();
+  rebuildCable(); resetAll(); assignBlocks(S.drugs);
+  requestAnimationFrame(frame);
+}
+
+/* ==================================================================
+   SimLearn shell: full-bleed stage, floating panel, experiment cards,
+   icon buttons, tooltip bubbles, HUD, phone sheet.
+   ================================================================== */
+
+/* ---- canvas placement -------------------------------------------
+   Two pictures share the stage. Each keeps the logical size its own
+   drawing code was written against and is letterboxed into the stage
+   by hand, because a canvas with an aspect ratio and both a max width
+   and a max height distorts instead of shrinking. On a short landscape
+   screen the two sit side by side, everywhere else they stack.       */
+function planViews(){
+  const host=el('views'); if(!host) return null;
+  const W=host.clientWidth||900, H=host.clientHeight||600, gap=10;
+  /* Stacked: take the whole width and the whole height, and only give height back if
+     the pair would end up taller than it is wide, or width back if it would end up a
+     letterbox slit. 0.62 and 1.30 are the flattest and tallest the pair may be. */
+  let sw=Math.min(W,1560), sh=H-gap;
+  /* a narrow screen is allowed a much taller pair: on a phone the two pictures go
+     nearly square rather than leaving a third of the screen empty */
+  const maxR = sw < 700 ? 2.05 : 1.30;
+  if(sh > maxR*sw) sh = maxR*sw;
+  if(sh < 0.62*sw) sw = Math.max(260, sh/0.62);
+  const share = (sh/sw) > 1.5 ? 0.515 : 0.545;
+  const stack={side:false, tw:sw, th:sh*share, pw:sw, ph:sh*(1-share), area:sw*sh};
+  /* Side by side: only wins on a short, wide screen, which in practice is a phone
+     held sideways. Each picture is then roughly square. */
+  let bw=Math.min((W-gap)/2, 900), bh=H;
+  if(bh > 1.35*bw) bh = 1.35*bw;
+  if(bh < 0.60*bw) bw = Math.max(240, bh/0.60);
+  const beside={side:true, tw:bw, th:bh, pw:bw, ph:bh, area:2*bw*bh};
+  const pick = beside.area > stack.area*1.06 ? beside : stack;
+  ['tw','th','pw','ph'].forEach(k=>{ pick[k]=Math.max(140,Math.floor(pick[k])); });
+  return pick;
+}
+function sizeViews(){
+  const p=planViews(); if(!p) return null;
+  document.body.classList.toggle('side', p.side);
+  const t=el('theatre').parentElement.style, q=el('plots').parentElement.style;
+  t.width=p.tw+'px'; t.height=p.th+'px';
+  q.width=p.pw+'px'; q.height=p.ph+'px';
+  return p;
+}
+/* One canvas unit is one CSS pixel. The drawing code used to be written against a fixed
+   1120x560 stage and then squeezed into whatever was left over, which shrank every label
+   on it by a quarter; now the stage is whatever the window can spare and the labels come
+   out at the size they are written in. */
+function relayout(){
+  const p=sizeViews(); if(!p) return;
+  narrow = p.tw < 760;
+  TH.setW=p.tw; TH.setH=p.th;
+  layoutTheatre(narrow); assignBlocks(S.drugs);
+  layoutCable();
+  PL.LW = p.pw; PL.LH = p.ph;
+  gT = fit(el('theatre'), TH.LW, TH.LH);
+  gP = fit(el('plots'), PL.LW, PL.LH);
+  buildLegend();
+}
+
+/* ---- tooltip bubbles --------------------------------------------
+   The controls arrived with native title attributes. The house style
+   is a "?" bubble beside the label, which shows on hover, focus and
+   tap, so the explanation is reachable on a phone as well.           */
+function tipify(){
+  document.querySelectorAll('.ctl label[title]').forEach(l=>{
+    const t=l.getAttribute('title'); if(!t) return;
+    l.removeAttribute('title');
+    const b=document.createElement('button');
+    b.className='tip'; b.type='button'; b.textContent='?';
+    b.setAttribute('data-tip',t);
+    b.setAttribute('aria-label','What this control does');
+    b.addEventListener('click',e=>{ e.preventDefault(); b.classList.toggle('show'); });
+    l.appendChild(b);
+  });
+  document.addEventListener('click',e=>{
+    if(e.target.classList && e.target.classList.contains('tip')) return;
+    document.querySelectorAll('.tip.show').forEach(t=>t.classList.remove('show'));
+  });
+}
+
+/* ---- chrome ------------------------------------------------------ */
+function setPlaying(on){
+  S.playing=on; setChip('playing',on);
+  const b=el('b-pause'); if(b) b.dataset.on=String(!on);
+}
+function shell(){
+  tipify();
+  if(window.self!==window.top) document.body.classList.add('in-frame');
+
+  el('b-fire').onclick=()=>fire();
+  el('b-pause').onclick=()=>setPlaying(!S.playing);
+  el('b-reset').onclick=()=>{ resetAll(); };
+  const bc=el('b-clean');
+  bc.onclick=()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); relayout(); };
+  el('b-full').onclick=()=>{
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  };
+  el('explainer').addEventListener('click',e=>{ if(e.target===el('explainer')) el('explainer').close(); });
+  const pt=el('p-toggle');
+  if(pt) pt.onclick=()=>{
+    const o=el('panel').classList.toggle('open');
+    pt.setAttribute('aria-expanded',String(o));
+    pt.textContent = o ? 'Hide controls' : 'Controls';
+    if(o) el('panel').scrollTop=0;
+    requestAnimationFrame(sizeViews);
+  };
+  /* the chip in the panel and the icon button are the same switch */
+  el('playing').onclick=()=>setPlaying(!S.playing);
+
+  let rt=null;
+  const kick=()=>{ clearTimeout(rt); rt=setTimeout(relayout,120); };
+  new ResizeObserver(kick).observe(el('views'));
+  window.addEventListener('orientationchange',kick);
+  relayout();
+}
+
+boot();
+</script>
+<script src="../../assets/js/explainer.js" defer></script>
+</body>
+</html>

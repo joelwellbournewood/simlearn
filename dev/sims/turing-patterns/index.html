@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>Turing's Morphogenesis: how spots, stripes and coral grow out of two chemicals | SimLearn</title>
+<meta name="description" content="Natural patterns arising from a uniform, featureless start.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c; --gold:#e6c34f;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage canvas.panning{cursor:grabbing}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:304px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.p-toggle{display:none}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.grp{border-top:1px solid var(--line);margin:0}
+.grp:first-of-type{border-top:0}
+.grp-title{
+  display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;user-select:none;
+  font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.01em;
+  color:var(--ink);padding:10px 0;margin:0
+}
+.grp-title::-webkit-details-marker{display:none}
+.grp-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.grp-title::after{content:'';width:7px;height:7px;margin-left:auto;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;opacity:.6;transform:rotate(-45deg);transition:transform .2s}
+.grp[open] > .grp-title::after{transform:rotate(45deg)}
+.grp[open] > .grp-title{padding-bottom:4px}
+.grp > :last-child{margin-bottom:12px}
+.label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
+.label:first-of-type{margin-top:0}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
+.preset small{color:var(--muted);font-size:11px;line-height:1.25}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:10px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:2px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.seg button:hover{border-color:var(--line-strong);color:var(--ink)}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.seg button:disabled{opacity:.35;cursor:default}
+.toggles{display:flex;flex-wrap:wrap;gap:5px}
+.tg{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.tg:hover{border-color:var(--line-strong);color:var(--ink)}
+.tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.tg:disabled{opacity:.35;cursor:default}
+.drawhint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;
+  font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.01em;color:var(--ink);
+  background:rgba(5,12,10,.62);backdrop-filter:blur(8px);border:1px solid var(--line);
+  border-radius:999px;padding:10px 18px;opacity:0;transition:opacity .5s}
+.drawhint.on{opacity:1}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em;max-width:min(46ch,calc(100% - 700px));line-height:1.5}
+.sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
+.sel.on{display:block}
+.sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sel h4 i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.sel table{border-collapse:collapse;width:100%;font-size:12.5px}
+.sel td{padding:2px 0;vertical-align:baseline}
+.sel td:first-child{color:var(--muted);padding-right:10px}
+.sel td:last-child{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.sel .kind{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
+.sel .kind.unb{color:var(--gold)}
+.sel .acts{display:flex;gap:6px;margin-top:8px}
+.sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
+.sel .acts button:hover{border-color:var(--line-strong)}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel,body.clean .mapcard{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(86vh,800px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:64ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-inner kbd{font-family:var(--mono);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel-2);color:var(--ink)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
+  .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
+  .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
+    transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
+  .panel.open{transform:none;overflow-y:auto}
+  .p-toggle{display:flex;position:sticky;top:0;width:100%;height:46px;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;
+    color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
+  .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
+  .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
+  .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
+  .stat{padding:0 1px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:9.5px}
+  .hint{display:none}
+  .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
+  .sel table{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+/* A landscape phone has 844 points of width and 390 of height, so the map goes on the
+   left of the sheet and everything that reads it goes in a column beside it. */
+@media (orientation:landscape) and (max-height:560px) and (pointer:coarse){
+  .mapcard.in-sheet{display:grid;grid-template-columns:min(46vw,340px) 1fr;gap:0 15px;align-items:start}
+  .mapcard.in-sheet .mc-head,.mapcard.in-sheet .mc-sub{grid-column:1/-1}
+  .mapcard.in-sheet #map{grid-column:1;grid-row:3/span 9;max-width:100%;margin:0}
+  .mapcard.in-sheet .mc-zone,.mapcard.in-sheet .legend,.mapcard.in-sheet .row,
+  .mapcard.in-sheet .mc-rule,.mapcard.in-sheet .mc-note{grid-column:2}
+  .mapcard.in-sheet .mc-zone{margin-top:0}
+}
+/* On a portrait phone the player shows the explainer next to the simulation's title,
+   so the in-panel copy would be a duplicate. Landscape keeps its own. */
+@media (max-width:820px) and (orientation:portrait){ .hosted-about .about-btn{display:none} }
+
+/* ---------- Turing patterns: module-specific chrome ---------- */
+#stage canvas{cursor:crosshair}
+#stage.tool-erase canvas{cursor:cell}
+.panel{width:322px}
+.notice{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;
+  background:rgba(7,18,15,.94);z-index:9}
+.notice h2{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 10px}
+.notice p{color:var(--muted);font-size:13.5px;margin:0 0 6px;max-width:44ch}
+/* ---- the parameter map, in its own card beside the pattern ---- */
+.mapcard{position:absolute;right:20px;top:66px;width:336px;max-height:calc(100% - 96px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.mapcard::-webkit-scrollbar{width:8px} .mapcard::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.mc-head{display:flex;align-items:center;gap:7px;position:relative}
+/* the card's own tip has no room to open upward, so it opens downward */
+.mc-head .tip::after{bottom:auto;top:calc(100% + 5px);left:0;right:auto;
+  box-sizing:border-box;width:min(300px,78vw);max-width:100%}
+/* pseudo-elements are not matched by the universal box-sizing rule, so any tooltip
+   with an explicit width has to say so itself or its padding lands outside the card */
+.tip::after{box-sizing:border-box}
+.mapcard{overflow-x:hidden}
+.mc-title{font-family:var(--display);font-weight:600;font-size:14.5px;color:var(--ink)}
+.mc-sub{margin:3px 0 9px;color:var(--muted);font-size:11.5px;line-height:1.42}
+.mc-zone{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--ink);min-height:2.9em}
+.mc-rule{height:1px;background:var(--line);margin:13px 0 2px}
+.mc-note{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.45;min-height:1.4em}
+.mapcard .row label .nm i,.mc-side .row label .nm i{font-style:italic;font-family:var(--mono);color:var(--gold)}
+/* the map keeps its own plotted colours: they carry meaning, not decoration */
+#map{width:100%;aspect-ratio:1/.9;display:block;border-radius:10px;cursor:crosshair;
+  touch-action:none;background:#07120f;border:1px solid var(--line)}
+/* zoom row under the map: the fine structures sit in bands a few thousandths wide,
+   so at full extent one slider step is under a pixel and they cannot be clicked */
+.mzoom{display:flex;align-items:center;gap:5px;margin-top:7px}
+.mz{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;
+  height:26px;min-width:26px;padding:0 7px;font-family:var(--body);font-size:12px;line-height:1;
+  cursor:pointer;transition:border-color .18s,color .18s}
+.mz:hover:not(:disabled){border-color:var(--line-strong);color:var(--ink)}
+.mz:disabled{opacity:.42;cursor:default}
+.mz.wide{flex:1 1 auto;min-width:0}
+.mzl{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:34px;text-align:right}
+.legend{list-style:none;margin:9px 0 0;padding:0;font-size:11px;color:var(--muted);line-height:1.65}
+.legend li{display:flex;align-items:center;gap:9px}
+.legend .sw{width:13px;height:9px;border-radius:2px;background:#41451f;border:1px solid #b9c25f;flex:none}
+.legend .ln{width:13px;height:0;border-top:1.5px solid #a8ccbe;flex:none}
+.legend .ln.dash{border-top-style:dashed;border-top-color:#79b0d6}
+/* inside the controls sheet on a small screen it is just another section */
+.mapcard.in-sheet{position:static;width:auto;max-height:none;overflow:visible;background:none;
+  backdrop-filter:none;border:0;border-radius:0;padding:0;margin:0 0 4px}
+.mapcard.in-sheet .mc-title{font-family:var(--body);font-size:12px;font-weight:400;color:var(--muted)}
+.mapcard.in-sheet #map{aspect-ratio:1/.9;max-width:340px;margin:0 auto}
+body.clean .mapcard{display:none}
+body.in-frame .mapcard{top:18px;max-height:calc(100% - 48px)}
+.presets{grid-template-columns:1fr 1fr}
+.seg.two{grid-template-columns:1fr 1fr}
+.btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px}
+.btnrow .btn{padding:7px 6px;border:1px solid var(--line);border-radius:9px;background:transparent;
+  color:var(--muted);font-family:var(--body);font-size:12px;transition:border-color .18s,color .18s}
+.btnrow .btn:hover:not(:disabled){border-color:var(--line-strong);color:var(--ink)}
+.btnrow .btn:disabled{opacity:.35;cursor:default}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-size:13px;margin:2px 0 8px}
+.toggle input{appearance:none;-webkit-appearance:none;width:34px;height:19px;border-radius:99px;
+  background:var(--panel-2);border:1px solid var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .16s,border-color .16s}
+.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+  background:var(--muted);transition:transform .16s,background .16s}
+.toggle input:checked{background:var(--accent-dim);border-color:rgba(86,224,194,.5)}
+.toggle input:checked::after{transform:translateX(15px);background:var(--accent)}
+select{width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:7px 9px;font-family:var(--body);font-size:12.5px}
+.row.off{opacity:.4}
+details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+details.more>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--muted);padding:3px 0}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:'+ ';font-family:var(--mono)}
+details.more[open]>summary::before{content:'\2212 '}
+details.more>summary:hover{color:var(--ink)}
+.eq{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--panel-2);
+  border-left:2px solid var(--accent);padding:11px 14px;margin:10px 0 14px;white-space:pre-wrap;line-height:1.9}
+.about-inner em{color:var(--ink);font-style:normal}
+.hud{max-width:calc(100% - 740px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .panel{width:100%}
+  .hud{max-width:none}
+  .mc-zone{min-height:0}
+  .legend{font-size:11.5px;line-height:1.75}
+}
+
+/* ---- the free play card sits across the top of the preset grid ---- */
+.preset.free{grid-column:1/-1;border-style:dashed}
+.preset.free[aria-pressed="true"]{border-style:solid}
+/* ---- on a phone the map is docked next to the field: the bare plot, nothing else, so
+       it is as big as the space allows and a finger can put the chemistry anywhere on it
+       without opening the controls. Every word that explains the plot lives in the sheet:
+       opening the controls moves this same element in there, at full size with its
+       labels, its legend and the three sliders, and the sheet then covers the pattern. */
+.mc-side{display:contents}
+/* In the controls sheet the plot is deliberately absent: only its three sliders and the
+   line of prose that says where they have put you. The plot itself stays docked against
+   the field, so a finger reaching for a slider cannot land on it by accident. */
+.grp.mapslot-label{display:none}
+body.map-docked .grp.mapslot-label{display:block}
+.mc-side.in-slot{display:block;margin:0 0 2px}
+.mc-side.in-slot .legend,.mc-side.in-slot .mc-note,.mc-side.in-slot .mc-rule{display:none}
+.mc-side.in-slot .mc-zone{margin:0 0 4px;min-height:0;color:var(--muted);font-size:11.5px}
+.mapcard.docked{position:fixed;z-index:6;overflow:hidden;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;
+  padding:7px;max-height:none;display:flex;align-items:center;justify-content:center}
+.mapcard.docked .mc-head,.mapcard.docked .mc-sub,.mapcard.docked .mc-side:not(.in-slot){display:none}
+/* Docked, the plot is the whole card. The zoom row goes: it cost a row of the little
+   height a phone has, and with the whole map always in view there is nothing to fit
+   back into. The three sliders in the controls sheet are the accurate way in on a
+   phone, and they place the chemistry exactly. */
+.mapcard.docked .mzoom{display:none}
+.mapcard.docked{padding:5px}
+.mapcard.docked #map{width:auto;height:100%;max-width:100%;margin:0;border-radius:9px;flex:none}
+body.clean.map-docked #stage{inset:0}
+/* portrait: pattern on top, plot underneath, clear of the controls handle */
+@media (orientation:portrait){
+  body.map-docked{--mapH:min(38vh,330px)}
+  body.map-docked #stage{bottom:calc(var(--mapH) + 56px)}
+  body.map-docked .mapcard.docked{left:8px;right:8px;bottom:50px;top:auto;width:auto;height:var(--mapH)}
+}
+/* landscape: pattern on the left, plot on the right under the icon buttons */
+@media (orientation:landscape){
+  /* three limits at once: never more than 46% of the width, never so wide that the
+     plot's own 1:0.9 shape pushes it past the bottom of the screen, and never larger
+     than it needs to be */
+  body.map-docked{--mapW:min(46vw,380px,calc((100vh - 76px)/0.9))}
+  body.map-docked #stage{right:calc(var(--mapW) + 12px);bottom:0}
+  /* the card hugs the plot's own shape, so there is no dead glass under it and the
+     plot is as wide as the strip allows */
+  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:auto;width:var(--mapW);
+    height:calc((var(--mapW) - 10px)*0.9 + 10px);max-height:calc(100% - 64px)}
+  body.map-docked .mapcard.docked #map{width:100%;height:auto}
+  body.map-docked .hud{left:14px;right:auto;top:auto;bottom:54px;flex-direction:row;align-items:flex-start;gap:12px}
+}
+/* the sheet is a cover over the pattern, not a shelf under the plot */
+body.sheet-open .panel{z-index:9}
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div class="drawhint" id="drawhint">Draw in the field to start it</div>
+  <div class="notice" id="notice">
+    <div>
+      <h2>This simulation needs WebGL 2</h2>
+      <p id="noticeMsg">Your browser or graphics driver did not provide it.</p>
+      <p>Chrome or Edge on a desktop machine is the safest bet.</p>
+    </div>
+  </div>
+</div>
+
+<header class="brand">
+  <p class="kicker">Reaction and diffusion</p>
+  <h1>Turing&#39;s Morphogenesis</h1>
+  <p>Two chemicals, no blueprint.</p>
+</header>
+
+<div class="actions">
+  <button class="icon-btn" id="playBtn" title="Pause (space)" aria-label="Pause" aria-pressed="true">
+    <svg class="main" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="seedBtn" title="Reseed the field (R)" aria-label="Reseed the field">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4"/></svg>
+  </button>
+  <button class="icon-btn" id="btnClean" title="Hide the interface (H)" aria-label="Hide the interface">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.5 10.5 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.8 8.6 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 4.4-1"/></svg>
+  </button>
+  <button class="icon-btn" id="btnFull" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg class="main" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel" id="panel">
+  <button class="p-toggle" id="p-toggle" aria-expanded="false">Controls</button>
+  <button class="about-btn" id="aboutBtn" data-host-on-phone="1">What am I looking at?</button>
+
+  <details class="grp" open>
+  <summary class="grp-title">Presets <span class="tag">try one</span></summary>
+  <div class="presets" id="presets"></div>
+
+  </details>
+  <details class="grp mapslot-label">
+  <summary class="grp-title">Steer it yourself <span class="tag">the parameter map</span></summary>
+  <div id="mapslot"></div>
+
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Paint <span class="tag">into the field</span></summary>
+  <div class="seg two" id="toolSeg" role="group" aria-label="Pointer tool">
+    <button data-tool="seed" aria-pressed="true">Seed</button>
+    <button data-tool="erase" aria-pressed="false">Erase</button>
+  </div>
+  <div class="row">
+    <label for="brushSl"><span class="nm">Brush</span><span class="val" id="brushVal">28 px</span></label>
+    <input type="range" id="brushSl" min="4" max="120" step="1" value="28">
+  </div>
+
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Run <span class="tag">speed</span></summary>
+  <div class="row">
+    <label for="stepsSl"><span class="nm">Speed</span><span class="val" id="stepsVal">12</span></label>
+    <input type="range" id="stepsSl" min="1" max="40" step="1" value="12">
+  </div>
+
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Growth <span class="tag">stretch the tissue</span></summary>
+  <label class="toggle"><input type="checkbox" id="growOn"><span>Stretch the field lengthwise</span></label>
+  <div class="row" id="rowGrowRate">
+    <label for="growRate"><span class="nm">Growth speed
+      <span class="tip" tabindex="0" data-tip="Real embryos pattern while getting bigger. As the field stretches, the chemistry keeps its own spacing, so new stripes insert between the old ones instead of the pattern scaling up.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
+    <input type="range" id="growRate" min="1" max="100" step="1" value="45" disabled>
+  </div>
+  <div class="row" id="rowGrowMax">
+    <label for="growMax"><span class="nm">Final length</span><span class="val" id="growMaxVal">4.0&times;</span></label>
+    <input type="range" id="growMax" min="2" max="6" step="0.5" value="4" disabled>
+  </div>
+
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Alignment <span class="tag">line the pattern up</span></summary>
+  <label class="toggle"><input type="checkbox" id="anisOn"><span>Diffuse faster along one axis</span></label>
+  <div class="row" id="rowAnisAng">
+    <label for="anisAng"><span class="nm">Direction
+      <span class="tip" tabindex="0" data-tip="Tissue is often fibrous, so a chemical spreads faster along one direction than across it. Stripes then run across the fast axis.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
+    <input type="range" id="anisAng" min="0" max="180" step="1" value="0" disabled>
+  </div>
+  <div class="row" id="rowAnisAmt">
+    <label for="anisAmt"><span class="nm">Strength</span><span class="val" id="anisAmtVal">2.00&times;</span></label>
+    <input type="range" id="anisAmt" min="1" max="3" step="0.05" value="2" disabled>
+  </div>
+
+  </details>
+  <details class="grp">
+  <summary class="grp-title">Look <span class="tag">and resolution</span></summary>
+    <div class="row">
+      <label for="palSel"><span class="nm">Palette</span></label>
+      <select id="palSel">
+        <option value="5" selected>The preset&#39;s own</option>
+        <option value="1">Coral</option>
+        <option value="0">Ink on paper</option>
+        <option value="2">Thermal</option>
+        <option value="3">Culture</option>
+        <option value="4">Grey</option>
+      </select>
+    </div>
+    <label class="toggle"><input type="checkbox" id="reliefOn" checked><span>Relief shading</span></label>
+    <div class="row">
+      <label for="levelSl"><span class="nm">Threshold</span><span class="val" id="levelVal">0.18</span></label>
+      <input type="range" id="levelSl" min="0.02" max="0.4" step="0.005" value="0.18">
+    </div>
+    <div class="row">
+      <label for="contrastSl"><span class="nm">Contrast</span><span class="val" id="contrastVal">1.6</span></label>
+      <input type="range" id="contrastSl" min="0.4" max="4" step="0.05" value="1.6">
+    </div>
+    <div class="row">
+      <label for="gridSel"><span class="nm">Grid</span></label>
+      <select id="gridSel">
+        <option value="256">256 &times; 256</option>
+        <option value="384">384 &times; 384</option>
+        <option value="512" selected>512 &times; 512</option>
+        <option value="768">768 &times; 768</option>
+      </select>
+    </div>
+  </details>
+</div>
+
+<aside class="mapcard" id="mapcard">
+  <div class="mc-head">
+    <span class="mc-title">Steer it yourself</span>
+    <span class="tip" tabindex="0" data-tip="Across the bottom is the feed rate F, how fast fresh substrate is topped up: low on the left, high on the right. Up the side is the kill rate k, how fast the activator is removed: low at the bottom, high at the top. The exact numbers are on the two sliders below. Each preset is a dot; click or drag anywhere to move the chemistry there. The interesting behaviour is packed into bands a few thousandths wide, so scroll the wheel, double-click, or use the buttons below to magnify up to 24 times, and the arrow keys to step one notch at a time. Drag past the edge and the view follows.">i</span>
+  </div>
+  <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own, and zoom in where the bands get narrow.</p>
+  <canvas id="map" width="320" height="300" tabindex="0" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry. Scroll or use the zoom buttons to magnify, arrow keys to nudge."></canvas>
+  <div class="mzoom">
+    <button class="mz" id="mzOut" aria-label="Zoom out" title="Zoom out">&minus;</button>
+    <button class="mz" id="mzIn" aria-label="Zoom in" title="Zoom in">+</button>
+    <button class="mz wide" id="mzFit" title="Show the whole map again">Whole map</button>
+    <span class="mzl" id="mzLbl">1.0&times;</span>
+  </div>
+  <div class="mc-side" id="mapside">
+  <p class="mc-zone" id="mapzone">&nbsp;</p>
+  <ul class="legend">
+    <li><span class="ln"></span>above this line no uniform mixture exists</li>
+    <li><span class="ln dash"></span>left of this the mixture oscillates</li>
+    <li><span class="sw"></span>genuine Turing instability</li>
+  </ul>
+  <div class="row">
+    <label for="fSl"><span class="nm">Feed rate <i>F</i>
+      <span class="tip" tabindex="0" data-tip="How fast fresh substrate is topped up. Raise it and the pattern fills the field; drop it and structures starve. This is the horizontal axis.">i</span></span><span class="val" id="fOut">0.0300</span></label>
+    <input type="range" id="fSl" min="0.005" max="0.09" step="0.0002">
+  </div>
+  <div class="row">
+    <label for="kSl"><span class="nm">Kill rate <i>k</i>
+      <span class="tip" tabindex="0" data-tip="How fast the activator is removed. It sets whether a blob holds its size, splits in two, or dies out. This is the vertical axis.">i</span></span><span class="val" id="kOut">0.0620</span></label>
+    <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
+  </div>
+  <div class="mc-rule"></div>
+  <div class="row">
+    <label for="ratioSl"><span class="nm">Diffusion ratio
+      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator. Turing's argument turns on this number: the olive region is where his condition actually holds, and it grows as you raise the ratio.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
+    <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
+  </div>
+  <p class="mc-note" id="mapnote">&nbsp;</p>
+  </div>
+</aside>
+
+<div class="hud" id="hud" style="display:none"></div>
+
+<dialog id="about" class="about"><div class="about-inner">
+<button class="about-close" id="closeAbout" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>A square of tissue with two chemicals dissolved in it, and no plan anywhere for what it should look like. Every cell starts identical to every other one. Nothing in the code contains the pattern you end up with. It appears because a perfectly even mixture turns out to be an unstable thing to be.</p>
+<p>Two substances react and spread, and that is the whole mechanism.</p>
+<ul>
+  <li>The <b>activator</b> makes more of itself, consuming the second chemical as it goes. Wherever there is slightly more of it than average, it builds up faster still.</li>
+  <li>The <b>substrate</b> is fed in evenly from outside at the <b>feed rate F</b>, and it spreads through the sheet about twice as fast as the activator does.</li>
+  <li>Everything is removed at the <b>kill rate k</b>, so a blob that stops being fed dies back.</li>
+</ul>
+<p>The competition between those two is what makes shapes. A patch of activator grows, and while it grows it starves the ring of tissue around it, because the substrate it needs is drained from a wider area than the patch itself covers. That ring cannot start a patch of its own, so the next patch has to begin further out, at a distance set by how far the two chemicals spread. Local growth with longer-range suppression gives you a spacing, and a spacing is a pattern.</p>
+<p>Once you have seen it, the same logic shows up in odd places. Vegetation in semi-arid country grows in regular stripes and rings, because each plant draws water from the bare ground around it. Ripples in sand, the spacing of hair follicles, the ridges on the roof of your mouth, and the spots on a big cat are all thought to come from something with this shape to it. Alan Turing proposed the idea in 1952, in the last paper he published, and it took forty years and a good deal of argument before biologists were persuaded.</p>
+<p>Only three sliders change the chemistry: <b>feed rate</b>, <b>kill rate</b>, and the <b>diffusion ratio</b> between the two substances. The map beside the field shows where in that space you are, and the regions on it are what the presets pick out. Small moves matter, since the boundary between spots, stripes, and a labyrinth is a few thousandths of a unit wide, which is why nudging one slider can turn a settled pattern into a growing one. Everything else in the panel either paints on the field or changes how it is drawn, apart from growth and anisotropy, which stretch the tissue while the pattern forms and are how a real pattern gets aligned with the body it sits on.</p>
+
+<div class="more-box"><div class="more-body">
+<h3>Turing's idea</h3>
+    <p>In 1952 Alan Turing pointed out something counterintuitive: diffusion, which normally smooths differences out, can create them. If a self-amplifying chemical is held in check by a second one that spreads faster, a uniform mixture becomes unstable. Any tiny fluctuation grows locally while suppressing its neighbourhood, and the system settles into a pattern with a characteristic spacing. Turing called the chemicals morphogens and suggested they were how embryos decide where to put things.</p>
+    <p>This particular pair is the Gray-Scott model, an autocatalytic reaction in a stirred tank rewritten as a field. <em>u</em> is the substrate, <em>v</em> the activator, and the reaction is u + 2v &rarr; 3v.</p>
+    <div class="eq">&part;u/&part;t = D<sub>u</sub>&nabla;&sup2;u &minus; uv&sup2; + F(1 &minus; u)
+&part;v/&part;t = D<sub>v</sub>&nabla;&sup2;v + uv&sup2; &minus; (F + k)v</div>
+    <p><em>F</em> is the feed rate, the rate at which substrate is topped up towards 1. <em>k</em> is the extra kill rate on the activator. Those two numbers are what the map navigates, and most presets change nothing else. Three of them go further. Labyrinth lowers both diffusion constants together, which shrinks the spacing without moving on the map. Stripes switches on the fast axis, since an isotropic field gives a maze and never parallel stripes. Worms runs more steps per frame, because its filaments crawl slowly.</p>
+    <p>Each preset is a complete recipe. Clicking one sets the feed and kill rates, the diffusion ratio, the fast axis, the seed, the speed, and the colours, and puts everything it does not name back to the default, so a preset always produces the pattern it is named after. Move any control that changes the chemistry and the selection drops to <em>Free play</em>, which is the card to start from when you want to mix your own.</p>
+
+    <h3>Why the map has that shape</h3>
+    <p>The two curves on the parameter map are solved directly from the equations with diffusion switched off, so they mark real boundaries in the chemistry rather than drawn guides.</p>
+    <ul>
+      <li>The <em>upper arc</em> is where the non-trivial steady states collide and vanish. Above it, the only uniform state is the dead one, u = 1 and v = 0. Patterns still live up there, and only as isolated structures that must keep dividing to survive, which is why the mitosis preset sits just above the line.</li>
+      <li>The <em>lower curve</em> is a Hopf bifurcation. To its left the steady state loses stability by oscillating in time rather than by splitting in space, so what you get is travelling waves and chemical turbulence. The waves and chaos presets sit right on it.</li>
+      <li>The <em>olive patch</em> is the only region where a classical Turing instability actually applies: a uniform steady state that is stable on its own and goes unstable once diffusion is switched on. This one depends on how much faster the substrate spreads, unlike the two curves. At the default ratio of 2 it is a thin sliver on the right, and dragging the diffusion ratio up opens it out across the map.</li>
+    </ul>
+    <p>Every preset in the list sits within a few thousandths of one of the two curves. The whole zoo lives in a sliver, which is why the map is worth navigating by clicking rather than by typing numbers.</p>
+
+    <h3>The growing field</h3>
+    <p>A real embryo changes size while it is being patterned. A somite-stage vertebrate trunk, a fish flank, and a limb bud are all getting bigger as the pattern forms. When you switch on growth here, the tissue stretches lengthwise while the chemistry holds on to its own preferred spacing. The stripes therefore refuse to stretch with the animal, and new ones insert between the old ones. That is exactly what Kondo and Asai observed in the marine angelfish <em>Pomacanthus</em> in 1995: as the fish grows, its stripes keep a constant width and new stripes appear in between, while a painted-on pattern would simply have scaled up.</p>
+    <p>The field is drawn in material coordinates, so what you see is the tissue itself elongating. Watch the stripe count in the readout climb while the visible spacing stays put.</p>
+
+    <h3>Directional diffusion</h3>
+    <p>Diffusion in tissue is often faster along one axis than another, because cells are elongated, or aligned, or the extracellular matrix is fibrous. Turning on directional diffusion replaces the single diffusion constant with a tensor. Structures then line up, since the pattern's wavelength is longer along the fast axis, so stripes tend to run across it. This is the difference between the Stripes preset and the Labyrinth one, and it changes the physics rather than the appearance. With diffusion equal in every direction the model has no reason to prefer any direction, so it always produces a maze, and parallel stripes require either an anisotropic tissue or a boundary telling the pattern which way to line up. The strength is capped at 3&times; because beyond that the explicit solver used here stops being stable.</p>
+
+    <h3>Are these actually Turing patterns?</h3>
+    <p>Partly, and it is worth being precise about it. Turing's own argument is a linear one: take a uniform steady state that is stable on its own, add diffusion, and show that a perturbation now grows. That condition is the olive patch on the map, and at the standard diffusion ratio of 2 not one of the presets falls inside it. Most of them sit where no non-trivial uniform state exists at all, or where the state oscillates. In those cases what you are watching is a self-sustaining localized structure, a pulse of activator that eats outward, splits when it gets too broad, and starves where the substrate has run out.</p>
+    <p>That gap is why Pearson's 1993 paper on this model is called <em>Complex patterns in a simple system</em>. The ingredients are Turing's and so is the characteristic spacing, and the linear analysis Turing wrote down still does not by itself explain a spot that divides. Push the diffusion ratio above about 3 and the olive region swells to cover the right-hand presets, which is the regime where the textbook version does hold.</p>
+
+    <h3>From caricature to real biology</h3>
+    <p>Gray-Scott is a caricature of a chemistry, and no animal runs this exact reaction. Whether Turing mechanisms set real body patterns was argued over for decades, and the answer turned out to be yes in several places. Zebrafish pigment stripes arise from short-range and long-range interactions between pigment cell types, mouse digit number follows a Turing-like Bmp/Sox9/Wnt network, and hair follicle spacing depends on a Wnt/Dkk activator-inhibitor pair. In those systems the diffusing species are often cells or signalling ranges rather than freely diffusing molecules, and the mathematics belongs to the same family regardless.</p>
+
+    <h3>Under the hood</h3>
+    <ul>
+      <li>Explicit forward Euler on a periodic grid, so the left edge wraps to the right and the top to the bottom.</li>
+      <li>A nine-point diffusion stencil, generalised to a diffusion tensor so that the directional and growth modes stay stable.</li>
+      <li>Growth is handled in material coordinates: the diffusion term along the growing axis is divided by the square of the stretch factor, and both chemicals are diluted at the rate the tissue expands.</li>
+      <li>The whole thing runs on the GPU in a pair of floating-point textures.</li>
+    </ul>
+  <h3>The equations on screen</h3>
+<p>This is the Gray-Scott model, a two-species reaction-diffusion system for concentrations u, the substrate, and v, the activator, on a grid with periodic boundaries:</p>
+<span class="eq">&part;u/&part;t = D<sub>u</sub> &nabla;&sup2;u &minus; u v&sup2; + F(1 &minus; u)<br>&part;v/&part;t = D<sub>v</sub> &nabla;&sup2;v + u v&sup2; &minus; (F + k) v</span>
+<p>The cubic term u v&sup2; is the autocatalytic step, in which two molecules of v convert one of u into a third v. F is the rate at which fresh u is pumped in and everything is washed out, and k is an extra decay applied to v alone. The Laplacian is evaluated with a nine-point stencil and the whole thing is stepped forward on the GPU, one texel per cell. Pearson (1993) mapped the behaviour of this system across the F-k plane and named the regimes, and the map in the panel is that parameter plane with his classification on it.</p>
+
+<h3>Why a uniform state is unstable</h3>
+<p>Turing (1952) asked what happens to a homogeneous chemical steady state when you perturb it slightly, and answered it by linearising the system and asking which spatial Fourier modes grow. A perturbation of wavenumber q grows or decays according to the eigenvalues of the Jacobian of the reaction terms with the diffusion terms &minus;D q&sup2; added along the diagonal. If diffusion is absent, or equal for both species, the steady state is stable. If the inhibitory species diffuses sufficiently faster than the autocatalytic one, a band of intermediate wavenumbers acquires a positive growth rate while q = 0 and large q stay negative. The state is then stable against uniform change and unstable against change at one particular length scale, which is why the resulting pattern has a characteristic spacing rather than a characteristic size. This is a diffusion-driven instability, and it is the sense in which the pattern is created by the very process that usually smooths things out.</p>
+<p>Gierer and Meinhardt (1972) restated the requirement in the form that is now standard in developmental biology: short-range activation with long-range inhibition. The diffusion ratio slider is that condition made adjustable. Turn it down toward 1 and every pattern in the system dissolves, however you set F and k. The same two-ingredient recipe has since been used to explain vegetation banding in the Sahel, where plants are the activator and soil water the long-range inhibitor, and the periodicity of those bands is now studied as an early-warning signal for desertification.</p>
+
+<h3>How much of this happens in animals</h3>
+<p>Turing's paper was theory with no molecular candidates, and for forty years the competing account of pattern in embryos was positional information, in which cells read a pre-existing gradient and consult a lookup table (Wolpert, 1969). The evidence for genuine Turing mechanisms came later. Kondo and Asai (1995) showed that the stripes of the marine angelfish <i>Pomacanthus</i> rearrange as the fish grows, inserting new stripes to hold spacing constant, which is what a reaction-diffusion system does and what a fixed prepattern cannot do. Sick et al. (2006) identified WNT and its diffusible inhibitor DKK as an activator-inhibitor pair setting mouse hair follicle spacing. Economou et al. (2012) showed the periodic ridges of the mouse palate form by a Turing mechanism, and Sheth et al. (2012) showed that reducing Hox gene dose increases the number of digits in a way consistent with Turing-type periodic patterning of the limb bud. The modern position, argued in reviews such as Green and Sharpe (2015), is that real embryos use both ideas together: gradients position and orient the field, and local self-organising instabilities fill it in with periodic structure. On the chemistry side, the instability was finally produced in a controlled experiment in 1990, in the chlorite-iodide-malonic acid reaction, nearly four decades after Turing predicted it.</p>
+
+<h3>Limits of the model</h3>
+<p>What runs here is a chemistry rather than a tissue. There are no cells, no mechanics, no gene regulation, and no growth beyond the artificial stretch this simulation applies. Two chemicals is the bare minimum for the instability, while real patterning networks have many more components, and that changes which patterns are reachable. Nothing here is fitted to measurements from any organism, so the resemblance to a shell, a coat, or a coral is qualitative. It is evidence about what kind of mechanism could produce such a thing, and any claim that it did produce it has to come from the biology.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Turing, A. M. (1952). The chemical basis of morphogenesis. Philosophical Transactions of the Royal Society B. <a class="doi" href="https://doi.org/10.1098/rstb.1952.0012" target="_blank" rel="noopener" title="10.1098/rstb.1952.0012">DOI</a></li>
+  <li>Gierer, A., &amp; Meinhardt, H. (1972). A theory of biological pattern formation. Kybernetik. <a class="doi" href="https://doi.org/10.1007/BF00289234" target="_blank" rel="noopener" title="10.1007/BF00289234">DOI</a></li>
+  <li>Gray, P., &amp; Scott, S. K. (1984). Autocatalytic reactions in the isothermal continuous stirred tank reactor. Chemical Engineering Science. <a class="doi" href="https://doi.org/10.1016/0009-2509(84)87017-7" target="_blank" rel="noopener" title="10.1016/0009-2509(84)87017-7">DOI</a></li>
+  <li>Pearson, J. E. (1993). Complex patterns in a simple system. Science. <a class="doi" href="https://doi.org/10.1126/science.261.5118.189" target="_blank" rel="noopener" title="10.1126/science.261.5118.189">DOI</a></li>
+  <li>Kondo, S., &amp; Asai, R. (1995). A reaction-diffusion wave on the skin of the marine angelfish Pomacanthus. Nature. <a class="doi" href="https://doi.org/10.1038/376765a0" target="_blank" rel="noopener" title="10.1038/376765a0">DOI</a></li>
+  <li>Sick, S., Reinker, S., Timmer, J., &amp; Schlake, T. (2006). WNT and DKK determine hair follicle spacing through a reaction-diffusion mechanism. Science. <a class="doi" href="https://doi.org/10.1126/science.1130088" target="_blank" rel="noopener" title="10.1126/science.1130088">DOI</a></li>
+  <li>Economou, A. D., et al. (2012). Periodic stripe formation by a Turing mechanism operating at growth zones in the mammalian palate. Nature Genetics. <a class="doi" href="https://doi.org/10.1038/ng.1090" target="_blank" rel="noopener" title="10.1038/ng.1090">DOI</a></li>
+  <li>Sheth, R., et al. (2012). Hox genes regulate digit patterning by controlling the wavelength of a Turing-type mechanism. Science. <a class="doi" href="https://doi.org/10.1126/science.1226804" target="_blank" rel="noopener" title="10.1126/science.1226804">DOI</a></li>
+  <li>Green, J. B. A., &amp; Sharpe, J. (2015). Positional information and reaction-diffusion: two big ideas in developmental biology combine. Development. <a class="doi" href="https://doi.org/10.1242/dev.114991" target="_blank" rel="noopener" title="10.1242/dev.114991">DOI</a></li>
+</ul>
+</div></div>
+</div>
+</dialog>
+
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+
+/* ------------------------------------------------------------------ *
+ * Presets. F and k only; everything else is left as the user set it.
+ * ------------------------------------------------------------------ */
+var PRESETS = [
+  {n:'Spots',          d:'holds its spacing',      F:0.030,  k:0.062,   seed:2, sp:32, sr:4,
+   c:['#f7ecd2','#d59a3c','#33200f',0.58]},
+  {n:'Stripes',        d:'lined up, not a maze',   F:0.029,  k:0.057,   seed:4, aniso:[90,1.6],
+   c:['#f6f4ef','#8f8d88','#0e0e10',0.50]},
+  {n:'Labyrinth',      d:'dense maze, spreads slowly', F:0.029, k:0.057, seed:2, DA:0.18,
+   c:['#fbe9de','#e08468','#4a1622',0.56]},
+  {n:'Turtle shell',   d:'plates and seams from seven seeds', F:0.0802, k:0.0594, seed:0, dots:7, steps:20,
+   c:['#f2dfae','#a8762c','#26301c',0.55]},
+  {n:'Mitosis',        d:'spots that divide',      F:0.0367, k:0.0649,  seed:1,
+   c:['#f1eaf7','#b552a4','#2a0a3d',0.55]},
+  {n:'Coral',          d:'branching fronts',       F:0.0545, k:0.062,   seed:1,
+   c:['#fdf4e0','#f29a3b','#66120f',0.60]},
+  {n:'Worms',          d:'wandering filaments',    F:0.078,  k:0.061,   seed:2, steps:26, draw:1,
+   c:['#efe6cf','#b7763a','#2a2116',0.58]},
+  {n:'Holes',          d:'spots, inverted',        F:0.039,  k:0.058,   seed:2, sp:32, sr:4,
+   c:['#fff3cf','#e8b21f','#4a2f06',0.60]},
+  {n:'Waves',          d:'travelling fronts',      F:0.014,  k:0.045,   seed:1, draw:1,
+   c:['#e9f7fb','#3aa6d0','#0a2340',0.55]},
+  {n:'Chaos',          d:'never settles',          F:0.026,  k:0.051,   seed:2,
+   c:['#fdf0c8','#df4a3a','#14040f',0.55]},
+  {n:'Drifting spots', d:'spots that wander',      F:0.014,  k:0.054,   seed:2, sp:32, sr:4,
+   c:['#eef8f2','#3fd0b3','#0f2338',0.55]},
+  {n:'Pulses',         d:'blobs that breathe',     F:0.025,  k:0.060,   seed:2, sp:32, sr:4,
+   c:['#ffece9','#e04b4b','#2a0709',0.55]}
+];
+/* Every preset now carries a complete recipe. Anything a preset does not name is put
+   back to the default below, the diffusion ratio included: leaving a modified ratio in
+   place was why Stripes could be selected and still not make stripes. */
+var PAL_DEFAULT = ['#fdf4e0','#f29a3b','#66120f',0.60];
+var RATIO_DEFAULT = 2.0, LEVEL_DEFAULT = 0.18, CONTRAST_DEFAULT = 1.6;
+function hx(c){
+  return [parseInt(c.substr(1,2),16)/255, parseInt(c.substr(3,2),16)/255, parseInt(c.substr(5,2),16)/255];
+}
+var DA_DEFAULT = 0.30, STEPS_DEFAULT = 12, SP_DEFAULT = 64, SR_DEFAULT = 14;
+/* ------------------------------------------------------------------ *
+ * Shaders
+ * ------------------------------------------------------------------ */
+var VS = [
+'#version 300 es',
+'precision highp float;',
+'out vec2 vUv;',
+'void main(){',
+'  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));',
+'  vUv = p;',
+'  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_SIM = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState;',
+'uniform vec2 uTexel;',
+'uniform vec4 uWA;',   // alongX, alongY, diag(+,+), diag(+,-)
+'uniform vec4 uWB;',
+'uniform float uF, uK, uDil;',
+'void main(){',
+'  vec2 t = uTexel;',
+'  vec2 c  = texture(uState, vUv).rg;',
+'  vec2 xp = texture(uState, vUv + vec2( t.x, 0.0)).rg;',
+'  vec2 xm = texture(uState, vUv + vec2(-t.x, 0.0)).rg;',
+'  vec2 yp = texture(uState, vUv + vec2(0.0,  t.y)).rg;',
+'  vec2 ym = texture(uState, vUv + vec2(0.0, -t.y)).rg;',
+'  vec2 pp = texture(uState, vUv + vec2( t.x,  t.y)).rg;',
+'  vec2 mm = texture(uState, vUv + vec2(-t.x, -t.y)).rg;',
+'  vec2 pm = texture(uState, vUv + vec2( t.x, -t.y)).rg;',
+'  vec2 mp = texture(uState, vUv + vec2(-t.x,  t.y)).rg;',
+'  float cenA = 2.0*(uWA.x+uWA.y+uWA.z+uWA.w);',
+'  float cenB = 2.0*(uWB.x+uWB.y+uWB.z+uWB.w);',
+'  float lapA = uWA.x*(xp.r+xm.r) + uWA.y*(yp.r+ym.r) + uWA.z*(pp.r+mm.r) + uWA.w*(pm.r+mp.r) - cenA*c.r;',
+'  float lapB = uWB.x*(xp.g+xm.g) + uWB.y*(yp.g+ym.g) + uWB.z*(pp.g+mm.g) + uWB.w*(pm.g+mp.g) - cenB*c.g;',
+'  float a = c.r, b = c.g;',
+'  float r = a*b*b;',
+'  float na = a + lapA - r + uF*(1.0 - a) - uDil*a;',
+'  float nb = b + lapB + r - (uF + uK)*b - uDil*b;',
+'  outColor = vec4(clamp(na,0.0,1.0), clamp(nb,0.0,1.0), 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_SPLAT = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState;',
+'uniform vec2 uP; uniform vec2 uR; uniform float uMode; uniform float uN;',
+'float hs(vec2 p){ p = fract(p*vec2(127.1, 311.7)); p += dot(p, p + 41.7); return fract(p.x*p.y*97.31); }',
+'void main(){',
+'  vec2 st = texture(uState, vUv).rg;',
+'  vec2 d = vUv - uP;',
+'  d = fract(d + 0.5) - 0.5;',
+'  d /= uR;',
+'  float f = smoothstep(0.0, 0.55, 1.0 - dot(d,d));',
+/* Seeding stipples: about half the cells under the brush get activator, the rest are
+   left as substrate. A solid disc of activator starves in its own middle and dies in
+   exactly the regimes people most want to draw into. Measured at Spots, Drifting spots
+   and Pulses, a solid 13-cell disc and a solid 26-cell disc both die within 3000 steps
+   and the same discs stippled take hold every time. Patch size matters as much as the
+   dither: stippling cell by cell still loses Drifting spots and Mitosis, because the
+   surviving specks are thinner than a nucleus, so the patches are six cells across.
+   Erasing stays solid, because a half-erased hole is not what anyone means by erase. */
+'  if(uMode > 0.0) f *= step(0.5, hs(floor(vUv*uN/6.0) + 0.5));',
+'  if(uMode > 0.0){',
+'    st.g = max(st.g, f*0.92);',
+'    st.r = min(st.r, mix(1.0, 0.12, f));',
+'  } else {',
+'    st.g *= (1.0 - f);',
+'    st.r = mix(st.r, 1.0, f);',
+'  }',
+'  outColor = vec4(clamp(st,0.0,1.0), 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_SEED = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform float uSeed; uniform int uMode; uniform vec2 uTexel; uniform vec2 uDots;',
+'float hash(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x*p.y); }',
+'void main(){',
+'  float a = 1.0, b = 0.0;',
+'  vec2 uv = vUv;',
+/* Seed features are measured in CELLS, not in a fraction of the field. The pattern
+   wavelength is about sixteen cells whatever the grid size, so a seed written as a
+   fraction of the field shrinks below the size that can survive when the grid is
+   coarser: on a 256 grid the mitosis blob simply died. */
+'  float cell = uTexel.x;',
+'  if(uMode == 1){',
+'    vec2 d = (uv - 0.5)/cell;',
+'    if(abs(d.x) < 14.3 && abs(d.y) < 14.3){ a = 0.5; b = 0.25; }',
+'  } else if(uMode == 2){',
+/* A lattice of nuclei laid out in CELLS, so the same number of nuclei per unit of
+   pattern lands on a 256 grid as on a 768 one, and the field never depends on the
+   screen it is drawn to. uDots.x is the lattice spacing in cells, uDots.y the nucleus
+   radius in cells. Sixteen nuclei of random size, which is what used to be here, threw
+   away a working field about a third of the time: measured over 4000 steps, Drifting
+   spots and Pulses die outright for most draws because a wide nucleus starves in the
+   middle before it can split. Four-cell nuclei on a 32-cell lattice took on every draw
+   tested; fourteen-cell nuclei on a 64-cell lattice spread more slowly and give the
+   maze presets their character. */
+'    vec2 cp = uv/cell;',
+'    float sp = uDots.x, rr = uDots.y;',
+'    float per = floor(1.0/cell/sp + 0.5);',
+'    vec2 gi = floor(cp/sp);',
+'    for(int oy = -1; oy <= 1; oy++){',
+'      for(int ox = -1; ox <= 1; ox++){',
+'        vec2 g = gi + vec2(float(ox), float(oy));',
+'        vec2 gw = mod(g, vec2(per));',
+'        vec2 jt = vec2(hash(gw + uSeed), hash(gw*1.73 + uSeed + 3.1)) - 0.5;',
+'        vec2 cc = (g + 0.5 + 0.66*jt)*sp;',
+'        vec2 d = cp - cc;',
+'        if(dot(d,d) < rr*rr){ a = 0.5; b = 0.25; }',
+'      }',
+'    }',
+'  } else if(uMode == 3){',
+'    if(hash(uv/cell*0.51 + uSeed) > 0.5){ a = 0.5; b = 0.25; }',
+'  } else if(uMode == 4){',
+'    if(sin(uv.x*6.2831853*5.0 + uSeed) > 0.35){ a = 0.5; b = 0.25; }',
+'  }',
+'  float nz = (uMode == 0) ? 0.0 : 0.02;',
+'  a += (hash(uv/cell*2.0 + uSeed*3.17) - 0.5)*nz;',
+'  outColor = vec4(clamp(a,0.0,1.0), clamp(b,0.0,1.0), 0.0, 1.0);',
+'}'].join('\n');
+
+var FS_DRAW = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState;',
+'uniform vec2 uTexel;',
+'uniform float uLo, uHi, uRelief;',
+'uniform int uPal; uniform float uBilin;',
+'uniform vec3 uC0, uC1, uC2; uniform float uMid;',
+'vec3 inferno(float t){',
+'  const vec3 c0 = vec3(0.00021894, 0.00165100, -0.01948090);',
+'  const vec3 c1 = vec3(0.10651342, 0.56395644, 3.93271239);',
+'  const vec3 c2 = vec3(11.6024931, -3.97285397, -15.9423941);',
+'  const vec3 c3 = vec3(-41.7039961, 17.4363989, 44.3541452);',
+'  const vec3 c4 = vec3(77.1629357, -33.4023589, -81.8073093);',
+'  const vec3 c5 = vec3(-71.3194282, 32.6260643, 73.2095199);',
+'  const vec3 c6 = vec3(25.1311262, -12.2426690, -23.0703250);',
+'  return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));',
+'}',
+'vec3 viridis(float t){',
+'  const vec3 c0 = vec3(0.27772733, 0.00540734, 0.33409981);',
+'  const vec3 c1 = vec3(0.10509304, 1.40461353, 1.38459016);',
+'  const vec3 c2 = vec3(-0.33086183, 0.21484756, 0.09509516);',
+'  const vec3 c3 = vec3(-4.63423050, -5.79910097, -19.3324410);',
+'  const vec3 c4 = vec3(6.22826994, 14.1799334, 56.6905526);',
+'  const vec3 c5 = vec3(4.77638500, -13.7451454, -65.3530326);',
+'  const vec3 c6 = vec3(-5.43545586, 4.64585261, 26.3124352);',
+'  return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));',
+'}',
+'vec3 pal(float t){',
+'  if(uPal == 5){',
+'    vec3 c = mix(uC0, uC1, smoothstep(0.0, uMid, t));',
+'    return mix(c, uC2, smoothstep(uMid*0.86, 1.0, t));',
+'  }',
+'  if(uPal == 0) return mix(vec3(0.961,0.953,0.929), vec3(0.055,0.075,0.157), t);',
+'  if(uPal == 1){',
+'    vec3 c = mix(vec3(0.992,0.957,0.878), vec3(0.949,0.596,0.231), smoothstep(0.0,0.62,t));',
+'    return mix(c, vec3(0.400,0.055,0.114), smoothstep(0.52,1.0,t));',
+'  }',
+'  if(uPal == 2) return inferno(t);',
+'  if(uPal == 3) return viridis(t);',
+'  return vec3(0.07 + 0.87*t);',
+'}',
+/* Plenty of phones expose WebGL 2 without OES_texture_float_linear, so the driver
+   refuses to interpolate a float texture and the field arrives as hard cells with
+   staircased relief shading: the same physics as the desktop, drawn badly. When the
+   extension is missing the interpolation happens here instead. */
+'float samp(vec2 uv){',
+'  if(uBilin < 0.5) return texture(uState, uv).g;',
+'  vec2 p = uv/uTexel - 0.5;',
+'  vec2 fp = fract(p);',
+'  vec2 b0 = (floor(p) + 0.5)*uTexel;',
+'  float s00 = texture(uState, b0).g;',
+'  float s10 = texture(uState, b0 + vec2(uTexel.x, 0.0)).g;',
+'  float s01 = texture(uState, b0 + vec2(0.0, uTexel.y)).g;',
+'  float s11 = texture(uState, b0 + uTexel).g;',
+'  return mix(mix(s00, s10, fp.x), mix(s01, s11, fp.x), fp.y);',
+'}',
+'float hgt(vec2 uv){ return smoothstep(uLo, uHi, samp(uv)); }',
+'void main(){',
+'  float h = hgt(vUv);',
+'  vec3 col = pal(h);',
+'  if(uRelief > 0.0){',
+'    float hx = hgt(vUv + vec2(uTexel.x,0.0)) - hgt(vUv - vec2(uTexel.x,0.0));',
+'    float hy = hgt(vUv + vec2(0.0,uTexel.y)) - hgt(vUv - vec2(0.0,uTexel.y));',
+'    vec3 n = normalize(vec3(-hx*uRelief, -hy*uRelief, 1.0));',
+'    vec3 L = normalize(vec3(-0.42, 0.55, 0.72));',
+'    float df = clamp(dot(n, L), 0.0, 1.0);',
+'    vec3 hv = normalize(L + vec3(0.0,0.0,1.0));',
+'    float sp = pow(clamp(dot(n, hv), 0.0, 1.0), 42.0);',
+'    col = col*(0.60 + 0.52*df) + sp*0.26;',
+'  }',
+'  outColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
+'}'].join('\n');
+
+var FS_RED = [
+'#version 300 es',
+'precision highp float;',
+'in vec2 vUv; out vec4 outColor;',
+'uniform sampler2D uState; uniform vec2 uTexel;',
+'void main(){',
+'  vec2 s = texture(uState, vUv + vec2(-0.5,-0.5)*uTexel).rg',
+'         + texture(uState, vUv + vec2( 0.5,-0.5)*uTexel).rg',
+'         + texture(uState, vUv + vec2(-0.5, 0.5)*uTexel).rg',
+'         + texture(uState, vUv + vec2( 0.5, 0.5)*uTexel).rg;',
+'  s *= 0.25;',
+'  outColor = vec4(clamp(s.g*2.0,0.0,1.0), step(0.15, s.g), clamp(s.r,0.0,1.0), 1.0);',
+'}'].join('\n');
+
+/* ------------------------------------------------------------------ *
+ * State
+ * ------------------------------------------------------------------ */
+var S = {
+  N: 512,
+  F: 0.037, k: 0.060,
+  DA: 0.30, ratio: 2.0,
+  steps: 12,
+  running: true,
+  anisOn: false, angle: 0, aniso: 2.0,
+  growOn: false, gRate: 1.55e-4, gMax: 4, g: 1, dil: 0,
+  pal: 5, c0:[0,0,0], c1:[0,0,0], c2:[0,0,0], mid: 0.6,
+  relief: true, level: 0.18, contrast: 1.6,
+  brush: 28, tool: 'seed',
+  seedMode: 2, seedSp: 64, seedR: 14, total: 0, preset: -1
+};
+var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
+
+/* The grid is drawn into a square as wide as the stage, so a 512 grid on a phone puts
+   the same pattern into half the width and the features come out too small to read. A
+   phone starts on 256, which keeps a wavelength at roughly the desktop's 22 screen
+   pixels. The Grid control still offers the rest. */
+if(matchMedia('(max-width:820px)').matches ||
+   (matchMedia('(pointer:coarse)').matches && Math.min(innerWidth, innerHeight) <= 560)) S.N = 256;
+
+var cvs = $('gl'), ov = $('ov'), stage = $('stage'), ovx = ov.getContext('2d');
+var gl = null, P = {}, ST = null, redFbo = null, redTex = null, pix = null, linSamp = null, smoothOK = true;
+var RED = 128;
+var WA = new Float32Array(4), WB = new Float32Array(4);
+
+/* ------------------------------------------------------------------ *
+ * Diffusion stencil for a tensor D = R(angle) diag(d1,d2) R(angle)^T,
+ * squeezed by the growth stretch, decomposed onto the four lattice
+ * directions so the explicit step stays stable.
+ * ------------------------------------------------------------------ */
+function stencil(D, angle, ratio, g, out){
+  var cs = Math.cos(angle), sn = Math.sin(angle);
+  var d1 = D, d2 = D/ratio;
+  var xx = d1*cs*cs + d2*sn*sn;
+  var yy = d1*sn*sn + d2*cs*cs;
+  var xy = (d1 - d2)*sn*cs;
+  xx /= g*g; xy /= g;
+  var mn = Math.min(xx, yy);
+  if(xy >  mn) xy =  mn;
+  if(xy < -mn) xy = -mn;
+  var gam = Math.max(Math.abs(xy), mn/3);
+  if(gam > mn) gam = mn;
+  out[0] = xx - gam;        // (+1, 0) and (-1, 0)
+  out[1] = yy - gam;        // ( 0,+1) and ( 0,-1)
+  out[2] = (gam + xy)*0.5;  // (+1,+1) and (-1,-1)
+  out[3] = (gam - xy)*0.5;  // (+1,-1) and (-1,+1)
+}
+function updateWeights(){
+  var ang = S.anisOn ? S.angle*Math.PI/180 : 0;
+  var rat = S.anisOn ? S.aniso : 1;
+  var g = S.growOn ? S.g : 1;
+  stencil(S.DA, ang, rat, g, WA);
+  stencil(S.DA/S.ratio, ang, rat, g, WB);
+}
+
+/* ------------------------------------------------------------------ *
+ * GL plumbing
+ * ------------------------------------------------------------------ */
+function fail(msg){
+  $('noticeMsg').textContent = msg;
+  $('notice').style.display = 'grid';
+  cvs.style.display = 'none'; ov.style.display = 'none';
+}
+function shader(type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(fs){
+  var p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, VS));
+  gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  var u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for(var i=0;i<n;i++){ var nm = gl.getActiveUniform(p,i).name; u[nm] = gl.getUniformLocation(p,nm); }
+  return {p:p, u:u};
+}
+var IFMT, ITYPE;
+function mkTex(w,h,ifmt,fmt,type){
+  var t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, type, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  return t;
+}
+function mkFbo(tex){
+  var f = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return f;
+}
+function allocGrid(N){
+  if(ST){
+    gl.deleteTexture(ST.tex[0]); gl.deleteTexture(ST.tex[1]);
+    gl.deleteFramebuffer(ST.fbo[0]); gl.deleteFramebuffer(ST.fbo[1]);
+  }
+  S.N = N;
+  var t0 = mkTex(N,N,IFMT,gl.RGBA,ITYPE), t1 = mkTex(N,N,IFMT,gl.RGBA,ITYPE);
+  ST = { tex:[t0,t1], fbo:[mkFbo(t0), mkFbo(t1)], cur:0 };
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE){
+    if(IFMT === gl.RGBA32F){
+      /* last resort on a device that cannot render 32 bit: 16 bit still draws something */
+      gl.deleteTexture(t0); gl.deleteTexture(t1);
+      gl.deleteFramebuffer(ST.fbo[0]); gl.deleteFramebuffer(ST.fbo[1]);
+      IFMT = gl.RGBA16F; ITYPE = gl.HALF_FLOAT; ST = null;
+      allocGrid(N); return;
+    }
+    throw new Error('float render target unavailable');
+  }
+}
+
+function initGL(){
+  gl = cvs.getContext('webgl2', {antialias:false, alpha:false, depth:false, stencil:false});
+  if(!gl){ fail('This page needs WebGL 2. Try a current Chrome, Firefox, Edge or Safari.'); return false; }
+  if(!gl.getExtension('EXT_color_buffer_float')){
+    fail('Your browser has WebGL 2 but will not render to floating point textures, which this simulation needs.');
+    return false;
+  }
+  /* The state must be 32 bit. Half floats have a spacing of about 0.001 near 1.0, and
+     the reaction terms per step are smaller than that, so on a 16 bit target the field
+     simply freezes: mitosis never divides, holes never open and pulses stop breathing.
+     That is what made most of the presets look broken on phones, where
+     OES_texture_float_linear is often missing and the old code fell back to 16 bit.
+     Filtering is a display concern only, so it is handled in drawField instead. */
+  smoothOK = !!gl.getExtension('OES_texture_float_linear');
+  IFMT = gl.RGBA32F;
+  ITYPE = gl.FLOAT;
+  try{
+    P.sim = program(FS_SIM); P.splat = program(FS_SPLAT); P.seed = program(FS_SEED);
+    P.draw = program(FS_DRAW); P.red = program(FS_RED);
+  }catch(e){ fail('Shader compilation failed: ' + e.message); return false; }
+
+  linSamp = gl.createSampler();
+  gl.samplerParameteri(linSamp, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.samplerParameteri(linSamp, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.samplerParameteri(linSamp, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.samplerParameteri(linSamp, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+  redTex = mkTex(RED, RED, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+  redFbo = mkFbo(redTex);
+  pix = new Uint8Array(RED*RED*4);
+
+  gl.bindVertexArray(gl.createVertexArray());
+  gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+  try{ allocGrid(S.N); }catch(e){ fail(e.message); return false; }
+  return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * Passes
+ * ------------------------------------------------------------------ */
+function seedField(mode){
+  S.seedMode = mode;
+  var d = 1 - ST.cur;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
+  gl.viewport(0,0,S.N,S.N);
+  gl.useProgram(P.seed.p);
+  gl.uniform1f(P.seed.u.uSeed, Math.random()*97.0);
+  gl.uniform1i(P.seed.u.uMode, mode);
+  gl.uniform2f(P.seed.u.uTexel, 1/S.N, 1/S.N);
+  gl.uniform2f(P.seed.u.uDots, S.seedSp, S.seedR);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  ST.cur = d;
+  S.total = 0;
+}
+function runSteps(n){
+  gl.useProgram(P.sim.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindSampler(0, null);
+  gl.uniform1i(P.sim.u.uState, 0);
+  gl.uniform2f(P.sim.u.uTexel, 1/S.N, 1/S.N);
+  gl.uniform4fv(P.sim.u.uWA, WA);
+  gl.uniform4fv(P.sim.u.uWB, WB);
+  gl.uniform1f(P.sim.u.uF, S.F);
+  gl.uniform1f(P.sim.u.uK, S.k);
+  gl.uniform1f(P.sim.u.uDil, S.dil);
+  gl.viewport(0,0,S.N,S.N);
+  for(var i=0;i<n;i++){
+    var s = ST.cur, d = 1 - s;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
+    gl.bindTexture(gl.TEXTURE_2D, ST.tex[s]);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    ST.cur = d;
+  }
+  S.total += n;
+}
+function splat(u, v, ru, rv, mode){
+  var s = ST.cur, d = 1 - s;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
+  gl.viewport(0,0,S.N,S.N);
+  gl.useProgram(P.splat.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindSampler(0, null);
+  gl.bindTexture(gl.TEXTURE_2D, ST.tex[s]);
+  gl.uniform1i(P.splat.u.uState, 0);
+  gl.uniform2f(P.splat.u.uP, u, v);
+  gl.uniform2f(P.splat.u.uR, ru, rv);
+  gl.uniform1f(P.splat.u.uMode, mode);
+  gl.uniform1f(P.splat.u.uN, S.N);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  ST.cur = d;
+}
+/* Some presets start from a handful of nuclei rather than a lattice or an empty field.
+   The dots are laid out on a jittered ring plus a centre so they are scattered but never
+   overlap, and they are painted through the same stippling brush a finger uses, because a
+   solid disc of activator starves in its own middle in exactly these regimes. */
+function scatterDots(n){
+  var rr = 18/S.N;  /* in CELLS, so a phone and a desktop start the same experiment */
+  var ph = Math.random()*6.2831853;
+  for(var i=0;i<n;i++){
+    var u, v;
+    if(i === 0){ u = 0.5; v = 0.5; }
+    else {
+      var a = ph + (i-1)*6.2831853/(n-1) + (Math.random()-0.5)*0.5;
+      var rad = 0.27 + Math.random()*0.09;
+      u = 0.5 + Math.cos(a)*rad; v = 0.5 + Math.sin(a)*rad;
+    }
+    u += (Math.random()-0.5)*0.04; v += (Math.random()-0.5)*0.04;
+    splat(u, v, rr, rr, 1);
+  }
+}
+function domainRect(){
+  var W = cvs.width, H = cvs.height;
+  if(S.growOn){
+    var h = Math.min(H*0.94, (W*0.94)/S.gMax);
+    var w = h*S.g;
+    return {x:(W-w)/2, y:(H-h)/2, w:w, h:h};
+  }
+  var s = Math.min(W,H)*0.94;
+  return {x:(W-s)/2, y:(H-s)/2, w:s, h:s};
+}
+function drawField(){
+  var span = 0.25/S.contrast;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0,0,cvs.width,cvs.height);
+  gl.clearColor(0.027, 0.063, 0.059, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  var R = domainRect();
+  gl.viewport(Math.round(R.x), Math.round(cvs.height - R.y - R.h), Math.round(R.w), Math.round(R.h));
+  gl.useProgram(P.draw.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, ST.tex[ST.cur]);
+  gl.bindSampler(0, smoothOK ? linSamp : null);
+  gl.uniform1i(P.draw.u.uState, 0);
+  gl.uniform2f(P.draw.u.uTexel, 1/S.N, 1/S.N);
+  gl.uniform1f(P.draw.u.uLo, Math.max(0, S.level - span));
+  gl.uniform1f(P.draw.u.uHi, S.level + span);
+  gl.uniform1f(P.draw.u.uRelief, S.relief ? 2.0 : 0.0);
+  gl.uniform1i(P.draw.u.uPal, S.pal);
+  gl.uniform3f(P.draw.u.uC0, S.c0[0], S.c0[1], S.c0[2]);
+  gl.uniform3f(P.draw.u.uC1, S.c1[0], S.c1[1], S.c1[2]);
+  gl.uniform3f(P.draw.u.uC2, S.c2[0], S.c2[1], S.c2[2]);
+  gl.uniform1f(P.draw.u.uMid, S.mid);
+  gl.uniform1f(P.draw.u.uBilin, smoothOK ? 0.0 : 1.0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindSampler(0, null);
+}
+function readStats(){
+  gl.bindFramebuffer(gl.FRAMEBUFFER, redFbo);
+  gl.viewport(0,0,RED,RED);
+  gl.useProgram(P.red.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindSampler(0, null);
+  gl.bindTexture(gl.TEXTURE_2D, ST.tex[ST.cur]);
+  gl.uniform1i(P.red.u.uState, 0);
+  gl.uniform2f(P.red.u.uTexel, 1/S.N, 1/S.N);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.readPixels(0,0,RED,RED,gl.RGBA,gl.UNSIGNED_BYTE,pix);
+  var sum = 0, cov = 0, i;
+  for(i=0;i<RED*RED;i++){ sum += pix[i*4]; cov += pix[i*4+1] > 127 ? 1 : 0; }
+  stats.meanV = sum/(RED*RED)/255/2;
+  stats.cov = cov/(RED*RED);
+  var counts = [];
+  for(var r = (RED>>1) - 6; r <= (RED>>1) + 6; r += 3){
+    var n = 0, prev = pix[(r*RED)*4+1] > 127;
+    for(var x=1;x<RED;x++){
+      var cur = pix[(r*RED + x)*4+1] > 127;
+      if(cur !== prev){ n++; prev = cur; }
+    }
+    counts.push(n);
+  }
+  counts.sort(function(a,b){ return a-b; });
+  stats.bands = Math.round(counts[counts.length>>1]/2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Parameter map
+ * ------------------------------------------------------------------ */
+var mapCv = $('map'), mx = mapCv.getContext('2d');
+var MAPR = {F0:0.005, F1:0.09, K0:0.035, K1:0.072};
+var base = document.createElement('canvas'), bx = base.getContext('2d');
+var baseKey = '';
+/* The plot now sits inside a margin so the axes can be labelled, so every conversion
+   goes through the plot rectangle rather than the whole canvas. */
+var PR = {x:0, y:0, w:1, h:1};
+var MPAD = {l:18, r:10, t:10, b:18};
+
+/* VIEW is the part of MAPR currently drawn. Everything on the map, the shaded zones,
+   the two boundary curves, the preset dots, the marker, and the picking, goes through
+   these four functions, so the whole plot follows the view with nothing else to change.
+   The point of the zoom: at full extent the k axis covers 0.037 in about 290 pixels, so
+   one step of the slider is under two pixels and the narrow bands where the pattern is
+   fragile, solitons and worms and the U-skate strip, cannot be hit with a mouse at all. */
+var VIEW = {F0:MAPR.F0, F1:MAPR.F1, K0:MAPR.K0, K1:MAPR.K1};
+var ZMAX = 24;   /* deepest zoom: one slider step is then about 16 pixels */
+function mX(F){ return PR.x + (F - VIEW.F0)/(VIEW.F1 - VIEW.F0)*PR.w; }
+function mY(k){ return PR.y + PR.h - (k - VIEW.K0)/(VIEW.K1 - VIEW.K0)*PR.h; }
+function iF(x){ return VIEW.F0 + (x - PR.x)/PR.w*(VIEW.F1 - VIEW.F0); }
+function iK(y){ return VIEW.K0 + (PR.y + PR.h - y)/PR.h*(VIEW.K1 - VIEW.K0); }
+function mapZoom(){ return (MAPR.F1 - MAPR.F0)/(VIEW.F1 - VIEW.F0); }
+/* set the view from a centre and a zoom, clamped to stay inside the full map */
+function setView(cF, ck, z){
+  z = Math.max(1, Math.min(ZMAX, z));
+  var fw = (MAPR.F1 - MAPR.F0)/z, kw = (MAPR.K1 - MAPR.K0)/z;
+  var f0 = Math.max(MAPR.F0, Math.min(MAPR.F1 - fw, cF - fw/2));
+  var k0 = Math.max(MAPR.K0, Math.min(MAPR.K1 - kw, ck - kw/2));
+  var same = Math.abs(f0-VIEW.F0)<1e-9 && Math.abs(k0-VIEW.K0)<1e-9 && Math.abs(fw-(VIEW.F1-VIEW.F0))<1e-9;
+  VIEW.F0 = f0; VIEW.F1 = f0 + fw; VIEW.K0 = k0; VIEW.K1 = k0 + kw;
+  if(!same) drawMap();
+  syncZoomUI();
+}
+function zoomBy(mult, cF, ck){
+  var z = mapZoom(), nz = Math.max(1, Math.min(ZMAX, z*mult));
+  /* keep the point under the cursor where it is */
+  var fx = (cF - VIEW.F0)/(VIEW.F1 - VIEW.F0), kx = (ck - VIEW.K0)/(VIEW.K1 - VIEW.K0);
+  var fw = (MAPR.F1 - MAPR.F0)/nz, kw = (MAPR.K1 - MAPR.K0)/nz;
+  setView(cF - (fx - 0.5)*fw, ck - (kx - 0.5)*kw, nz);
+}
+function syncZoomUI(){
+  var l = $('mzLbl'); if(l) l.textContent = mapZoom().toFixed(1) + '\u00d7';
+  var z = mapZoom();
+  if($('mzIn')) $('mzIn').disabled = z > ZMAX - 0.001;
+  if($('mzOut')) $('mzOut').disabled = z < 1.001;
+  if($('mzFit')) $('mzFit').disabled = z < 1.001;
+}
+
+function classify(F,k,Du,Dv){
+  var s = F+k, disc = F*F - 4*F*s*s;
+  if(disc < 0) return 0;
+  var v = (F + Math.sqrt(disc))/(2*s);
+  var det = s*(v*v - F);
+  if(det <= 0) return 1;
+  if(k - v*v >= 0) return 2;
+  var H = Dv*(-v*v - F) + Du*s;
+  if(H > 0 && H*H > 4*Du*Dv*det) return 4;
+  return 3;
+}
+var ZONE = ['#0b1618','#101f21','#123040','#16292b','#41451f'];
+/* What standing at that point on the map actually means, in words. */
+var ZONE_TXT = [
+  'No uniform mixture can exist here. Whatever you see is a structure feeding itself, and it has to keep dividing to survive.',
+  'A uniform mixture exists but comes apart on its own.',
+  'The mixture oscillates instead of settling, so you get travelling fronts and turbulence rather than a fixed pattern.',
+  'The uniform mixture is stable here, so nothing happens until you disturb it. Draw into the field.',
+  'A genuine Turing instability: the mixture is stable on its own and breaks into a pattern only because the two chemicals spread at different speeds.'
+];
+function turingShare(ratio){
+  var n = 0, tot = 0, Du = 0.3, Dv = 0.3/ratio, ix, iy;
+  for(ix=0;ix<48;ix++) for(iy=0;iy<48;iy++){
+    var F = MAPR.F0 + (ix+0.5)/48*(MAPR.F1-MAPR.F0);
+    var k = MAPR.K0 + (iy+0.5)/48*(MAPR.K1-MAPR.K0);
+    tot++; if(classify(F,k,Du,Dv) === 4) n++;
+  }
+  return Math.round(n/tot*100);
+}
+
+function buildBase(w,h,dpr){
+  base.width = w; base.height = h;
+  bx.clearRect(0,0,w,h);
+  var Du = S.DA, Dv = S.DA/S.ratio;
+  var cell = Math.max(2, Math.round(3*dpr));
+  var nx = Math.ceil(PR.w/cell), ny = Math.ceil(PR.h/cell);
+  var zi = new Uint8Array(nx*ny), i, j, z, X, Y;
+  for(i=0;i<nx;i++) for(j=0;j<ny;j++){
+    z = classify(iF(PR.x + i*cell + cell/2), iK(PR.y + j*cell + cell/2), Du, Dv);
+    zi[i*ny+j] = z;
+    bx.fillStyle = ZONE[z];
+    bx.fillRect(PR.x + i*cell, PR.y + j*cell, cell, cell);
+  }
+  bx.save();
+  bx.beginPath(); bx.rect(PR.x, PR.y, PR.w, PR.h); bx.clip();
+
+  /* Outline the Turing region and, when it is big enough to hold the word, name it in
+     place. That is the region that grows when the diffusion ratio goes up, so seeing it
+     labelled makes the ratio slider explain itself. */
+  var cnt = 0, sx = 0, sy = 0;
+  bx.strokeStyle = 'rgba(206,216,110,.9)'; bx.lineWidth = Math.max(1, 1.1*dpr);
+  bx.beginPath();
+  for(i=0;i<nx;i++) for(j=0;j<ny;j++){
+    if(zi[i*ny+j] !== 4) continue;
+    cnt++; sx += PR.x + i*cell + cell/2; sy += PR.y + j*cell + cell/2;
+    X = PR.x + i*cell; Y = PR.y + j*cell;
+    if(i === 0 || zi[(i-1)*ny+j] !== 4){ bx.moveTo(X, Y); bx.lineTo(X, Y+cell); }
+    if(i === nx-1 || zi[(i+1)*ny+j] !== 4){ bx.moveTo(X+cell, Y); bx.lineTo(X+cell, Y+cell); }
+    if(j === 0 || zi[i*ny+j-1] !== 4){ bx.moveTo(X, Y); bx.lineTo(X+cell, Y); }
+    if(j === ny-1 || zi[i*ny+j+1] !== 4){ bx.moveTo(X, Y+cell); bx.lineTo(X+cell, Y+cell); }
+  }
+  bx.stroke();
+
+  // saddle-node arc: the two non-trivial uniform states meet and vanish
+  bx.strokeStyle = '#a8ccbe'; bx.lineWidth = 1.5*dpr; bx.setLineDash([]);
+  bx.beginPath();
+  var started = false, x;
+  for(x=0;x<=PR.w;x++){
+    var F = iF(PR.x + x), kk = Math.sqrt(F)/2 - F, yy = mY(kk);
+    if(!started){ bx.moveTo(PR.x + x, yy); started = true; } else bx.lineTo(PR.x + x, yy);
+  }
+  bx.stroke();
+  // Hopf curve, both branches: F*sqrt(k) = (F+k)^2
+  bx.strokeStyle = '#79b0d6'; bx.lineWidth = 1.3*dpr; bx.setLineDash([3*dpr,3*dpr]);
+  bx.beginPath();
+  var pts = [], kk2, b2, d2, kstep = Math.min(0.0002, (VIEW.K1 - VIEW.K0)/400);
+  for(kk2 = MAPR.K0; kk2 <= 0.0625; kk2 += kstep){
+    b2 = Math.sqrt(kk2) - 2*kk2; d2 = b2*b2 - 4*kk2*kk2;
+    if(d2 < 0) continue;
+    pts.push([(b2 - Math.sqrt(d2))/2, kk2]);
+  }
+  for(kk2 = 0.0625; kk2 >= MAPR.K0; kk2 -= kstep){
+    b2 = Math.sqrt(kk2) - 2*kk2; d2 = b2*b2 - 4*kk2*kk2;
+    if(d2 < 0) continue;
+    pts.push([(b2 + Math.sqrt(d2))/2, kk2]);
+  }
+  for(i=0;i<pts.length;i++){
+    var px = mX(pts[i][0]), py = mY(pts[i][1]);
+    if(i === 0) bx.moveTo(px,py); else bx.lineTo(px,py);
+  }
+  bx.stroke();
+  bx.setLineDash([]);
+
+  if(cnt*cell*cell > 0.055*PR.w*PR.h){
+    bx.font = '600 ' + Math.round(9.5*dpr) + 'px ' + 'var(--display)'.replace('var(--display)','"Space Grotesk",sans-serif');
+    bx.fillStyle = 'rgba(226,233,150,.92)';
+    bx.textAlign = 'center'; bx.textBaseline = 'middle';
+    bx.fillText('TURING', sx/cnt, sy/cnt);
+  }
+
+  // preset markers
+  for(j=0;j<PRESETS.length;j++){
+    var pcx = mX(PRESETS[j].F), pcy = mY(PRESETS[j].k);
+    bx.beginPath(); bx.arc(pcx,pcy,2.7*dpr,0,6.2832);
+    bx.fillStyle = 'rgba(9,17,19,.8)'; bx.fill();
+    bx.strokeStyle = 'rgba(214,232,226,.62)'; bx.lineWidth = 1*dpr; bx.stroke();
+  }
+  bx.restore();
+
+  /* axes: named, not numbered. The exact values live on the two sliders under the
+     map and in the tooltip, which is enough and leaves the plot uncluttered. */
+  bx.strokeStyle = 'rgba(130,170,150,.34)'; bx.lineWidth = 1;
+  bx.strokeRect(PR.x + 0.5, PR.y + 0.5, PR.w - 1, PR.h - 1);
+  var ts = Math.round(10*dpr);
+  bx.font = '600 ' + ts + 'px "Space Grotesk",sans-serif';
+  bx.fillStyle = '#b9d0c6';
+  bx.textAlign = 'center'; bx.textBaseline = 'bottom';
+  bx.fillText('feed rate F \u2192', PR.x + PR.w/2, h - 1);
+  bx.save();
+  bx.translate(ts + 1, PR.y + PR.h/2); bx.rotate(-Math.PI/2);
+  bx.textAlign = 'center'; bx.textBaseline = 'top';
+  bx.fillText('kill rate k \u2192', 0, 0);
+  bx.restore();
+}
+function mapDpr(){
+  return mapCv.clientWidth ? mapCv.width/mapCv.clientWidth : 1;
+}
+function drawMap(){
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var w = Math.round(mapCv.clientWidth*dpr), h = Math.round(mapCv.clientHeight*dpr);
+  if(w < 40 || h < 40) return;
+  if(mapCv.width !== w || mapCv.height !== h){ mapCv.width = w; mapCv.height = h; }
+  PR = {x:MPAD.l*dpr, y:MPAD.t*dpr, w:w - (MPAD.l+MPAD.r)*dpr, h:h - (MPAD.t+MPAD.b)*dpr};
+  var key = w+'x'+h+':'+S.ratio.toFixed(2)+':'+VIEW.F0.toFixed(6)+','+VIEW.F1.toFixed(6)
+          +','+VIEW.K0.toFixed(6)+','+VIEW.K1.toFixed(6);
+  if(baseKey !== key){ buildBase(w,h,dpr); baseKey = key; }
+  /* if the chemistry has moved outside the zoomed view, follow it rather than
+     leaving the marker off screen */
+  if(mapZoom() > 1.001 &&
+     (S.F < VIEW.F0 || S.F > VIEW.F1 || S.k < VIEW.K0 || S.k > VIEW.K1)){
+    var fw0 = VIEW.F1 - VIEW.F0, kw0 = VIEW.K1 - VIEW.K0;
+    VIEW.F0 = Math.max(MAPR.F0, Math.min(MAPR.F1 - fw0, S.F - fw0/2));
+    VIEW.F1 = VIEW.F0 + fw0;
+    VIEW.K0 = Math.max(MAPR.K0, Math.min(MAPR.K1 - kw0, S.k - kw0/2));
+    VIEW.K1 = VIEW.K0 + kw0;
+    key = w+'x'+h+':'+S.ratio.toFixed(2)+':'+VIEW.F0.toFixed(6)+','+VIEW.F1.toFixed(6)
+        + ','+VIEW.K0.toFixed(6)+','+VIEW.K1.toFixed(6);
+    if(baseKey !== key){ buildBase(w,h,dpr); baseKey = key; }
+  }
+  mx.clearRect(0,0,w,h);
+  mx.drawImage(base,0,0);
+  var cx = mX(S.F), cy = mY(S.k);
+  mx.save();
+  mx.beginPath(); mx.rect(PR.x, PR.y, PR.w, PR.h); mx.clip();
+  mx.strokeStyle = 'rgba(230,195,79,.45)'; mx.lineWidth = 1*dpr;
+  mx.setLineDash([3*dpr, 3*dpr]);
+  mx.beginPath();
+  mx.moveTo(PR.x, cy); mx.lineTo(PR.x+PR.w, cy);
+  mx.moveTo(cx, PR.y); mx.lineTo(cx, PR.y+PR.h);
+  mx.stroke(); mx.setLineDash([]);
+  mx.beginPath(); mx.arc(cx, cy, 5*dpr, 0, 6.2832);
+  mx.fillStyle = '#e6c34f'; mx.fill();
+  mx.strokeStyle = '#0a1214'; mx.lineWidth = 1.6*dpr; mx.stroke();
+  mx.restore();
+}
+/* the two lines under the map: where you are, and what the olive region is doing */
+function updateMapText(hover){
+  var zn = $('mapzone');
+  if(zn){
+    if(hover >= 0) zn.innerHTML = '<b>' + PRESETS[hover].n + '</b> \u2014 ' + PRESETS[hover].d;
+    else zn.textContent = ZONE_TXT[classify(S.F, S.k, S.DA, S.DA/S.ratio)];
+  }
+  var nt = $('mapnote');
+  if(nt) nt.textContent = 'Substrate spreads ' + S.ratio.toFixed(2) + '\u00d7 faster than the activator. '
+    + 'At that ratio the olive region covers ' + turingShare(S.ratio) + '% of the map.';
+}
+function mapPick(ev, commit){
+  var r = mapCv.getBoundingClientRect();
+  var x = (ev.clientX - r.left)/r.width*mapCv.width;
+  var y = (ev.clientY - r.top)/r.height*mapCv.height;
+  /* dragging past the edge of a zoomed view pans it, so you can walk along a band
+     instead of having to zoom out and back in */
+  if(commit && mapZoom() > 1.001){
+    var ox = x < PR.x ? x - PR.x : (x > PR.x + PR.w ? x - PR.x - PR.w : 0);
+    var oy = y < PR.y ? y - PR.y : (y > PR.y + PR.h ? y - PR.y - PR.h : 0);
+    if(ox || oy){
+      var df = ox/PR.w*(VIEW.F1 - VIEW.F0), dk = -oy/PR.h*(VIEW.K1 - VIEW.K0);
+      var fw1 = VIEW.F1 - VIEW.F0, kw1 = VIEW.K1 - VIEW.K0;
+      VIEW.F0 = Math.max(MAPR.F0, Math.min(MAPR.F1 - fw1, VIEW.F0 + df)); VIEW.F1 = VIEW.F0 + fw1;
+      VIEW.K0 = Math.max(MAPR.K0, Math.min(MAPR.K1 - kw1, VIEW.K0 + dk)); VIEW.K1 = VIEW.K0 + kw1;
+    }
+  }
+  x = Math.max(PR.x, Math.min(PR.x + PR.w, x));
+  y = Math.max(PR.y, Math.min(PR.y + PR.h, y));
+  if(commit){
+    S.F = Math.round(iF(x)/0.0002)*0.0002;
+    S.k = Math.round(iK(y)/0.0002)*0.0002;
+    S.preset = -1;
+    syncParams();
+  }
+  return {x:x, y:y};
+}
+function nearestPreset(x,y){
+  var best = -1, bd = 1e9, lim = 13*mapDpr();
+  for(var i=0;i<PRESETS.length;i++){
+    var dx = x - mX(PRESETS[i].F), dy = y - mY(PRESETS[i].k);
+    var d = dx*dx + dy*dy;
+    if(d < bd){ bd = d; best = i; }
+  }
+  return bd < lim*lim ? best : -1;
+}
+
+/* ------------------------------------------------------------------ *
+ * Overlay: brush ring, field outline, growth ruler, diffusion axis
+ * ------------------------------------------------------------------ */
+var ptr = {x:0, y:0, in:false, down:false, lu:0, lv:0, has:false};
+function drawOverlay(){
+  var w = ov.width, h = ov.height;
+  ovx.clearRect(0,0,w,h);
+  var R = domainRect(), dpr = ov.clientWidth ? w/ov.clientWidth : 1;
+  ovx.strokeStyle = 'rgba(120,170,165,.22)'; ovx.lineWidth = 1;
+  ovx.strokeRect(R.x+0.5, R.y+0.5, R.w-1, R.h-1);
+
+  if(S.growOn){
+    var y = R.y + R.h + 9*dpr;
+    ovx.strokeStyle = 'rgba(230,178,60,.5)'; ovx.lineWidth = 1*dpr;
+    ovx.beginPath();
+    ovx.moveTo(R.x, y); ovx.lineTo(R.x + R.w, y);
+    ovx.moveTo(R.x, y-4*dpr); ovx.lineTo(R.x, y+4*dpr);
+    ovx.moveTo(R.x + R.h, y-4*dpr); ovx.lineTo(R.x + R.h, y+4*dpr);
+    ovx.moveTo(R.x + R.w, y-4*dpr); ovx.lineTo(R.x + R.w, y+4*dpr);
+    ovx.stroke();
+    ovx.fillStyle = 'rgba(230,178,60,.85)';
+    ovx.font = (10.5*dpr)+'px ui-monospace, Menlo, monospace';
+    ovx.textAlign = 'center';
+    ovx.fillText('start', R.x + R.h/2, y + 15*dpr);
+    if(S.g > 1.25) ovx.fillText('\u00d7' + S.g.toFixed(2), R.x + (R.h + R.w)/2, y + 15*dpr);
+  }
+  if(S.anisOn){
+    var ax = R.x + R.w - 30*dpr, ay = R.y + 30*dpr, L = 17*dpr;
+    var a = -S.angle*Math.PI/180;
+    var dx = Math.cos(a)*L, dy = Math.sin(a)*L;
+    ovx.strokeStyle = 'rgba(79,179,161,.8)'; ovx.lineWidth = 1.6*dpr;
+    ovx.beginPath(); ovx.moveTo(ax-dx, ay-dy); ovx.lineTo(ax+dx, ay+dy); ovx.stroke();
+    ovx.beginPath();
+    ovx.arc(ax+dx, ay+dy, 2.6*dpr, 0, 6.2832);
+    ovx.arc(ax-dx, ay-dy, 2.6*dpr, 0, 6.2832);
+    ovx.fillStyle = 'rgba(79,179,161,.9)'; ovx.fill();
+  }
+  if(ptr.in){
+    var rr = S.brush*dpr*0.5;
+    ovx.strokeStyle = S.tool === 'seed' ? 'rgba(235,240,236,.75)' : 'rgba(212,112,90,.85)';
+    ovx.lineWidth = 1*dpr;
+    ovx.beginPath(); ovx.arc(ptr.x, ptr.y, rr, 0, 6.2832); ovx.stroke();
+  }
+}
+function paintAt(ev){
+  var r = ov.getBoundingClientRect();
+  var sx = ov.width/r.width, sy = ov.height/r.height;
+  var px = (ev.clientX - r.left)*sx, py = (ev.clientY - r.top)*sy;
+  var R = domainRect();
+  var u = (px - R.x)/R.w, v = 1 - (py - R.y)/R.h;
+  var rad = S.brush*sx*0.5;
+  /* The brush has a floor measured in CELLS, not in screen pixels. Below about a dozen
+     cells a stroke cannot nucleate in the regimes where no uniform mixture exists, and
+     the default 28 pixel brush worked out at nine cells on both a phone and a desktop,
+     which is why drawing into Spots so often did nothing at all. */
+  var ru = Math.max(rad/R.w, 16/S.N), rv = Math.max(rad/R.h, 16/S.N);
+  var mode = S.tool === 'seed' ? 1 : -1;
+  if(ptr.has){
+    var du = u - ptr.lu, dv = v - ptr.lv;
+    var n = Math.min(8, Math.ceil(Math.sqrt(du*du + dv*dv)/Math.max(ru,0.002)*2));
+    for(var i=1;i<n;i++) splat(ptr.lu + du*i/n, ptr.lv + dv*i/n, ru, rv, mode);
+  }
+  splat(u, v, ru, rv, mode);
+  if(drawHintOn) showDrawHint(false);
+  ptr.lu = u; ptr.lv = v; ptr.has = true;
+}
+
+/* ------------------------------------------------------------------ *
+ * Sizing
+ * ------------------------------------------------------------------ */
+function resize(){
+  /* the card is placed first: docking changes the size of the stage */
+  placeMapCard();
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var w = Math.max(1, Math.round(stage.clientWidth*dpr));
+  var h = Math.max(1, Math.round(stage.clientHeight*dpr));
+  if(cvs.width !== w || cvs.height !== h){ cvs.width = w; cvs.height = h; }
+  if(ov.width !== w || ov.height !== h){ ov.width = w; ov.height = h; }
+}
+
+/* ------------------------------------------------------------------ *
+ * UI
+ * ------------------------------------------------------------------ */
+function fmt(x,n){ return x.toFixed(n); }
+function syncParams(){
+  $('fSl').value = S.F; $('kSl').value = S.k;
+  $('fOut').textContent = fmt(S.F,4);  $('kOut').textContent = fmt(S.k,4);
+  var btns = $('presets').children;
+  for(var i=0;i<btns.length;i++){
+    var pi = parseInt(btns[i].dataset.i, 10);
+    btns[i].setAttribute('aria-pressed', pi === S.preset ? 'true' : 'false');
+  }
+  updateMapText(-1);
+  drawMap();
+}
+function growSeconds(){
+  var perStep = Math.log(S.gMax)/Math.log(1 + S.gRate);
+  return perStep/S.steps/60;
+}
+function syncGrowth(){
+  var s = growSeconds();
+  $('growRateVal').textContent = s < 90 ? ('\u2248 ' + Math.round(s) + ' s') : ('\u2248 ' + (s/60).toFixed(1) + ' min');
+  $('growMaxVal').textContent = S.gMax.toFixed(1) + '\u00d7';
+}
+function buildPresets(){
+  var box = $('presets');
+  var f = document.createElement('button');
+  f.className = 'preset free'; f.type = 'button';
+  f.dataset.i = '-1';
+  f.setAttribute('aria-pressed', 'false');
+  f.innerHTML = '<b>Free play</b><small>every control is yours: mix your own chemistry and draw into it</small>';
+  f.addEventListener('click', function(){ freePlay(); });
+  box.appendChild(f);
+  PRESETS.forEach(function(p, i){
+    var b = document.createElement('button');
+    b.className = 'preset';
+    b.type = 'button';
+    b.dataset.i = String(i);
+    b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = '<b>' + p.n + '</b><small>' + p.d + '</small>';
+    b.addEventListener('click', function(){ applyPreset(i); });
+    box.appendChild(b);
+  });
+}
+/* A preset sets the chemistry, and may also set the feature scale (DA), turn the fast
+   axis on, or run at its own speed. Anything it does not set goes back to the default,
+   so presets never inherit a previous one's settings. */
+function applyPreset(i){
+  var p = PRESETS[i];
+  S.preset = i;
+  S.F = p.F; S.k = p.k;
+  S.ratio = p.ratio || RATIO_DEFAULT;
+  S.DA = p.DA || DA_DEFAULT;
+  S.steps = p.steps || STEPS_DEFAULT;
+  S.anisOn = !!p.aniso;
+  S.angle = p.aniso ? p.aniso[0] : 0;
+  S.aniso = p.aniso ? p.aniso[1] : 2.0;
+  S.seedSp = p.sp || SP_DEFAULT; S.seedR = p.sr || SR_DEFAULT;
+  S.level = p.level || LEVEL_DEFAULT;
+  S.contrast = p.contrast || CONTRAST_DEFAULT;
+  S.relief = true;
+  setPalette(p.c || PAL_DEFAULT);
+  S.growOn = false; S.g = 1; S.dil = 0;
+  seedField(p.seed === undefined ? 2 : p.seed);
+  if(p.dots) scatterDots(p.dots);
+  syncPanel();
+  syncParams();
+  showDrawHint(!!p.draw);
+}
+/* Free play leaves the field exactly as it is and simply stops claiming that a preset
+   is in force. Moving any control that changes the chemistry drops into it too, so the
+   highlighted card and what is actually running can never disagree. */
+function freeMode(){
+  if(S.preset < 0) return;
+  S.preset = -1;
+  showDrawHint(false);
+  syncParams();
+}
+/* Clicking the Free play card keeps every setting exactly where it is and empties the
+   field, so you start from a blank sheet with your own chemistry and draw into it.
+   freeMode above is the passive version: a control moved while a preset is lit only
+   stops the card claiming to be in force, it never wipes what is on screen. */
+function freePlay(){
+  S.preset = -1;
+  seedField(0);
+  syncParams();
+  showDrawHint(true);
+}
+function setPalette(c){
+  S.pal = 5;
+  S.c0 = hx(c[0]); S.c1 = hx(c[1]); S.c2 = hx(c[2]); S.mid = c[3];
+}
+setPalette(PAL_DEFAULT);
+/* the panel has to agree with what the preset just did */
+function syncPanel(){
+  $('growOn').checked = S.growOn;
+  ['growRate','growMax'].forEach(function(id){ $(id).disabled = !S.growOn; });
+  ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
+  $('ratioSl').value = S.ratio; $('ratioVal').textContent = S.ratio.toFixed(2) + '\u00d7';
+  $('palSel').value = String(S.pal);
+  $('levelSl').value = S.level; $('levelVal').textContent = S.level.toFixed(3);
+  $('contrastSl').value = S.contrast; $('contrastVal').textContent = S.contrast.toFixed(2);
+  $('reliefOn').checked = S.relief;
+  $('anisOn').checked = S.anisOn;
+  $('anisAng').disabled = !S.anisOn; $('anisAmt').disabled = !S.anisOn;
+  ['rowAnisAng','rowAnisAmt'].forEach(function(id){ $(id).classList.toggle('off', !S.anisOn); });
+  $('anisAng').value = S.angle; $('anisAngVal').textContent = Math.round(S.angle) + '\u00b0';
+  $('anisAmt').value = S.aniso; $('anisAmtVal').textContent = S.aniso.toFixed(2) + '\u00d7';
+  $('stepsSl').value = S.steps; $('stepsVal').textContent = String(S.steps);
+  syncGrowth();
+}
+/* Worms and Waves both die out from a plain seed: they need something drawn into the
+   field before there is anything to travel. Say so, and let the prompt fade on the
+   first stroke. */
+var drawHintOn = false;
+function showDrawHint(on){
+  var h = $('drawhint'); if(!h) return;
+  drawHintOn = on;
+  h.classList.toggle('on', on);
+}
+function bindRange(id, valId, get, set, render){
+  var el = $(id);
+  el.addEventListener('input', function(){
+    set(parseFloat(el.value));
+    $(valId).textContent = render();
+  });
+  el.value = get();
+  $(valId).textContent = render();
+}
+function setPlaying(on){
+  S.running = on;
+  var pb = $('playBtn');
+  pb.setAttribute('data-on', on ? 'false' : 'true');   /* .alt icon = the play triangle */
+  pb.setAttribute('aria-pressed', on ? 'true' : 'false');
+  pb.setAttribute('aria-label', on ? 'Pause' : 'Play');
+  pb.title = on ? 'Pause (space)' : 'Play (space)';
+}
+
+/* Beside the pattern on anything with room for it, and just another section of the
+   controls sheet on a phone, where a square field plus a card side by side would leave
+   both too small to read. Landscape phones are only 390 tall, so they use the sheet
+   too. One element, moved, so there is never a second copy to keep in sync. */
+var SIDE_MQ = matchMedia('(min-width:900px) and (min-height:620px)');
+var PHONE_MQ = matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
+/* Three homes for one element, never two copies of it. Beside the pattern on a desktop;
+   docked against the pattern on a phone, on the right in landscape and underneath in
+   portrait, so it can be touched without opening the sheet; inside the controls sheet
+   only on the in-between sizes where there is no room for either. When it is docked its
+   three sliders move into the controls sheet on their own and the plot stays outside, so
+   nobody drags a slider and lands on the plot. */
+var mapMode = '';
+function placeMapCard(){
+  var card = $('mapcard'), slot = $('mapslot');
+  if(!card || !slot) return;
+  var mode = SIDE_MQ.matches ? 'side' : (PHONE_MQ.matches ? 'dock' : 'sheet');
+  if(mode === mapMode) return false;
+  mapMode = mode;
+  if(mode === 'sheet'){ if(card.parentNode !== slot) slot.appendChild(card); }
+  else if(card.parentNode !== document.body){ document.body.appendChild(card); }
+  /* the sliders travel on their own: into the sheet when the plot is docked, back into
+     the card everywhere else, so there is only ever one of each control */
+  var side = document.getElementById('mapside');
+  if(side){
+    if(mode === 'dock'){ if(side.parentNode !== slot) slot.appendChild(side); }
+    else if(side.parentNode !== card) card.appendChild(side);
+    side.classList.toggle('in-slot', mode === 'dock');
+  }
+  card.classList.toggle('in-sheet', mode === 'sheet');
+  card.classList.toggle('docked', mode === 'dock');
+  document.body.classList.toggle('map-docked', mode === 'dock');
+  baseKey = '';
+  drawMap();
+  return true;
+}
+function onPlacementChange(){ mapMode = ''; placeMapCard(); resize(); }
+/* the sheet opening or closing is a placement change like any other */
+new MutationObserver(function(){
+  if(placeMapCard()) requestAnimationFrame(resize);
+}).observe(document.body, {attributes:true, attributeFilter:['class']});
+[SIDE_MQ, PHONE_MQ].forEach(function(mq){
+  if(mq.addEventListener) mq.addEventListener('change', onPlacementChange);
+  else if(mq.addListener) mq.addListener(onPlacementChange);
+});
+
+function wire(){
+  buildPresets();
+
+  $('fSl').addEventListener('input', function(){ S.F = parseFloat(this.value); S.preset = -1; syncParams(); });
+  $('kSl').addEventListener('input', function(){ S.k = parseFloat(this.value); S.preset = -1; syncParams(); });
+
+  placeMapCard();
+  var mapDown = false;
+  mapCv.addEventListener('pointerdown', function(e){
+    mapDown = true; mapCv.setPointerCapture(e.pointerId); mapPick(e, true);
+  });
+  mapCv.addEventListener('pointermove', function(e){
+    var p = mapPick(e, mapDown);
+    if(!mapDown){
+      var i = nearestPreset(p.x, p.y);
+      updateMapText(i);
+    }
+  });
+  mapCv.addEventListener('pointerup', function(){ mapDown = false; });
+  mapCv.addEventListener('wheel', function(e){
+    e.preventDefault();
+    var r = mapCv.getBoundingClientRect();
+    var x = (e.clientX - r.left)/r.width*mapCv.width;
+    var y = (e.clientY - r.top)/r.height*mapCv.height;
+    x = Math.max(PR.x, Math.min(PR.x + PR.w, x));
+    y = Math.max(PR.y, Math.min(PR.y + PR.h, y));
+    zoomBy(e.deltaY < 0 ? 1.25 : 1/1.25, iF(x), iK(y));
+  }, {passive:false});
+  mapCv.addEventListener('dblclick', function(e){
+    /* docked on a phone the whole map is always shown, and there is no control to get
+       back out of a zoom, so a stray double tap must not enter one */
+    if(document.body.classList.contains('map-docked')) return;
+    var r = mapCv.getBoundingClientRect();
+    var x = (e.clientX - r.left)/r.width*mapCv.width;
+    var y = (e.clientY - r.top)/r.height*mapCv.height;
+    zoomBy(2, iF(x), iK(y));
+  });
+  /* arrow keys nudge by exactly one slider step, which is the only way to land on a
+     single point of the map with certainty */
+  mapCv.addEventListener('keydown', function(e){
+    var st = (e.shiftKey ? 10 : 1)*0.0002, dF = 0, dk = 0;
+    if(e.key === 'ArrowLeft') dF = -st;
+    else if(e.key === 'ArrowRight') dF = st;
+    else if(e.key === 'ArrowUp') dk = st;
+    else if(e.key === 'ArrowDown') dk = -st;
+    else if(e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1.5, S.F, S.k); return; }
+    else if(e.key === '-' || e.key === '_') { e.preventDefault(); zoomBy(1/1.5, S.F, S.k); return; }
+    else return;
+    e.preventDefault();
+    S.F = Math.max(MAPR.F0, Math.min(MAPR.F1, Math.round((S.F + dF)/0.0002)*0.0002));
+    S.k = Math.max(MAPR.K0, Math.min(MAPR.K1, Math.round((S.k + dk)/0.0002)*0.0002));
+    S.preset = -1; syncParams();
+  });
+  $('mzIn').addEventListener('click', function(){ zoomBy(1.5, S.F, S.k); });
+  $('mzOut').addEventListener('click', function(){ zoomBy(1/1.5, S.F, S.k); });
+  $('mzFit').addEventListener('click', function(){ setView((MAPR.F0+MAPR.F1)/2, (MAPR.K0+MAPR.K1)/2, 1); });
+  syncZoomUI();
+  mapCv.addEventListener('pointerleave', function(){ updateMapText(-1); });
+
+  $('growOn').addEventListener('change', function(){
+    S.growOn = this.checked; freeMode();
+    ['growRate','growMax'].forEach(function(id){ $(id).disabled = !S.growOn; });
+    ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
+    S.g = 1;
+    if(S.growOn) seedField(4);
+    syncGrowth();
+  });
+  bindRange('growRate','growRateVal',
+    function(){ return 45; },
+    function(v){ S.gRate = 2e-5*Math.pow(100,(v-1)/99); },
+    function(){ var s = growSeconds(); return s < 90 ? ('\u2248 ' + Math.round(s) + ' s') : ('\u2248 ' + (s/60).toFixed(1) + ' min'); });
+  bindRange('growMax','growMaxVal',
+    function(){ return S.gMax; },
+    function(v){ S.gMax = v; if(S.g > v) S.g = v; },
+    function(){ return S.gMax.toFixed(1) + '\u00d7'; });
+
+  $('anisOn').addEventListener('change', function(){
+    S.anisOn = this.checked; freeMode();
+    $('anisAng').disabled = !S.anisOn; $('anisAmt').disabled = !S.anisOn;
+    ['rowAnisAng','rowAnisAmt'].forEach(function(id){ $(id).classList.toggle('off', !S.anisOn); });
+  });
+  bindRange('anisAng','anisAngVal', function(){ return S.angle; },
+    function(v){ S.angle = v; freeMode(); }, function(){ return Math.round(S.angle) + '\u00b0'; });
+  bindRange('anisAmt','anisAmtVal', function(){ return S.aniso; },
+    function(v){ S.aniso = v; freeMode(); }, function(){ return S.aniso.toFixed(2) + '\u00d7'; });
+
+  var seg = $('toolSeg');
+  seg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    S.tool = b.dataset.tool;
+    Array.prototype.forEach.call(seg.children, function(c){
+      c.setAttribute('aria-pressed', c === b ? 'true' : 'false');
+    });
+    stage.classList.toggle('tool-erase', S.tool === 'erase');
+  });
+  bindRange('brushSl','brushVal', function(){ return S.brush; },
+    function(v){ S.brush = v; }, function(){ return Math.round(S.brush) + ' px'; });
+
+  bindRange('ratioSl','ratioVal', function(){ return S.ratio; },
+    function(v){ S.ratio = v; freeMode(); updateMapText(-1); drawMap(); },
+    function(){ return S.ratio.toFixed(2) + '\u00d7'; });
+  bindRange('stepsSl','stepsVal', function(){ return S.steps; },
+    function(v){ S.steps = v; syncGrowth(); }, function(){ return String(S.steps); });
+  bindRange('levelSl','levelVal', function(){ return S.level; },
+    function(v){ S.level = v; }, function(){ return S.level.toFixed(3); });
+  bindRange('contrastSl','contrastVal', function(){ return S.contrast; },
+    function(v){ S.contrast = v; }, function(){ return S.contrast.toFixed(2); });
+
+  $('gridSel').value = String(S.N);
+  $('gridSel').addEventListener('change', function(){
+    try{ allocGrid(parseInt(this.value,10)); seedField(S.seedMode); }
+    catch(e){ fail(e.message); }
+  });
+  $('palSel').addEventListener('change', function(){
+    S.pal = parseInt(this.value,10);
+    if(S.pal === 5) setPalette(S.preset >= 0 ? (PRESETS[S.preset].c || PAL_DEFAULT) : PAL_DEFAULT);
+  });
+  $('reliefOn').addEventListener('change', function(){ S.relief = this.checked; });
+
+  $('playBtn').addEventListener('click', function(){ setPlaying(!S.running); });
+  $('seedBtn').addEventListener('click', function(){
+    seedField(S.growOn ? 4 : (S.seedMode === 0 ? 2 : S.seedMode));
+    if(S.growOn) S.g = 1;
+  });
+  $('aboutBtn').addEventListener('click', function(){ $('about').showModal(); });
+  $('closeAbout').addEventListener('click', function(){ $('about').close(); });
+
+  ov.addEventListener('pointerdown', function(e){
+    ptr.down = true; ptr.has = false; ov.setPointerCapture(e.pointerId);
+    ptr.in = true; paintAt(e);
+  });
+  ov.addEventListener('pointermove', function(e){
+    var r = ov.getBoundingClientRect();
+    ptr.x = (e.clientX - r.left)*(ov.width/r.width);
+    ptr.y = (e.clientY - r.top)*(ov.height/r.height);
+    ptr.in = true;
+    if(ptr.down) paintAt(e);
+  });
+  ov.addEventListener('pointerup', function(){ ptr.down = false; ptr.has = false; });
+  ov.addEventListener('pointercancel', function(){ ptr.down = false; ptr.has = false; });
+  ov.addEventListener('pointerleave', function(){ ptr.in = false; ptr.down = false; ptr.has = false; });
+
+  /* keyboard is handled once, in the shell block at the end of this file */
+
+  if(window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  window.addEventListener('resize', resize);
+}
+
+/* ------------------------------------------------------------------ *
+ * Loop
+ * ------------------------------------------------------------------ */
+var last = 0, acc = 0, frames = 0, statTick = 0;
+function hudText(){
+  var L = [];
+  if(S.growOn) L.push(chip('length', '\u00d7' + S.g.toFixed(2)));
+  if(S.growOn) L.push(chip('bands across', stats.bands));
+  if(S.anisOn) L.push(chip('fast axis', Math.round(S.angle) + '<small>\u00b0</small>'));
+  return L.join('');
+}
+function chip(k, v){
+  return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+}
+window.__turing = function(){
+  return {N:S.N, F:S.F, k:S.k, DA:S.DA, steps:S.steps, anisOn:S.anisOn, angle:S.angle,
+          aniso:S.aniso, cov:stats.cov, total:S.total, fps:stats.fps, smoothOK:smoothOK,
+          fmt:(IFMT === gl.RGBA32F ? '32f' : '16f'), preset:S.preset,
+          ratio:S.ratio, level:S.level, contrast:S.contrast, growOn:S.growOn,
+          pal:S.pal, sp:S.seedSp, sr:S.seedR};
+};
+window.__turingPreset = function(i){ applyPreset(i); };
+/* verification hook for the headless checks: the map's current window and zoom */
+window.__turingMap = function(){ return {F0:VIEW.F0, F1:VIEW.F1, K0:VIEW.K0, K1:VIEW.K1, z:mapZoom()}; };
+/* runs the model without waiting for frames, so the pattern tests can measure a fixed
+   number of steps instead of a fixed number of seconds */
+window.__turingRun = function(n){
+  updateWeights();
+  var done = 0;
+  while(done < n){ var c = Math.min(200, n-done); runSteps(c); done += c; }
+  readStats();
+  return {cov:stats.cov, total:S.total};
+};
+var stepCarry = 0;
+function frame(t){
+  requestAnimationFrame(frame);
+  if(!last) last = t;
+  var dt = t - last; last = t;
+  acc += dt; frames++;
+  if(acc > 400){ stats.fps = frames*1000/acc; acc = 0; frames = 0; }
+
+  /* The model advances on wall-clock time, not on frames. Hiding the interface makes
+     the page cheaper to draw and the frame rate rises, and when the step count was tied
+     to the frame the pattern sped up with it. Speed now means steps per sixtieth of a
+     second whatever the display is doing, with a fractional carry so nothing is lost and
+     a ceiling of four frames' worth so a stall cannot dump a thousand steps at once. */
+  var n = 0;
+  if(S.running){
+    stepCarry += S.steps * Math.min(dt, 100) / (1000/60);
+    n = Math.floor(stepCarry);
+    stepCarry -= n;
+    var capN = Math.max(1, S.steps*4);
+    if(n > capN){ n = capN; stepCarry = 0; }
+  } else {
+    stepCarry = 0;
+  }
+  if(S.growOn && S.g < S.gMax && S.running && n > 0){
+    S.g = Math.min(S.gMax, S.g*Math.pow(1 + S.gRate, n));
+    S.dil = S.gRate;
+  } else {
+    S.dil = 0;
+  }
+  updateWeights();
+  if(n > 0) runSteps(n);
+  drawField();
+  drawOverlay();
+  if(++statTick % 12 === 0){ readStats(); var _h=$('hud'), _t=hudText(); _h.innerHTML=_t; _h.style.display=_t?'':'none'; }
+}
+
+/* ------------------------------------------------------------------ */
+if(initGL()){
+  wire();
+  resize();
+  seedField(2);
+  syncParams();
+  syncGrowth();
+  setPlaying(true);
+  requestAnimationFrame(frame);
+  setTimeout(function(){ resize(); drawMap(); }, 60);
+}
+/* ------------------------------------------------------------------ *
+ * SimLearn shell wiring: frame awareness, clean mode, fullscreen,
+ * the mobile control sheet and the keyboard shortcuts every module has.
+ * ------------------------------------------------------------------ */
+(function(){
+  var body = document.body;
+  try{ if(window.self !== window.top) body.classList.add('in-frame'); }
+  catch(e){ body.classList.add('in-frame'); }
+
+  var panel = $('panel'), pt = $('p-toggle');
+  if(pt) pt.addEventListener('click', function(){
+    var open = panel.classList.toggle('open');
+    pt.setAttribute('aria-expanded', open ? 'true' : 'false');
+    pt.textContent = open ? 'Hide controls' : 'Controls';
+    if(open) panel.scrollTop = 0;
+  });
+
+  var clean = $('btnClean');
+  clean.addEventListener('click', function(){
+    var on = body.classList.toggle('clean');
+    clean.setAttribute('data-on', on ? 'true' : 'false');
+  });
+
+  var full = $('btnFull');
+  full.addEventListener('click', function(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if(t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+    if($('about').open){ if(e.key === 'Escape') $('about').close(); return; }
+    var k = e.key.toLowerCase();
+    if(e.key === ' '){ e.preventDefault(); $('playBtn').click(); }
+    else if(k === 'r'){ $('seedBtn').click(); }
+    else if(k === 'h'){ clean.click(); }
+    else if(k === 'f'){ full.click(); }
+    else if(k === '?' || k === '/'){ $('aboutBtn').click(); }
+    else if(k >= '0' && k <= '9'){
+      var b = $('presets').querySelector('.preset[data-i="' + (parseInt(k,10) - 1) + '"]');
+      if(b) b.click();
+    }
+  });
+})();
+
+})();
+
+</script>
+<script src="../../assets/js/explainer.js" defer></script>
+</body>
+</html>

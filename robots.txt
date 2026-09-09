@@ -5,6 +5,7 @@
 
 User-agent: *
 Allow: /
+Disallow: /dev/
 
 # No licence for machine learning training or dataset collection.
 User-agent: GPTBot

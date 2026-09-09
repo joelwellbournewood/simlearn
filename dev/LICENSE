@@ -1,0 +1,31 @@
+SimLearn - all rights reserved
+Copyright (c) 2026 SimLearn (simlearn.ai). All rights reserved.
+
+This repository and the website it publishes, including the source code, the
+simulation models, the written explainers, the artwork, and the layout, are
+proprietary. They are published so that people can use the site, and not as an
+invitation to reuse the material.
+
+You may:
+  - visit simlearn.ai and use the simulations in a browser;
+  - read the source in the ordinary course of visiting the site;
+  - quote short passages with attribution and a link, as you would any article;
+  - link to any page here.
+
+You may not, without prior written permission from the copyright holder:
+  - copy, publish, mirror, or host this code or these pages, in whole or in
+    part, anywhere else;
+  - create a derivative work from this code or these explainers;
+  - use any of it in a commercial product or a paid course;
+  - use it as training data for a machine learning model.
+
+No licence is granted by implication. To ask for permission, write to the
+address on https://simlearn.ai/about.html.
+
+Third-party components: this site loads three.js (MIT licence, Copyright (c)
+2010-2024 three.js authors) from a public CDN at runtime. That library is not
+covered by the terms above and remains under its own licence.
+
+Scientific models are named and cited in each simulation's explainer. The
+underlying published models are the work of their authors; the implementation,
+wording, and presentation here are not.

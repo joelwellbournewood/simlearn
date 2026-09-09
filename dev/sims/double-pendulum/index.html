@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>Pendulum Chaos | SimLearn</title>
+<meta name="description" content="Pendulum Chaos: an interactive double pendulum. Release a hundred copies that differ by a thousandth of a degree and watch a deterministic system become unpredictable.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--display);font-weight:600;font-size:14.5px;letter-spacing:.01em;text-transform:none;color:var(--ink);margin:0 0 6px}
+.presets{display:grid;gap:6px;margin-bottom:14px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:12px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.row .nm{display:inline-flex;align-items:center;gap:6px}
+.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
+.stat{background:none;border:0;padding:0 2px;min-width:70px;text-align:right;text-shadow:0 1px 12px rgba(0,0,0,.85)}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+.hint{position:absolute;left:340px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 560px)}
+body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(84vh,780px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner p{margin:0 0 10px;max-width:62ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="brand">
+  <p class="kicker">Deterministic chaos</p>
+  <h1>Pendulum Chaos</h1>
+  <p>Exact equations. No randomness. Still unpredictable.</p>
+</div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Restart (R)" aria-label="Restart">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel">
+  <button class="about-btn" id="b-about">What am I looking at?</button>
+  <p class="label">Experiment</p>
+  <div class="presets" id="presets"></div>
+  <p class="label">Controls</p>
+  <div class="row">
+    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once. They are spread across a tiny range of starting angles, so at first they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
+  </div>
+  <div class="row">
+    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="The angle, in degrees, between the first copy and the last. At 0.001 degrees they are identical to the eye, and still tear apart." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
+  </div>
+  <div class="row">
+    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="How high both arms are lifted before release. Below about 20 degrees the motion stays regular; above that it goes chaotic." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
+  </div>
+  <div class="row">
+    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Length of the second arm relative to the first. A long lower arm carries more of the energy and whips harder." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
+    <input type="range" id="s-l2" min="0.4" max="1.6" step="0.05" value="1">
+  </div>
+  <div class="row">
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each tip's path stays on screen. With many copies, short trails read more clearly." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <input type="range" id="s-trail" min="0" max="100" step="1" value="60">
+  </div>
+  <div class="row">
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. Integration substeps scale with it, so the physics stays accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <input type="range" id="s-speed" min="0.25" max="2.5" step="0.05" value="1">
+  </div>
+</div>
+
+<div class="hud">
+  <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
+  <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
+</div>
+<div class="hint">Drag to pan, scroll to zoom, click the field to re-release, R restarts.</div>
+
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>Two rigid arms, joined by a free hinge, swinging under gravity with no friction and no driving force. Four numbers describe the whole system: the two angles, and the two rates at which those angles are changing. It is about as simple as a mechanical system can be while still being unpredictable.</p>
+<p>There are many pendulums on screen rather than one. They were released together, and they differ only by the amount in <b>starting spread</b>, which is a fraction of a degree. Every copy obeys the same equations to the same precision, and nothing random is added at any point.</p>
+<ul>
+  <li>For the first few swings they move as one line, because a tiny difference is still tiny.</li>
+  <li>Then the line frays. Small differences are amplified at every swing, roughly multiplying rather than adding, so the gap grows geometrically.</li>
+  <li>Within about ten seconds the copies fill the whole reachable area, and knowing where one of them is tells you nothing about where the others are.</li>
+</ul>
+<p>This is sensitive dependence on initial conditions, and it is the point of the demonstration. The system is fully deterministic, so the same starting numbers always give the same motion. It is unpredictable in practice all the same, because to predict twice as far ahead you need roughly the square of the precision in your starting measurement, and no measurement is ever exact.</p>
+<p>The same arrangement of two hinged arms turns up in a surprising number of real machines. A crane hook on a slack cable, a wrecking ball, the human leg during a stride, and a golf club through the downswing are all close relatives, which is why crane operators are trained to move the trolley in a particular rhythm and why a bad swing scatters shots so widely. Once two hinged pieces can exchange energy freely, control gets difficult fast.</p>
+<p><b>Release angle</b> is the important slider, because it sets the energy. Start the arms low and the motion stays regular and repetitive, and the copies stay together for a long time. Somewhere above the height at which the lower arm can just swing over the top, the behaviour changes character and the flipping begins. <b>Lower arm length</b> changes the geometry, <b>copies released</b> and <b>trail length</b> change what is drawn, and <b>time speed</b> changes only the playback rate.</p>
+<h3>Things to try</h3>
+    <ul>
+      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than most people expect.</li>
+      <li>Watch the <b>spread now</b> readout climb. Its growth is close to a straight line on a log scale, which is what an exponent looks like.</li>
+      <li>Give the lower arm a length of 1.6 and release from 180 degrees. The tip trace fills the whole disc it can reach.</li>
+    </ul>
+  
+<div class="more-box"><div class="more-body">
+<h3>The demonstration</h3>
+    <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree. For the first few seconds they move as one thick line, because for practical purposes they are the same pendulum. Then the line frays and splits, and within about fifteen seconds the hundred copies are scattered over every angle, with no memory of their shared start.</p>
+    <p>Nothing was added. No noise was injected and no forcing applied. The tiny difference they began with was simply <b>stretched</b>, at a roughly constant exponential rate, until it reached the size of the whole system. That rate is the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days however good the measurements get.</p>
+    <h3>The cost of sensitive dependence</h3>
+    <p>If errors grow exponentially, one more decimal place of accuracy in the starting measurement buys a fixed extra amount of forecast time rather than a proportional one. Instruments ten times better do not give ten times the warning. The horizon belongs to the system itself, and better technology moves it only by a constant.</p>
+    <h3>Regular motion is available too</h3>
+    <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the system behaves like two coupled linear oscillators and is perfectly well behaved. What decides the character of the motion here is the energy you release it with, and the machine itself is the same either way.</p>
+    <h3>How this one is computed</h3>
+    <ul>
+      <li>Integration is fourth-order Runge-Kutta with small substeps, and total energy is held to a fraction of a percent over a run. The separation you see on screen is therefore dynamics, and the arithmetic is not contributing to it in any visible way.</li>
+      <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
+      <li>The rods are massless and the bobs are points. Real hardware has friction, and eventually stops.</li>
+    </ul>
+    <h3>Equations of motion</h3>
+<p>The standard derivation is Lagrangian. With arm lengths L1, L2, masses m1, m2, and angles &theta;1, &theta;2 measured from vertical, the Lagrangian L = T &minus; V is written out and the two Euler-Lagrange equations give a pair of coupled second-order equations that can be arranged as</p>
+<span class="eq">M(&theta;1, &theta;2) &middot; (&theta;&#776;1, &theta;&#776;2)&#7488; = f(&theta;1, &theta;2, &theta;&#775;1, &theta;&#775;2)</span>
+<p>where M is a 2x2 mass matrix depending on the difference of the angles, so the angular accelerations are obtained by inverting a matrix at every timestep. The nonlinearity comes from the sines and cosines of the angles, and from the centrifugal terms in f, which are quadratic in the velocities. There is no closed-form solution and none is expected.</p>
+<p>Two degrees of freedom means a four-dimensional phase space. Energy is conserved, which confines the motion to a three-dimensional surface inside it. There are no other conserved quantities, and that absence is what makes chaos possible rather than the number of moving parts: with one more conserved quantity the system would be integrable and every trajectory would be quasi-periodic.</p>
+
+<h3>Regular and chaotic motion in the same machine</h3>
+<p>At low energy the motion is close to two coupled harmonic oscillators. Trajectories lie on invariant tori in phase space, and a Poincare section through them shows closed curves. The Kolmogorov-Arnold-Moser theorem guarantees that most of these tori survive a small nonlinear perturbation, which is why gentle swinging is predictable. As energy rises the resonances between the two normal modes overlap, tori break up, and a connected chaotic sea appears in the section, with islands of regular motion embedded in it. The double pendulum is the standard teaching example of this transition because the threshold has a physical meaning you can watch for: chaos becomes widespread once there is enough energy for the lower arm to pass over its own pivot.</p>
+
+<h3>Quantifying the divergence</h3>
+<p>Nearby trajectories separate on average as</p>
+<span class="eq">&delta;(t) &asymp; &delta;(0) e<sup>&lambda;t</sup></span>
+<p>where &lambda; is the largest Lyapunov exponent, positive in the chaotic regime and zero on a torus. Rearranged, the horizon of prediction is t &asymp; (1/&lambda;) ln(&delta;<sub>tol</sub>/&delta;(0)). Because the initial error appears inside a logarithm, improving your measurement by a factor of ten buys the same fixed extra amount of prediction time each time you do it. That logarithm is the whole quantitative content of the phrase butterfly effect, and it applies with equal force to weather models. The fan of copies on screen is a visual estimate of &lambda;, since the time the fan takes to spread to a visible angle scales with 1/&lambda;.</p>
+<p>The behaviour survives contact with real hardware. Shinbrot et al. (1992) built a physical double pendulum, measured its divergence and its Poincare sections, and used it as a laboratory demonstration of sensitive dependence, with Levien and Tan (1993) following up on the experimental side.</p>
+
+<h3>Numerics, and how to tell physics from arithmetic</h3>
+<p>The equations here are integrated with fourth-order Runge-Kutta, with each animation frame subdivided into several substeps so the step size stays small when the arms are moving fast. Total energy is displayed live, and its drift is the diagnostic that matters: a symplectic or sufficiently small-step integrator holds it nearly constant, and any visible drift would mean the separation on screen came partly from the integrator's error. In a chaotic system, after a few seconds a single simulated pendulum has departed from the ideal one at any tolerance you care to set, because floating-point rounding is itself a perturbation and then grows as e<sup>&lambda;t</sup>. Statistical properties survive that, meaning how quickly the ensemble spreads and which regions it visits, while the exact position of copy number 37 at t = 20 s is fiction.</p>
+
+<h3>Limits of the model</h3>
+<p>The bobs here are point masses on massless rigid arms, the hinges are frictionless, there is no air resistance, and the motion is confined to a plane. A real double pendulum loses energy and eventually hangs still, so chaos in hardware is a transient, albeit a long one. Adding damping and a periodic drive gives the forced damped pendulum, in which chaos is sustained indefinitely on a strange attractor instead of filling an energy shell, and that version is the closer model for machinery that keeps being fed energy, such as a crane under an operator's hand.</p>
+
+<h3>References</h3>
+<ul class="refs">
+  <li>Shinbrot, T., Grebogi, C., Wisdom, J., &amp; Yorke, J. A. (1992). Chaos in a double pendulum. American Journal of Physics. <a class="doi" href="https://doi.org/10.1119/1.16860" target="_blank" rel="noopener" title="10.1119/1.16860">DOI</a></li>
+  <li>Levien, R. B., &amp; Tan, S. M. (1993). Double pendulum: an experiment in chaos. American Journal of Physics. <a class="doi" href="https://doi.org/10.1119/1.17335" target="_blank" rel="noopener" title="10.1119/1.17335">DOI</a></li>
+  <li>Ott, E. (2002). Chaos in Dynamical Systems, 2nd ed. Cambridge University Press. <a class="doi" href="https://doi.org/10.1017/CBO9780511803260" target="_blank" rel="noopener" title="10.1017/CBO9780511803260">DOI</a></li>
+  <li>Lichtenberg, A. J., &amp; Lieberman, M. A. (1992). Regular and Chaotic Dynamics. Springer. (KAM tori and resonance overlap.) <a class="doi" href="https://doi.org/10.1007/978-1-4757-2184-3" target="_blank" rel="noopener" title="10.1007/978-1-4757-2184-3">DOI</a></li>
+</ul>
+</div></div>
+</div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+if(window.self!==window.top) document.body.classList.add('in-frame');
+const TAU=Math.PI*2, DEG=Math.PI/180;
+const stage=document.getElementById('stage'), cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const el=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+/* ---------- view: pan and zoom ----------
+   The model is drawn in world units with the pivot at (0,0). The view puts that
+   origin on the canvas and scales around it, so trails recorded minutes ago stay
+   in register with the arms however far you have panned or zoomed since. */
+let zoom=1, panx=0, pany=0;
+const ZMIN=0.35, ZMAX=8;
+function baseX(){ return W/2; }
+function baseY(){ return H*0.43; }
+function resetView(){ zoom=1; panx=0; pany=0; }
+function toWorld(sx,sy){ return [(sx-baseX()-panx)/zoom, (sy-baseY()-pany)/zoom]; }
+function zoomAt(sx,sy,f){
+  const z2=Math.max(ZMIN,Math.min(ZMAX,zoom*f)); if(z2===zoom) return;
+  const [wx,wy]=toWorld(sx,sy);
+  zoom=z2; panx=sx-baseX()-wx*zoom; pany=sy-baseY()-wy*zoom;
+}
+function resize(){
+  const r=stage.getBoundingClientRect();
+  W=Math.max(320,r.width); H=Math.max(240,r.height);
+  const native=Math.min(window.devicePixelRatio||1,2); const BUDGET=3.2e6;
+  let d=native; if(W*H*d*d>BUDGET) d=Math.max(1,Math.sqrt(BUDGET/(W*H)));
+  DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
+}
+/* ---------- model ---------- */
+const M1=1, M2=1;
+let g=1.0, L1=140, L2=140, l2r=1, copies=1, spreadDeg=0.1, angleDeg=120,
+    trailPct=60, speed=1, paused=false, arr=[], E0=null, tsec=0, activePreset='twins';
+function deriv(s){
+  const a1=s[0],a2=s[1],w1=s[2],w2=s[3], d=a1-a2;
+  const den=2*M1+M2-M2*Math.cos(2*d);
+  const n1=-g*(2*M1+M2)*Math.sin(a1)-M2*g*Math.sin(a1-2*a2)-2*Math.sin(d)*M2*(w2*w2*L2+w1*w1*L1*Math.cos(d));
+  const n2=2*Math.sin(d)*(w1*w1*L1*(M1+M2)+g*(M1+M2)*Math.cos(a1)+w2*w2*L2*M2*Math.cos(d));
+  return [w1,w2,n1/(L1*den),n2/(L2*den)];
+}
+function rk4(s,h){
+  const k1=deriv(s);
+  const s2=[s[0]+h/2*k1[0],s[1]+h/2*k1[1],s[2]+h/2*k1[2],s[3]+h/2*k1[3]], k2=deriv(s2);
+  const s3=[s[0]+h/2*k2[0],s[1]+h/2*k2[1],s[2]+h/2*k2[2],s[3]+h/2*k2[3]], k3=deriv(s3);
+  const s4=[s[0]+h*k3[0],s[1]+h*k3[1],s[2]+h*k3[2],s[3]+h*k3[3]], k4=deriv(s4);
+  for(let i=0;i<4;i++) s[i]+=h/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
+}
+function energyOf(s){
+  const a1=s[0],a2=s[1],w1=s[2],w2=s[3];
+  const v1s=L1*L1*w1*w1;
+  const v2s=L1*L1*w1*w1+L2*L2*w2*w2+2*L1*L2*w1*w2*Math.cos(a1-a2);
+  const y1=-L1*Math.cos(a1), y2=y1-L2*Math.cos(a2);
+  return 0.5*M1*v1s+0.5*M2*v2s+M1*g*y1+M2*g*y2;
+}
+function colourAt(t){
+  let r,gg,b;
+  if(t<0.5){ const u=t/0.5; r=86+(230-86)*u; gg=224+(195-224)*u; b=194+(79-194)*u; }
+  else { const u=(t-0.5)/0.5; r=230+(255-230)*u; gg=195+(125-195)*u; b=79+(92-79)*u; }
+  return [r|0,gg|0,b|0];
+}
+function geom(){
+  /* g is tied to arm length so the swing takes the same wall-clock time whatever
+     the canvas size. omega = sqrt(g/L1) is then constant, about 0.47 per time unit,
+     which puts a small-amplitude period near two and a half seconds at 60fps. */
+  const base=Math.min(W,H)*0.20;
+  L1=base; L2=base*l2r; g=0.22*base;
+}
+function release(a1seed){
+  geom();
+  const a0=(a1seed!==undefined)?a1seed:angleDeg*DEG;
+  arr=[];
+  const sp=spreadDeg*DEG;
+  for(let i=0;i<copies;i++){
+    const f=copies===1?0:(i/(copies-1)-0.5);
+    arr.push({s:[a0+f*sp, a0, 0, 0], trail:[], c:colourAt(copies===1?0:i/(copies-1))});
+  }
+  tsec=0; E0=energyOf(arr[0].s.slice());
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+/* ---------- presets ---------- */
+const PRESETS={
+  twins:{name:'The twin test',tag:'Two starts half a degree apart',set:{copies:2,spread:-0.3,angle:120,l2:1,trail:70}},
+  fan:{name:'Fan of a hundred',tag:'A hundred starts inside a tenth of a degree',set:{copies:110,spread:-1,angle:130,l2:1,trail:35}},
+  single:{name:'One pendulum',tag:'Just watch the shape the tip traces',set:{copies:1,spread:-1,angle:120,l2:1,trail:75}},
+  gentle:{name:'Gentle swing',tag:'Small angles stay regular and predictable',set:{copies:60,spread:-1,angle:15,l2:1,trail:80}},
+  whip:{name:'Long whip',tag:'A long lower arm carries most of the energy',set:{copies:40,spread:-1.5,angle:180,l2:1.55,trail:45}}
+};
+function applyPreset(k){
+  activePreset=k; const p=PRESETS[k].set;
+  el('s-copies').value=p.copies; el('s-spread').value=p.spread;
+  el('s-angle').value=p.angle; el('s-l2').value=p.l2; el('s-trail').value=p.trail;
+  ['s-copies','s-spread','s-angle','s-l2','s-trail'].forEach(id=>el(id).dispatchEvent(new Event('input')));
+  release();
+  [...document.querySelectorAll('.preset')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===k)));
+}
+/* ---------- render ---------- */
+function trailCap(){
+  if(trailPct===0) return 0;
+  return Math.max(0,Math.min(Math.round(trailPct/100*600), Math.floor(16000/Math.max(1,copies))));
+}
+function draw(){
+  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
+  /* everything below is drawn about the pivot at world (0,0); the view supplies the
+     placement and the scale, and stroke widths are divided by it so lines keep the
+     same weight on screen at any zoom. */
+  ctx.save(); ctx.translate(baseX()+panx, baseY()+pany); ctx.scale(zoom,zoom);
+  const ox=0, oy=0;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  // reach circle, so you can see the space the tip can explore
+  ctx.strokeStyle='rgba(130,170,150,.10)'; ctx.lineWidth=1/zoom;
+  ctx.beginPath(); ctx.arc(ox,oy,L1+L2,0,TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(ox,oy,Math.abs(L1-L2),0,TAU); ctx.stroke();
+  const many=copies>12;
+  // tip trails
+  for(const b of arr){
+    const t=b.trail, n=t.length/2; if(n<3) continue;
+    const [r,g2,bl]=b.c;
+    if(many){
+      ctx.strokeStyle='rgba('+r+','+g2+','+bl+',.30)'; ctx.lineWidth=1/zoom;
+      ctx.beginPath(); ctx.moveTo(t[0],t[1]);
+      for(let p=1;p<n;p++) ctx.lineTo(t[p*2],t[p*2+1]);
+      ctx.stroke();
+    } else {
+      const K=12;
+      for(let k=0;k<K;k++){
+        const s=Math.floor(n*k/K), e=Math.floor(n*(k+1)/K); if(e-s<2) continue;
+        const u=(k+1)/K;
+        ctx.strokeStyle='rgba('+r+','+g2+','+bl+','+(0.05+0.55*Math.pow(u,1.7)).toFixed(3)+')';
+        ctx.lineWidth=(0.5+2.1*u)/zoom;
+        ctx.beginPath(); ctx.moveTo(t[s*2],t[s*2+1]);
+        for(let p=s+1;p<e;p++) ctx.lineTo(t[p*2],t[p*2+1]);
+        ctx.stroke();
+      }
+    }
+  }
+  // rods, batched by alpha
+  ctx.strokeStyle='rgba(198,214,205,'+(many?0.16:0.62)+')';
+  ctx.lineWidth=(many?1:2.4)/zoom; ctx.beginPath();
+  for(const b of arr){
+    const a1=b.s[0],a2=b.s[1];
+    const x1=ox+L1*Math.sin(a1), y1=oy+L1*Math.cos(a1);
+    const x2=x1+L2*Math.sin(a2), y2=y1+L2*Math.cos(a2);
+    b.x1=x1;b.y1=y1;b.x2=x2;b.y2=y2;
+    ctx.moveTo(ox,oy); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2);
+  }
+  ctx.stroke();
+  // bobs
+  const R=many?2.6:7;
+  for(const b of arr){
+    const [r,g2,bl]=b.c;
+    if(!many){
+      ctx.fillStyle='rgba(230,195,79,.9)'; ctx.beginPath(); ctx.arc(b.x1,b.y1,R*0.72,0,TAU); ctx.fill();
+      const gr=ctx.createRadialGradient(b.x2,b.y2,R*0.3,b.x2,b.y2,R*3.4);
+      gr.addColorStop(0,'rgba('+r+','+g2+','+bl+',.4)');
+      gr.addColorStop(1,'rgba('+r+','+g2+','+bl+',0)');
+      ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(b.x2,b.y2,R*3.4,0,TAU); ctx.fill();
+    }
+    ctx.fillStyle='rgb('+r+','+g2+','+bl+')'; ctx.beginPath(); ctx.arc(b.x2,b.y2,R,0,TAU); ctx.fill();
+  }
+  // pivot
+  ctx.fillStyle='#88a397'; ctx.beginPath(); ctx.arc(ox,oy,4/zoom,0,TAU); ctx.fill();
+  ctx.restore();
+}
+/* ---------- step ---------- */
+function step(){
+  const sub=Math.max(2,Math.min(8,Math.round(4*speed)));
+  const h=0.09*speed/sub;
+  for(const b of arr) for(let k=0;k<sub;k++) rk4(b.s,h);
+  tsec+=speed/60; // wall-clock seconds of simulated motion at 1x on a 60Hz display
+  const cap=trailCap(), ox=0, oy=0;   /* world coordinates: the view moves, the path does not */
+  for(const b of arr){
+    if(cap===0){ if(b.trail.length) b.trail.length=0; continue; }
+    const a1=b.s[0],a2=b.s[1];
+    const x2=ox+L1*Math.sin(a1)+L2*Math.sin(a2), y2=oy+L1*Math.cos(a1)+L2*Math.cos(a2);
+    b.trail.push(x2,y2); while(b.trail.length>cap*2) b.trail.splice(0,2);
+  }
+}
+/* ---------- hud ---------- */
+let hudT=0;
+function hud(now){
+  if(now-hudT<180) return; hudT=now;
+  el('s-n').textContent=arr.length;
+  el('s-t').textContent=tsec.toFixed(1)+'s';
+}
+/* ---------- ui ---------- */
+const pbox=el('presets');
+Object.keys(PRESETS).forEach((k,i)=>{
+  const p=PRESETS[k], b=document.createElement('button');
+  b.className='preset'; b.dataset.k=k; b.setAttribute('aria-pressed','false');
+  b.innerHTML='<b>'+p.name+'</b><small>'+p.tag+'</small>';
+  b.addEventListener('click',()=>applyPreset(k));
+  pbox.appendChild(b);
+});
+function bind(id,vid,fmt,fn){
+  const s=el(id), v=el(vid);
+  const upd=()=>{ v.textContent=fmt(+s.value); fn(+s.value); };
+  s.addEventListener('input',upd); upd();
+}
+bind('s-copies','v-copies',x=>String(x),x=>{copies=x;});
+bind('s-spread','v-spread',x=>{const d=Math.pow(10,x);return d<0.01?d.toExponential(0)+'\u00b0':d.toFixed(d<1?3:2)+'\u00b0';},x=>{spreadDeg=Math.pow(10,x);});
+bind('s-angle','v-angle',x=>x+'\u00b0',x=>{angleDeg=x;});
+bind('s-l2','v-l2',x=>x.toFixed(2)+'x',x=>{l2r=x; geom();});
+bind('s-trail','v-trail',x=>x===0?'off':x+'%',x=>{trailPct=x;});
+bind('s-speed','v-speed',x=>x.toFixed(2)+'x',x=>{speed=x;});
+['s-copies','s-spread','s-angle','s-l2'].forEach(id=>el(id).addEventListener('change',()=>release()));
+const bp=el('b-pause');
+function setPaused(p){ paused=p; bp.dataset.on=String(p); }
+bp.addEventListener('click',()=>setPaused(!paused));
+el('b-reset').addEventListener('click',()=>release());
+const bc=el('b-clean');
+bc.addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); bc.dataset.on=String(on); });
+el('b-full').addEventListener('click',()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else (document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen());
+});
+const dlg=el('about');
+el('b-about').addEventListener('click',()=>dlg.showModal());
+el('b-close').addEventListener('click',()=>dlg.close());
+dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',e=>{
+  e.preventDefault();
+  document.querySelectorAll('.tip.show').forEach(o=>{ if(o!==t) o.classList.remove('show'); });
+  t.classList.toggle('show');
+}));
+/* One pointer: a drag pans, a tap re-releases from that angle. Two pointers pinch.
+   A wheel zooms about the cursor. The drag threshold is what keeps a click from
+   being swallowed by a two-pixel wobble of the hand. */
+const PTR=new Map(); let dragged=false, pinch0=0, zoom0=1;
+function local(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+cv.style.touchAction='none';
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  const [x,y]=local(e); PTR.set(e.pointerId,{x,y,x0:x,y0:y});
+  if(PTR.size===1) dragged=false;
+  if(PTR.size===2){
+    const [a,b]=[...PTR.values()];
+    pinch0=Math.hypot(a.x-b.x,a.y-b.y)||1; zoom0=zoom; dragged=true;
+  }
+});
+cv.addEventListener('pointermove',e=>{
+  const p=PTR.get(e.pointerId); if(!p) return;
+  const [x,y]=local(e), dx=x-p.x, dy=y-p.y;
+  p.x=x; p.y=y;
+  if(PTR.size===2){
+    const [a,b]=[...PTR.values()];
+    const d=Math.hypot(a.x-b.x,a.y-b.y)||1;
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    zoomAt(mx,my,(d/pinch0)*zoom0/zoom);
+    panx+=dx/2; pany+=dy/2;
+  } else {
+    if(Math.hypot(x-p.x0,y-p.y0)>4) dragged=true;
+    if(dragged){ panx+=dx; pany+=dy; }
+  }
+});
+function endPtr(e){
+  const p=PTR.get(e.pointerId); if(!p) return;
+  PTR.delete(e.pointerId);
+  if(PTR.size===0 && !dragged){
+    const [wx,wy]=toWorld(p.x,p.y);
+    release(Math.atan2(wx,wy));
+  }
+  if(PTR.size<2) pinch0=0;
+}
+cv.addEventListener('pointerup',endPtr);
+cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const [x,y]=local(e);
+  zoomAt(x,y,Math.exp(-e.deltaY*(e.deltaMode===1?0.0125:0.0004)));
+},{passive:false});
+cv.addEventListener('dblclick',e=>{ e.preventDefault(); });
+window.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  const k=e.key;
+  if(k===' '){ e.preventDefault(); setPaused(!paused); }
+  else if(k==='r'||k==='R'){ resetView(); release(); }
+  else if(k==='h'||k==='H') bc.click();
+  else if(k==='f'||k==='F') el('b-full').click();
+  else if(k==='?'){ dlg.open?dlg.close():dlg.showModal(); }
+  else if(k>='1'&&k<='5'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) applyPreset(ks); }
+});
+let rt=null;
+window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(); geom(); },150); });
+function loop(now){ if(!paused) step(); draw(); hud(now); requestAnimationFrame(loop); }
+/* a read-only hook so the view can be measured from outside in testing */
+window.__dbg=()=>({zoom,panx,pany,n:arr.length,t:tsec});
+resize(); applyPreset('twins');
+requestAnimationFrame(loop);
+})();
+</script>
+<script src="../../assets/js/explainer.js" defer></script>
+</body></html>

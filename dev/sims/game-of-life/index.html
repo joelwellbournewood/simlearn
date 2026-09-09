@@ -1,0 +1,162 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock"><title>Game of Life</title>
+<style>
+html,body{margin:0;height:100%;background:#0a1512;color:#e3efe9;font-family:sans-serif;overflow:hidden}
+#wrap{display:flex;height:100%}
+#canvas-holder{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%;background:#07120f;cursor:crosshair}
+#panel{width:250px;padding:14px 16px;background:#0f1f1a;border-left:1px solid #22362e;overflow-y:auto;font-size:13px}
+#panel h2{font-size:15px;margin:0 0 8px}
+#panel p{color:#88a397;line-height:1.45;margin:0 0 12px}
+.row{margin-bottom:12px}
+.row label{display:flex;justify-content:space-between;margin-bottom:4px;color:#c6d6cd}
+.row input[type=range]{width:100%;accent-color:#56e0c2}
+select{width:100%;background:#22362e;color:#e3efe9;border:1px solid #2a4237;border-radius:6px;padding:6px;margin-top:4px}
+button{width:100%;background:#56e0c2;border:none;color:#0a1512;font-weight:600;padding:8px 0;border-radius:8px;cursor:pointer;margin-top:4px}
+button.secondary{background:#22362e;color:#e3efe9;margin-top:8px}
+#stats{display:flex;justify-content:space-between;background:#13261f;border-radius:8px;padding:8px 10px;margin-bottom:12px}
+#stats div{text-align:center}
+#stats span{display:block;color:#88a397;font-size:11px}
+#stats b{font-size:16px;color:#56e0c2}
+</style><link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-legacy-mobile.css">
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head><body>
+<div id="wrap">
+<div id="canvas-holder"><canvas id="c"></canvas></div>
+<div id="panel">
+<h2>Conway's Game of Life</h2>
+<p>A cell is born if it has exactly 3 live neighbors, survives with 2 or 3, and dies otherwise. No randomness, no central plan — just complex patterns emerging from one rule. Model: John Conway, 1970.</p>
+<div id="stats">
+  <div><b id="v-gen">0</b><span>generation</span></div>
+  <div><b id="v-pop">0</b><span>alive</span></div>
+</div>
+<div class="row"><label><span>Stamp pattern (click board to place)</span></label>
+<select id="preset">
+  <option value="toggle">None — toggle single cell</option>
+  <option value="glider">Glider</option>
+  <option value="lwss">Lightweight Spaceship</option>
+  <option value="pulsar">Pulsar (oscillator)</option>
+  <option value="pentadecathlon">Pentadecathlon (oscillator)</option>
+  <option value="gun">Gosper Glider Gun</option>
+</select>
+</div>
+<div class="row"><label><span>Speed</span><span id="v-speed">10</span></label><input type="range" id="speed" min="1" max="60" step="1" value="10"></div>
+<button id="playpause">Pause</button>
+<button class="secondary" id="randomize">Randomize</button>
+<button class="secondary" id="clear">Clear</button>
+<p style="margin-top:16px">Tip: pick a pattern above, then click (or click-drag) on the board to stamp it down. Try a Glider Gun on a cleared board and watch it fire forever.</p>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const cell=10;
+let cols,rows,grid,running=true,speed=10,acc=0,last=performance.now(),gen=0;
+let presetName='toggle';
+let dragging=false, lastStamp=null;
+
+const PRESETS={
+  glider:[[0,1],[1,2],[2,0],[2,1],[2,2]],
+  lwss:[[0,1],[0,3],[1,0],[2,0],[3,0],[3,3],[4,0],[4,1],[4,2]],
+  pulsar:(()=>{
+    const rel=[[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],
+      [0,2],[5,2],[7,2],[12,2],
+      [0,3],[5,3],[7,3],[12,3],
+      [0,4],[5,4],[7,4],[12,4],
+      [2,5],[3,5],[4,5],[8,5],[9,5],[10,5],
+      [2,7],[3,7],[4,7],[8,7],[9,7],[10,7],
+      [0,8],[5,8],[7,8],[12,8],
+      [0,9],[5,9],[7,9],[12,9],
+      [0,10],[5,10],[7,10],[12,10],
+      [2,12],[3,12],[4,12],[8,12],[9,12],[10,12]];
+    return rel;
+  })(),
+  pentadecathlon:[[1,0],[2,0],[3,0],[0,1],[4,1],[0,2],[4,2],[1,3],[2,3],[3,3],[1,6],[2,6],[3,6],[0,7],[4,7],[0,8],[4,8],[1,9],[2,9],[3,9]],
+  gun:[[1,5],[1,6],[2,5],[2,6],[11,5],[11,6],[11,7],[12,4],[12,8],[13,3],[13,9],[14,3],[14,9],[15,6],[16,4],[16,8],[16,5],[16,6],[16,7],[17,6],[18,3],[18,4],[18,5],[19,3],[19,4],[19,5],[20,2],[20,6],[21,1],[21,7],[22,1],[22,7],[23,4],[24,2],[24,3],[24,4],[24,5],[24,6],[25,4],[35,2],[35,3],[36,2],[36,3]]
+};
+
+function resize(){
+  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
+  cols=Math.floor(canvas.width/cell); rows=Math.floor(canvas.height/cell);
+  grid=makeGrid(); randomize();
+}
+function makeGrid(){ return new Uint8Array(cols*rows); }
+function idx(x,y){ return ((y+rows)%rows)*cols + ((x+cols)%cols); }
+function population(){ let p=0; for(let i=0;i<grid.length;i++) p+=grid[i]; return p; }
+function updateStats(){
+  document.getElementById('v-gen').textContent=gen;
+  document.getElementById('v-pop').textContent=population();
+}
+function randomize(){ for(let i=0;i<grid.length;i++) grid[i]=Math.random()<0.18?1:0; gen=0; draw(); updateStats(); }
+function clearGrid(){ grid=makeGrid(); gen=0; draw(); updateStats(); }
+
+function step(){
+  const next=makeGrid();
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      let n=0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        if(dx===0&&dy===0) continue;
+        n+=grid[idx(x+dx,y+dy)];
+      }
+      const alive=grid[idx(x,y)];
+      next[idx(x,y)] = (alive && (n===2||n===3)) || (!alive && n===3) ? 1 : 0;
+    }
+  }
+  grid=next; gen++;
+}
+function draw(){
+  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#56e0c2';
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++)
+    if(grid[idx(x,y)]) ctx.fillRect(x*cell,y*cell,cell-1,cell-1);
+}
+function loop(t){
+  const dt=t-last; last=t;
+  if(running){
+    acc+=dt;
+    const interval=1000/speed;
+    if(acc>interval){ acc=0; step(); draw(); updateStats(); }
+  }
+  requestAnimationFrame(loop);
+}
+function stampAt(cx,cy){
+  if(presetName==='toggle'){ grid[idx(cx,cy)]=grid[idx(cx,cy)]?0:1; draw(); updateStats(); return; }
+  const pts=PRESETS[presetName];
+  if(!pts) return;
+  pts.forEach(([dx,dy])=>{ grid[idx(cx+dx,cy+dy)]=1; });
+  draw(); updateStats();
+}
+function clickPos(e){
+  const r=canvas.getBoundingClientRect();
+  return [Math.floor((e.clientX-r.left)/cell), Math.floor((e.clientY-r.top)/cell)];
+}
+canvas.addEventListener('mousedown', e=>{
+  dragging=true;
+  const [x,y]=clickPos(e);
+  lastStamp=`${x},${y}`;
+  stampAt(x,y);
+});
+window.addEventListener('mouseup', ()=>{ dragging=false; lastStamp=null; });
+canvas.addEventListener('mousemove', e=>{
+  if(!dragging || presetName!=='toggle') return;
+  const [x,y]=clickPos(e);
+  const key=`${x},${y}`;
+  if(key===lastStamp) return;
+  lastStamp=key;
+  grid[idx(x,y)]=1; draw(); updateStats();
+});
+document.getElementById('preset').addEventListener('change', e=>{ presetName=e.target.value; });
+document.getElementById('speed').addEventListener('input', e=>{ speed=+e.target.value; document.getElementById('v-speed').textContent=speed; });
+document.getElementById('playpause').addEventListener('click', e=>{ running=!running; e.target.textContent = running?'Pause':'Play'; });
+document.getElementById('randomize').addEventListener('click', randomize);
+document.getElementById('clear').addEventListener('click', clearGrid);
+window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(loop);
+</script>
+</body></html>

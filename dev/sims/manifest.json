@@ -1,0 +1,201 @@
+[
+  {
+    "id": "boids",
+    "title": "Flocking Boids",
+    "category": "Emergent Systems",
+    "tags": [
+      "agent-based",
+      "emergence",
+      "biology",
+      "3d"
+    ],
+    "difficulty": "Beginner",
+    "description": "Separation, alignment, and cohesion are the only three rules. The shape of the flock follows from them. Ten presets, 2D and 3D, with predators, obstacles, and currents you can paint into the sky.",
+    "status": "live",
+    "hook": "Three rules make a flock",
+    "visible": true
+  },
+  {
+    "id": "predator-prey",
+    "title": "Predator and Prey",
+    "category": "Population Dynamics",
+    "tags": [
+      "ecology",
+      "agent-based",
+      "Lotka-Volterra"
+    ],
+    "difficulty": "Intermediate",
+    "description": "Every dot is one animal with its own energy budget, grazing, hunting, and breeding. The boom and bust population cycles come out of those individual decisions.",
+    "status": "live",
+    "hook": "Booms, busts, and extinction",
+    "visible": true
+  },
+  {
+    "id": "double-pendulum",
+    "title": "Pendulum Chaos",
+    "category": "Physics",
+    "tags": [
+      "chaos",
+      "classical mechanics",
+      "dynamical systems"
+    ],
+    "difficulty": "Intermediate",
+    "description": "Release a hundred pendulums that differ by a tenth of a degree and watch them tear apart. The clearest demonstration that deterministic and predictable are not the same thing.",
+    "status": "live",
+    "hook": "Deterministic but unpredictable",
+    "visible": true
+  },
+  {
+    "id": "gravity",
+    "title": "N-Body Gravity",
+    "category": "Physics",
+    "tags": [
+      "mechanics",
+      "astronomy",
+      "chaos",
+      "orbits"
+    ],
+    "difficulty": "Beginner",
+    "description": "Newton's one rule, applied to everything at once. Build a star system, run the figure-eight, watch three bodies go chaotic, park a probe at a Lagrange point, or collide two galaxies.",
+    "status": "live",
+    "hook": "One law, many orbits",
+    "visible": true
+  },
+  {
+    "id": "optics-lens",
+    "title": "Lens & Image Formation",
+    "category": "Optics",
+    "tags": [
+      "optics",
+      "imaging",
+      "ray tracing",
+      "cameras"
+    ],
+    "difficulty": "Beginner",
+    "description": "An optical bench with real ray tracing. Move the object, the lens, and the sensor, and watch the image form. Aperture, focus error, blur circles, and spherical aberration, with a live view of what the sensor actually records.",
+    "status": "live",
+    "hook": "Trace rays, form an image",
+    "visible": false
+  },
+  {
+    "id": "epidemic",
+    "title": "Epidemic Spread (SIR)",
+    "category": "Social Dynamics",
+    "tags": [
+      "epidemiology",
+      "agent-based",
+      "public health"
+    ],
+    "difficulty": "Beginner",
+    "description": "Susceptible, infected, and recovered agents wander and mix. Change the infection rate and the recovery time to make an outbreak burn out or take off.",
+    "status": "live",
+    "hook": "One case to an outbreak",
+    "visible": false
+  },
+  {
+    "id": "traffic",
+    "title": "Traffic Jams",
+    "category": "Complex Systems",
+    "tags": [
+      "car-following",
+      "IDM",
+      "instability",
+      "transportation"
+    ],
+    "difficulty": "Intermediate",
+    "description": "One lane of road bent into a circle, where nothing can hold a car up except the car in front. Every driver follows the Intelligent Driver Model. Tap the brakes on one car and watch the wave outlive it, or pack the road until an ordinary wobble on the pedal is enough to stop it. Live space-time diagram, and self-driving cars to try to fix it.",
+    "status": "live",
+    "hook": "A brake tap becomes a wave",
+    "visible": true
+  },
+  {
+    "id": "lorenz",
+    "title": "Lorenz Attractor",
+    "category": "Physics",
+    "tags": [
+      "chaos",
+      "dynamical systems"
+    ],
+    "difficulty": "Intermediate",
+    "description": "The first picture of chaos anyone plotted. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate it, and release a swarm to watch identical starts come apart.",
+    "status": "live",
+    "hook": "The first picture of chaos",
+    "visible": false
+  },
+  {
+    "id": "turing-patterns",
+    "title": "Turing's Morphogenesis",
+    "category": "Emergent Systems",
+    "tags": [
+      "reaction-diffusion",
+      "biology",
+      "emergence",
+      "pattern formation"
+    ],
+    "difficulty": "Intermediate",
+    "description": "Natural patterns arising from a uniform, featureless start.",
+    "status": "live",
+    "hook": "Two chemicals, no blueprint",
+    "visible": true
+  },
+  {
+    "id": "hodgkin-huxley",
+    "title": "Hodgkin-Huxley Axon",
+    "category": "Physiology",
+    "tags": [
+      "neuroscience",
+      "electrophysiology",
+      "biology",
+      "ion channels"
+    ],
+    "difficulty": "Intermediate",
+    "description": "The 1952 squid axon equations, running live.",
+    "status": "live",
+    "hook": "How a nerve fires",
+    "visible": true
+  },
+  {
+    "id": "segregation",
+    "title": "Schelling's Segregation Model",
+    "category": "Social Dynamics",
+    "tags": [
+      "agent-based",
+      "sociology",
+      "emergence"
+    ],
+    "difficulty": "Intermediate",
+    "description": "Mild individual preferences about who lives next door are enough to segregate a whole city. A classic result in social science.",
+    "status": "live",
+    "hook": "Small preferences, split cities",
+    "visible": false
+  },
+  {
+    "id": "game-of-life",
+    "title": "Conway's Game of Life",
+    "category": "Emergent Systems",
+    "tags": [
+      "cellular automaton",
+      "emergence"
+    ],
+    "difficulty": "Beginner",
+    "description": "One rule about live and dead neighbours is enough to produce gliders, oscillators, and patterns that never settle down.",
+    "status": "live",
+    "hook": "Life from one rule",
+    "visible": false
+  },
+  {
+    "id": "pharmacokinetics",
+    "title": "Pharmacokinetics",
+    "category": "Physiology",
+    "tags": [
+      "medicine",
+      "compartment models",
+      "dosing"
+    ],
+    "difficulty": "Intermediate",
+    "description": "How the concentration of a drug in the body rises and falls over time, and what different dosing schedules do to that curve.",
+    "status": "coming-soon",
+    "hook": "Dose in, curve out",
+    "visible": false
+  }
+]
