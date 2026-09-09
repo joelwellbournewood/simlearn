@@ -123,7 +123,7 @@
 
   /* ---------- experiment presets ---------- */
   .presets{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
-  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);
+  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);
     border-radius:10px;background:transparent;text-align:left;color:var(--ink);cursor:pointer;
     font-family:var(--body);transition:border-color .18s, background .18s}
   .preset b{font-family:var(--display);font-weight:600;font-size:13px}
@@ -133,9 +133,9 @@
 
   /* ---------- "?" tooltips ---------- */
   .row{position:relative}
-  .row .nm{display:inline-flex;align-items:center;gap:6px}
+  .row .nm{display:inline-flex;align-items:center;gap:6px;font-weight:500}
   .tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;
-    color:var(--muted);font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;
+    color:var(--muted);font-family:var(--body);font-size:10px;font-weight:600;line-height:1;
     display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
   .tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
   .tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);
@@ -174,21 +174,46 @@
   .group{margin-top:12px}
   .group-title{
     display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;
-    font-size:13px;letter-spacing:.01em;text-transform:none;margin:0 0 4px
+    font-size:13px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;margin:0 0 4px
   }
+  .group-title{
+    cursor:pointer;list-style:none;justify-content:flex-start;font-size:16px;
+    padding:4px 0;margin:0;user-select:none
+  }
+  .group-title::-webkit-details-marker{display:none}
+  .group-title::after{
+    content:'';width:8px;height:8px;margin-left:auto;
+    border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;
+    opacity:.75;transform:rotate(-45deg);transition:transform .2s
+  }
+  details.group[open] > .group-title::after{transform:rotate(45deg)}
+  details.group[open] > .group-title{margin-bottom:6px}
+  .group.look .group-title{color:var(--ink)}
+  details.group{margin-top:12px}
+  details.group + details.group{border-top:1px solid var(--line);padding-top:6px}
   .group-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em;text-transform:none}
   .row{margin:13px 0}
   .row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;color:var(--ink);margin-bottom:6px}
-  .row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .row .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
   .row .hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
   input[type=range]{
-    -webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;
+    -webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;
     cursor:pointer;accent-color:var(--c);touch-action:pan-y
   }
-  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
-  input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--c);border:3px solid var(--panel);box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-9px}
-  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--c);border:3px solid var(--panel);box-shadow:0 1px 6px rgba(0,0,0,.5)}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--c,var(--accent)),var(--c,var(--accent))) 0/var(--p,0%) 100% no-repeat,rgba(255,255,255,.14);border:0}
+  input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
+  input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+  /* BOIDS PATTERN: the left column is a single panel and its sections are divided by a
+     hairline, not boxed one by one. Padding, heading size and gaps copy sims/boids. */
+  .card.stack{padding:0;overflow:hidden}
+  .card.stack > details.group{margin:0!important;padding:15px 18px;border-top:0!important;
+    border-bottom:1px solid var(--line)}
+  .card.stack > details.group:last-child{border-bottom:0}
+  .card.stack > details.group > .group-title{font-size:16px!important;margin:0!important;padding:0}
+  .card.stack > details.group[open] > .group-title{margin:0 0 12px!important}
+  .card.stack .presets{margin-top:0}
   .group.hare{--c:var(--hare)} .group.lynx{--c:var(--lynx)} .group.habitat{--c:#3fa066}
   .group.hare .group-title{color:var(--hare)}
   .group.lynx .group-title{color:var(--lynx)}
@@ -217,7 +242,7 @@
     h1{font-size:20px}
     .sub{font-size:12.5px;margin:5px 0 0}
     .layout{flex:1 1 auto;min-height:0;display:grid;
-            grid-template-columns:minmax(240px,272px) minmax(0,1fr) minmax(300px,340px);
+            grid-template-columns:minmax(300px,340px) minmax(0,1fr) minmax(240px,272px);
             gap:16px;align-items:stretch}
     .side{display:contents}
     .col-l{order:1} .col-c{order:2} .col-r{order:3}
@@ -245,10 +270,10 @@
     .expwrap{margin-top:14px}
     .group{display:block}
     .row{margin:4px 0}
-    .row label{font-size:11.5px}
+    .row label{font-size:13px}
     .row .hint{font-size:10.5px;line-height:1.32;margin-top:2px}
     .group{margin-top:9px}
-    .group-title{font-size:11px;margin-bottom:2px}
+    .group-title{font-size:15px;margin-bottom:3px}
     .card{margin-top:10px;padding:12px 13px}
     input[type=range]{margin:3px 0}
     details{margin-top:12px}
@@ -266,16 +291,18 @@
     .preset{padding:6px 10px}
     .preset b{font-size:12.5px}
     .preset small{font-size:11px;line-height:1.25}
-    /* the left column has to fit without a scrollbar (2026-09-06) */
+    /* the left column has to fit without a scrollbar (2026-09-06, retrimmed 2026-09-09) */
     .stat{padding:5px 8px}
-    .stat .v{font-size:15px}
+    .stat .v{font-size:14.5px}
+    .status{margin-top:8px}
     .about-btn{margin-bottom:6px}
     .transport{margin-top:6px}
     .card{margin-top:8px}
+    .card-head{margin-bottom:6px}
     .expwrap{margin-top:6px}
     .presets{gap:4px}
     .preset{padding:5px 9px}
-    #graph{max-height:112px}
+    #graph{max-height:88px}
   }
   /* cramped laptop heights: the hints are what overflow, so trade them for fit */
   /* inside the SimLearn player the title/description are already shown above us */
@@ -291,12 +318,12 @@
   @media (min-width:1061px) and (max-height:520px){
     .row .hint{display:none}
     .row{margin:5px 0}
-    .row label{font-size:11px}
+    .row label{font-size:12.5px}
     input[type=range]{margin:1px 0}
     .card .group-title .tag{display:none}
   }
   @media (min-width:1061px) and (max-width:1400px){
-    .layout{grid-template-columns:minmax(220px,252px) minmax(0,1fr) minmax(280px,310px);gap:12px}
+    .layout{grid-template-columns:minmax(280px,310px) minmax(0,1fr) minmax(220px,252px);gap:12px}
   }
   @media (max-width:1060px){
     body{max-width:720px}
@@ -307,6 +334,7 @@
     .field-wrap{margin-top:0}
     #field{width:100%;height:auto;max-width:100%;display:block}
     .col-l,.col-r{max-height:none;overflow:visible}
+    .col-r{order:0} .col-l{order:1}
     /* inside the SimLearn player the page already has a title bar */
     .in-frame header,.in-frame footer{display:none}
     /* With no header above it the field is the first thing in the frame, so dropping the
@@ -365,9 +393,9 @@
     .preset b{font-size:12.5px}
     .preset small{font-size:11px;line-height:1.25}
     .group{display:block;margin-top:8px}
-    .group-title{font-size:11px;margin-bottom:2px}
+    .group-title{font-size:15px;margin-bottom:3px}
     .row{margin:4px 0}
-    .row label{font-size:11.5px}
+    .row label{font-size:13px}
     .row .hint{display:none}
     input[type=range]{margin:2px 0}
     details{margin-top:10px}
@@ -539,6 +567,86 @@
        everywhere else it is display:contents and the columns lay out as before. -->
   <div class="side">
   <div class="col col-l">
+<div class="card stack">
+  <details class="group presets-group" open>
+  <summary class="group-title">Presets</summary>
+  <div class="presets" id="chips">
+    <button class="preset" data-p="balance" aria-pressed="true"><b>Balanced cycle</b><small>Textbook out-of-phase oscillation</small></button>
+    <button class="preset" data-p="boom" aria-pressed="false"><b>Boom &amp; bust</b><small>Fast breeders overshoot their food</small></button>
+    <button class="preset" data-p="enrich" aria-pressed="false"><b>Paradox of enrichment</b><small>More grass, wilder swings</small></button>
+    <button class="preset" data-p="overhunt" aria-pressed="false"><b>Overhunting collapse</b><small>Too many lynx, too good at it</small></button>
+    <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
+  </div>
+  </details>
+  <details class="group hare">
+    <summary class="group-title">Hares</summary>
+    <div class="row">
+      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
+      <input type="range" id="s_startHare" min="0" max="400" step="5" value="120">
+    </div>
+    <div class="row">
+      <label for="s_hareBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed hare reproduces.">?</span></span><span class="val" id="v_hareBirth"></span></label>
+      <input type="range" id="s_hareBirth" min="0" max="15" step="1" value="4">
+    </div>
+    <div class="row">
+      <label for="s_grassEnergy"><span class="nm">Energy from grass<span class="tip" role="button" tabindex="0" aria-label="What energy from grass means" data-tip="Food value of one grazed patch.">?</span></span><span class="val" id="v_grassEnergy"></span></label>
+      <input type="range" id="s_grassEnergy" min="1" max="12" step="1" value="4">
+    </div>
+    <div class="row">
+      <label for="s_hareVision"><span class="nm">Eyesight<span class="tip" role="button" tabindex="0" aria-label="What eyesight means" data-tip="How far hares spot grass to graze and lynx to flee.">?</span></span><span class="val" id="v_hareVision"></span></label>
+      <input type="range" id="s_hareVision" min="1" max="6" step="1" value="3">
+    </div>
+  </details>
+
+  <!-- LYNX -->
+  <details class="group lynx">
+    <summary class="group-title">Lynx</summary>
+    <div class="row">
+      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
+      <input type="range" id="s_startLynx" min="0" max="150" step="2" value="28">
+    </div>
+    <div class="row">
+      <label for="s_lynxBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed lynx reproduces.">?</span></span><span class="val" id="v_lynxBirth"></span></label>
+      <input type="range" id="s_lynxBirth" min="0" max="15" step="1" value="5">
+    </div>
+    <div class="row">
+      <label for="s_preyEnergy"><span class="nm">Energy from a kill<span class="tip" role="button" tabindex="0" aria-label="What energy from a kill means" data-tip="Food value of catching one hare.">?</span></span><span class="val" id="v_preyEnergy"></span></label>
+      <input type="range" id="s_preyEnergy" min="5" max="40" step="1" value="20">
+    </div>
+    <div class="row">
+      <label for="s_lynxVision"><span class="nm">Hunting range<span class="tip" role="button" tabindex="0" aria-label="What hunting range means" data-tip="How far lynx detect and chase hares.">?</span></span><span class="val" id="v_lynxVision"></span></label>
+      <input type="range" id="s_lynxVision" min="1" max="8" step="1" value="4">
+    </div>
+  </details>
+
+  <!-- HABITAT -->
+  <details class="group habitat">
+    <summary class="group-title">Habitat</summary>
+    <div class="row">
+      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back. This sets the land's carrying capacity.">?</span></span><span class="val" id="v_plant"></span></label>
+      <input type="range" id="s_plant" min="1" max="10" step="1" value="6">
+    </div>
+    <div class="row">
+      <label for="s_metab"><span class="nm">Metabolic cost<span class="tip" role="button" tabindex="0" aria-label="What metabolic cost means" data-tip="Energy every animal burns each step just to stay alive.">?</span></span><span class="val" id="v_metab"></span></label>
+      <input type="range" id="s_metab" min="0.5" max="2.5" step="0.1" value="1">
+    </div>
+  </details>
+  <details class="group look">
+  <summary class="group-title">Look</summary>
+  <div class="pals" id="pals"></div>
+  <div class="swatches">
+    <label class="sw-item"><span>Predator</span><input type="color" id="swPred" aria-label="Predator colour"></label>
+    <label class="sw-item"><span>Prey</span><input type="color" id="swPrey" aria-label="Prey colour"></label>
+    <label class="sw-item"><span>Grass</span><input type="color" id="swGrass" aria-label="Grass colour"></label>
+    <label class="sw-item"><span>Background</span><input type="color" id="swBg" aria-label="Background colour"></label>
+  </div>
+  <div class="pal-row">
+    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="false"><span class="ramp"></span>Brightness by energy</button>
+  </div>
+  </details>
+</div>
+  </div>
+  <div class="col col-r">
 <button class="about-btn" id="btnAbout" aria-haspopup="dialog">What am I looking at?</button>
 <div class="status">
   <div class="stat"><div class="k"><span class="dot h"></span>Hares</div><div class="v h" id="cHare">0</div></div>
@@ -566,92 +674,6 @@
     </div>
   </div>
   <canvas id="graph"></canvas>
-</div>
-<div class="expwrap">
-<div class="card">
-  <div class="card-head"><span class="label">Try an experiment</span></div>
-  <div class="presets" id="chips">
-    <button class="preset" data-p="balance" aria-pressed="true"><b>Balanced cycle</b><small>Textbook out-of-phase oscillation</small></button>
-    <button class="preset" data-p="boom" aria-pressed="false"><b>Boom &amp; bust</b><small>Fast breeders overshoot their food</small></button>
-    <button class="preset" data-p="enrich" aria-pressed="false"><b>Paradox of enrichment</b><small>More grass, wilder swings</small></button>
-    <button class="preset" data-p="overhunt" aria-pressed="false"><b>Overhunting collapse</b><small>Too many lynx, too good at it</small></button>
-    <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
-  </div>
-</div>
-</div>
-  </div>
-  <div class="col col-r">
-<div class="card">
-  <!-- HARE -->
-  <div class="group hare">
-    <p class="group-title">Hares <span class="tag">prey · herbivore</span></p>
-    <div class="row">
-      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
-      <input type="range" id="s_startHare" min="0" max="400" step="5" value="120">
-    </div>
-    <div class="row">
-      <label for="s_hareBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed hare reproduces.">?</span></span><span class="val" id="v_hareBirth"></span></label>
-      <input type="range" id="s_hareBirth" min="0" max="15" step="1" value="4">
-    </div>
-    <div class="row">
-      <label for="s_grassEnergy"><span class="nm">Energy from grass<span class="tip" role="button" tabindex="0" aria-label="What energy from grass means" data-tip="Food value of one grazed patch.">?</span></span><span class="val" id="v_grassEnergy"></span></label>
-      <input type="range" id="s_grassEnergy" min="1" max="12" step="1" value="4">
-    </div>
-    <div class="row">
-      <label for="s_hareVision"><span class="nm">Eyesight<span class="tip" role="button" tabindex="0" aria-label="What eyesight means" data-tip="How far hares spot grass to graze and lynx to flee.">?</span></span><span class="val" id="v_hareVision"></span></label>
-      <input type="range" id="s_hareVision" min="1" max="6" step="1" value="3">
-    </div>
-  </div>
-
-  <!-- LYNX -->
-  <div class="group lynx">
-    <p class="group-title">Lynx <span class="tag">predator · carnivore</span></p>
-    <div class="row">
-      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Applies on Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
-      <input type="range" id="s_startLynx" min="0" max="150" step="2" value="28">
-    </div>
-    <div class="row">
-      <label for="s_lynxBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed lynx reproduces.">?</span></span><span class="val" id="v_lynxBirth"></span></label>
-      <input type="range" id="s_lynxBirth" min="0" max="15" step="1" value="5">
-    </div>
-    <div class="row">
-      <label for="s_preyEnergy"><span class="nm">Energy from a kill<span class="tip" role="button" tabindex="0" aria-label="What energy from a kill means" data-tip="Food value of catching one hare.">?</span></span><span class="val" id="v_preyEnergy"></span></label>
-      <input type="range" id="s_preyEnergy" min="5" max="40" step="1" value="20">
-    </div>
-    <div class="row">
-      <label for="s_lynxVision"><span class="nm">Hunting range<span class="tip" role="button" tabindex="0" aria-label="What hunting range means" data-tip="How far lynx detect and chase hares.">?</span></span><span class="val" id="v_lynxVision"></span></label>
-      <input type="range" id="s_lynxVision" min="1" max="8" step="1" value="4">
-    </div>
-  </div>
-
-  <!-- HABITAT -->
-  <div class="group habitat">
-    <p class="group-title">Habitat <span class="tag">environment</span></p>
-    <div class="row">
-      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back. This sets the land's carrying capacity.">?</span></span><span class="val" id="v_plant"></span></label>
-      <input type="range" id="s_plant" min="1" max="10" step="1" value="6">
-    </div>
-    <div class="row">
-      <label for="s_metab"><span class="nm">Metabolic cost<span class="tip" role="button" tabindex="0" aria-label="What metabolic cost means" data-tip="Energy every animal burns each step just to stay alive.">?</span></span><span class="val" id="v_metab"></span></label>
-      <input type="range" id="s_metab" min="0.5" max="2.5" step="0.1" value="1">
-    </div>
-  </div>
-</div>
-<div class="card">
-  <div class="card-head">
-    <span class="label">Colour palette</span>
-    <span class="tip" role="button" tabindex="0" aria-label="What the colour palette does" data-tip="A look-up table for the field and the graph. It repaints grass, hares, and lynx and nothing else: every number, rule, and random draw is untouched, so the run carries on exactly as it was.">?</span>
-  </div>
-  <div class="pals" id="pals"></div>
-  <div class="swatches">
-    <label class="sw-item"><span>Predator</span><input type="color" id="swPred" aria-label="Predator colour"></label>
-    <label class="sw-item"><span>Prey</span><input type="color" id="swPrey" aria-label="Prey colour"></label>
-    <label class="sw-item"><span>Grass</span><input type="color" id="swGrass" aria-label="Grass colour"></label>
-    <label class="sw-item"><span>Background</span><input type="color" id="swBg" aria-label="Background colour"></label>
-  </div>
-  <div class="pal-row">
-    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="false"><span class="ramp"></span>Brightness by energy<span class="tip" role="button" tabindex="0" aria-label="What brightness by energy does" data-tip="Each animal is drawn darker or lighter according to how much energy it is carrying, from nearly black when it is a step from starving to pale when it is full and ready to breed. Drawing only: no rule, rate, or random draw changes.">?</span></button>
-  </div>
 </div>
   </div>
   </div>
@@ -1013,8 +1035,8 @@
      gains light that is not there. The top band is lifted a little towards white because a
      saturated colour runs out of headroom before it looks full. */
   function brightBand(base, t){
-    if(t<=0.78){ const f=0.34+0.66*(t/0.78); return mix('#000000', base, f); }
-    return mix(base, '#ffffff', (t-0.78)/0.22*0.42);
+    if(t<=0.78){ const f=0.13+0.87*(t/0.78); return mix('#000000', base, f); }
+    return mix(base, '#ffffff', (t-0.78)/0.22*0.55);
   }
   function buildRamps(){
     hareRamp=[]; lynxRamp=[];
@@ -1052,11 +1074,14 @@
     if(energyOn){
       eTops();
       for(let b=0;b<EBINS;b++){
+        /* brightness AND size, because brightness alone was easy to miss: a starving
+           hare is a small dark speck and a full one is a fat pale dot. Drawing only. */
+        const t=b/(EBINS-1), hr=HARE_R*(0.62+0.58*t);
         fctx.fillStyle = hareRamp[b];
         fctx.beginPath(); let any=false;
         for(let i=0;i<hares.length;i++){
           const h=hares[i]; if(ebin(h.e,eTopH)!==b) continue; any=true;
-          fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU);
+          fctx.moveTo(h.x+hr,h.y); fctx.arc(h.x,h.y,hr,0,TAU);
         }
         if(any) fctx.fill();
       }
@@ -1066,13 +1091,14 @@
       for(let i=0;i<hares.length;i++){ const h=hares[i]; fctx.moveTo(h.x+HARE_R,h.y); fctx.arc(h.x,h.y,HARE_R,0,TAU); }
       fctx.fill();
     }
-    /* lynx - a lean directional dart. Deliberately minimal: two batched fills, no
-       outline, no eyes, no tail. The shape alone says predator and says heading, and
-       it stays legible down to a few pixels where the old cat silhouette turned to mush.
-       Do not add per-lynx strokes here; at 900 lynx that is 900 extra path segments. */
+    /* lynx - a cat's head, and nothing more: a chin, two cheeks, and two pointy ears
+       drawn as slim tufted spikes. Twelve straight points, no curves, no eyes, no tail,
+       so the whole population is still a handful of batched paths. The ears point the
+       way the animal is heading. Keep it this simple: every extra vertex is paid for
+       nine hundred times over. */
     const R = LYNX_R;
     /* soft halo so the hunters read as hot points against the field. Drawn in both modes
-       and at a constant strength, so brightness alone carries the energy. */
+       and at a constant strength, so the brightness of the head carries the energy. */
     {
       fctx.fillStyle = LYNX_HALO;
       fctx.beginPath();
@@ -1082,27 +1108,40 @@
       }
       fctx.fill();
     }
-    // the dart itself
-    const dart = (l)=>{
-      const c=Math.cos(l.dir), s=Math.sin(l.dir);
-      const X=(u,v)=> l.x + u*c - v*s, Y=(u,v)=> l.y + u*s + v*c;
-      fctx.moveTo(X( R*1.60, 0),        Y( R*1.60, 0));
-      fctx.lineTo(X(-R*0.78,  R*0.82),  Y(-R*0.78,  R*0.82));
-      fctx.lineTo(X(-R*0.30, 0),        Y(-R*0.30, 0));
-      fctx.lineTo(X(-R*0.78, -R*0.82),  Y(-R*0.78, -R*0.82));
+    // the head itself
+    const CATP=[[-1.05,0],[-0.55,0.85],[0.30,0.95],[0.55,1.02],[1.45,1.70],[1.05,0.60],
+                [0.70,0],[1.05,-0.60],[1.45,-1.70],[0.55,-1.02],[0.30,-0.95],[-0.55,-0.85]];
+    const dart = (l,k)=>{
+      const c=Math.cos(l.dir), s=Math.sin(l.dir), q=R*0.86*(k||1);
+      for(let j=0;j<12;j++){
+        const u=CATP[j][0]*q, v=CATP[j][1]*q;
+        const x=l.x + u*c - v*s, y=l.y + u*s + v*c;
+        if(j===0) fctx.moveTo(x,y); else fctx.lineTo(x,y);
+      }
       fctx.closePath();
     };
     if(energyOn){
+      fctx.lineJoin='round';
       for(let b=0;b<EBINS;b++){
+        const t=b/(EBINS-1);
         fctx.fillStyle = lynxRamp[b];
         fctx.beginPath(); let any=false;
-        for(let i=0;i<lynx.length;i++){ const l=lynx[i]; if(ebin(l.e,eTopL)!==b) continue; any=true; dart(l); }
-        if(any) fctx.fill();
+        for(let i=0;i<lynx.length;i++){ const l=lynx[i]; if(ebin(l.e,eTopL)!==b) continue; any=true; dart(l, 0.76+0.40*t); }
+        if(any){
+          fctx.fill();
+          /* the outline is what keeps a starving lynx findable. The fill runs almost to
+             black at the bottom of the ramp, so the darker the animal the stronger its
+             edge: the head stays clearly drawn the whole way down the fade. One stroke
+             per band, not one per animal. */
+          fctx.strokeStyle=hexa(PAL.lynx, 0.92-0.74*t);
+          fctx.lineWidth=Math.max(0.7, R*0.17);
+          fctx.stroke();
+        }
       }
     } else {
       fctx.fillStyle = PAL.lynx;
       fctx.beginPath();
-      for(let i=0;i<lynx.length;i++) dart(lynx[i]);
+      for(let i=0;i<lynx.length;i++) dart(lynx[i],1);
       fctx.fill();
     }
     // vignette
@@ -1339,7 +1378,7 @@
     window.setPalette=function(k){
       const p=PALETTES[k]; if(!p) return;
       PAL=Object.assign({},p); PAL.grass=p.grass.slice(); palKey=k;
-      applyLook(); syncPickers();
+    applyLook(); syncPickers();
       [...wrap.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pal===k)));
     };
     /* one picked colour edits the live palette and leaves every other colour alone */
@@ -1363,6 +1402,7 @@
       if(e.target.classList.contains('tip')) return;
       setEnergyColour(!energyOn);
     });
+    setEnergyColour(false);
     applyLook(); syncPickers();
   })();
 
@@ -1447,5 +1487,16 @@
 </script>
 <script src="../../assets/js/explainer.js" defer></script>
 <script src="../../assets/js/colorpop.js?v=20260909a"></script>
+<script>/* harmonised sliders: keep --p in step with the value, boids style */
+(function(){function u(r){var mn=parseFloat(r.min===''?0:r.min),mx=parseFloat(r.max===''?100:r.max),v=parseFloat(r.value);
+if(!isFinite(mn)||!isFinite(mx)||!isFinite(v)||mx===mn)return;var p=(v-mn)/(mx-mn);p=p<0?0:p>1?1:p;
+r.style.setProperty('--p',(p*100).toFixed(2)+'%')}
+function all(){var l=document.querySelectorAll('input[type=range]');for(var i=0;i<l.length;i++)u(l[i])}
+function tap(e){if(e.target&&e.target.type==='range')u(e.target);else setTimeout(all,0)}
+addEventListener('input',tap,true);addEventListener('change',tap,true);
+addEventListener('click',function(){setTimeout(all,0)},true);
+addEventListener('keyup',function(){setTimeout(all,0)},true);
+document.addEventListener('DOMContentLoaded',all);addEventListener('load',all);
+setTimeout(all,150);setTimeout(all,800);})();</script>
 </body>
 </html>
