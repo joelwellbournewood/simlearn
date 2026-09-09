@@ -123,7 +123,7 @@
 
   /* ---------- experiment presets ---------- */
   .presets{display:grid;grid-template-columns:1fr;gap:6px;margin-top:6px}
-  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--line);
+  .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);
     border-radius:10px;background:transparent;text-align:left;color:var(--ink);cursor:pointer;
     font-family:var(--body);transition:border-color .18s, background .18s}
   .preset b{font-family:var(--display);font-weight:600;font-size:13px}
@@ -133,9 +133,9 @@
 
   /* ---------- "?" tooltips ---------- */
   .row{position:relative}
-  .row .nm{display:inline-flex;align-items:center;gap:6px}
+  .row .nm{display:inline-flex;align-items:center;gap:6px;font-weight:500}
   .tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;
-    color:var(--muted);font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;
+    color:var(--muted);font-family:var(--body);font-size:10px;font-weight:600;line-height:1;
     display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
   .tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
   .tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);
@@ -174,17 +174,17 @@
   .group{margin-top:12px}
   .group-title{
     display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;
-    font-size:13px;letter-spacing:.01em;text-transform:none;margin:0 0 4px
+    font-size:13px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;margin:0 0 4px
   }
   .group-title{
-    cursor:pointer;list-style:none;justify-content:flex-start;font-size:15px;
+    cursor:pointer;list-style:none;justify-content:flex-start;font-size:16px;
     padding:4px 0;margin:0;user-select:none
   }
   .group-title::-webkit-details-marker{display:none}
   .group-title::after{
-    content:'';width:7px;height:7px;margin-left:auto;
+    content:'';width:8px;height:8px;margin-left:auto;
     border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;
-    opacity:.65;transform:rotate(-45deg);transition:transform .2s
+    opacity:.75;transform:rotate(-45deg);transition:transform .2s
   }
   details.group[open] > .group-title::after{transform:rotate(45deg)}
   details.group[open] > .group-title{margin-bottom:6px}
@@ -194,16 +194,17 @@
   .group-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em;text-transform:none}
   .row{margin:13px 0}
   .row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;color:var(--ink);margin-bottom:6px}
-  .row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .row .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
   .row .hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
   input[type=range]{
-    -webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;
+    -webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;
     cursor:pointer;accent-color:var(--c);touch-action:pan-y
   }
-  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
-  input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--c);border:3px solid var(--panel);box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-9px}
-  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--c);border:3px solid var(--panel);box-shadow:0 1px 6px rgba(0,0,0,.5)}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--c,var(--accent)),var(--c,var(--accent))) 0/var(--p,0%) 100% no-repeat,rgba(255,255,255,.14);border:0}
+  input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
+  input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
   .group.hare{--c:var(--hare)} .group.lynx{--c:var(--lynx)} .group.habitat{--c:#3fa066}
   .group.hare .group-title{color:var(--hare)}
   .group.lynx .group-title{color:var(--lynx)}
@@ -260,10 +261,10 @@
     .expwrap{margin-top:14px}
     .group{display:block}
     .row{margin:4px 0}
-    .row label{font-size:11.5px}
+    .row label{font-size:13px}
     .row .hint{font-size:10.5px;line-height:1.32;margin-top:2px}
     .group{margin-top:9px}
-    .group-title{font-size:11px;margin-bottom:2px}
+    .group-title{font-size:15px;margin-bottom:3px}
     .card{margin-top:10px;padding:12px 13px}
     input[type=range]{margin:3px 0}
     details{margin-top:12px}
@@ -308,7 +309,7 @@
   @media (min-width:1061px) and (max-height:520px){
     .row .hint{display:none}
     .row{margin:5px 0}
-    .row label{font-size:11px}
+    .row label{font-size:12.5px}
     input[type=range]{margin:1px 0}
     .card .group-title .tag{display:none}
   }
@@ -382,9 +383,9 @@
     .preset b{font-size:12.5px}
     .preset small{font-size:11px;line-height:1.25}
     .group{display:block;margin-top:8px}
-    .group-title{font-size:11px;margin-bottom:2px}
+    .group-title{font-size:15px;margin-bottom:3px}
     .row{margin:4px 0}
-    .row label{font-size:11.5px}
+    .row label{font-size:13px}
     .row .hint{display:none}
     input[type=range]{margin:2px 0}
     details{margin-top:10px}
@@ -1466,5 +1467,16 @@
 </script>
 <script src="../../assets/js/explainer.js" defer></script>
 <script src="../../assets/js/colorpop.js?v=20260909a"></script>
+<script>/* harmonised sliders: keep --p in step with the value, boids style */
+(function(){function u(r){var mn=parseFloat(r.min===''?0:r.min),mx=parseFloat(r.max===''?100:r.max),v=parseFloat(r.value);
+if(!isFinite(mn)||!isFinite(mx)||!isFinite(v)||mx===mn)return;var p=(v-mn)/(mx-mn);p=p<0?0:p>1?1:p;
+r.style.setProperty('--p',(p*100).toFixed(2)+'%')}
+function all(){var l=document.querySelectorAll('input[type=range]');for(var i=0;i<l.length;i++)u(l[i])}
+function tap(e){if(e.target&&e.target.type==='range')u(e.target);else setTimeout(all,0)}
+addEventListener('input',tap,true);addEventListener('change',tap,true);
+addEventListener('click',function(){setTimeout(all,0)},true);
+addEventListener('keyup',function(){setTimeout(all,0)},true);
+document.addEventListener('DOMContentLoaded',all);addEventListener('load',all);
+setTimeout(all,150);setTimeout(all,800);})();</script>
 </body>
 </html>

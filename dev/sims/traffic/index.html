@@ -41,8 +41,8 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .icon-btn .alt{display:none}
 .icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
-.panel{position:absolute;left:20px;top:106px;width:304px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
-  background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:13px}
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:16px;padding:14px 17px}
 .panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .p-toggle{display:none}
 .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
@@ -50,33 +50,33 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
   border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
 .about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
 #row-truck[hidden]{display:none}
-.label{font-family:var(--display);font-weight:600;font-size:14.5px;letter-spacing:.01em;text-transform:none;color:var(--ink);margin:13px 0 6px}
+.label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:13px 0 6px}
 .label:first-of-type{margin-top:0}
 .presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
   background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
 .preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
-.preset small{color:var(--muted);font-size:11px;line-height:1.25}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
 .preset:hover{border-color:var(--line-strong)}
 .preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
 .row{position:relative;margin:10px 0}
 .row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:2px}
-.row .nm{display:inline-flex;align-items:center;gap:6px}
-.row .val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.row .nm{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.row .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
-  font-family:var(--mono);font-size:10px;font-weight:700;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+  font-family:var(--body);font-size:10px;font-weight:600;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
 .tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
 .tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
   background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
   opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
   font-family:var(--body);letter-spacing:normal;text-transform:none}
 .tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer;margin:0}
-input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
-  background:var(--accent);border:3px solid #0f1f1a;box-shadow:0 1px 6px rgba(0,0,0,.5);margin-top:-8px}
-input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line)}
-input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid #0f1f1a}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--c,var(--accent)),var(--c,var(--accent))) 0/var(--p,0%) 100% no-repeat,rgba(255,255,255,.14);border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
+input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
+input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
 .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
 .seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
 .seg button:hover{border-color:var(--line-strong);color:var(--ink)}
@@ -286,7 +286,7 @@ body.clean .tapwrap{display:none}
 <p>Because the instability belongs to the collective response, a minority of vehicles running a different control law can stabilise the whole platoon. Stern et al. (2018) repeated the ring experiment with twenty-one human drivers and one autonomous vehicle running a controller designed to damp waves, and the stop-and-go oscillations were substantially suppressed, with measured reductions in fuel consumption for every vehicle on the ring. The <b>self-driving cars</b> slider is that result. The mechanism is that a controller which refuses to over-brake, and which holds its own speed steady instead of tracking the car in front exactly, breaks the amplification chain. Real deployments complicate the picture, because many production adaptive cruise control systems are tuned for comfort at short headways and have been measured to be string-unstable themselves, so the cars already on the road are not yet the cars in this slider.</p>
 
 <h3>Limits of the model</h3>
-<p>The default road is a single lane with no junctions, so there is no bottleneck of the kind that fixes where real jams form. Switching the second lane on adds overtaking under the MOBIL rule, in which a driver pulls out when it helps them more than it costs the driver they move in front of, and never when it would force that driver to brake hard. Both lanes are treated as the same length, which a real pair of concentric lanes is not, and stretching the ring changes the length of the loop and the speed a car can hold through a bend, and nothing else about the driving. Every vehicle is identical apart from the ones you convert, and no driver makes a mistake beyond the wobble the model imposes. There is no explicit reaction-time delay either, so the lag that drives real instability enters only through the shape of the equation. A ring road is a laboratory device for holding a closed platoon at a fixed density, and a real network behaves differently in ways that matter for planning. The numbers used here sit in the right physical range without being calibrated to any particular road.</p>
+<p>The default road is a single lane with no junctions, so there is no bottleneck of the kind that fixes where real jams form. Switching the second lane on adds overtaking under the MOBIL rule, in which a driver pulls out when it helps them more than it costs the driver they move in front of, and never when it would force that driver to brake hard. The truck is the exception, and it never changes lane at all, because a slow heavy vehicle keeps to the inside and gets passed, which is also what lane discipline laws require of it on most motorways. Both lanes are treated as the same length, which a real pair of concentric lanes is not, and stretching the ring changes the length of the loop and the speed a car can hold through a bend, and nothing else about the driving. Every vehicle is identical apart from the ones you convert, and no driver makes a mistake beyond the wobble the model imposes. There is no explicit reaction-time delay either, so the lag that drives real instability enters only through the shape of the equation. A ring road is a laboratory device for holding a closed platoon at a fixed density, and a real network behaves differently in ways that matter for planning. The numbers used here sit in the right physical range without being calibrated to any particular road.</p>
 
 <h3>References</h3>
 <ul class="refs">
@@ -436,7 +436,20 @@ function build(){
    would be both and the automated control law would hand it a car's cruising speed. */
 function applyKinds(){
   for(let i=0;i<cars.length;i++){ cars[i].truck=false; cars[i].av=false; }
-  if(truckOn && cars.length) cars[0].truck=true;
+  if(truckOn && cars.length){
+    cars[0].truck=true;
+    /* keep the truck in the inside lane; only slide it across if the slot is empty,
+       so switching the toggle mid-run can never drop it on top of another vehicle */
+    if(lanes===2 && cars[0].lane!==0){
+      let clear=true;
+      for(let j=1;j<cars.length;j++){
+        if(cars[j].lane!==0) continue;
+        let d=Math.abs(cars[j].x-cars[0].x); d=Math.min(d,L-d);
+        if(d<CARLEN*1.6){ clear=false; break; }
+      }
+      if(clear) cars[0].lane=0;
+    }
+  }
   for(let i=0;i<cars.length;i++) if(!cars[i].truck) cars[i].av=((i*97)%100)<AVpct;
 }
 function pOf(c){
@@ -477,6 +490,9 @@ function mobil(ord){
     const cur=ord[li], oth=ord[1-li];
     for(let i=0;i<cur.length;i++){
       const c=cur[i];
+      /* the truck holds its lane: heavy vehicles keep to the inside and are overtaken,
+         they do not weave, and the point of the two-lane road is watching cars pass it */
+      if(c.truck) continue;
       const lead=cur.length>1?cur[(i+1)%cur.length]:null;
       const back=cur.length>1?cur[(i-1+cur.length)%cur.length]:null;
       const nb=around(oth,c.x);
@@ -614,6 +630,7 @@ window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:ST
   vmin:TRACK.vlim?Math.min.apply(null,Array.from(TRACK.vlim)):null,
   meanv:cars.length?cars.reduce((a,c)=>a+c.v,0)/cars.length:0,
   avn:cars.filter(c=>c.av).length, truckn:cars.filter(c=>c.truck).length,
+  trucklane:(cars.find(c=>c.truck)||{lane:-1}).lane,
   bothn:cars.filter(c=>c.av&&c.truck).length,
   truckv:(cars.find(c=>c.truck)||{}).v, V0:V0, truckSpeed:truckSpeed, AVpct:AVpct};};
 function pushRow(){
@@ -931,5 +948,16 @@ else requestAnimationFrame(loop);
 })();
 </script>
 <script src="../../assets/js/explainer.js" defer></script>
+<script>/* harmonised sliders: keep --p in step with the value, boids style */
+(function(){function u(r){var mn=parseFloat(r.min===''?0:r.min),mx=parseFloat(r.max===''?100:r.max),v=parseFloat(r.value);
+if(!isFinite(mn)||!isFinite(mx)||!isFinite(v)||mx===mn)return;var p=(v-mn)/(mx-mn);p=p<0?0:p>1?1:p;
+r.style.setProperty('--p',(p*100).toFixed(2)+'%')}
+function all(){var l=document.querySelectorAll('input[type=range]');for(var i=0;i<l.length;i++)u(l[i])}
+function tap(e){if(e.target&&e.target.type==='range')u(e.target);else setTimeout(all,0)}
+addEventListener('input',tap,true);addEventListener('change',tap,true);
+addEventListener('click',function(){setTimeout(all,0)},true);
+addEventListener('keyup',function(){setTimeout(all,0)},true);
+document.addEventListener('DOMContentLoaded',all);addEventListener('load',all);
+setTimeout(all,150);setTimeout(all,800);})();</script>
 </body>
 </html>
