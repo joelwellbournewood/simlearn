@@ -874,8 +874,11 @@ class Flock {
         const k = force * 3;
         if (x < lo0 + margin) S[0] += k * (1 - (x - lo0) / margin);
         else if (x > hi0 - margin) S[0] -= k * (1 - (hi0 - x) / margin);
-        if (y < lo1 + margin) S[1] += k * (1 - (y - lo1) / margin);
-        else if (y > hi1 - margin) S[1] -= k * (1 - (hi1 - y) / margin);
+        /* in 3D the sky's floor and ceiling get a tenth of the height, never the flat
+           150 units the roost rule asks for, which on a 900-unit sky was a third of it */
+        const my = is3 ? Math.min(margin, s1 * 0.10) : margin;
+        if (y < lo1 + my) S[1] += k * (1 - (y - lo1) / my);
+        else if (y > hi1 - my) S[1] -= k * (1 - (hi1 - y) / my);
         if (is3) {
           if (z < lo2 + margin) S[2] += k * (1 - (z - lo2) / margin);
           else if (z > hi2 - margin) S[2] -= k * (1 - (hi2 - z) / margin);
@@ -1030,8 +1033,17 @@ class Flock {
 
       }
       if (imp[i] > 0) { imp[i] -= dt; const k = maxForce * 2.5; S[0] += impX[i] * k; S[1] += impY[i] * k; S[2] += impZ[i] * k; }
-      // preference for level flight: a soft, lightly damped spring toward the flock's own altitude, so the sheet can tilt and fold in turns
-      if (level > 0) S[1] += (meanY - y) * 0.002 * level - vy0 * 0.03 * level;
+      /* Altitude. This used to be a spring toward the flock's own mean height, which
+         pinned the whole murmuration onto a single horizontal sheet in the middle of the
+         sky. Now the middle eight tenths of the volume are free and a bird is only pushed
+         back inside the top and bottom tenth, with a whisper of damping so it settles into
+         a glide rather than porpoising. */
+      if (level > 0) {
+        const band = s1 * 0.10;
+        if (y < lo1 + band) S[1] += level * maxForce * 2.4 * (1 - (y - lo1) / band);
+        else if (y > lo1 + s1 - band) S[1] -= level * maxForce * 2.4 * (1 - (lo1 + s1 - y) / band);
+        S[1] -= vy0 * 0.004 * level;
+      }
       if (jitter > 0) { const jf = jitter * maxForce * 2; S[0] += (rand() - 0.5) * jf; S[1] += (rand() - 0.5) * jf; if (is3) S[2] += (rand() - 0.5) * jf; }
       const nsp = integrate(i, vx0, vy0, vz0, maxSpeed, minSpeed);
       {  // how sharply this boid just turned (sin of the heading change), used for startle and banking
@@ -1506,9 +1518,12 @@ class View3D {
     this.pAxis = 1; this.pVal = 0; this.pSnap = true;
     this.pn = new THREE.Vector3(); this.pp = new THREE.Vector3();
     this.placeGroup = new THREE.Group(); this.placeGroup.visible = false; this.scene.add(this.placeGroup);
-    this.placeGrid = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.17, depthWrite: false }));
-    this.placeFill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false }));
-    this.placeCross = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x56e0c2, transparent: true, opacity: 0.6, depthWrite: false }));
+    /* maroon, not the teal accent: the plane is scaffolding for placing a thing, and it
+       should not read as part of the flock's own palette. Slightly higher opacities than
+       the teal had, because a dark red carries less against a dark sky. */
+    this.placeGrid = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x8c2b3f, transparent: true, opacity: 0.30, depthWrite: false }));
+    this.placeFill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x6d1f2f, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
+    this.placeCross = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xb03a52, transparent: true, opacity: 0.9, depthWrite: false }));
     this.placeCross.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(60), 3));
     this.placeCross.geometry.setDrawRange(0, 0);
     this.placeGroup.add(this.placeGrid, this.placeFill, this.placeCross);

@@ -190,10 +190,8 @@ body.slogan-js .hero h1{cursor:default}
 .card-art .fill2{fill:var(--accent-2);stroke:none}
 /* Card art. Every glyph carries its own small idle animation; the per-sim keyframes
    are emitted by main.js inside each card's <svg>. These are the shared ones. */
-.card-art .g-drift{animation:drift 2.9s ease-in-out infinite alternate}
-.card-art .g-chase{animation:chase 3.9s ease-in-out infinite alternate}
-@keyframes drift{to{transform:translateX(7px)}}
-@keyframes chase{to{transform:translateX(14px)}}
+/* drift and chase are gone: the boids card now emits one closed loop per bird from
+   main.js, because an alternating translate stalls and reverses in view. */
 .card:hover .g-draw{animation:draw 1.5s cubic-bezier(.4,0,.2,1) forwards}
 @keyframes draw{from{stroke-dashoffset:var(--len,240)}to{stroke-dashoffset:0}}
 /* The idle motion is a hover reward. Every glyph holds its published still frame until the

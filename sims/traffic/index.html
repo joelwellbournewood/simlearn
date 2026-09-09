@@ -691,8 +691,9 @@ function drawST(){
 function draw(){
   ctx.clearRect(0,0,W,H);
   easeFit();
-  drawCars(roadRing());
-  drawHandles();
+  const _lw=roadRing();
+  drawCars(_lw);
+  drawHandles(_lw);
   drawST();
 }
 /* ---- readouts ---- */
@@ -832,15 +833,27 @@ function onRoad(px,py){
   const rpix=(TRACK.mode==='circle'?1:rAtAngle(Math.atan2(dy,dx)))*RS();
   return Math.abs(rho-rpix)<Math.max(24,RR*0.14);
 }
-/* the eight dots are a promise that the road can be grabbed; the pull works anywhere on it */
-function drawHandles(){
+/* The eight grips sit just OUTSIDE the tarmac, on a short stem off the outer edge, so they
+   can never be mistaken for a car on the road. They are smaller on a phone, and they brighten
+   when the pointer is over the road. The pull itself still works anywhere on the road. */
+let roadHover=false;
+function drawHandles(laneW){
   if(document.body.classList.contains('clean')) return;
   const sc=RS();
+  const lw=laneW||Math.max(11,Math.min(26,RR*0.13));
+  const out=(lw*lanes)/2+(narrow?3.5:5);
+  const rad=narrow?2.1:3.3, stem=narrow?3:4.5;
+  const live=pulling||roadHover;
   for(let i=0;i<8;i++){
     const th=2*Math.PI*i/8, r=(TRACK.mode==='circle'?1:rAtAngle(th))*sc;
-    const x=RX+Math.cos(th)*r, y=RY+Math.sin(th)*r;
-    ctx.beginPath(); ctx.arc(x,y,pulling?4.6:3.6,0,6.28319);
-    ctx.fillStyle=pulling?'rgba(86,224,194,.95)':'rgba(86,224,194,.55)'; ctx.fill();
+    const ux=Math.cos(th), uy=Math.sin(th);
+    const bx=RX+ux*(r+out), by=RY+uy*(r+out);
+    const ex=bx+ux*stem, ey=by+uy*stem;
+    ctx.strokeStyle=live?'rgba(206,230,226,.8)':'rgba(163,188,190,.4)';
+    ctx.lineWidth=narrow?1:1.2;
+    ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(ex,ey); ctx.stroke();
+    ctx.beginPath(); ctx.arc(ex+ux*rad,ey+uy*rad,rad,0,6.28319);
+    ctx.fillStyle=live?'rgba(214,235,231,.95)':'rgba(163,188,190,.55)'; ctx.fill();
   }
   if(TRACK.mode!=='circle'){
     ctx.setLineDash([3,7]); ctx.strokeStyle='rgba(163,188,190,.20)'; ctx.lineWidth=1;
@@ -860,10 +873,10 @@ cv.addEventListener('pointerdown',e=>{
 });
 cv.addEventListener('pointermove',e=>{
   const q=penPos(e);
-  if(!pulling){ cv.style.cursor=onRoad(q[0],q[1])?'grab':''; return; }
+  if(!pulling){ const on=onRoad(q[0],q[1]); roadHover=on; cv.style.cursor=on?'grab':''; return; }
   pullAt(q[0],q[1]);
 });
-function pullEnd(){ if(!pulling) return; pulling=false; cv.style.cursor=''; }
+function pullEnd(){ if(!pulling) return; pulling=false; roadHover=false; cv.style.cursor=''; }
 cv.addEventListener('pointerup',pullEnd);
 cv.addEventListener('pointercancel',pullEnd);
 window.addEventListener('keydown',e=>{

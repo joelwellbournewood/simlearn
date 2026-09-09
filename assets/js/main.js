@@ -67,9 +67,28 @@ const GLYPH = {
     const streak = (x, y, l, s) => `<path class="soft" d="M${x - l} ${(y + 6.5 * (s || 1)).toFixed(1)} h${l - 4}"/>`;
     const P = [[236, 52], [212, 30], [212, 74], [186, 16], [186, 90], [160, 40], [160, 66], [136, 58]];
     const PRED = [58, 48], PS = 1.55;
-    return `<g class="g-drift">${P.map((p, i) => streak(p[0], p[1], 18 + (i % 3) * 8)).join('')}
-      ${P.map(p => bird(p[0], p[1], 'fillA')).join('')}</g>
-      <g class="g-chase">${streak(PRED[0], PRED[1], 30, PS)}
+    /* Every bird flies its own small closed loop, sampled as translate steps and played
+       linearly, so the cycle returns exactly to its start and the motion never turns
+       around. The old art slid the whole flock 7px right and back on an alternating
+       animation, so the flock stalled and reversed twice a cycle, which is the jerk you
+       could see. Phases are spread around the loop and the periods are mutually prime-ish,
+       so the flock breathes instead of marching in step. */
+    const loop = (ax, ay, ph) => (t => {
+      const a = 2 * Math.PI * t + ph;
+      return [ax * Math.cos(a), ay * Math.sin(a) + ay * 0.35 * Math.sin(2 * a + ph)];
+    });
+    let g = '';
+    P.forEach((p, i) => {
+      const ph = i * 0.7853981634, per = (3.3 + (i % 3) * 0.45 + (i % 2) * 0.2).toFixed(2);
+      addAnim(orbitKF('bdA' + i, loop(3.4, 2.1, ph), 36) +
+        `.bd${i}{animation:bdA${i} ${per}s linear infinite}`);
+      g += `<g class="bd${i}">${streak(p[0], p[1], 18 + (i % 3) * 8)}${bird(p[0], p[1], 'fillA')}</g>`;
+    });
+    /* the predator's loop is wider and slower, so it reads as a heavier bird holding a
+       line through the flock rather than as one more starling */
+    addAnim(orbitKF('bdPred', loop(5.2, 2.6, 1.9), 40) +
+      `.bd-pred{animation:bdPred 5.2s linear infinite}`);
+    return `${g}<g class="bd-pred">${streak(PRED[0], PRED[1], 30, PS)}
       ${bird(PRED[0], PRED[1], 'fill2', PS)}</g>`;
   },
   'predator-prey'() {

@@ -650,7 +650,7 @@
     <label class="sw-item"><span>Background</span><input type="color" id="swBg" aria-label="Background colour"></label>
   </div>
   <div class="pal-row">
-    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="false"><span class="ramp"></span>Glow by energy<span class="tip" role="button" tabindex="0" aria-label="What glowing by energy does" data-tip="Every animal is lit by how much energy it is carrying: bright and haloed when it is full and ready to breed, sunk into the field when it is a step from starving. Drawing only: no rule, rate, or random draw changes.">?</span></button>
+    <button class="pal-btn" id="tEnergy" type="button" aria-pressed="false"><span class="ramp"></span>Brightness by energy<span class="tip" role="button" tabindex="0" aria-label="What brightness by energy does" data-tip="Each animal is drawn darker or lighter according to how much energy it is carrying, from nearly black when it is a step from starving to pale when it is full and ready to breed. Drawing only: no rule, rate, or random draw changes.">?</span></button>
   </div>
 </div>
   </div>
@@ -1007,18 +1007,21 @@
   }
   /* a little gamma so the starving end is not all crushed into one band */
   const ebin = (e,top) => { let b=(Math.pow(clampU(e/top),0.72)*EBINS)|0; return b>EBINS-1?EBINS-1:b; };
-  let hareRamp = [], lynxRamp = [], hareGlow = [], lynxGlow = [];
+  let hareRamp = [], lynxRamp = [];
+  /* Brightness, not glow. Each band is the species colour at a fixed fraction of its own
+     brightness, so the ramp is one quantity moving in one direction and the field never
+     gains light that is not there. The top band is lifted a little towards white because a
+     saturated colour runs out of headroom before it looks full. */
+  function brightBand(base, t){
+    if(t<=0.78){ const f=0.34+0.66*(t/0.78); return mix('#000000', base, f); }
+    return mix(base, '#ffffff', (t-0.78)/0.22*0.42);
+  }
   function buildRamps(){
-    hareRamp=[]; lynxRamp=[]; hareGlow=[]; lynxGlow=[];
+    hareRamp=[]; lynxRamp=[];
     for(let i=0;i<EBINS;i++){
       const t=i/(EBINS-1);
-      /* dim end: the species colour sunk into the field. bright end: lifted to white. */
-      hareRamp.push(mix(mix(PAL.hare,PAL.bg,0.72), mix(PAL.hare,'#ffffff',0.62), t));
-      lynxRamp.push(mix(mix(PAL.lynx,PAL.bg,0.72), mix(PAL.lynx,'#ffffff',0.62), t));
-      /* and a halo that only the well-fed carry, added over the field */
-      const a=(0.030+0.30*t*t*t).toFixed(3);
-      hareGlow.push(hexa(mix(PAL.hare,'#ffffff',0.25),+a));
-      lynxGlow.push(hexa(mix(PAL.lynx,'#ffffff',0.25),+a));
+      hareRamp.push(brightBand(PAL.hare,t));
+      lynxRamp.push(brightBand(PAL.lynx,t));
     }
   }
   buildRamps();
@@ -1048,19 +1051,6 @@
     // hares: one batched fill, or one fill per energy band
     if(energyOn){
       eTops();
-      /* halo first, added rather than painted over, so a full animal reads as lit */
-      fctx.globalCompositeOperation='lighter';
-      for(let b=1;b<EBINS;b++){
-        const t=b/(EBINS-1), rad=HARE_R*(1.5+2.3*t);
-        fctx.fillStyle = hareGlow[b];
-        fctx.beginPath(); let any=false;
-        for(let i=0;i<hares.length;i++){
-          const h=hares[i]; if(ebin(h.e,eTopH)!==b) continue; any=true;
-          fctx.moveTo(h.x+rad,h.y); fctx.arc(h.x,h.y,rad,0,TAU);
-        }
-        if(any) fctx.fill();
-      }
-      fctx.globalCompositeOperation='source-over';
       for(let b=0;b<EBINS;b++){
         fctx.fillStyle = hareRamp[b];
         fctx.beginPath(); let any=false;
@@ -1081,8 +1071,9 @@
        it stays legible down to a few pixels where the old cat silhouette turned to mush.
        Do not add per-lynx strokes here; at 900 lynx that is 900 extra path segments. */
     const R = LYNX_R;
-    // soft halo so the hunters read as hot points against the field
-    if(!energyOn){
+    /* soft halo so the hunters read as hot points against the field. Drawn in both modes
+       and at a constant strength, so brightness alone carries the energy. */
+    {
       fctx.fillStyle = LYNX_HALO;
       fctx.beginPath();
       for(let i=0;i<lynx.length;i++){
@@ -1102,18 +1093,6 @@
       fctx.closePath();
     };
     if(energyOn){
-      fctx.globalCompositeOperation='lighter';
-      for(let b=1;b<EBINS;b++){
-        const t=b/(EBINS-1), rad=R*(1.7+2.6*t);
-        fctx.fillStyle = lynxGlow[b];
-        fctx.beginPath(); let any=false;
-        for(let i=0;i<lynx.length;i++){
-          const l=lynx[i]; if(ebin(l.e,eTopL)!==b) continue; any=true;
-          fctx.moveTo(l.x+rad,l.y); fctx.arc(l.x,l.y,rad,0,TAU);
-        }
-        if(any) fctx.fill();
-      }
-      fctx.globalCompositeOperation='source-over';
       for(let b=0;b<EBINS;b++){
         fctx.fillStyle = lynxRamp[b];
         fctx.beginPath(); let any=false;
@@ -1318,7 +1297,7 @@
     const bins=[0,0,0,0,0,0];
     for(let i=0;i<hares.length;i++) bins[ebin(hares[i].e,eTopH)]++;
     return {energyOn:energyOn, eTopH:eTopH, eTopL:eTopL, hares:hares.length, lynx:lynx.length,
-            bins:bins, ramp:hareRamp.slice(), glow:hareGlow.slice(),
+            bins:bins, ramp:hareRamp.slice(), lramp:lynxRamp.slice(),
             emax:hares.reduce((a,h)=>Math.max(a,h.e),0), emin:hares.reduce((a,h)=>Math.min(a,h.e),99)};
   };
   // ---- colour palette menu, custom colours, energy colouring ----
