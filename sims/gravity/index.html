@@ -99,13 +99,18 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .tg:hover{border-color:var(--line-strong);color:var(--ink)}
 .tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
 .tg:disabled{opacity:.35;cursor:default}
-.hud{position:absolute;right:20px;bottom:18px;z-index:6;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 360px)}
 .stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
-.hint{position:absolute;left:344px;right:230px;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 366px)}
+/* Centred on the window with the same 52px rightward bias the pendulum uses, so the
+   300px panel on the left does not make the line look pushed to one side. The max-width
+   is set so that in the clipping regime the left edge lands at a constant 337px, which is
+   17px clear of the panel at every window width. */
+.hint{position:absolute;left:50%;right:auto;transform:translateX(calc(-50% + 52px));bottom:18px;text-align:center;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 570px)}
+/* the inspect card shares the bottom-left corner and is opaque, so stand the line down */
+body:has(.sel.on) .hint{opacity:0}
 .sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
 .sel.on{display:block}
 .sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
@@ -119,7 +124,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .sel .acts{display:flex;gap:6px;margin-top:8px}
 .sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
 .sel .acts button:hover{border-color:var(--line-strong)}
-body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+body.clean .brand,body.clean .panel,body.clean .hint,body.clean .sel{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
@@ -147,7 +152,6 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
   .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
   .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
-  .hud{left:auto;right:12px;top:58px;bottom:auto;flex-direction:column;gap:5px;max-width:none;align-items:flex-end}
   .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
   .hint{display:none}
   .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
@@ -257,10 +261,6 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
 <div class="hint">Drag empty space to sling a body, click one to inspect it. Scroll zooms, right-drag pans. Space pauses, R rebuilds.</div>
 
-<div class="hud">
-  <div class="stat"><div class="k">bodies</div><div class="v" id="s-nb">0</div></div>
-  <div class="stat"><div class="k">energy drift</div><div class="v" id="s-drift">&ndash;</div></div>
-</div>
 <div class="sel" id="sel">
   <h4><i id="sel-dot"></i><span id="sel-name">Body</span></h4>
   <p class="kind" id="sel-kind"></p>
@@ -361,7 +361,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <p>Two bodies reduce exactly to the Kepler problem, which has a closed-form solution: bound orbits are conic sections, and Kepler's three laws follow from conservation of angular momentum and energy. For N = 3 there is no general closed-form solution. Bruns and Poincare showed in the 1880s and 1890s that no further algebraic integrals of the required kind exist, and Poincare's work on the restricted three-body problem, which was where he found homoclinic tangles, is the origin of dynamical chaos as a subject. Two facts have lasted. The three-body problem is chaotic for generic initial conditions, and its typical outcome is disintegration, with one body ejected and the remaining two forming a binary. Special periodic solutions exist and occupy a set of measure zero, which is why the figure-eight orbit, found numerically by Moore (1993) and proved to exist by Chenciner and Montgomery (2000), has never been observed in the sky.</p>
 
 <h3>Numerical method and cost</h3>
-<p>Motion is integrated with velocity Verlet, a symplectic scheme that conserves phase-space volume and keeps energy error bounded and oscillatory instead of letting it grow steadily, which is why total energy holds to well under a percent through ordinary orbits here. Each frame is subdivided into as many substeps as the largest acceleration on screen requires. The live energy drift readout exists so that a separation you see can be attributed to the physics, since in a chaotic configuration physics and arithmetic are indistinguishable without it.</p>
+<p>Motion is integrated with velocity Verlet, a symplectic scheme that conserves phase-space volume and keeps energy error bounded and oscillatory instead of letting it grow steadily, which is why total energy holds to well under a percent through ordinary orbits here. Each frame is subdivided into as many substeps as the largest acceleration on screen requires. That matters because in a chaotic configuration a separation caused by the physics and one caused by arithmetic look identical on screen. Energy is therefore checked against its starting value during development rather than left to trust: over fifteen seconds of running it holds to four thousandths of a percent on the default star system and three ten-thousandths of a percent on the Lagrange scene, it reaches about two tenths of a percent across the 1,235-body galaxy merger, and it costs a few percent through the very close passes of the Pythagorean problem, which is the case that works the substepping hardest.</p>
 <p>Direct summation costs O(N&sup2;) force evaluations per step. Past a few hundred bodies this simulation switches to a Barnes-Hut tree (Barnes &amp; Hut, 1986), which groups distant bodies into cells and replaces each with its centre of mass whenever the cell subtends a small enough angle, reducing the cost to O(N log N) for a force error near a percent. Professional galaxy and cosmology codes use the same idea, or the fast multipole method, for the same reason.</p>
 
 <h3>Where the specific set pieces come from</h3>
@@ -1228,19 +1228,19 @@ function drawLagrange(z,ox,oy){
   /* name the pair the points belong to */
   ctx.font='10px "Space Mono",monospace'; ctx.fillStyle='rgba(227,239,233,.5)';
   if(A.m>3*B.m){ ctx.fillText('star',a.x,a.y-A.r*z-9); ctx.fillText('planet',b.x,b.y-B.r*z-9); }
-  /* key, right-aligned above the readouts */
+  /* key, right-aligned along the bottom edge */
   ctx.textAlign='end'; ctx.font='10.5px "Space Mono",monospace';
-  ctx.fillStyle='rgba(86,224,194,.9)'; ctx.fillText('teal  L4 L5  stable: a body left here stays', W-20, H-86);
-  ctx.fillStyle='rgba(230,195,79,.9)'; ctx.fillText('gold  L1 L2 L3  unstable: it slides away', W-20, H-70);
+  ctx.fillStyle='rgba(86,224,194,.9)'; ctx.fillText('teal  L4 L5  stable: a body left here stays', W-20, H-56);
+  ctx.fillStyle='rgba(230,195,79,.9)'; ctx.fillText('gold  L1 L2 L3  unstable: it slides away', W-20, H-40);
   ctx.textAlign='start';
 }
 function drawLagNote(){
   const k=heavyCount();
   ctx.save(); ctx.textAlign='end'; ctx.font='11px "Space Mono",monospace';
   ctx.fillStyle='rgba(230,195,79,.92)';
-  ctx.fillText('Lagrange points are not defined here', W-20, H-86);
+  ctx.fillText('Lagrange points are not defined here', W-20, H-56);
   ctx.fillStyle='rgba(227,239,233,.6)'; ctx.font='10.5px "Space Mono",monospace';
-  ctx.fillText('they need one dominant pair, and '+k+' bodies here are comparable', W-20, H-70);
+  ctx.fillText('they need one dominant pair, and '+k+' bodies here are comparable', W-20, H-40);
   ctx.restore();
 }
 function drawOrbit(b,z,ox,oy){
@@ -1464,16 +1464,6 @@ window.addEventListener('keydown',e=>{
   else if(k>='1'&&k<='9'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) restart(ks); }
 });
 
-let hudTm=0;
-function updateHud(now){
-  if(now-hudTm<250) return; hudTm=now;
-  el('s-nb').textContent=bodies.length;
-  if(E0!==null&&bodies.length){
-    const E=currentEnergy(false);
-    const d=Math.abs(E0)>1e-9?(E-E0)/Math.abs(E0):0;
-    el('s-drift').textContent=(d>=0?'+':'')+(100*d).toFixed(3)+'%';
-  } else { el('s-drift').textContent='\u2013'; }
-}
 /* ---------- loop ---------- */
 let lastT=0, pvT=0;
 function loop(now){
@@ -1490,7 +1480,7 @@ function loop(now){
       predict(wx,wy,tmp.x,tmp.y,launchM);
     }
   }
-  draw(); updateSel(now); updateHud(now); govern(dtms);
+  draw(); updateSel(now); govern(dtms);
   requestAnimationFrame(loop);
 }
 let rt=null;

@@ -279,6 +279,16 @@ details.more>summary:hover{color:var(--ink)}
 html:fullscreen .panel,html:-webkit-full-screen .panel{width:288px;padding:12px 14px}
 html:fullscreen .mapcard,html:-webkit-full-screen .mapcard{width:300px;padding:12px 14px}
 html:fullscreen .brand h1,html:-webkit-full-screen .brand h1{font-size:23px}
+/* On a wide screen the pattern is inset in fullscreen so the two panels stand beside it
+   instead of on top of it: the left inset clears the 288px panel and its 20px gutters,
+   the right inset clears the 300px map card. Hide the panels (H) and the pattern goes
+   back to edge to edge. */
+@media (min-width:900px){
+  html:fullscreen body:not(.clean):not(.map-docked) #stage,
+  html:-webkit-full-screen body:not(.clean):not(.map-docked) #stage{
+    left:348px;right:360px;top:16px;bottom:16px;
+    border:1px solid var(--line);border-radius:16px;overflow:hidden}
+}
 @media (max-width:820px), (max-height:560px) and (pointer:coarse){
   .panel{width:100%}
   .hud{max-width:none}
