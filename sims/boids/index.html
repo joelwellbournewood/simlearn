@@ -113,14 +113,14 @@
   .tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
   .about-btn{position:absolute;left:150px;top:64px;z-index:6;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--text);padding:9px 14px;font-weight:500;transition:border-color .18s}
   .about-btn:hover{border-color:var(--line-strong)}
-  dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--text);padding:0;width:min(600px,calc(100vw - 32px));max-height:min(80vh,760px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--text);padding:0;width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)}
   dialog.about::backdrop{background:rgba(4,10,8,.6);backdrop-filter:blur(4px)}
-  .about-inner{padding:28px 30px 30px;overflow-y:auto;max-height:min(80vh,760px)}
+  .about-inner{padding:28px 30px 30px;overflow-y:auto;max-height:min(92vh,940px)}
   .about-inner h2{font-family:var(--display);font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px;font-variation-settings:'opsz' 96}
   .about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:22px 0 6px}
-  .about-inner p{margin:0 0 10px;color:#b9d0c6;font-size:14px;line-height:1.55;max-width:60ch}
+  .about-inner p{margin:0 0 10px;color:#b9d0c6;font-size:15.5px;line-height:1.62;max-width:70ch}
   .about-inner p b{color:var(--text);font-weight:600}
-  .about-inner ul{margin:0 0 10px;padding-left:18px;color:#b9d0c6;font-size:14px;line-height:1.55}
+  .about-inner ul{margin:0 0 10px;padding-left:18px;color:#b9d0c6;font-size:15.5px;line-height:1.62}
   .about-inner li{margin:0 0 4px}
   .about-close{position:absolute;right:14px;top:14px}
   body.clean .about-btn{display:none}
@@ -341,7 +341,7 @@
   <li><b>Cohesion:</b> steer toward the average position of nearby boids, keeping the group together.</li>
 </ul>
 <p>Nothing in those rules mentions the flock. No boid can see the whole group, none of them has a plan, and there is no leader. The shape you are watching is simply what a few hundred agents obeying three local rules add up to.</p>
-<p>Craig Reynolds wrote the rules for animation in 1987, and Tim Burton's <b>Batman Returns</b> (1992) was the first film to put them on screen. The swarms of bats, and the army of penguins marching through Gotham, were both run as boids rather than animated by hand. Every animal in those shots was an agent following the same three rules you are watching here, which is why a crowd of a thousand cost about as much work as a crowd of ten. The same trick now fills battlefields in films and games, keeps drone light shows from colliding, and helps architects work out how a crowd will drain out of a stadium.</p>
+<p>Craig Reynolds wrote the rules for animation in 1987, showed them off that year in the animated short <i>Stanley and Stella in: Breaking the Ice</i>, and Tim Burton's <b>Batman Returns</b> (1992) became the first feature film to put them on screen. The swarms of bats, and the army of penguins marching through Gotham, were both run as boids rather than animated by hand. Every animal in those shots was an agent following the same three rules you are watching here, which is why a crowd of a thousand cost about as much work as a crowd of ten. The same trick now fills battlefields in films and games, keeps drone light shows from colliding, and helps architects work out how a crowd will drain out of a stadium.</p>
 <p>Each boid has its own perception radius, field of view, and nearest-neighbour count, determining what it can see. Separation, alignment, and cohesion set how it reacts. Every other slider in the panel is detail layered on top of those core elements. Strong alignment produces long streams, strong cohesion produces dense clusters, and strong separation produces a diffuse cloud.</p>
 <h3>Things to try</h3>
     <ul>
@@ -1973,40 +1973,39 @@ const PRESETS = [
 ];
 
 const TIPS = {
-  count: 'How many boids are in the sky. More boids make denser, richer flocks but ask more of your device.',
-  predators: 'Hunters that chase the nearest boid. Prey flee from them, which splits and reshapes the flock.',
-  maxSpeed: 'The fastest a boid can fly. Boids never drop below about a third of this.',
-  agility: 'How sharply a boid can turn each frame. High values react instantly; low values glide.',
-  perception: 'How far a boid can see. Only neighbours inside this distance influence it.',
-  separation: 'The personal bubble. Neighbours closer than this push the boid away.',
-  fov: 'The angle a boid can see. 360° sees all around; smaller angles ignore what is behind.',
-  topo: 'Attend only to the few closest boids, however far away they are, instead of everyone within perception. Real starlings do this and it keeps a flock together.',
-  wSep: 'How strongly boids avoid crowding. Zero lets them pile onto each other.',
-  wAli: 'How strongly boids match their neighbours\' direction. High values give streams and sheets.',
-  wCoh: 'How strongly boids drift toward the middle of their neighbours. High values give tight clumps.',
+  count: 'How many boids are in the sky, and more of them ask more of your device.',
+  predators: 'Hunters that chase the nearest boid, splitting and reshaping the flock as the prey flee.',
+  maxSpeed: 'The fastest a boid can fly, and it never drops below about a third of this.',
+  agility: 'How sharply a boid can turn each frame, from instant reactions down to a long glide.',
+  perception: 'How far a boid can see, since only neighbours inside this distance influence it.',
+  separation: 'The personal bubble: neighbours closer than this get pushed away.',
+  fov: 'The angle a boid can see, where 360° sees all around and smaller angles ignore what is behind.',
+  topo: 'Attend only to the few closest boids however far away they are, which is what real starlings do.',
+  wSep: 'How strongly boids avoid crowding, with zero letting them pile onto each other.',
+  wAli: 'How strongly boids match their neighbours\' direction, giving streams and sheets when high.',
+  wCoh: 'How strongly boids drift toward the middle of their neighbours, giving tight clumps when high.',
   cruise: 'Nudges every boid back toward a comfortable speed so the flock moves as one mass.',
-  jitter: 'Random wobble in each boid\'s steering. A little makes the flock breathe and ripple.',
-  startle: 'How much a boid copies neighbours that are turning sharply. This is how an escape wave races through a flock faster than any bird flies.',
-  initiative: 'How often a bird on the edge of the flock spontaneously makes a sharp turn. Field studies found flock-wide turns start this way, with one bird on the border.',
-  roost: 'A free zone in the middle of the sky. Inside it there is no pull; past it the flock is drawn back, so it circles a roost instead of hitting the edges.',
+  jitter: 'Random wobble in each boid\'s steering, which makes the flock breathe and ripple.',
+  startle: 'How much a boid copies neighbours that are turning sharply, which is how an escape wave outruns any single bird.',
+  initiative: 'How often a bird on the edge turns sharply of its own accord, which is where field studies found flock-wide turns begin.',
+  roost: 'A free zone in the middle of the sky, outside which the flock is pulled back, so it circles a roost instead of hitting the edges.',
   tribes: 'Split the flock into coloured groups.',
-  tribeMix: 'How much different tribes flock with each other. Zero keeps them apart.',
+  tribeMix: 'How much different tribes flock with each other, with zero keeping them apart.',
   bounds: 'What happens at the edge of the world: turn back, or reappear on the far side.',
   flow: 'Strength of a hidden, slowly shifting current that carries the boids along.',
-  flowScale: 'Size of the eddies in the current. Larger gives broad, slow bends.',
+  flowScale: 'Size of the eddies in the current, larger giving broad, slow bends.',
   attractor: 'A gentle pull toward the centre of the world, like starlings circling their roost.',
   swirl: 'A sideways push around the centre that spins the flock into a vortex.',
   pulse: 'Lets boids flash and gradually fall into sync with their neighbours, like fireflies.',
   fleeRadius: 'How close a predator gets before prey panic and flee.',
-  predSpeed: 'Top speed of predators. Faster than the prey means more catches.',
+  predSpeed: 'Top speed of predators, and faster than the prey means more catches.',
   mouseRadius: 'How far the Attract and Repel tools reach from the pointer.',
   trail: 'How long each boid\'s path lingers before it fades.',
-  size: 'How big each boid is drawn.',
-  glow: 'A soft halo around each boid. Looks best on dark backgrounds with trails.',
+  glow: 'A soft halo around each boid, best on dark backgrounds with trails.',
   colorMode: 'What the colour of a boid encodes: its tribe, direction, speed, how crowded it is, or how hard it is turning.',
-  palette: 'The set of colours used by the current colour mode.',
-  bg: 'Background colour. Light backgrounds switch the interface to a light theme.',
-  quality: 'Automatic measures the frame rate and switches off whichever effects are costing the most on your browser. The fixed settings drop the frosted panels and the render resolution. None of them change the flock itself.',
+  palette: 'The colours used by the current colour mode.',
+  bg: 'Light backgrounds switch the whole interface to a light theme.',
+  quality: 'Automatic watches the frame rate and drops whichever effects cost the most, and none of these settings change the flock itself.',
 };
 
 const CONTROLS = {

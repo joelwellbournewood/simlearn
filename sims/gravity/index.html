@@ -104,7 +104,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
-.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+.hint{position:absolute;left:344px;right:230px;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 366px)}
 .sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
 .sel.on{display:block}
@@ -121,13 +121,13 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .sel .acts button:hover{border-color:var(--line-strong)}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
-  width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
-.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(86vh,800px);position:relative}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(92vh,940px);position:relative}
 .about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
-.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
-.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
-.about-inner p{margin:0 0 10px;max-width:64ch}
+.about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:15.5px;line-height:1.62}
+.about-inner p{margin:0 0 10px;max-width:70ch}
 .about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
 .about-inner b{color:var(--ink);font-weight:600}
 .about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
@@ -174,7 +174,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
     <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
   </button>
-  <button class="icon-btn" id="b-reset" title="Rebuild the arrangement with the sliders where they are now (R). Click the arrangement card again to go back to its original settings." aria-label="Rebuild the arrangement with the current settings">
+  <button class="icon-btn" id="b-reset" title="Rebuild with the sliders where they are now (R)" aria-label="Rebuild the arrangement with the current settings">
     <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
   </button>
   <button class="icon-btn" id="b-fit" title="Fit everything in view (0)" aria-label="Fit everything in view">
@@ -200,34 +200,34 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Bodies</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="Planets, disc stars, cloud members and test particles: everything light enough to be pushed around rather than do the pushing. The number shown is exactly how many are created. Above about 400 bodies the solver switches to a Barnes-Hut tree so thousands stay smooth." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="The light bodies that get pushed around rather than do the pushing." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="0" max="100" step="1" value="30">
   </div>
   <div class="row">
-    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy ones: stars, galaxy nuclei, massive seeds. Two or more are placed on a ring and given the speed that keeps that ring turning. Some arrangements are defined by their heavy bodies, so the count is fixed there." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
+    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy bodies that do the pushing: stars, galaxy nuclei, massive seeds." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
     <input type="range" id="s-nl" min="0" max="5" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling with the mouse. Drag on empty space and release like a slingshot. The dotted line shows where it will go." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
+    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging on empty space and releasing." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
     <input type="range" id="s-launch" min="0" max="100" step="1" value="42">
   </div>
   </details>
   <details class="grp">
   <summary class="grp-title">Physics</summary>
   <div class="row">
-    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair. Turn it up and orbits tighten until they collapse; turn it down and the system drifts apart. Resets the energy baseline." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
+    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair, so orbits tighten as you raise it and drift apart as you lower it." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Treats each body as a fuzzy sphere rather than a point, so the force stops growing once two bodies are closer than their sizes. Smaller is more accurate but needs more substeps during close passes." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
+    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Treats each body as a fuzzy sphere, so the force stops growing once two bodies are closer than their sizes." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
     <input type="range" id="s-soft" min="0.25" max="2" step="0.05" value="0.7">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. The integrator splits each frame into as many substeps as the closest encounter needs, so speeding up does not make orbits go wrong until it hits the substep ceiling." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with extra substeps added automatically so close passes stay accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.1" max="8" step="0.05" value="1">
   </div>
   <div class="row">
-    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch become a single heavier one, conserving mass and momentum." aria-label="What collisions does">?</button></span></label>
+    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch merge into one heavier body." aria-label="What collisions does">?</button></span></label>
     <div class="toggles"><button class="tg" id="t-merge" aria-pressed="false">Merge on contact</button></div>
   </div>
   </details>
@@ -244,7 +244,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Look</summary>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen. Trails are drawn in the current reference frame, so switch to the co-rotating view and they show the path as seen from the orbiting pair." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen, drawn in whichever reference frame you are watching from." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="55">
   </div>
   <div class="toggles">
@@ -257,6 +257,10 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
 <div class="hint">Drag empty space to sling a body, click one to inspect it. Scroll zooms, right-drag pans. Space pauses, R rebuilds.</div>
 
+<div class="hud">
+  <div class="stat"><div class="k">bodies</div><div class="v" id="s-nb">0</div></div>
+  <div class="stat"><div class="k">energy drift</div><div class="v" id="s-drift">&ndash;</div></div>
+</div>
 <div class="sel" id="sel">
   <h4><i id="sel-dot"></i><span id="sel-name">Body</span></h4>
   <p class="kind" id="sel-kind"></p>
@@ -342,6 +346,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p>Nothing here is locked. <b>Small bodies</b> sets how many light members are created, and the number shown is the number you get. <b>Large bodies</b> sets the heavy ones, and where an arrangement allows more than one they are placed on a ring turning at the speed that ring needs. Some arrangements are defined by their heavy bodies, so the count is held there. Beyond that, drag on empty space to sling in a new body at any time, click a body to inspect it, and delete anything you do not want. The reset button rebuilds the scene with the sliders exactly where you have left them, so you can rerun the same experiment with one thing changed. Clicking the arrangement card again is the way back to the settings it was published with.</p>
 
     <h3>Under the bonnet</h3>
+    <p>The point of the engineering is trust: every choice below exists so that when two orbits diverge on screen, the cause is gravity rather than the computer.</p>
     <ul>
       <li>Each body is treated as a softened sphere rather than a point, so the force stops growing once two bodies are closer than their own size. That is what prevents infinities during a close pass. The Pythagorean problem depends on very close approaches, so its exact timing here will differ from the published solution while the story stays the same.</li>
       <li>Motion is integrated with velocity Verlet, and each frame is cut into as many substeps as the fiercest acceleration on screen demands. Total energy holds to well under a percent through ordinary orbits, so what you see separating is physics rather than arithmetic.</li>
@@ -1459,6 +1464,16 @@ window.addEventListener('keydown',e=>{
   else if(k>='1'&&k<='9'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) restart(ks); }
 });
 
+let hudTm=0;
+function updateHud(now){
+  if(now-hudTm<250) return; hudTm=now;
+  el('s-nb').textContent=bodies.length;
+  if(E0!==null&&bodies.length){
+    const E=currentEnergy(false);
+    const d=Math.abs(E0)>1e-9?(E-E0)/Math.abs(E0):0;
+    el('s-drift').textContent=(d>=0?'+':'')+(100*d).toFixed(3)+'%';
+  } else { el('s-drift').textContent='\u2013'; }
+}
 /* ---------- loop ---------- */
 let lastT=0, pvT=0;
 function loop(now){
@@ -1475,7 +1490,7 @@ function loop(now){
       predict(wx,wy,tmp.x,tmp.y,launchM);
     }
   }
-  draw(); updateSel(now); govern(dtms);
+  draw(); updateSel(now); updateHud(now); govern(dtms);
   requestAnimationFrame(loop);
 }
 let rt=null;

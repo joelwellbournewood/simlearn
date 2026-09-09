@@ -80,12 +80,12 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
-  width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
-.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(84vh,780px);position:relative}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(92vh,940px);position:relative}
 .about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
-.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
-.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:15.5px;line-height:1.62}
 .about-inner p{margin:0 0 10px;max-width:62ch}
 .about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
 .about-inner b{color:var(--ink);font-weight:600}
@@ -137,20 +137,20 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <div class="presets" id="presets"></div>
   <p class="label">The equations</p>
   <div class="row">
-    <label for="s-rho"><span class="nm">&rho; Rayleigh<button class="tip" data-tip="How hard the fluid is being heated from below. Under about 24.7 the system settles to a steady roll. Above it, it never settles." aria-label="What rho does">?</button></span><span class="val" id="v-rho"></span></label>
+    <label for="s-rho"><span class="nm">&rho; Rayleigh<button class="tip" data-tip="How hard the fluid is heated from below, and above about 24.7 it never settles." aria-label="What rho does">?</button></span><span class="val" id="v-rho"></span></label>
     <input type="range" id="s-rho" min="0.5" max="120" step="0.5" value="28">
   </div>
   <div class="row">
-    <label for="s-sigma"><span class="nm">&sigma; Prandtl<button class="tip" data-tip="The ratio of how fast momentum spreads through the fluid to how fast heat does. Lorenz used 10, roughly water." aria-label="What sigma does">?</button></span><span class="val" id="v-sigma"></span></label>
+    <label for="s-sigma"><span class="nm">&sigma; Prandtl<button class="tip" data-tip="How fast momentum spreads through the fluid compared with heat, which Lorenz set to 10, roughly water." aria-label="What sigma does">?</button></span><span class="val" id="v-sigma"></span></label>
     <input type="range" id="s-sigma" min="1" max="30" step="0.5" value="10">
   </div>
   <div class="row">
-    <label for="s-beta"><span class="nm">&beta; Geometry<button class="tip" data-tip="Set by the width-to-height shape of the convection cell. Lorenz used eight thirds, about 2.67." aria-label="What beta does">?</button></span><span class="val" id="v-beta"></span></label>
+    <label for="s-beta"><span class="nm">&beta; Geometry<button class="tip" data-tip="Set by the width to height shape of the convection cell, which Lorenz took as about 2.67." aria-label="What beta does">?</button></span><span class="val" id="v-beta"></span></label>
     <input type="range" id="s-beta" min="0.4" max="6" step="0.05" value="2.65">
   </div>
   <p class="label">Display</p>
   <div class="row">
-    <label for="s-copies"><span class="nm">Trajectories<button class="tip" data-tip="How many starts are released at once, spread across a tiny range. They begin as one line." aria-label="What trajectories does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Trajectories<button class="tip" data-tip="How many starts are released at once, so close together that they begin as one line." aria-label="What trajectories does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="80" step="1" value="1">
   </div>
   <div class="row">
@@ -158,16 +158,16 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-spread" min="-6" max="0" step="0.1" value="-3">
   </div>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays drawn. Long trails show the attractor's shape; short ones show where the state is now." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays drawn, long trails showing the shape of the attractor and short ones where the state is now." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="5" max="100" step="1" value="70">
   </div>
   <div class="pair">
   <div class="row">
-    <label for="s-rot"><span class="nm">Rotation<button class="tip" data-tip="Spin speed of the viewpoint. Drag on the canvas to turn it yourself." aria-label="What rotation does">?</button></span><span class="val" id="v-rot"></span></label>
+    <label for="s-rot"><span class="nm">Rotation<button class="tip" data-tip="Spin speed of the viewpoint, which you can also turn by dragging on the canvas." aria-label="What rotation does">?</button></span><span class="val" id="v-rot"></span></label>
     <input type="range" id="s-rot" min="0" max="2" step="0.05" value="0.45">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. Integration substeps scale with it." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with the integration substeps scaled to match." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.25" max="3" step="0.05" value="1">
   </div>
   </div>

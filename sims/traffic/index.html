@@ -109,13 +109,13 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .sel .acts button:hover{border-color:var(--line-strong)}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
-  width:min(660px,calc(100vw - 32px));max-height:min(86vh,800px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
-.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(86vh,800px);position:relative}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(92vh,940px);position:relative}
 .about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
-.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
-.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
-.about-inner p{margin:0 0 10px;max-width:64ch}
+.about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:15.5px;line-height:1.62}
+.about-inner p{margin:0 0 10px;max-width:70ch}
 .about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
 .about-inner b{color:var(--ink);font-weight:600}
 .about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
@@ -230,15 +230,15 @@ body.clean .tapwrap{display:none}
   <details class="grp">
     <summary>Change the road</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="How many cars are on the one kilometre ring. This is the density, and it is the strongest control on whether a jam can form at all. Below about fifty the road is stable, above it jams grow on their own." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="How many cars share the one kilometre ring, which is the density and the strongest control on whether a jam forms." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="10" max="80" step="1" value="38">
   </div>
   <div class="row">
-    <label for="s-T"><span class="nm">Following gap<button class="tip" data-tip="The gap each driver wants, measured in seconds of travel rather than metres. Short gaps mean tailgating: more cars fit, and a disturbance spreads further." aria-label="What the following gap does">?</button></span><span class="val" id="v-T"></span></label>
+    <label for="s-T"><span class="nm">Following gap<button class="tip" data-tip="The gap each driver wants, measured in seconds of travel rather than metres." aria-label="What the following gap does">?</button></span><span class="val" id="v-T"></span></label>
     <input type="range" id="s-T" min="0.5" max="2.4" step="0.05" value="1.35">
   </div>
   <div class="row">
-    <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="The share of cars run by a controller instead of a person: no wobble, a strictly held gap and a quicker response. Watch how large the share has to get before the waves go away." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
+    <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="The share of cars run by a controller instead of a person, with no wobble and a strictly held gap." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
     <input type="range" id="s-av" min="0" max="100" step="5" value="0">
   </div>
   
@@ -251,7 +251,7 @@ body.clean .tapwrap{display:none}
     <button class="tg" id="t-circle">Back to a circle <kbd>D</kbd></button>
   </div>
   <div class="row" id="row-truck" hidden>
-    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="The cruising speed of the one truck on the loop, as a share of what a car would hold on an empty road. Everything behind it has to fit itself around that speed, so a slower truck seeds a longer queue." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
+    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="Cruising speed of the one truck, as a share of what a car holds on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
     <input type="range" id="s-truck" min="20" max="95" step="5" value="55">
   </div>
   </details>

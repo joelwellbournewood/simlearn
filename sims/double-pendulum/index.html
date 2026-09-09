@@ -79,17 +79,17 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
 .hint{position:absolute;left:50%;right:auto;bottom:18px;transform:translateX(calc(-50% + 52px));
   text-align:center;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 620px)}
-@media (max-width:1000px){.hint{left:20px;transform:none;text-align:left;max-width:calc(100% - 40px)}}
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 700px)}
+@media (max-width:1000px){.hint{left:20px;transform:none;text-align:left;max-width:calc(100% - 300px)}}
 @media (max-width:820px){.hint{display:none}}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
-  width:min(640px,calc(100vw - 32px));max-height:min(84vh,780px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
-.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(84vh,780px);position:relative}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(92vh,940px);position:relative}
 .about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
-.about-inner h3{font-family:var(--display);font-size:15px;font-weight:600;margin:19px 0 6px}
-.about-inner p,.about-inner li{color:#b9d0c6;font-size:14px;line-height:1.58}
+.about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:15.5px;line-height:1.62}
 .about-inner p{margin:0 0 10px;max-width:62ch}
 .about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
 .about-inner b{color:var(--ink);font-weight:600}
@@ -160,27 +160,27 @@ details.grp > summary + *{margin-top:0}
   <details class="grp">
     <summary>Controls</summary>
   <div class="row">
-    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once. They are spread across a tiny range of starting angles, so at first they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once, spread over so small a range of angles that they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="The angle, in degrees, between the first copy and the last. At 0.001 degrees they are identical to the eye, and still tear apart." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="The angle between the first copy and the last, which can be a thousandth of a degree and still tear apart." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
     <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
   </div>
   <div class="row">
-    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="How high both arms are lifted before release. Below about 20 degrees the motion stays regular; above that it goes chaotic." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="How high both arms are lifted before release, with the motion turning chaotic above about 20 degrees." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
     <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
   </div>
   <div class="row">
-    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Length of the second arm relative to the first. A long lower arm carries more of the energy and whips harder." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
+    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Length of the second arm relative to the first, and the longer it is the harder it whips." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
     <input type="range" id="s-l2" min="0.4" max="1.6" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each tip's path stays on screen. With many copies, short trails read more clearly." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each tip path stays on screen." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="60">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame. Integration substeps scale with it, so the physics stays accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with the integration substeps scaled to match." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.25" max="2.5" step="0.05" value="1">
   </div>
   </details>
@@ -190,6 +190,7 @@ details.grp > summary + *{margin-top:0}
 <div class="hud">
   <div class="stat"><div class="k">Copies</div><div class="v" id="s-n" style="color:var(--accent)">1</div></div>
   <div class="stat"><div class="k">Elapsed</div><div class="v" id="s-t">0.0s</div></div>
+  <div class="stat"><div class="k">Energy drift</div><div class="v" id="s-e">0.000%</div></div>
 </div>
 <div class="hint">Right-drag to move the view (left-drag works too), scroll to zoom, click the field to re-release, R restarts.</div>
 
@@ -222,6 +223,7 @@ details.grp > summary + *{margin-top:0}
     <h3>Regular motion is available too</h3>
     <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the system behaves like two coupled linear oscillators and is perfectly well behaved. What decides the character of the motion here is the energy you release it with, and the machine itself is the same either way.</p>
     <h3>How this one is computed</h3>
+    <p>Everything in this section serves one claim: the divergence you watch is a property of the pendulum, and never an artefact of the arithmetic.</p>
     <ul>
       <li>Integration is fourth-order Runge-Kutta with small substeps, and total energy is held to a fraction of a percent over a run. The separation you see on screen is therefore dynamics, and the arithmetic is not contributing to it in any visible way.</li>
       <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
@@ -330,7 +332,7 @@ function geom(){
      the canvas size. omega = sqrt(g/L1) is then constant, about 0.47 per time unit,
      which puts a small-amplitude period near two and a half seconds at 60fps. */
   const base=Math.min(W,H)*0.20;
-  L1=base; L2=base*l2r; g=0.22*base;
+  L1=base; L2=base*l2r; g=0.22*base;  if(arr&&arr.length&&E0!==null) E0=energyOf(arr[0].s);
 }
 function release(a1seed){
   geom();
@@ -448,6 +450,8 @@ function hud(now){
   if(now-hudT<180) return; hudT=now;
   el('s-n').textContent=arr.length;
   el('s-t').textContent=tsec.toFixed(1)+'s';
+  if(E0!==null&&arr.length){ const E=energyOf(arr[0].s); const d=Math.abs(E0)>1e-9?(E-E0)/Math.abs(E0):0;
+    el('s-e').textContent=(d>=0?'+':'')+(100*d).toFixed(3)+'%'; }
 }
 /* ---------- ui ---------- */
 const pbox=el('presets');
