@@ -369,3 +369,5 @@ body.leaving .card:not(.launching){opacity:.25; transition:opacity .18s}
   .sim-header{padding:.3rem 12px}
   .sim-header h1{font-size:.92rem}
 }
+
+footer .copy{opacity:.62;font-size:.92em;white-space:nowrap}

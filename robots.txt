@@ -1,0 +1,49 @@
+# simlearn.ai
+# The content of this site is copyright 2026 SimLearn. All rights reserved.
+# Search engines are welcome. Crawlers that collect text, code, or images to
+# train machine learning models are not, and no licence is granted to them.
+
+User-agent: *
+Allow: /
+
+# No licence for machine learning training or dataset collection.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Claude-User
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+Sitemap: https://simlearn.ai/sitemap.xml

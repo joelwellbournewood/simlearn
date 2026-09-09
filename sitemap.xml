@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://simlearn.ai/</loc><lastmod>2026-09-09</lastmod><priority>1.0</priority></url>
+  <url><loc>https://simlearn.ai/about.html</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=boids</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=predator-prey</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=double-pendulum</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=gravity</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=traffic</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=turing-patterns</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+  <url><loc>https://simlearn.ai/sim.html?id=hodgkin-huxley</loc><lastmod>2026-09-09</lastmod><priority>0.7</priority></url>
+</urlset>
