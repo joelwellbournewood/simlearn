@@ -36,11 +36,14 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
 .brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
 .theatre .icon-btn.gold{position:absolute;left:14px;top:14px;z-index:7;
-  background:linear-gradient(160deg,#f6d97a 0%,#d8a53a 42%,#8f6412 100%);
-  border:1px solid #f0d99a;color:#2a1c04;
-  box-shadow:0 2px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.55)}
+  background:linear-gradient(158deg,#fff6cf 0%,#f7de91 14%,#e3b447 44%,#b07f1c 74%,#7d550d 100%);
+  border:1px solid #a87a15;color:#2a1c04;overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.85), inset 0 -3px 7px rgba(90,58,4,.55)}
+.theatre .icon-btn.gold::before{content:'';position:absolute;left:-10%;top:-58%;width:120%;height:96%;
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,rgba(255,255,255,.72) 0%,rgba(255,255,255,.18) 52%,rgba(255,255,255,0) 74%)}
 .theatre .icon-btn.gold svg{fill:#2a1c04;stroke:none}
-.theatre .icon-btn.gold:hover{background:linear-gradient(160deg,#fde9a4 0%,#e6b747 42%,#a2731a 100%)}
+.theatre .icon-btn.gold:hover{background:linear-gradient(158deg,#fffbe6 0%,#ffeaa6 14%,#f0c65a 44%,#c08f22 74%,#8d6210 100%);border-color:#c0902a}
 .theatre .icon-btn.gold:active{transform:translateY(1px)}
 .actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
 .icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
@@ -316,7 +319,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
 
   <div class="blocks">
       <details class="block grp" open>
-        <summary class="grp-title">Setup <span class="tag">preparation and recording</span></summary>
+        <summary class="grp-title">Setup</summary>
         <div class="seg two" id="modes">
     <button id="modePatch" aria-pressed="true">Membrane patch</button>
     <button id="modeCable" aria-pressed="false">Whole axon</button>
@@ -351,7 +354,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
       </details>
 
       <details class="block grp" id="axonBlock" hidden>
-        <summary class="grp-title">Axon <span class="tag">how the cable is built</span></summary>
+        <summary class="grp-title">Axon</summary>
 
         
         <div class="chips" style="margin-bottom:13px">
@@ -383,7 +386,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
             </details>
 
       <details class="block grp" id="stimBlock">
-        <summary class="grp-title">Stimulation <span class="tag">the electrode that fires it</span></summary>
+        <summary class="grp-title">Stimulation</summary>
 
         
         <div class="ctl">
@@ -430,7 +433,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
             </details>
 
       <details class="block grp">
-        <summary class="grp-title">Drugs <span class="tag">in the bath</span></summary>
+        <summary class="grp-title">Drugs</summary>
 
         
         <div class="chips" id="drugChips"></div>
@@ -440,7 +443,7 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
             </details>
 
       <details class="block grp">
-        <summary class="grp-title">Display <span class="tag">what is drawn, and how fast</span></summary>
+        <summary class="grp-title">Display</summary>
 
         
         <div class="ctl">
@@ -466,12 +469,13 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
 
 <h2>What am I looking at?</h2>
 <p>A patch of nerve membrane, magnified, running the equations Alan Hodgkin and Andrew Huxley fitted to the giant axon of the squid in 1952. The picture on the left is the membrane itself, with the channels sitting in it and the ions on either side of it. The trace on the right is the voltage across that membrane, measured in millivolts, as it changes.</p>
-<p>Three things set that voltage, and only three.</p>
+<p>Three things set that voltage in this model, and only three.</p>
 <ul>
   <li><b>The gradients.</b> There is more sodium outside the cell than inside, and more potassium inside than outside. Each ion therefore has a voltage it would drag the membrane to if it were the only one that could cross: about +50 mV for sodium, about &minus;77 mV for potassium.</li>
   <li><b>The gates.</b> Sodium and potassium cross through separate channels, and those channels open and close depending on the voltage they currently sit at. Sodium opens fast, then closes itself off. Potassium opens slowly and stays open.</li>
-  <li><b>The pump.</b> The Na/K pump spends energy putting the ions back where they started, which is what keeps the gradients from running down.</li>
+  <li><b>The leak.</b> A small conductance that does not care about voltage, 0.3 mS/cm&sup2;, carrying background ions toward about &minus;54 mV. It is what drags a nudge that was too small back down to rest.</li>
 </ul>
+<p>The sodium-potassium pump is drawn in the membrane, and it is deliberately outside the arithmetic. Its job is slow. It spends ATP carrying sodium back out and potassium back in over seconds and minutes, which is what stops the gradients running down over a lifetime of firing, and Hodgkin and Huxley left it out of the 1952 equations because across the two milliseconds of one spike it moves a negligible amount of charge. So the pump on screen tells you where the gradients come from, and it puts no current into the voltage trace: its turning is illustration, paced by how much sodium has arrived inside. That is also why there is no pump blocker in the drug list.</p>
 <p>Everything you see follows from those. At rest, potassium leaks out and holds the membrane near &minus;65 mV. Push the voltage up far enough with the electrode and sodium channels open, sodium floods in, and the voltage those channels are responding to is the same voltage they are changing. The rise feeds itself, and the spike goes all the way to the top with no further help from you. Sodium then shuts itself off while the slow potassium channels are still opening, so the voltage overshoots downward before settling. The whole event takes about two milliseconds.</p>
 <p>That two milliseconds is the unit every nervous system is built from. Every thought, every sensation, and every muscle you move is carried by this event repeated along billions of fibres, which is why so much of medicine ends up interfering with it deliberately. The injection at the dentist works by blocking the sodium channel in this model. Pufferfish poisoning blocks the same channel with a toxin, and the patient stays awake and paralysed. Several drugs for epilepsy, for heart rhythm, and for chronic pain act on close relatives of these gates, and the reason a nerve conduction test in a clinic can locate an injury is that the speed of this spike along a nerve is measurable to the metre per second.</p>
 <p><b>Fire pulse</b> injects current at the strength and duration set in the panel. The interesting settings are the ones near the edge: just under threshold gives nothing at all, just over gives a full-height spike, and a second pulse arriving too early gives nothing however hard you push, because the sodium channels have not reset yet. The electrode chips change what the apparatus is doing rather than what the axon is doing. Current clamp injects current and lets the voltage move, while voltage clamp holds the voltage where you put it and measures the current needed, which is the experiment the equations were fitted to. The drug chips block one channel type each, and each chip explains itself if you hover it.</p>
@@ -510,8 +514,8 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
     <p>Five things to put in the bath. Blocked channels go grey and show the drug molecule lodged in the pore, and the partial blockers take out a fraction of the channels, which is what a partial block physically is.</p>
     <ul>
       <li><b>TTX</b> plugs the sodium pore from outside, completely. The membrane can still be charged by the electrode, and it cannot make a spike of its own.</li>
-      <li><b>Lidocaine</b> takes out about 40% of the sodium channels from inside. That alone raises threshold roughly eightfold. Push the pulse to 100 &micro;A/cm&sup2; and a normal spike comes back, which is the difference between an anaesthetic and a poison.</li>
-      <li><b>TEA</b> blocks the delayed rectifier from inside. The background potassium channels that hold the resting potential are a different, TEA-insensitive population and stay open, so the membrane still sits at &minus;65 mV. The spike fires taller and repolarisation is left to the slow leak.</li>
+      <li><b>Lidocaine</b> takes about 40% of the sodium channels out of action from inside, which is what a modest concentration does to an axon sitting at rest. Threshold roughly doubles, from 6.9 to 12.2 &micro;A/cm&sup2; measured by running this model, and pushing the pulse harder brings a full-height spike back, which is the difference between an anaesthetic and a poison. Real lidocaine also grips channels that have just opened far more tightly, so a nerve firing fast gets blocked much harder than a resting one, and that use dependence is not in these equations.</li>
+      <li><b>TEA</b> blocks the delayed rectifier from inside. The background potassium channels that hold the resting potential are a different, TEA-insensitive population and stay open, so the membrane still sits at &minus;65 mV. The spike fires about 6 mV taller and repolarisation is left to the slow leak, so measured above &minus;20 mV it lasts 3.5 ms against 1.7 ms in control, about twice as long.</li>
       <li><b>4-AP</b> is a milder potassium block. Try it on a stripped patch in the axon view.</li>
       <li><b>Pronase</b> digests the inactivation gate off most sodium channels. Nothing shuts the sodium current off, so the spike becomes a permanent plateau near +20 mV. Wash it out to recover.</li>
     </ul>
@@ -535,9 +539,13 @@ dialog.about{width:min(760px,calc(100vw - 28px))}
 <p>The absolute refractory period is h, sodium inactivation, sitting near zero, and no stimulus of any size can recruit channels that are inactivated. The relative refractory period that follows is h recovering while n is still elevated, so a larger stimulus is required and the resulting spike is smaller. Tetrodotoxin, the pufferfish toxin, binds the outer pore of the voltage-gated sodium channel and abolishes the spike while leaving the potassium current intact, a selectivity that made it a standard tool for dissecting the two currents (Narahashi, Moore, &amp; Scott, 1964). Tetraethylammonium does the reverse and blocks the potassium channel, broadening the spike.</p>
 <p>Propagation along an axon needs one more ingredient, the cable equation, in which local circuit current from an active patch depolarises the patch ahead of it. In an unmyelinated fibre conduction velocity scales with the square root of diameter, which is the reason the squid evolved a millimetre-wide axon to work its escape jet and the reason Hodgkin and Huxley could get an electrode inside one. Myelin raises membrane resistance and lowers capacitance between nodes, so the depolarisation jumps from node to node, which Huxley and Stampfli (1949) demonstrated in single frog fibres. The myelinated axon in this simulation is a chain of Hodgkin-Huxley nodes coupled by axial resistance, and stripping the sheath slows or blocks it in the way a demyelinating lesion does.</p>
 
+<h3>What is in the equations, and what is not</h3>
+<p>Everything on the voltage trace comes from four terms. The current you inject, a sodium current g&#772;<sub>Na</sub> m&sup3;h (V &minus; E<sub>Na</sub>), a potassium current g&#772;<sub>K</sub> n&#8308; (V &minus; E<sub>K</sub>), and a leak g<sub>L</sub> (V &minus; E<sub>L</sub>), all charging a membrane capacitance of 1 &micro;F/cm&sup2;. The reversal potentials are held at +50, &minus;77, and &minus;54.4 mV throughout. Those values come from the concentrations listed in this module. The Nernst equation applied to them gives +51 mV for sodium and &minus;79 mV for potassium at 6.3 &deg;C, so holding the reversal potentials there is the right choice for this preparation, and a pore blocker in the bath changes none of it.</p>
+<p>Absent from the arithmetic: any pump or exchanger current, any drift in the ion concentrations, calcium of any kind, and any randomness. The ions drawn crossing the membrane, the running count of sodium inside, and the turning pump are all illustration driven by those same gating variables, and none of them feeds back into the voltage.</p>
+<p>The drugs are handled the way a pore blocker behaves in a real bath. Each one removes a fraction of one channel population, or in the case of pronase removes the inactivation gate, and none of them touches a concentration. That is faithful, because a blocker changes how permeable the membrane is rather than what is dissolved either side of it, and the bath is enormous compared with the axon. The one drug that would break the assumption is a pump blocker such as ouabain, whose entire effect is to let the gradients run down over minutes, and it is left out for exactly that reason.</p>
 <h3>Limits of the model</h3>
-<p>The concentration gradients are held fixed here. A real spike moves about one sodium ion in a hundred thousand and the pump carries it back out over the following seconds, so nothing in this model runs the gradients down. Blocking the pump in a real preparation shrinks the spike over minutes of firing, and that is an experiment this simulation does not offer. The pump drawn on screen runs far too fast, and the drawn channels are far too few and far too large, since a square micrometre of real axon holds hundreds of them. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities have the right shape and only roughly the right size.</p>
-<p>The equations themselves are deterministic, while real channels are stochastic, so this model has no channel noise and no spontaneous firing. These are also the 1952 squid equations at 6.3 &deg;C, held there throughout, and a mammalian axon at body temperature uses faster kinetics and additional channel types. Real neurons carry a dozen or more channel types, including calcium and several potassium variants that the squid axon largely lacks, and the shapes of spikes in mammalian cortex depend on them. Later structural work also showed that inactivation is a separate mechanism from activation rather than a fourth identical gating particle. Within the range they were fitted to, the equations remain accurate, and they are the foundation of every conductance-based neuron model since.</p>
+<p>The concentration gradients are held fixed, as they are in the original equations. A real spike moves about one sodium ion in a hundred thousand and the pump carries it back out over the following seconds, so one spike barely dents the gradients, and this model does not track them at all. Two consequences are worth knowing. Firing a real axon hard piles potassium up in the narrow space just outside the membrane, which drags E<sub>K</sub> positive and shrinks each spike, and that effect is largest under a potassium blocker, so a long TEA or 4-AP train here stays tidier than the bench would. Blocking the pump in a real preparation shrinks the spike over minutes of firing, an experiment this simulation cannot offer, because no pump current exists in it. The pump drawn on screen runs far too fast, and the drawn channels are far too few and far too large, since a square micrometre of real axon holds hundreds of them. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities have the right shape and only roughly the right size.</p>
+<p>The blockers are tonic and constant, so the use dependence that makes a local anaesthetic work on a firing nerve better than a quiet one is missing, and the block you set is the block you get at any firing rate. The equations themselves are deterministic, while real channels are stochastic, so this model has no channel noise and no spontaneous firing. These are also the 1952 squid equations at 6.3 &deg;C, held there throughout, and a mammalian axon at body temperature uses faster kinetics and additional channel types. Real neurons carry a dozen or more channel types, including calcium and several potassium variants that the squid axon largely lacks, and the shapes of spikes in mammalian cortex depend on them. Later structural work also showed that inactivation is a separate mechanism from activation rather than a fourth identical gating particle. Within the range they were fitted to, the equations remain accurate, and they are the foundation of every conductance-based neuron model since.</p>
 
 <h3>References</h3>
 <ul class="refs">
@@ -583,15 +591,15 @@ function phiOf(T){ return Math.pow(3, (T-6.3)/10); }   // Q10 = 3
    sticks at a depolarised steady state held up by the sodium window current,
    which is not what the classic experiment shows.                            */
 const DRUGS = {
-  ttx:      {short:'sodium pore plugged from outside — no spike at any strength', label:'TTX',       target:'na',   block:1.00, mouth:'out',
+  ttx:      {short:'sodium pore plugged from outside, no spike at any strength', label:'TTX',       target:'na',   block:1.00, mouth:'out',
              tip:'Tetrodotoxin, from pufferfish. Plugs the sodium pore from outside. Complete block: no spike at any stimulus.'},
-  lidocaine:{short:'about 40% of sodium channels blocked — threshold rises roughly eightfold', label:'Lidocaine', target:'na',   block:0.40, mouth:'in',
-             tip:'Local anaesthetic. Blocks about 40% of sodium channels from inside — enough to raise threshold roughly eightfold. Push the pulse harder and the spike comes back.'},
-  tea:      {short:'delayed-rectifier potassium blocked from inside — the spike broadens', label:'TEA',       target:'k',    block:0.90, mouth:'in',
-             tip:'Tetraethylammonium. Plugs the delayed-rectifier potassium channel from inside. The spike gets taller and lasts about three times as long.'},
-  fap:      {short:'potassium partly blocked — a milder version of TEA', label:'4-AP',      target:'k',    block:0.60, mouth:'in',
-             tip:'4-aminopyridine, a milder potassium blocker. Prescribed to some people with multiple sclerosis — try it on a stripped patch in the axon view.'},
-  pronase:  {short:'inactivation gate digested off most sodium channels — the spike never shuts itself off', label:'Pronase',   target:'h',    block:0.70, mouth:null,
+  lidocaine:{short:'about 40% of sodium channels blocked, threshold roughly doubles', label:'Lidocaine', target:'na',   block:0.40, mouth:'in',
+             tip:'Local anaesthetic. Blocks about 40% of sodium channels from inside, which roughly doubles threshold, 6.9 to 12.2 uA/cm2 here. Push the pulse harder and the spike comes back.'},
+  tea:      {short:'delayed-rectifier potassium blocked from inside, so the spike broadens', label:'TEA',       target:'k',    block:0.90, mouth:'in',
+             tip:'Tetraethylammonium. Plugs the delayed-rectifier potassium channel from inside. The spike gets about 6 mV taller and lasts about twice as long.'},
+  fap:      {short:'potassium partly blocked, a milder version of TEA', label:'4-AP',      target:'k',    block:0.60, mouth:'in',
+             tip:'4-aminopyridine, a milder potassium blocker. Prescribed to some people with multiple sclerosis. Try it on a stripped patch in the axon view.'},
+  pronase:  {short:'inactivation gate digested off most sodium channels, so the spike never shuts itself off', label:'Pronase',   target:'h',    block:0.70, mouth:null,
              tip:'A protease. Digests the inactivation gate off most sodium channels, so the spike never switches itself off and the membrane locks up depolarised.'}
 };
 /* Two blockers on the same channel act independently. Potassium block is
@@ -2217,7 +2225,8 @@ function commandPanel(g, L, y, h, pw, X, win, base, val, fmt){
    slowly, so the scale does not snap back and forth around a spike. */
 let iHold=60, sHold=8;
 function drawCurrentClamp(g, train){
-  const W=PL.LW, H=PL.LH, L=54, R=W<620?30:40, T=8, B=26;
+  const full = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const W=PL.LW, H=PL.LH, L=54, R=W<620?30:40, T=full?8:34, B=26;
   g.clearRect(0,0,W,H);
   g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.47), h2=Math.round(ph*0.24), h3=ph-h1-h2-8;
@@ -2314,7 +2323,8 @@ function drawCurrentClamp(g, train){
 
 /* ---------------- whole-cell current clamp: a family of spikes ---------------- */
 function drawCCSweeps(g){
-  const W=PL.LW, H=PL.LH, L=54, R=14, T=8, B=26;
+  const full = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=full?8:34, B=26;
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.22), h2=Math.round(ph*0.52), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;
@@ -2357,7 +2367,8 @@ function drawCCSweeps(g){
 
 /* ---------------- whole-cell voltage clamp ---------------- */
 function drawVoltageClamp(g){
-  const W=PL.LW, H=PL.LH, L=54, R=14, T=8, B=26;
+  const full = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=full?8:34, B=26;
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.24), h2=Math.round(ph*0.50), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;
@@ -2402,7 +2413,8 @@ function drawVoltageClamp(g){
 
 /* ---------------- cell-attached: single channels ---------------- */
 function drawSingleChannel(g){
-  const W=PL.LW, H=PL.LH, L=54, R=14, T=8, B=26;
+  const full = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const W=PL.LW, H=PL.LH, L=54, R=14, T=full?8:34, B=26;
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.18), h2=Math.round(ph*0.42), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;

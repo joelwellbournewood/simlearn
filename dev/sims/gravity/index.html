@@ -194,11 +194,11 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <button class="about-btn" id="b-about">What am I looking at?</button>
 
   <details class="grp" open>
-  <summary class="grp-title">Presets <span class="tag">starting arrangement</span></summary>
+  <summary class="grp-title">Presets</summary>
   <div class="presets" id="presets"></div>
   </details>
   <details class="grp">
-  <summary class="grp-title">Bodies <span class="tag">what is out there</span></summary>
+  <summary class="grp-title">Bodies</summary>
   <div class="row">
     <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="Planets, disc stars, cloud members and test particles: everything light enough to be pushed around rather than do the pushing. The number shown is exactly how many are created. Above about 400 bodies the solver switches to a Barnes-Hut tree so thousands stay smooth." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="0" max="100" step="1" value="30">
@@ -213,7 +213,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
   </details>
   <details class="grp">
-  <summary class="grp-title">Physics <span class="tag">the forces</span></summary>
+  <summary class="grp-title">Physics</summary>
   <div class="row">
     <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair. Turn it up and orbits tighten until they collapse; turn it down and the system drifts apart. Resets the energy baseline." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
@@ -232,7 +232,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
   </details>
   <details class="grp">
-  <summary class="grp-title">Frame <span class="tag">what the camera follows</span></summary>
+  <summary class="grp-title">Frame</summary>
   <div class="seg" id="frames">
     <button data-f="fixed" aria-pressed="true">Fixed</button>
     <button data-f="com" aria-pressed="false">Centre of mass</button>
@@ -242,7 +242,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
   </details>
   <details class="grp">
-  <summary class="grp-title">Look <span class="tag">trails and overlays</span></summary>
+  <summary class="grp-title">Look</summary>
   <div class="row">
     <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen. Trails are drawn in the current reference frame, so switch to the co-rotating view and they show the path as seen from the orbiting pair." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="55">

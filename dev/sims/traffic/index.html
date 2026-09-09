@@ -432,13 +432,17 @@ function build(){
                                   av:false, truck:false, a:0, lane:lanes===2?(i%2):0});
   applyKinds(); tapped=false; callTap();
 }
+/* The truck is picked first and is never one of the automated cars, otherwise vehicle 0
+   would be both and the automated control law would hand it a car's cruising speed. */
 function applyKinds(){
-  for(let i=0;i<cars.length;i++){ cars[i].truck=false; cars[i].av=((i*97)%100)<AVpct; }
+  for(let i=0;i<cars.length;i++){ cars[i].truck=false; cars[i].av=false; }
   if(truckOn && cars.length) cars[0].truck=true;
+  for(let i=0;i<cars.length;i++) if(!cars[i].truck) cars[i].av=((i*97)%100)<AVpct;
 }
 function pOf(c){
-  if(c.av) return {T:Math.max(0.9,T*0.8), a:Math.min(2.2,AMAX*2.6), b:BCOMF, noise:0, v0:V0};
-  return {T:T, a:AMAX, b:BCOMF, noise:NOISE, v0:c.truck? V0*truckSpeed/100 : V0};
+  const v0 = c.truck ? V0*truckSpeed/100 : V0;
+  if(c.av) return {T:Math.max(0.9,T*0.8), a:Math.min(2.2,AMAX*2.6), b:BCOMF, noise:0, v0:v0};
+  return {T:T, a:AMAX, b:BCOMF, noise:NOISE, v0:v0};
 }
 let nrand_s=null;
 function nrand(){ if(nrand_s!==null){const r=nrand_s;nrand_s=null;return r;}
@@ -608,7 +612,10 @@ window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:ST
   rmax:shapeR?Math.max.apply(null,Array.from(shapeR)):1,nmax:document.getElementById('s-n').max,
   off:cars.filter(c=>c.x<0||c.x>L).length,
   vmin:TRACK.vlim?Math.min.apply(null,Array.from(TRACK.vlim)):null,
-  meanv:cars.length?cars.reduce((a,c)=>a+c.v,0)/cars.length:0};};
+  meanv:cars.length?cars.reduce((a,c)=>a+c.v,0)/cars.length:0,
+  avn:cars.filter(c=>c.av).length, truckn:cars.filter(c=>c.truck).length,
+  bothn:cars.filter(c=>c.av&&c.truck).length,
+  truckv:(cars.find(c=>c.truck)||{}).v, V0:V0, truckSpeed:truckSpeed, AVpct:AVpct};};
 function pushRow(){
   const w=stc.width;
   stx.fillStyle='#0b1412'; stx.fillRect(0,stRow,w,1);
@@ -654,7 +661,7 @@ function drawCars(laneW){
     carPos(c,laneW,_pt);
     const x=_pt.x, y=_pt.y, th=Math.atan2(_pt.ty,_pt.tx);
     ctx.save(); ctx.translate(x,y); ctx.rotate(th+Math.PI/2);
-    ctx.fillStyle=c.av?'rgba(120,170,255,.98)':speedCol(c.v/V0);
+    ctx.fillStyle=(c.av&&!c.truck)?'rgba(120,170,255,.98)':speedCol(c.v/V0);
     const len=c.truck?cl*1.9:cl;
     ctx.beginPath();
     if(ctx.roundRect) ctx.roundRect(-cw/2,-len/2,cw,len,Math.min(2.4,cw/3));
