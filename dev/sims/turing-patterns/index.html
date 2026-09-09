@@ -555,6 +555,7 @@ body.sheet-open .panel{z-index:9}
     <p>Gray-Scott is a caricature of a chemistry, and no animal runs this exact reaction. Whether Turing mechanisms set real body patterns was argued over for decades, and the answer turned out to be yes in several places. Zebrafish pigment stripes arise from short-range and long-range interactions between pigment cell types, mouse digit number follows a Turing-like Bmp/Sox9/Wnt network, and hair follicle spacing depends on a Wnt/Dkk activator-inhibitor pair. In those systems the diffusing species are often cells or signalling ranges rather than freely diffusing molecules, and the mathematics belongs to the same family regardless.</p>
 
     <h3>Under the hood</h3>
+    <p>What runs here is chemistry on a grid, built from four choices that keep a very stiff system stable at interactive speed.</p>
     <ul>
       <li>Explicit forward Euler on a periodic grid, so the left edge wraps to the right and the top to the bottom.</li>
       <li>A nine-point diffusion stencil, generalised to a diffusion tensor so that the directional and growth modes stay stable.</li>

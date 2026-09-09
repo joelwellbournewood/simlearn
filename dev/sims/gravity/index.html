@@ -104,7 +104,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
-.hint{position:absolute;left:344px;right:auto;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+.hint{position:absolute;left:344px;right:230px;bottom:18px;text-align:left;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 366px)}
 .sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
 .sel.on{display:block}
@@ -257,6 +257,10 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 
 <div class="hint">Drag empty space to sling a body, click one to inspect it. Scroll zooms, right-drag pans. Space pauses, R rebuilds.</div>
 
+<div class="hud">
+  <div class="stat"><div class="k">bodies</div><div class="v" id="s-nb">0</div></div>
+  <div class="stat"><div class="k">energy drift</div><div class="v" id="s-drift">&ndash;</div></div>
+</div>
 <div class="sel" id="sel">
   <h4><i id="sel-dot"></i><span id="sel-name">Body</span></h4>
   <p class="kind" id="sel-kind"></p>
@@ -342,6 +346,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <p>Nothing here is locked. <b>Small bodies</b> sets how many light members are created, and the number shown is the number you get. <b>Large bodies</b> sets the heavy ones, and where an arrangement allows more than one they are placed on a ring turning at the speed that ring needs. Some arrangements are defined by their heavy bodies, so the count is held there. Beyond that, drag on empty space to sling in a new body at any time, click a body to inspect it, and delete anything you do not want. The reset button rebuilds the scene with the sliders exactly where you have left them, so you can rerun the same experiment with one thing changed. Clicking the arrangement card again is the way back to the settings it was published with.</p>
 
     <h3>Under the bonnet</h3>
+    <p>The point of the engineering is trust: every choice below exists so that when two orbits diverge on screen, the cause is gravity rather than the computer.</p>
     <ul>
       <li>Each body is treated as a softened sphere rather than a point, so the force stops growing once two bodies are closer than their own size. That is what prevents infinities during a close pass. The Pythagorean problem depends on very close approaches, so its exact timing here will differ from the published solution while the story stays the same.</li>
       <li>Motion is integrated with velocity Verlet, and each frame is cut into as many substeps as the fiercest acceleration on screen demands. Total energy holds to well under a percent through ordinary orbits, so what you see separating is physics rather than arithmetic.</li>
@@ -1459,6 +1464,16 @@ window.addEventListener('keydown',e=>{
   else if(k>='1'&&k<='9'){ const ks=Object.keys(PRESETS)[+k-1]; if(ks) restart(ks); }
 });
 
+let hudTm=0;
+function updateHud(now){
+  if(now-hudTm<250) return; hudTm=now;
+  el('s-nb').textContent=bodies.length;
+  if(E0!==null&&bodies.length){
+    const E=currentEnergy(false);
+    const d=Math.abs(E0)>1e-9?(E-E0)/Math.abs(E0):0;
+    el('s-drift').textContent=(d>=0?'+':'')+(100*d).toFixed(3)+'%';
+  } else { el('s-drift').textContent='\u2013'; }
+}
 /* ---------- loop ---------- */
 let lastT=0, pvT=0;
 function loop(now){
@@ -1475,7 +1490,7 @@ function loop(now){
       predict(wx,wy,tmp.x,tmp.y,launchM);
     }
   }
-  draw(); updateSel(now); govern(dtms);
+  draw(); updateSel(now); updateHud(now); govern(dtms);
   requestAnimationFrame(loop);
 }
 let rt=null;
