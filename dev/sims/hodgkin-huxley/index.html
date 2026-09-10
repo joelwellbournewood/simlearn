@@ -1010,7 +1010,17 @@ const DRUGCOL = { ttx:'#ff5a4a', lidocaine:'#ffd166', tea:'#b9a2ff',
                   fap:'#6fd0ff', pronase:'#7ce0b0' };
 
 /* ---------------- stochastic single channels ---------------- */
-function tickChannels(V, dtModel, phi, dtWall){
+/* The four pores on screen are a stochastic cartoon of a patch that really holds
+   thousands, so left to their own coin flips only one or two are open at the moment
+   of the inward rush and the biggest current of the whole spike looks like a trickle.
+   While the model's own Na conductance is high we therefore SHOWCASE the rush: three
+   of every four unblocked pores (all of them if fewer are on screen) are held with
+   their m gates open and the inactivation ball out. Nothing conducts with the ball in,
+   and the forcing fades out as gNa falls, so inactivation still shuts the pores on
+   screen at the right moment. The current itself is untouched: it comes from the
+   Hodgkin-Huxley equations, not from counting these pores. Voltage clamp is exempt,
+   because there the pores ARE the measurement. */
+function tickChannels(V, dtModel, phi, dtWall, gNa){
   const am=a_m(V)*phi, bm=b_m(V)*phi, ah=a_h(V)*phi, bh=b_h(V)*phi,
         an=a_n(V)*phi, bn=b_n(V)*phi;
   const P=r=>1-Math.exp(-r*dtModel);
@@ -1042,13 +1052,31 @@ function tickChannels(V, dtModel, phi, dtWall){
     ch.glow = ease(ch.glow, ch.cond?1:0, dtWall, 0.05);
     ch.sway += dtWall*1.7;
   }
+  showcaseNa(gNa, dtWall);
+}
+const NASHOW = { f:0 };
+function showcaseNa(gNa, dtWall){
+  const clamped = (typeof isClamp==='function') && isClamp();
+  const target = clamped ? 0 : clamp(((gNa===undefined?0:gNa)-4)/8, 0, 1);
+  NASHOW.f = ease(NASHOW.f, target, dtWall, 0.02);
+  if(NASHOW.f<0.02) return;
+  const na = TH.channels.filter(c=>c.type==='na' && !c.blk);
+  if(!na.length) return;
+  const want = Math.min(na.length, Math.max(1, Math.ceil(0.75*na.length*NASHOW.f)));
+  na.sort((a,b)=>(b.cond?1:0)-(a.cond?1:0));   /* keep the ones already open */
+  for(let i=0;i<want;i++){
+    const ch=na[i];
+    ch.mS[0]=ch.mS[1]=ch.mS[2]=1; ch.hS=1; ch.cond=true;
+    ch.act   = ease(ch.act,   1, dtWall, 0.030);
+    ch.inact = ease(ch.inact, 1, dtWall, 0.045);
+  }
 }
 
 /* ---------------- ion transit ---------------- */
 function sendThrough(ch, kind, count, dirDown){
   const srcSide = dirDown ? -1 : 1;
   for(let i=0;i<count;i++){
-    if(TH.transits.length>95) return;
+    if(TH.transits.length>130) return;
     /* sample a handful at random and take the nearest of those, so the pool
        near a busy channel does not get hollowed out into a visible hole */
     let best=null, bd=Infinity;
@@ -1067,6 +1095,7 @@ function sendThrough(ch, kind, count, dirDown){
     if(kind==='k')  TH.kOut += dirDown?-1:1;
   }
 }
+const RR = {};
 function pushFlux(kind, count, dirDown){
   if(kind==='leak_cl'){                       // the always-open background trickle
     const lk = TH.channels.filter(c=>c.type==='leak');
@@ -1076,8 +1105,12 @@ function pushFlux(kind, count, dirDown){
   }
   const open = TH.channels.filter(c=>c.type===kind && c.cond);
   if(!open.length) return;                    // blocked or shut: nothing crosses
-  for(let i=0;i<count;i++)
-    sendThrough(open[(Math.random()*open.length)|0], kind, 1, dirDown);
+  /* round robin, not a random pick: with four pores a random pick leaves one
+     pore doing all the work half the time, which reads as a weaker current */
+  for(let i=0;i<count;i++){
+    RR[kind]=(RR[kind]||0)+1;
+    sendThrough(open[RR[kind]%open.length], kind, 1, dirDown);
+  }
 }
 
 const POOLKEY = { 'na-1':'nao', 'na1':'nai', 'k-1':'ko', 'k1':'ki',
@@ -2847,7 +2880,7 @@ function advanceClamp(dtModel, dtWall){
 function finishPatchFrame(dtModel, dtWall, sampler){
   const nsub = Math.min(48, Math.max(1, Math.ceil(dtModel/0.05)));
   for(let i=0;i<nsub;i++){
-    tickChannels(patch.V, dtModel/nsub, PHI, dtWall/nsub);
+    tickChannels(patch.V, dtModel/nsub, PHI, dtWall/nsub, patch.gNa);
     if(sampler) sampler((i+1)/nsub);
   }
   if(S.ions){
@@ -2855,8 +2888,8 @@ function finishPatchFrame(dtModel, dtWall, sampler){
     TH.naDebt += Math.abs(patch.iNa)*dtModel*k;
     TH.kDebt  += Math.abs(patch.iK )*dtModel*k;
     TH.lDebt  += Math.abs(patch.iL )*dtModel*k*0.5;
-    let na=Math.min(8, Math.floor(TH.naDebt)); TH.naDebt-=na;
-    let kk=Math.min(8, Math.floor(TH.kDebt));  TH.kDebt -=kk;
+    let na=Math.min(12, Math.floor(TH.naDebt)); TH.naDebt-=na;
+    let kk=Math.min(12, Math.floor(TH.kDebt));  TH.kDebt -=kk;
     let ll=Math.min(2, Math.floor(TH.lDebt));  TH.lDebt -=ll;
     if(na) pushFlux('na', na, patch.iNa<0);
     if(kk) pushFlux('k',  kk, patch.iK <0);
