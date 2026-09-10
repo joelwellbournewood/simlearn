@@ -49,7 +49,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
 .label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:0 0 6px}
 .presets{display:grid;gap:5px;margin-bottom:11px}
-.preset{display:flex;flex-direction:column;gap:1px;padding:6px 11px;border:1px solid var(--line);border-radius:10px;
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
   background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
 .preset b{font-family:var(--display);font-weight:600;font-size:13px}
 .preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
@@ -400,7 +400,7 @@ const GB={
     const sx=Math.max(13,Math.min(30,A.w/36));
     const binBot=A.bot-34;
     /* the bin shelf: 2.5x the old 96px where there is room for it, less on a short window */
-    const binH=Math.max(96,Math.min(213,(binBot-A.y)*0.42));
+    const binH=Math.max(96,Math.min(240,(binBot-A.y)*0.42));
     const pegLow=binBot-binH, top=A.y+40;
     const span=pegLow-top-40;
     const sy=Math.max(11,Math.min(28,span/19));
@@ -477,10 +477,14 @@ const GB={
       const x=this.colx(g,this.ox+i-r/2);
       if(x>g.A.x-4&&x<g.A.x+g.A.w+4) disc(x,g.pegTop+r*g.sy,2.2,'rgba(150,180,165,.85)');
     }
-    /* fixed bin grid */
-    for(let j=-g.half;j<=g.half+1;j++){ const x=this.colx(g,j)-g.sx/2;
-      if(x>g.A.x&&x<g.A.x+g.A.w) line(x,g.pegBot+18,x,g.binBot,LINE,1); }
-    line(g.A.x,g.binBot,g.A.x+g.A.w,g.binBot,LINES,1.2);
+    /* fixed bin grid: walls drawn strongly enough to read as buckets */
+    { const yT=g.pegBot+18;
+      for(let j=-g.half;j<=g.half;j++){ const x=this.colx(g,j)-g.sx/2;
+        if((j+1000)%2===0) { ctx.fillStyle='rgba(150,190,170,.045)'; ctx.fillRect(x,yT,g.sx,g.binBot-yT); } }
+      for(let j=-g.half;j<=g.half+1;j++){ const x=this.colx(g,j)-g.sx/2;
+        if(x>g.A.x&&x<g.A.x+g.A.w){ line(x,yT,x,g.binBot,'rgba(150,190,170,.30)',1);
+          line(x,g.binBot-9,x,g.binBot,LINES,1.4); } } }
+    line(g.A.x,g.binBot,g.A.x+g.A.w,g.binBot,'rgba(150,190,170,.55)',1.4);
     /* stacked discs */
     for(let j=-g.half;j<=g.half;j++){ const n=Math.round(this.counts[j+HALFMAX]/this.upd);
       if(!n) continue; const x=this.colx(g,j);
@@ -524,12 +528,17 @@ const GB={
    Every population is stored as a discrete grid, the sampler draws from that
    exact grid, and the red theory curve is the exact n-fold convolution of it,
    so the prediction matches the machine for n = 1 and n = 2 as well as n = 60. */
-const PG=257; /* population grid points, x = i/256 */
+/* The population lives on PG equal cells of [0,1]; a cell is represented by its
+   CENTRE, gx(i). Cell centres matter: with 256 cells and 64 histogram bins every bin
+   holds exactly four cells, so a flat population is flat in every bin, including the
+   last one. Grid END POINTS would put one extra cell in the final bin and lift it. */
+const PG=256;
+const gx=i=>(i+0.5)/PG;
 function gridFromPdf(f){ const w=new Float64Array(PG); let s=0;
-  for(let i=0;i<PG;i++){ const v=Math.max(0,f(i/(PG-1))); w[i]=v; s+=v; }
+  for(let i=0;i<PG;i++){ const v=Math.max(0,f(gx(i))); w[i]=v; s+=v; }
   for(let i=0;i<PG;i++) w[i]/=s; return w; }
 function gridFromAtoms(list){ const w=new Float64Array(PG);
-  for(const [x,p] of list) w[Math.round(x*(PG-1))]+=p; return w; }
+  for(const [x,p] of list) w[clamp(Math.round(x*PG-0.5),0,PG-1)]+=p; return w; }
 const POPS={
   height:{lab:'Height', note:'adult height: symmetric bell',
     make:()=>gridFromPdf(x=>Math.exp(-0.5*((x-0.5)/0.105)**2))},
@@ -545,13 +554,13 @@ const POPS={
     make:()=>gridFromPdf(x=>x<0.04?0:Math.pow(x,-2.2))}
 };
 for(const k in POPS){ const P=POPS[k]; P.w=P.make();
-  let m=0,m2=0; for(let i=0;i<PG;i++){ const x=i/(PG-1); m+=P.w[i]*x; m2+=P.w[i]*x*x; }
+  let m=0,m2=0; for(let i=0;i<PG;i++){ const x=gx(i); m+=P.w[i]*x; m2+=P.w[i]*x*x; }
   P.mu=m; P.sd=Math.sqrt(Math.max(0,m2-m*m));
   P.cdf=new Float64Array(PG); let c=0;
   for(let i=0;i<PG;i++){ c+=P.w[i]; P.cdf[i]=c; }
   P.draw=()=>{ const u=rnd(); let lo=0,hi=PG-1;
     while(lo<hi){ const mid=(lo+hi)>>1; if(P.cdf[mid]<u) lo=mid+1; else hi=mid; }
-    return lo/(PG-1); };
+    return gx(lo); };
 }
 function convolve(a,b){ const r=new Float64Array(a.length+b.length-1);
   for(let i=0;i<a.length;i++){ const ai=a[i]; if(ai<1e-13) continue;
@@ -568,16 +577,19 @@ const CLT={
     const key=this.pop+'|'+this.n;
     if(key===this.tkey) return this.q;
     const P=POPS[this.pop], n=this.n;
-    /* coarsen by a power of two only, so atoms land exactly on grid points */
-    let c=1; while((PG-1)/c*n>4200) c*=2;
-    const G=(PG-1)/c+1;
+    /* coarsen by a power of two only, so atoms stay on cell centres */
+    let c=1; while(PG/c*n>4200) c*=2;
+    const G=PG/c;
     const w=new Float64Array(G);
     for(let i=0;i<PG;i++){ if(!P.w[i]) continue;
-      const t=i/c, lo=Math.floor(t), f=t-lo;
-      w[lo]+=P.w[i]*(1-f); if(f>0) w[lo+1]+=P.w[i]*f; }
-    const s=pmfPow(w,n), q=new Float64Array(this.NB), L=s.length-1;
-    for(let i=0;i<=L;i++){ if(!s[i]) continue;
-      const mean=i/L; q[clamp(Math.floor(mean*this.NB),0,this.NB-1)]+=s[i]; }
+      const t=(i+0.5)/c-0.5;                       /* fine centre -> coarse cell index */
+      if(t<=0) w[0]+=P.w[i];
+      else if(t>=G-1) w[G-1]+=P.w[i];
+      else { const lo=Math.floor(t), f=t-lo; w[lo]+=P.w[i]*(1-f); w[lo+1]+=P.w[i]*f; } }
+    const s=pmfPow(w,n), q=new Float64Array(this.NB);
+    for(let i=0;i<s.length;i++){ if(!s[i]) continue;
+      const mean=(i/n+0.5)/G;                      /* mean of n cell centres */
+      q[clamp(Math.floor(mean*this.NB),0,this.NB-1)]+=s[i]; }
     this.tkey=key; this.q=q; return q;
   },
   geom(){ const A=area(); const popB=A.y+90; const hTop=popB+72, hBot=A.bot-32;
@@ -605,8 +617,8 @@ const CLT={
     { let mx=0; for(let i=0;i<PG;i++) mx=Math.max(mx,P.w[i]);
       const h=g.popB-g.popT-16, atoms=(this.pop==='coin');
       if(atoms){ for(let i=0;i<PG;i++){ if(P.w[i]<1e-9) continue;
-          line(this.xpix(g,i/(PG-1)),g.popB,this.xpix(g,i/(PG-1)),g.popB-P.w[i]/mx*h,'rgba(160,190,175,.8)',3); } }
-      else { const pts=[]; for(let i=0;i<PG;i++) pts.push([this.xpix(g,i/(PG-1)),g.popB-P.w[i]/mx*h]);
+          line(this.xpix(g,gx(i)),g.popB,this.xpix(g,gx(i)),g.popB-P.w[i]/mx*h,'rgba(160,190,175,.8)',3); } }
+      else { const pts=[]; for(let i=0;i<PG;i++) pts.push([this.xpix(g,gx(i)),g.popB-P.w[i]/mx*h]);
         ctx.fillStyle='rgba(150,180,165,.18)'; ctx.beginPath(); ctx.moveTo(g.x0,g.popB);
         for(const p of pts) ctx.lineTo(p[0],p[1]); ctx.lineTo(g.x1,g.popB); ctx.fill();
         curve(pts,'rgba(160,190,175,.75)',1.2); } }
@@ -844,12 +856,13 @@ const TEST={
 /* ================= 5. MONTE CARLO DARTS ================= */
 const PI={
   rate:20, N:0, inside:0, dots:null, dctx:null, rings:[], acc:0,
-  px:0, py:0, pan:false, lx:0, ly:0,
-  reset(){ this.N=0; this.inside=0; this.rings=[]; this.px=0; this.py=0; this.pan=false;
+  px:0, py:0, sc:1, pan:false, lx:0, ly:0,
+  reset(){ this.N=0; this.inside=0; this.rings=[]; this.px=0; this.py=0; this.sc=1; this.pan=false;
     if(this.dots) this.dctx.clearRect(0,0,this.dots.width,this.dots.height); },
   geom(){ const A=area();
-    const side=Math.max(160,Math.min(A.w-300,A.h-206));
-    return {A,side,sx:A.cx-side/2,sy:A.y+40,rT:A.y+40+side+44}; },
+    const sy=A.y+22;
+    const side=Math.max(160,Math.min(A.w-140,A.h-150));
+    return {A,side,sx:A.cx-side/2,sy,rT:sy+side+48}; },
   ensure(){ if(!this.dots||this.dots.width!==cv.width||this.dots.height!==cv.height){
       this.dots=document.createElement('canvas'); this.dots.width=cv.width; this.dots.height=cv.height;
       this.dctx=this.dots.getContext('2d'); this.dctx.setTransform(DPR,0,0,DPR,0,0); this.reset(); } },
@@ -869,8 +882,10 @@ const PI={
     for(const r of this.rings) r.t+=dt*3; this.rings=this.rings.filter(r=>r.t<1); },
   draw(){
     const g=this.geom(); this.ensure();
-    ctx.save(); ctx.translate(this.px,this.py);
     const cx=g.sx+g.side/2, cy=g.sy+g.side/2, R=g.side/2;
+    /* right-drag pans, the wheel grows the whole board and its numbers up to 1.5x */
+    ctx.save(); ctx.translate(this.px,this.py);
+    if(this.sc!==1){ ctx.translate(cx,cy); ctx.scale(this.sc,this.sc); ctx.translate(-cx,-cy); }
     ctx.strokeStyle=LINES; ctx.lineWidth=1.2; ctx.strokeRect(g.sx,g.sy,g.side,g.side);
     ctx.beginPath(); ctx.arc(cx,cy,R,0,6.2832); ctx.stroke();
     ctx.drawImage(this.dots,0,0,W,H);
@@ -880,9 +895,9 @@ const PI={
     dash([3,4]);
     line(cx,cy,cx+R,cy,'rgba(160,190,175,.55)',1); dash();
     disc(cx,cy,2.2,'rgba(160,190,175,.85)');
-    txt('r = 1',cx+R/2,cy-10,'center','rgba(190,214,202,.95)','13.5px '+MONO);
-    txt('square area 4',g.sx+10,g.sy+20,'left','rgba(178,200,188,.95)','13px '+MONO);
-    txt('circle area '+String.fromCharCode(960),g.sx+g.side-10,g.sy+20,'right',ACC,'13px '+MONO);
+    txt('r = 1',cx+R/2,cy-11,'center','rgba(190,214,202,.95)','15px '+MONO);
+    txt('square area 4',g.sx+12,g.sy+24,'left','rgba(178,200,188,.95)','16px '+MONO);
+    txt('circle area '+String.fromCharCode(960),g.sx+g.side-12,g.sy+24,'right',ACC,'16px '+MONO);
     /* the estimate, as the ratio it is. The number of decimals follows the noise:
        one digit past the typical error, so the last digit shown is one you can trust. */
     const est=this.N?4*this.inside/this.N:0;
@@ -900,13 +915,13 @@ const PI={
     let wsum=0; for(const p of parts){ ctx.font=p[1]; wsum+=ctx.measureText(p[0]).width; }
     let x=g.A.cx-wsum/2;
     for(const p of parts){ ctx.font=p[1]; ctx.fillStyle=p[2]; ctx.textAlign='left';
-      ctx.fillText(p[0],x,y+13); x+=ctx.measureText(p[0]).width; }
+      ctx.fillText(p[0],x,y+21); x+=ctx.measureText(p[0]).width; }
     txt('the fraction of darts inside the circle is the circle\u2019s share of the square, '
-      +String.fromCharCode(960)+'/4',g.A.cx,y-18,'center',MUTED,'13px '+MONO);
+      +String.fromCharCode(960)+'/4',g.A.cx,y-24,'center',MUTED,'14.5px '+MONO);
     txt(this.N?('true '+String.fromCharCode(960)+' = '+Math.PI.toFixed(dp)+'   off by '
       +(100*Math.abs(est-Math.PI)/Math.PI).toFixed(dpp)+'%   typical error at this many darts \u00b1'
-      +pctSd.toFixed(dpp)+'%   click to throw 500')
-      :'click to throw 500 darts',g.A.cx,y+46,'center',MUTED,'13px '+MONO);
+      +pctSd.toFixed(dpp)+'%')
+      :'click to throw 500 darts',g.A.cx,y+60,'center',MUTED,'15px '+MONO);
     ctx.restore();
   },
   /* right-drag slides the whole board, dots, labels and readout together */
@@ -920,16 +935,16 @@ const PI={
 };
 /* ================= wiring ================= */
 const MODES={
-  galton:{o:GB, b:'Galton board',
+  galton:{o:GB, b:'Galton board', tag:'Bounces stack into a bell curve',
     hint:'Click to pour a burst of balls. Drag the funnel sideways, or down to take rows away.'},
-  clt:{o:CLT, b:'Population sampling',
+  clt:{o:CLT, b:'Population sampling', tag:'Averages turn normal whatever the population',
     hint:'Click to draw extra samples. Raise draws per sample and watch the red prediction narrow.'},
-  ci:{o:CI, b:'Confidence intervals',
+  ci:{o:CI, b:'Confidence intervals', tag:'What 95% confident actually means',
     hint:'Green intervals caught the true mean, red ones missed. R starts a new truth.'},
-  test:{o:TEST, b:'Screening test',
+  test:{o:TEST, b:'Screening test', tag:'False alarms and missed cases in a diagnosis',
     hint:'Drag the threshold. Every step right trades missed cases for false alarms.'},
-  pi:{o:PI, b:'Monte Carlo darts',
-    hint:'Click to throw 500 darts at once. The error shrinks as 1/\u221aN.'}
+  pi:{o:PI, b:'Monte Carlo darts', tag:'Measuring \u03c0 by throwing at random',
+    hint:'Click to throw 500 darts at once. Scroll to grow the board. The error shrinks as 1/\u221aN.'}
 };
 let mode='galton', paused=false;
 const hintEl=el('hint');
@@ -938,7 +953,7 @@ function renderPresets(){
   Object.keys(MODES).forEach((k,i)=>{
     const m=MODES[k], b=document.createElement('button');
     b.className='preset'; b.setAttribute('aria-pressed',k===mode?'true':'false');
-    b.innerHTML='<b>'+m.b+'</b>';
+    b.innerHTML='<b>'+m.b+'</b><small>'+m.tag+'</small>';
     b.addEventListener('click',()=>applyMode(k)); box.appendChild(b);
   });
 }
@@ -1003,6 +1018,8 @@ dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
 /* pointer on canvas */
 function local(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top]; }
 cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{ if(mode!=='pi') return; e.preventDefault();
+  PI.sc=clamp(PI.sc*(e.deltaY<0?1.06:1/1.06),1,1.5); },{passive:false});
 cv.addEventListener('pointerdown',e=>{ if((e.button===2||e.button===1)&&mode!=='pi') return;
   const [x,y]=local(e); cv.setPointerCapture(e.pointerId); MODES[mode].o.down(x,y,e); });
 cv.addEventListener('pointermove',e=>{ if(e.buttons===0) MODES[mode].o.up(); const [x,y]=local(e); MODES[mode].o.move(x,y,e); });

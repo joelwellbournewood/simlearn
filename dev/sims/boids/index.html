@@ -1809,8 +1809,8 @@ class View3D {
   panScene(dx, dy) {
     const c = this.cam, k = c.r * 0.0016;
     const sp = Math.sin(c.theta), cp = Math.cos(c.theta);
-    this.target.x += (dx * sp - dy * cp * Math.cos(c.phi)) * k;
-    this.target.z += (-dx * cp - dy * sp * Math.cos(c.phi)) * k;
+    this.target.x += (-dx * sp - dy * cp * Math.cos(c.phi)) * k;
+    this.target.z += (dx * cp - dy * sp * Math.cos(c.phi)) * k;
     this.target.y += dy * Math.sin(c.phi) * k;
     const W = this.W, lo = W.lo, sz = W.size, m = 1.2;
     this.target.x = clamp(this.target.x, lo[0] - sz[0] * m, lo[0] + sz[0] * (1 + m));
