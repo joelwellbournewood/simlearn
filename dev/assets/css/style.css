@@ -370,3 +370,14 @@ body.leaving .card:not(.launching){opacity:.25; transition:opacity .18s}
 }
 
 footer .copy{opacity:.62;font-size:.92em;white-space:nowrap}
+
+/* Short laptops on the player page. A 768px screen gave the simulation only 620px
+   of frame, and several control panels are taller than that. The brand bar is the
+   one row that carries nothing the player needs, since the back link and the title
+   live in the row below it, so it stands down and the padding tightens. Measured
+   at 1366x768: usable frame height 620px to 686px. */
+@media (min-width:781px) and (max-height:840px){
+  body.sim-page header.site-header{display:none}
+  .sim-header{padding:.26rem clamp(12px,1.6vw,26px) .24rem}
+  .sim-frame-wrap{padding:6px clamp(10px,1.4vw,22px) 7px}
+}

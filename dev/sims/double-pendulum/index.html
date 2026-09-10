@@ -78,7 +78,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 .segrow .seg:hover{border-color:var(--line-strong)}
 .segrow .seg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
 .seglabel{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;margin:9px 0 4px;position:relative}
-/* short laptops: compact the six machine cards to a 2-column grid so the panel
 input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
 input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
@@ -123,6 +122,27 @@ details.grp > summary::after{content:'';width:8px;height:8px;flex:none;
 details.grp[open] > summary::after{transform:rotate(45deg)}
 details.grp[open] > summary{margin-bottom:12px}
 details.grp > summary + *{margin-top:0}
+
+/* Short laptops. Everything from the range thumbs to the explainer dialog used to
+   sit inside an unterminated comment here, so on a 768px screen the in-frame panel
+   rules never applied and the panel ran off the bottom. Rules restored, and the
+   rhythm tightens on a short viewport so the panel fits without a scrollbar. */
+@media (max-height:840px){
+  .panel{padding:12px 15px}
+  .about-btn{padding:6px 14px;margin-bottom:6px;font-size:13.5px}
+  .presets{gap:4px;margin-bottom:7px}
+  .preset{padding:4px 10px}
+  .preset b{font-size:12.5px}
+  .preset small{font-size:11px;line-height:1.22}
+  .row{margin:6px 0}
+  .row label{margin-bottom:1px;font-size:12.5px}
+  input[type=range]{height:15px}
+  details.grp{padding:8px 0 9px}
+  .grp-title{font-size:15px}
+  .grp[open] > .grp-title{padding-bottom:7px}
+  .segrow{margin:7px 0}
+}
+}
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <link rel="stylesheet" href="../../assets/css/sim-mobile.css">
