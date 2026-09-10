@@ -165,37 +165,39 @@ details.grp > summary + *{margin-top:0}
   <details class="grp" open>
     <summary>Controls</summary>
   <div class="row">
-    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once, spread over so small a range of angles that they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="Near identical pendulums, released together." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="The angle between the first copy and the last, which can be a thousandth of a degree and still tear apart." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="Angle between the first copy and the last." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
     <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
   </div>
   <div class="row">
-    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="How high both arms are lifted before release, with the motion turning chaotic above about 20 degrees." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="Lift before release. Chaotic above about 20 degrees." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
     <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
   </div>
   <div class="row">
-    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Length of the second arm relative to the first, and the longer it is the harder it whips." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
+    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Second arm, relative to the first." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
     <input type="range" id="s-l2" min="0.4" max="1.6" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each tip path stays on screen." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length</span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="60">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with the integration substeps scaled to match." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed</span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.25" max="2.5" step="0.05" value="1">
   </div>
 
-  <div class="seglabel"><span class="nm">Look<button class="tip" data-tip="Colour only. The physics is untouched." aria-label="What look does">?</button></span></div>
-  <div class="segrow" id="seg-look">
-    <button class="seg" data-v="field" aria-pressed="true">Field</button>
-    <button class="seg" data-v="dusk" aria-pressed="false">Dusk</button>
-    <button class="seg" data-v="ember" aria-pressed="false">Ember</button>
-    <button class="seg" data-v="ice" aria-pressed="false">Ice</button>
-  </div>
+  </details>
+  <details class="grp">
+    <summary>Look</summary>
+    <div class="segrow" id="seg-look">
+      <button class="seg" data-v="field" aria-pressed="true">Field</button>
+      <button class="seg" data-v="dusk" aria-pressed="false">Dusk</button>
+      <button class="seg" data-v="ember" aria-pressed="false">Ember</button>
+      <button class="seg" data-v="ice" aria-pressed="false">Ice</button>
+    </div>
   </details>
 
 </div>

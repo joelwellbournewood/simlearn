@@ -172,19 +172,19 @@ details.grp > summary + *{margin-top:0}
     <summary>Controls</summary>
 
     <div class="row" data-m="galton">
-      <label for="s-rows"><span class="nm">Rows of pegs<button class="tip" data-tip="Each row is one left or right decision. Dragging the funnel down takes rows away." aria-label="What rows of pegs does">?</button></span><span class="val" id="v-rows"></span></label>
+      <label for="s-rows"><span class="nm">Rows of pegs<button class="tip" data-tip="Each row is one left or right bounce." aria-label="What rows of pegs does">?</button></span><span class="val" id="v-rows"></span></label>
       <input type="range" id="s-rows" min="2" max="20" step="1" value="11">
     </div>
     <div class="row" data-m="galton">
-      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="The chance a ball bounces right at each peg. Off centre, the bell moves and leans." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
+      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="Chance of bouncing right. Off centre, the bell leans." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
       <input type="range" id="s-bias" min="0.05" max="0.95" step="0.01" value="0.5">
     </div>
     <div class="row" data-m="galton">
-      <label for="s-rate"><span class="nm">Drop rate<button class="tip" data-tip="Balls released per second. Turn it up to watch the histogram converge in seconds." aria-label="What drop rate does">?</button></span><span class="val" id="v-rate"></span></label>
+      <label for="s-rate"><span class="nm">Drop rate</span><span class="val" id="v-rate"></span></label>
       <input type="range" id="s-rate" min="0" max="2.7" step="0.05" value="1.1">
     </div>
 
-    <div class="seglabel" data-m="clt"><span class="nm">Population<button class="tip" data-tip="A real quantity with that shape. The point is that the shape stops mattering once you average." aria-label="What population does">?</button></span></div>
+    <div class="seglabel" data-m="clt"><span class="nm">Population<button class="tip" data-tip="The shape stops mattering once you average." aria-label="What population does">?</button></span></div>
     <div class="segrow wrap" data-m="clt" id="seg-pop">
       <button class="seg" data-v="height" aria-pressed="false">Height</button>
       <button class="seg" data-v="wealth" aria-pressed="false">Wealth</button>
@@ -194,11 +194,11 @@ details.grp > summary + *{margin-top:0}
       <button class="seg" data-v="asteroid" aria-pressed="false">Asteroids</button>
     </div>
     <div class="row" data-m="clt">
-      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="How many values are averaged into each falling ball. At 1 you are looking at the population itself." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
+      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="Values averaged into each ball. At 1 you see the population." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
       <input type="range" id="s-cltn" min="1" max="64" step="1" value="1">
     </div>
     <div class="row" data-m="clt">
-      <label for="s-cltrate"><span class="nm">Samples per second<button class="tip" data-tip="How fast new sample means fall into the histogram." aria-label="What samples per second does">?</button></span><span class="val" id="v-cltrate"></span></label>
+      <label for="s-cltrate"><span class="nm">Samples per second</span><span class="val" id="v-cltrate"></span></label>
       <input type="range" id="s-cltrate" min="0" max="2" step="0.05" value="0.8">
     </div>
 
@@ -207,54 +207,56 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-cin" min="3" max="60" step="1" value="10">
     </div>
     <div class="row" data-m="ci">
-      <label for="s-cisig"><span class="nm">Population spread<button class="tip" data-tip="The true standard deviation of the thing being measured. Wider population, wider intervals." aria-label="What population spread does">?</button></span><span class="val" id="v-cisig"></span></label>
+      <label for="s-cisig"><span class="nm">Population spread<button class="tip" data-tip="The true spread. Wider population, wider intervals." aria-label="What population spread does">?</button></span><span class="val" id="v-cisig"></span></label>
       <input type="range" id="s-cisig" min="0.03" max="0.3" step="0.005" value="0.12">
     </div>
     <div class="row" data-m="ci">
-      <label for="s-conf"><span class="nm">Confidence level<button class="tip" data-tip="The fraction of intervals that should catch the true mean in the long run." aria-label="What confidence level does">?</button></span><span class="val" id="v-conf"></span></label>
+      <label for="s-conf"><span class="nm">Confidence level<button class="tip" data-tip="Share of intervals that should catch the true mean." aria-label="What confidence level does">?</button></span><span class="val" id="v-conf"></span></label>
       <input type="range" id="s-conf" min="50" max="99" step="1" value="95">
     </div>
-    <div class="seglabel" data-m="ci"><span class="nm">Critical value<button class="tip" data-tip="Use z only when the population spread is genuinely known. Otherwise the sample estimates it and t pays for the uncertainty." aria-label="What critical value does">?</button></span></div>
+    <div class="seglabel" data-m="ci"><span class="nm">Critical value<button class="tip" data-tip="Use z only if the spread is truly known. t pays for estimating it." aria-label="What critical value does">?</button></span></div>
     <div class="segrow" data-m="ci" id="seg-meth">
       <button class="seg" data-v="t" aria-pressed="true">&sigma; unknown: t</button>
       <button class="seg" data-v="z" aria-pressed="false">&sigma; known: z</button>
     </div>
     <div class="row" data-m="ci">
-      <label for="s-cirate"><span class="nm">Experiments per second<button class="tip" data-tip="How fast new intervals are produced and stacked." aria-label="What experiments per second does">?</button></span><span class="val" id="v-cirate"></span></label>
+      <label for="s-cirate"><span class="nm">Experiments per second</span><span class="val" id="v-cirate"></span></label>
       <input type="range" id="s-cirate" min="0" max="1.3" step="0.05" value="0.45">
     </div>
 
     <div class="row" data-m="test">
-      <label for="s-prev"><span class="nm">How common the disease is<button class="tip" data-tip="Prevalence. The rarer the disease, the more of your positives are false ones." aria-label="What prevalence does">?</button></span><span class="val" id="v-prev"></span></label>
+      <label for="s-prev"><span class="nm">How common the disease is<button class="tip" data-tip="Prevalence. The rarer it is, the more positives are false." aria-label="What prevalence does">?</button></span><span class="val" id="v-prev"></span></label>
       <input type="range" id="s-prev" min="0.3" max="4" step="0.05" value="1.7">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="The gap between the two peaks. Drag either curve along the chart to move it by hand." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
+      <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="Gap between the peaks. Drag either curve too." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
       <input type="range" id="s-sep" min="0.5" max="4" step="0.1" value="2.2">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sd0"><span class="nm">Biomarker spread, healthy<button class="tip" data-tip="How much healthy people differ from each other. A noisier marker overlaps the ill more." aria-label="What the healthy spread does">?</button></span><span class="val" id="v-sd0"></span></label>
+      <label for="s-sd0"><span class="nm">Biomarker spread, healthy<button class="tip" data-tip="Wider means more overlap with the ill." aria-label="What the healthy spread does">?</button></span><span class="val" id="v-sd0"></span></label>
       <input type="range" id="s-sd0" min="0.4" max="2.2" step="0.05" value="1">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sd1"><span class="nm">Biomarker spread, ill<button class="tip" data-tip="How much ill people differ from each other. Widen it and the tail reaches down past the cut-off." aria-label="What the ill spread does">?</button></span><span class="val" id="v-sd1"></span></label>
+      <label for="s-sd1"><span class="nm">Biomarker spread, ill<button class="tip" data-tip="Wider means more ill people fall below the cut-off." aria-label="What the ill spread does">?</button></span><span class="val" id="v-sd1"></span></label>
       <input type="range" id="s-sd1" min="0.4" max="2.2" step="0.05" value="1">
     </div>
     <div class="row" data-m="test">
-      <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="The cut-off. Drag it on the chart too: every step right trades false alarms for missed cases." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
+      <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="The cut-off. Drag it on the chart too." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
       <input type="range" id="s-thr" min="-7" max="11" step="0.05" value="1.4">
     </div>
     <div class="row" data-m="test">
-      <label for="s-trate"><span class="nm">People per second<button class="tip" data-tip="How fast the queue is screened." aria-label="What people per second does">?</button></span><span class="val" id="v-trate"></span></label>
+      <label for="s-trate"><span class="nm">People per second</span><span class="val" id="v-trate"></span></label>
       <input type="range" id="s-trate" min="0" max="4.7" step="0.05" value="1.15">
     </div>
 
     <div class="row" data-m="pi">
-      <label for="s-darts"><span class="nm">Darts per second<button class="tip" data-tip="Throw rate. The estimate improves with the square root of the total, so patience gets expensive." aria-label="What darts per second does">?</button></span><span class="val" id="v-darts"></span></label>
+      <label for="s-darts"><span class="nm">Darts per second<button class="tip" data-tip="The error falls as one over the square root of the total." aria-label="What darts per second does">?</button></span><span class="val" id="v-darts"></span></label>
       <input type="range" id="s-darts" min="0" max="4" step="0.05" value="1.3">
     </div>
 
-    <div class="seglabel"><span class="nm">Look<button class="tip" data-tip="Colour only. Nothing about the mathematics changes." aria-label="What look does">?</button></span></div>
+  </details>
+  <details class="grp">
+    <summary>Look</summary>
     <div class="segrow" id="seg-look">
       <button class="seg" data-v="field" aria-pressed="true">Field</button>
       <button class="seg" data-v="dusk" aria-pressed="false">Dusk</button>
@@ -695,13 +697,6 @@ const CLT={
     curve(pts,DGR,1.5,[5,4]);
     txt('means of '+this.n+(this.n>1?' draws':' draw')+'   red: the exact distribution of the mean',
         g.x0,g.hTop-8,'left',MUTED,'10.5px '+MONO);
-    const m=this.total?this.sum/this.total:0,
-          v=this.total>1?(this.sum2-this.sum*m)/(this.total-1):0;
-    let s=fmtN(this.total)+' samples';
-    if(this.total>1) s+='   mean of means '+m.toFixed(3)+' (theory '+P.mu.toFixed(3)+')   sd '
-      +Math.sqrt(Math.max(0,v)).toFixed(3)+' (theory '+(P.sd/Math.sqrt(this.n)).toFixed(3)+')';
-    else s+='   population mean '+P.mu.toFixed(3)+', sd '+P.sd.toFixed(3);
-    txt(s,(g.x0+g.x1)/2,g.hBot+20,'center',MUTED);
   },
   histY(g,m){ const b=clamp(Math.floor(m*this.NB),0,this.NB-1);
     let mxo=0; for(const x of this.bins) mxo=Math.max(mxo,x);
@@ -1034,7 +1029,7 @@ const PI={
 const MODES={
   galton:{o:GB, b:'Galton board', tag:'Bounces stack into a bell curve',
     hint:'Click to pour a burst of balls. Drag the funnel sideways, or down to take rows away.'},
-  clt:{o:CLT, b:'Population sampling', tag:'Averages turn normal whatever the population',
+  clt:{o:CLT, b:'Population sampling', tag:'Averages turn normal',
     hint:'Click to draw extra samples. Raise draws per sample and watch the red prediction narrow.'},
   ci:{o:CI, b:'Confidence intervals', tag:'What 95% confident actually means',
     hint:'Green intervals caught the true mean, red ones missed. R starts a new truth.'},

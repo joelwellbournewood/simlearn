@@ -207,34 +207,34 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Bodies</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="The light bodies that get pushed around rather than do the pushing." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="Pushed around rather than pushing." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="0" max="100" step="1" value="30">
   </div>
   <div class="row">
-    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy bodies that do the pushing: stars, galaxy nuclei, massive seeds." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
+    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy ones: stars, galaxy nuclei." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
     <input type="range" id="s-nl" min="0" max="5" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging on empty space and releasing." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
+    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
     <input type="range" id="s-launch" min="0" max="100" step="1" value="42">
   </div>
   </details>
   <details class="grp">
   <summary class="grp-title">Physics</summary>
   <div class="row">
-    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair, so orbits tighten as you raise it and drift apart as you lower it." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
+    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Treats each body as a fuzzy sphere, so the force stops growing once two bodies are closer than their sizes." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
+    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Bodies act as fuzzy spheres, so close passes stay finite." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
     <input type="range" id="s-soft" min="0.25" max="2" step="0.05" value="0.7">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with extra substeps added automatically so close passes stay accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed</span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.1" max="8" step="0.05" value="1">
   </div>
   <div class="row">
-    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch merge into one heavier body." aria-label="What collisions does">?</button></span></label>
+    <label><span class="nm">Collisions<button class="tip" data-tip="Touching bodies merge." aria-label="What collisions does">?</button></span></label>
     <div class="toggles"><button class="tg" id="t-merge" aria-pressed="false">Merge on contact</button></div>
   </div>
   </details>
@@ -251,10 +251,10 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Look</summary>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen, drawn in whichever reference frame you are watching from." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length</span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="55">
   </div>
-  <div class="sublab"><span class="nm">Palette<button class="tip" data-tip="Colour and sky only. The physics, the masses and the units are untouched." aria-label="What palette does">?</button></span></div>
+  <div class="sublab"><span class="nm">Palette</span></div>
   <div class="seg four" id="palettes">
     <button data-p="deep" aria-pressed="true">Deep field</button>
     <button data-p="nebula" aria-pressed="false">Nebula</button>
@@ -625,30 +625,66 @@ function buildStars(){
   const s=stars.getContext('2d'); s.setTransform(DPR,0,0,DPR,0,0);
   const R=Math.min(W,H)*0.42;
   s.globalCompositeOperation='lighter';
-  for(const [cr,cg,cb,cn] of (P.neb||[])){
-    for(let i=0;i<cn;i++){
-      const x=Math.random()*W, y=Math.random()*H;
-      const rad=R*(0.55+Math.random()*0.45), a=0.065+Math.random()*0.055;
-      for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
-        const gx=x+dx*W, gy=y+dy*H;
-        if(gx<-rad||gx>W+rad||gy<-rad||gy>H+rad) continue;
-        const gr=s.createRadialGradient(gx,gy,rad*0.06,gx,gy,rad);
-        gr.addColorStop(0,'rgba('+cr+','+cg+','+cb+','+a.toFixed(3)+')');
-        gr.addColorStop(0.45,'rgba('+cr+','+cg+','+cb+','+(a*0.34).toFixed(3)+')');
-        gr.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0)');
-        s.fillStyle=gr; s.beginPath(); s.arc(gx,gy,rad,0,TAU); s.fill();
+  /* one soft ellipse, stamped at every wrapped offset so the tile has no seam */
+  const blob=(x,y,rx,ry,rot,c,a)=>{
+    const R=Math.max(rx,ry);
+    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
+      const gx=x+dx*W, gy=y+dy*H;
+      if(gx<-R||gx>W+R||gy<-R||gy>H+R) continue;
+      s.save(); s.translate(gx,gy); s.rotate(rot); s.scale(1,ry/rx);
+      const gr=s.createRadialGradient(0,0,rx*0.06,0,0,rx);
+      gr.addColorStop(0,'rgba('+c[0]+','+c[1]+','+c[2]+','+a.toFixed(3)+')');
+      gr.addColorStop(0.45,'rgba('+c[0]+','+c[1]+','+c[2]+','+(a*0.34).toFixed(3)+')');
+      gr.addColorStop(1,'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+      s.fillStyle=gr; s.beginPath(); s.arc(0,0,rx,0,TAU); s.fill(); s.restore();
+    }
+  };
+  const sky=P.sky||'clear';
+  if(sky==='clouds'){
+    /* Nebula: round billows, the emission-nebula look */
+    for(const [cr,cg,cb,cn] of (P.neb||[])){
+      for(let i=0;i<cn;i++){
+        const rad=R*(0.55+Math.random()*0.45);
+        blob(Math.random()*W,Math.random()*H,rad,rad*(0.8+Math.random()*0.4),
+             Math.random()*TAU,[cr,cg,cb],0.065+Math.random()*0.055);
+      }
+      for(let i=0;i<90;i++){ const rad=R*(0.05+Math.random()*0.16);
+        blob(Math.random()*W,Math.random()*H,rad,rad,0,[cr,cg,cb],0.05); }
+    }
+  } else if(sky==='filaments'){
+    /* Ember: long thin wisps at a shared drift angle, a supernova remnant rather
+       than a cloud, so the sky reads differently and not just in colour */
+    const base=Math.random()*Math.PI;
+    for(const [cr,cg,cb,cn] of (P.neb||[])){
+      for(let i=0;i<cn+2;i++){
+        const rx=R*(0.7+Math.random()*0.35), rot=base+(Math.random()-0.5)*0.85;
+        blob(Math.random()*W,Math.random()*H,rx,rx*(0.09+Math.random()*0.11),rot,
+             [cr,cg,cb],0.085+Math.random()*0.055);
+      }
+      for(let i=0;i<40;i++){ const rx=R*(0.10+Math.random()*0.20);
+        blob(Math.random()*W,Math.random()*H,rx,rx*(0.22+Math.random()*0.25),
+             base+(Math.random()-0.5)*1.1,[cr,cg,cb],0.075); }
+    }
+  } else if(sky==='band'){
+    /* Ice: one broad ribbon across the sky, the plane of a cold galaxy, with the
+       clumps strung along it rather than scattered */
+    const ang=0.30+Math.random()*0.12, cy=H*(0.3+Math.random()*0.4);
+    const neb=P.neb||[];
+    for(let i=0;i<9;i++){
+      const x=(i+0.5)/9*W, y=cy+Math.tan(ang)*(x-W/2)+(Math.random()-0.5)*H*0.06;
+      const c=neb[i%Math.max(1,neb.length)]||[120,160,220];
+      blob(x,y,R*(0.42+Math.random()*0.22),R*(0.10+Math.random()*0.06),ang,c,
+           0.055+Math.random()*0.04);
+    }
+    for(const [cr,cg,cb] of neb){
+      for(let i=0;i<26;i++){
+        const x=Math.random()*W, y=cy+Math.tan(ang)*(x-W/2)+(Math.random()-0.5)*H*0.22;
+        const rad=R*(0.04+Math.random()*0.13);
+        blob(x,y,rad,rad*(0.5+Math.random()*0.5),ang,[cr,cg,cb],0.045);
       }
     }
-    /* a little mottling so the clouds are not smooth blobs */
-    for(let i=0;i<90;i++){
-      const x=Math.random()*W, y=Math.random()*H, rad=R*(0.05+Math.random()*0.16);
-      const gr=s.createRadialGradient(x,y,0,x,y,rad);
-      gr.addColorStop(0,'rgba('+cr+','+cg+','+cb+',0.05)');
-      gr.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0)');
-      s.fillStyle=gr; s.beginPath(); s.arc(x,y,rad,0,TAU); s.fill();
-    }
   }
-  const st=P.star, n=Math.round(W*H/5200);
+  const st=P.star, n=Math.round(W*H/5200*(P.starK||1));
   for(let i=0;i<n;i++){
     const x=Math.random()*W, y=Math.random()*H, a=0.05+Math.random()*0.22, r=Math.random()<0.12?1.5:0.85;
     s.fillStyle='rgba('+st[0]+','+st[1]+','+st[2]+','+a.toFixed(3)+')';
@@ -703,17 +739,20 @@ function twoHeaviest(){ let A=null,B=null; for(const b of bodies){ if(!A||b.m>A.
 const LOOKS={
   deep:{ nm:'Deep field', field:'#07120f', bg:'#0a1712', panel:'rgba(15,31,26,.84)', panel2:'#1b352c',
     ink:[227,239,233], neu:[150,190,170], acc:[86,224,194], muted:'#9db9ac',
-    star:[200,232,220], neb:[] },
+    star:[200,232,220], neb:[], sky:'clear', starK:1 },
   nebula:{ nm:'Nebula', field:'#080615', bg:'#0d0a1e', panel:'rgba(26,20,48,.84)', panel2:'#241b3b',
     ink:[236,233,252], neu:[160,150,200], acc:[186,148,255], muted:'#a99fc4',
+    sky:'clouds', starK:0.95,
     star:[228,228,255], neb:[[126,72,214,3],[214,80,170,3],[60,110,220,2]],
     ramp:[[120,180,255],[214,132,255],[255,138,178]] },
   ember:{ nm:'Ember', field:'#130a07', bg:'#1b120e', panel:'rgba(46,26,20,.84)', panel2:'#33201a',
     ink:[252,238,228], neu:[190,150,128], acc:[255,178,102], muted:'#c3a493',
+    sky:'filaments', starK:0.85,
     star:[255,232,206], neb:[[226,104,38,3],[186,36,54,3],[240,170,60,2]],
     ramp:[[255,226,138],[255,150,60],[214,52,60]] },
   ice:{ nm:'Ice', field:'#050d16', bg:'#0b1622', panel:'rgba(16,32,50,.84)', panel2:'#152c42',
     ink:[233,244,255], neu:[140,175,205], acc:[124,212,255], muted:'#9db3c8',
+    sky:'band', starK:1.3,
     star:[236,248,255], neb:[[42,96,200,3],[86,180,240,3],[150,90,220,2]],
     ramp:[[52,96,220],[124,212,255],[236,250,255]] }
 };

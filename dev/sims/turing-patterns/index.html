@@ -416,7 +416,7 @@ body.sheet-open .panel{z-index:9}
   </div>
   <div class="row">
     <label><span class="nm">Brush pattern
-      <button class="tip" type="button" data-tip="What the seeding brush lays down. Stipple takes hold in the most regimes; a solid disc can starve in its own middle."
+      <button class="tip" type="button" data-tip="Stipple takes hold in the most regimes. A solid disc can starve in its middle."
         aria-label="About the brush pattern">?</button></span></label>
   </div>
   <div class="seg" id="patSeg" role="group" aria-label="Brush pattern">
@@ -441,7 +441,7 @@ body.sheet-open .panel{z-index:9}
   <label class="toggle"><input type="checkbox" id="growOn"><span>Stretch the field lengthwise</span></label>
   <div class="row" id="rowGrowRate">
     <label for="growRate"><span class="nm">Growth speed
-      <span class="tip" tabindex="0" data-tip="Real embryos pattern while growing, so new stripes insert between the old ones instead of the pattern stretching.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
+      <span class="tip" tabindex="0" data-tip="New stripes insert as it grows, as in a real embryo.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
     <input type="range" id="growRate" min="1" max="100" step="1" value="45" disabled>
   </div>
   <div class="row" id="rowGrowMax">
@@ -455,7 +455,7 @@ body.sheet-open .panel{z-index:9}
   <label class="toggle"><input type="checkbox" id="anisOn"><span>Diffuse faster along one axis</span></label>
   <div class="row" id="rowAnisAng">
     <label for="anisAng"><span class="nm">Direction
-      <span class="tip" tabindex="0" data-tip="Tissue is often fibrous, so a chemical spreads faster along one direction and the stripes run across it.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
+      <span class="tip" tabindex="0" data-tip="Fibrous tissue: stripes run across the fast axis.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
     <input type="range" id="anisAng" min="0" max="180" step="1" value="0" disabled>
   </div>
   <div class="row" id="rowAnisAmt">
@@ -501,7 +501,7 @@ body.sheet-open .panel{z-index:9}
 <aside class="mapcard" id="mapcard">
   <div class="mc-head">
     <span class="mc-title">Steer it yourself</span>
-    <span class="tip" tabindex="0" data-tip="Feed rate runs left to right and kill rate runs bottom to top, and clicking anywhere moves the chemistry there.">i</span>
+    <span class="tip" tabindex="0" data-tip="Click the map: feed rate across, kill rate up.">i</span>
   </div>
   <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own, and zoom in where the bands get narrow.</p>
   <canvas id="map" width="320" height="300" tabindex="0" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry. Scroll or use the zoom buttons to magnify, arrow keys to nudge."></canvas>
@@ -520,18 +520,18 @@ body.sheet-open .panel{z-index:9}
   </ul>
   <div class="row">
     <label for="fSl"><span class="nm">Feed rate <i>F</i>
-      <span class="tip" tabindex="0" data-tip="How fast fresh substrate is topped up, which is the map horizontal axis.">i</span></span><span class="val" id="fOut">0.0300</span></label>
+      <span class="tip" tabindex="0" data-tip="Substrate top-up, the horizontal axis of the map.">i</span></span><span class="val" id="fOut">0.0300</span></label>
     <input type="range" id="fSl" min="0.005" max="0.09" step="0.0002">
   </div>
   <div class="row">
     <label for="kSl"><span class="nm">Kill rate <i>k</i>
-      <span class="tip" tabindex="0" data-tip="How fast the activator is removed, which decides whether a blob holds, splits, or dies.">i</span></span><span class="val" id="kOut">0.0620</span></label>
+      <span class="tip" tabindex="0" data-tip="Activator removal. Decides whether a blob holds, splits, or dies.">i</span></span><span class="val" id="kOut">0.0620</span></label>
     <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
   </div>
   <div class="mc-rule"></div>
   <div class="row">
     <label for="ratioSl"><span class="nm">Diffusion ratio
-      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator, the number Turing condition turns on.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
+      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
     <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
   </div>
   <p class="mc-note" id="mapnote">&nbsp;</p>
@@ -1906,8 +1906,6 @@ function wire(){
 var last = 0, acc = 0, frames = 0, statTick = 0;
 function hudText(){
   var L = [];
-  if(S.growOn) L.push(chip('length', '\u00d7' + S.g.toFixed(2)));
-  if(S.growOn) L.push(chip('bands across', stats.bands));
   if(S.anisOn) L.push(chip('fast axis', Math.round(S.angle) + '<small>\u00b0</small>'));
   return L.join('');
 }
