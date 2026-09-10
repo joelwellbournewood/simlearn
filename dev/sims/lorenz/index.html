@@ -91,6 +91,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
 .hint{position:absolute;right:20px;bottom:74px;text-align:right;z-index:5;color:var(--muted);font-size:12px;pointer-events:none;font-family:var(--mono);letter-spacing:.04em}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint{display:none}
+.about-inner kbd{font-family:"Space Mono",monospace;font-size:11.5px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.about-inner p.keys{color:var(--muted);font-size:12.5px}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
@@ -152,22 +154,22 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">The equations</summary>
   <div class="row">
-    <label for="s-rho"><span class="nm">&rho; Rayleigh<button class="tip" data-tip="Heating from below. Never settles above about 24.7." aria-label="What rho does">?</button></span><span class="val" id="v-rho"></span></label>
+    <label for="s-rho"><span class="nm">&rho; Rayleigh<button class="tip" data-tip="How hard the fluid is heated, and above about 24.7 nothing ever settles." aria-label="What rho does">?</button></span><span class="val" id="v-rho"></span></label>
     <input type="range" id="s-rho" min="0.5" max="120" step="0.5" value="28">
   </div>
   <div class="row">
-    <label for="s-sigma"><span class="nm">&sigma; Prandtl<button class="tip" data-tip="Momentum spread against heat. Lorenz used 10." aria-label="What sigma does">?</button></span><span class="val" id="v-sigma"></span></label>
+    <label for="s-sigma"><span class="nm">&sigma; Prandtl<button class="tip" data-tip="How fast momentum spreads compared with heat, 10 in Lorenz&rsquo;s paper." aria-label="What sigma does">?</button></span><span class="val" id="v-sigma"></span></label>
     <input type="range" id="s-sigma" min="1" max="30" step="0.5" value="10">
   </div>
   <div class="row">
-    <label for="s-beta"><span class="nm">&beta; Geometry<button class="tip" data-tip="Shape of the convection cell. Lorenz used 2.67." aria-label="What beta does">?</button></span><span class="val" id="v-beta"></span></label>
-    <input type="range" id="s-beta" min="0.4" max="6" step="0.05" value="2.65">
+    <label for="s-beta"><span class="nm">&beta; Geometry<button class="tip" data-tip="The shape of the convection roll, 8/3 in Lorenz&rsquo;s paper." aria-label="What beta does">?</button></span><span class="val" id="v-beta"></span></label>
+    <input type="range" id="s-beta" min="0.4" max="6" step="0.01" value="2.67">
   </div>
   </details>
   <details class="grp">
   <summary class="grp-title">Display</summary>
   <div class="row">
-    <label for="s-copies"><span class="nm">Trajectories<button class="tip" data-tip="Near identical starts, released together." aria-label="What trajectories does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Trajectories<button class="tip" data-tip="How many near identical starts are released together." aria-label="What trajectories does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="80" step="1" value="1">
   </div>
   <div class="row">
@@ -196,7 +198,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <div class="stat"><div class="k">Separation</div><div class="v" id="s-div" style="color:var(--danger)">-</div></div>
   <div class="stat"><div class="k">Lobe swaps</div><div class="v" id="s-sw">0</div></div>
 </div>
-<div class="hint">Drag to turn the view. 1-5 presets, space pause, R restart, H hide.</div>
+<div class="hint">Drag to turn the view.</div>
 <dialog class="about" id="about"><div class="about-inner">
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
 <h2>What am I looking at?</h2>
@@ -204,7 +206,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <p>The rules are three lines of arithmetic, each one saying how fast its coordinate is changing right now:</p>
 <span class="eq">dx/dt = &sigma;(y &minus; x)<br>dy/dt = x(&rho; &minus; z) &minus; y<br>dz/dt = xy &minus; &beta;z</span>
 <p>Only two terms are nonlinear, the products xz and xy, and everything interesting comes from them. The path never crosses itself, never repeats, and never escapes, and it manages all three at once, which is why describing it required the idea of a strange attractor.</p>
-<p>The two lobes are the two directions the fluid can roll, clockwise and anticlockwise. The trajectory winds outward on one lobe until it gets too far from the centre, then crosses over and winds outward on the other. The number of turns it takes before each switch follows no pattern. Release a swarm of points a hair apart with <b>trajectories</b> and <b>starting spread</b> and you can watch them stay together, then separate, then end up on opposite lobes: the same starting conditions to eleven decimal places, and a completely different history.</p>
+<p>The two lobes are the two directions the fluid can roll, clockwise and anticlockwise. The trajectory winds outward on one lobe until it gets too far from the centre, then crosses over and winds outward on the other. The number of turns it takes before each switch follows no pattern. Release a swarm of points a hair apart with <b>trajectories</b> and <b>starting spread</b> and you can watch them stay together, then separate, then end up on opposite lobes: starts that agree to six decimal places, and completely different histories.</p>
 <p>That last observation is why this small picture changed how forecasting is done. A weather model can be perfect and still be useless past a certain range, because the error in today's measurements grows on its own until it fills the whole space of possible outcomes. Modern forecasts are run dozens of times from slightly different starting states for exactly this reason, and the spread between those runs is where the percentage on a rain forecast comes from.</p>
 <p><b>&rho;</b>, the Rayleigh number, is the slider that matters. It is how hard the fluid is being heated. Below about 1 the heat simply conducts and everything decays to the origin. Between 1 and about 24.7 the fluid rolls steadily and the point spirals into one of two fixed states. Above 24.74 neither of those states is stable any longer and nothing ever settles, which is the classic butterfly. <b>&sigma;</b> and <b>&beta;</b> describe the fluid and the shape of the container, and are usually left at 10 and 8/3. <b>Time speed</b> and <b>rotation</b> change only the view.</p>
 <h3>Things to try</h3>
@@ -212,27 +214,22 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
       <li>Set &rho; to 14 and restart. Watch the spiral tighten and stop. Then move it to 25 and restart. The equations have not changed shape, and the behaviour has.</li>
       <li>Release the swarm, then read the <b>lobe swaps</b> counter. The sequence of left and right is as good a coin flip as anything in physics, and it comes out of arithmetic with no randomness anywhere in it.</li>
       <li>Drag the view until you are looking down the attractor's axis. The lobes turn out to be thin sheets rather than solid discs, folded over each other and never quite touching.</li>
+      <li>Set &rho; to 100.5 and restart. Far above the onset of chaos there are narrow windows where the path settles into a clean repeating loop, with chaos again on either side of them.</li>
     </ul>
   
+<h3>Keyboard</h3>
+<p class="keys"><kbd>Space</kbd> pause, <kbd>R</kbd> restart, <kbd>1</kbd>-<kbd>5</kbd> presets, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
 <div class="more-box"><div class="more-body">
 <h3>Why the picture mattered</h3>
     <p>Before Lorenz, an aperiodic wiggle in a model was put down to noise or to too few decimal places. He produced one in a system with neither excuse. The set the path is drawn onto is a <b>strange attractor</b>: everything nearby is pulled towards it, and yet two points on it that start a millionth apart end up on opposite lobes. It attracts and it stays unpredictable.</p>
-    <p>This is also the origin of the butterfly. The shape is a coincidence, and the substance is Lorenz's question about whether a flap in Brazil could set off a tornado in Texas. Press <b class="hl">Swarm of fifty</b> and watch fifty starts a thousandth apart become fifty unrelated futures.</p>
-    <h3>The parameter that decides the behaviour</h3>
-    <p>&rho; is the Rayleigh number, a measure of how hard the fluid is being heated.</p>
-    <ul>
-      <li><b>Below 1</b>: nothing moves. Heat conducts through. Every start collapses to the origin.</li>
-      <li><b>Between 1 and about 24.74</b>: steady convection. The path spirals in and stops at one of two fixed points, one for each direction of roll. Try &rho; = 14.</li>
-      <li><b>Above 24.74</b>: both fixed points lose stability and there is nowhere left to settle. Chaos. Lorenz used 28.</li>
-      <li><b>Around 99.5 to 100.8</b>: a periodic window. The chaos gives way to a clean repeating loop, with chaos again on either side. Try &rho; = 100.5.</li>
-    </ul>
+    <p>This is also where the butterfly came from. The resemblance between the attractor and a pair of wings is a coincidence; the name comes from the title of Lorenz's 1972 talk, which asked whether the flap of a butterfly's wings in Brazil could set off a tornado in Texas. Press <b class="hl">Swarm of fifty</b> and watch fifty starts a thousandth apart become fifty unrelated futures.</p>
     <h3>How this one is computed</h3>
     <ul>
       <li>Integration is fourth-order Runge-Kutta, which is a requirement rather than a luxury. With a first-order method the path visibly drifts off the attractor, and then there is no telling physics from arithmetic.</li>
       <li>The <b>separation</b> readout is the largest distance between any two of the released paths in state space. On a chaotic setting it grows roughly exponentially until it saturates at the size of the attractor.</li>
     </ul>
     <h3>Where the three equations come from</h3>
-<p>The system is a severe truncation of Rayleigh-Benard convection: a fluid layer heated from below, cooled from above, described by the Navier-Stokes and heat equations. Saltzman (1962) expanded the stream function and temperature field in Fourier modes and integrated the resulting set numerically. Lorenz (1963) kept just three of those modes, one for the convective roll and two for the temperature field, and obtained a closed system in x, y, and z, with parameters &sigma; the Prandtl number, &rho; the Rayleigh number scaled by its critical value, and &beta; a geometric factor for the aspect ratio of the roll, conventionally 8/3. The truncation is far too brutal to be quantitatively valid for a real fluid at high Rayleigh number, and Lorenz said so himself. Its value is that it is the simplest continuous dissipative system known to have an aperiodic solution, and it is exactly solvable by nobody.</p>
+<p>The system is a severe truncation of Rayleigh-Benard convection: a fluid layer heated from below, cooled from above, described by the Navier-Stokes and heat equations. Saltzman (1962) expanded the stream function and temperature field in Fourier modes and integrated the resulting set numerically. Lorenz (1963) kept just three of those modes, one for the convective roll and two for the temperature field, and obtained a closed system in x, y, and z, with parameters &sigma; the Prandtl number, &rho; the Rayleigh number scaled by its critical value, and &beta; a geometric factor for the aspect ratio of the roll, conventionally 8/3. The truncation is far too brutal to be quantitatively valid for a real fluid at high Rayleigh number, and Lorenz said so himself. Its value is that it is the simplest continuous dissipative system known to have an aperiodic solution, and nobody has solved it in closed form.</p>
 
 <h3>Bifurcation structure</h3>
 <p>The flow contracts volume everywhere. The divergence of the vector field is &minus;(&sigma; + 1 + &beta;), a negative constant, so any blob of initial conditions shrinks exponentially in volume while stretching in one direction. That combination is what produces an attractor of zero volume and non-integer dimension.</p>
@@ -250,7 +247,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 <p>At the classical parameters the attractor has a correlation dimension of about 2.05, so it is a set of measure zero that still fails to be a surface, and the largest Lyapunov exponent is about 0.906 per unit time, giving an e-folding time for errors of a little over one time unit. Sensitive dependence therefore has a measurable rate, and it survives any improvement in the arithmetic. For decades the existence of the attractor was supported by numerics rather than proof. Tucker (2002) closed that gap with a computer-assisted proof using rigorous interval arithmetic and normal forms, establishing that the Lorenz system at the classical parameters does possess a robust strange attractor. The geometric skeleton behind it is the geometric Lorenz model of Guckenheimer and Williams (1979), in which the return map on a cross-section stretches and folds a line segment.</p>
 
 <h3>Why it mattered outside mathematics</h3>
-<p>Lorenz found the behaviour while restarting a weather calculation from a printout rounded to three decimal places instead of the six the machine held, and getting a completely different forecast. The consequence, argued in his 1963 paper and popularised in the title of his 1972 talk about a butterfly's wings, is that deterministic prediction of a system with this property has a hard horizon set by the accuracy of the initial state, and that no improvement in the model removes that horizon. It is why operational weather forecasting is done with ensembles of perturbed initial conditions rather than a single run, why forecasts beyond roughly ten days are quoted as climatology rather than weather, and why a forecast is expressed as a probability at all. The swarm in this simulation is a miniature version of that ensemble method. The same reasoning has since been applied to spacecraft trajectory design, to cardiac arrhythmia, and to the standing argument that a climate projection for 2070 can be sound even though a forecast for a fortnight from now cannot, because one is a statement about the attractor and the other is a statement about a point on it.</p>
+<p>Lorenz found the behaviour while restarting a weather calculation from a printout rounded to three decimal places instead of the six the machine held, and getting a completely different forecast. The consequence, argued in his 1963 paper and popularised in the title of his 1972 talk about a butterfly's wings, is that deterministic prediction of a system with this property has a hard horizon set by the accuracy of the initial state, and that no improvement in the model removes that horizon. It is why forecasts beyond roughly ten days are quoted as climatology rather than weather, and the swarm of starts in this simulation is a miniature version of the ensembles a forecasting centre runs every day. The same reasoning has since been applied to spacecraft trajectory design, to cardiac arrhythmia, and to the standing argument that a climate projection for 2070 can be sound even though a forecast for a fortnight from now cannot, because one is a statement about the attractor and the other is a statement about a point on it.</p>
 
 <h3>Limits of the model</h3>
 <p>Three modes cannot represent a turbulent fluid. Real convection has a full spectrum of modes, and quantitative agreement with Rayleigh-Benard experiments fails well below &rho; = 28. The equations are non-dimensional, so the time axis is not measured in seconds, and the system has three variables where the atmosphere has billions, which makes it a demonstration of a mechanism rather than anything you could forecast with. What does transfer to the real world is the structure, meaning a bounded aperiodic attractor with a positive Lyapunov exponent in a low-dimensional deterministic system, which turned out to be common. Numerically, any single trajectory drawn here departs from the true one within tens of time units even at double precision, and what stays reliable is the shape of the attractor together with the statistics of the lobe switching.</p>
@@ -284,7 +281,7 @@ function resize(){
   DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
   cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
 }
-let sigma=10, rho=28, beta=2.65, copies=1, spread=1e-3, trailPct=70, rotSpeed=0.45, speed=1;
+let sigma=10, rho=28, beta=2.67, copies=1, spread=1e-3, trailPct=70, rotSpeed=0.45, speed=1;
 let paused=false, arr=[], tsim=0, swaps=0, yaw=0.6, pitch=0.28, activePreset='classic';
 function deriv(s,o){ o[0]=sigma*(s[1]-s[0]); o[1]=s[0]*(rho-s[2])-s[1]; o[2]=s[0]*s[1]-beta*s[2]; }
 const k1=[0,0,0],k2=[0,0,0],k3=[0,0,0],k4=[0,0,0],tmp=[0,0,0];
@@ -311,11 +308,11 @@ function release(){
   [...document.querySelectorAll('.preset')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===activePreset)));
 }
 const PRESETS={
-  classic:{name:'Classic butterfly',tag:'Lorenz\u2019s own numbers, one path',set:{rho:28,sigma:10,beta:2.65,copies:1,spread:-3,trail:85}},
-  swarm:{name:'Swarm of fifty',tag:'Fifty starts a thousandth apart',set:{rho:28,sigma:10,beta:2.65,copies:50,spread:-3,trail:45}},
-  settle:{name:'Settles down',tag:'Below \u03c1 24.7 it spirals in and stops',set:{rho:14,sigma:10,beta:2.65,copies:14,spread:-2,trail:90}},
-  window:{name:'Periodic window',tag:'At \u03c1 100.5 the chaos becomes a clean loop',set:{rho:100.5,sigma:10,beta:2.65,copies:1,spread:-3,trail:60}},
-  wild:{name:'Hard boil',tag:'\u03c1 60, a bigger and busier attractor',set:{rho:60,sigma:10,beta:2.65,copies:24,spread:-3,trail:40}}
+  classic:{name:'Classic butterfly',tag:'Lorenz\u2019s own numbers, one path',set:{rho:28,sigma:10,beta:2.67,copies:1,spread:-3,trail:85}},
+  swarm:{name:'Swarm of fifty',tag:'Fifty starts a thousandth apart',set:{rho:28,sigma:10,beta:2.67,copies:50,spread:-3,trail:45}},
+  settle:{name:'Settles down',tag:'Below \u03c1 = 24.7 it spirals in and stops',set:{rho:14,sigma:10,beta:2.67,copies:14,spread:-2,trail:90}},
+  window:{name:'Periodic window',tag:'At \u03c1 100.5 the chaos becomes a clean loop',set:{rho:100.5,sigma:10,beta:2.67,copies:1,spread:-3,trail:60}},
+  wild:{name:'Hard boil',tag:'\u03c1 60, a bigger and busier attractor',set:{rho:60,sigma:10,beta:2.67,copies:24,spread:-3,trail:40}}
 };
 function applyPreset(k){
   activePreset=k; const p=PRESETS[k].set;

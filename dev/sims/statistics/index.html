@@ -79,6 +79,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 @media (max-width:1000px){.hint{left:20px;transform:none;text-align:left;max-width:calc(100% - 300px)}}
 @media (max-width:820px){.hint{display:none}}
 body.clean .brand,body.clean .panel,body.clean .hint{display:none}
+.about-inner kbd{font-family:"Space Mono",monospace;font-size:11.5px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.about-inner p.keys{color:var(--muted);font-size:12.5px}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
@@ -176,7 +178,7 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-rows" min="2" max="20" step="1" value="11">
     </div>
     <div class="row" data-m="galton">
-      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="Chance of bouncing right. Off centre, the bell leans." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
+      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="The chance of bouncing right, which leans the bell when it is off centre." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
       <input type="range" id="s-bias" min="0.05" max="0.95" step="0.01" value="0.5">
     </div>
     <div class="row" data-m="galton">
@@ -194,7 +196,7 @@ details.grp > summary + *{margin-top:0}
       <button class="seg" data-v="asteroid" aria-pressed="false">Asteroids</button>
     </div>
     <div class="row" data-m="clt">
-      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="Values averaged into each ball. At 1 you see the population." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
+      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="How many values are averaged into each ball, and at 1 you see the population itself." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
       <input type="range" id="s-cltn" min="1" max="64" step="1" value="1">
     </div>
     <div class="row" data-m="clt">
@@ -207,14 +209,14 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-cin" min="3" max="60" step="1" value="10">
     </div>
     <div class="row" data-m="ci">
-      <label for="s-cisig"><span class="nm">Population spread<button class="tip" data-tip="The true spread. Wider population, wider intervals." aria-label="What population spread does">?</button></span><span class="val" id="v-cisig"></span></label>
+      <label for="s-cisig"><span class="nm">Population spread<button class="tip" data-tip="The true spread of the population, and a wider one gives wider intervals." aria-label="What population spread does">?</button></span><span class="val" id="v-cisig"></span></label>
       <input type="range" id="s-cisig" min="0.03" max="0.3" step="0.005" value="0.12">
     </div>
     <div class="row" data-m="ci">
       <label for="s-conf"><span class="nm">Confidence level<button class="tip" data-tip="Share of intervals that should catch the true mean." aria-label="What confidence level does">?</button></span><span class="val" id="v-conf"></span></label>
       <input type="range" id="s-conf" min="50" max="99" step="1" value="95">
     </div>
-    <div class="seglabel" data-m="ci"><span class="nm">Critical value<button class="tip" data-tip="Use z only if the spread is truly known. t pays for estimating it." aria-label="What critical value does">?</button></span></div>
+    <div class="seglabel" data-m="ci"><span class="nm">Critical value<button class="tip" data-tip="z is honest only when the spread is truly known, and t pays for estimating it from the sample." aria-label="What critical value does">?</button></span></div>
     <div class="segrow" data-m="ci" id="seg-meth">
       <button class="seg" data-v="t" aria-pressed="true">&sigma; unknown: t</button>
       <button class="seg" data-v="z" aria-pressed="false">&sigma; known: z</button>
@@ -225,11 +227,11 @@ details.grp > summary + *{margin-top:0}
     </div>
 
     <div class="row" data-m="test">
-      <label for="s-prev"><span class="nm">How common the disease is<button class="tip" data-tip="Prevalence. The rarer it is, the more positives are false." aria-label="What prevalence does">?</button></span><span class="val" id="v-prev"></span></label>
+      <label for="s-prev"><span class="nm">How common the disease is<button class="tip" data-tip="The rarer the disease, the more of the positive results are false alarms." aria-label="What prevalence does">?</button></span><span class="val" id="v-prev"></span></label>
       <input type="range" id="s-prev" min="0.3" max="4" step="0.05" value="1.7">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="Gap between the peaks. Drag either curve too." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
+      <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="The gap between the healthy and the ill peaks, in standard deviations." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
       <input type="range" id="s-sep" min="0.5" max="4" step="0.1" value="2.2">
     </div>
     <div class="row" data-m="test">
@@ -237,11 +239,11 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-sd0" min="0.4" max="2.2" step="0.05" value="1">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sd1"><span class="nm">Biomarker spread, ill<button class="tip" data-tip="Wider means more ill people fall below the cut-off." aria-label="What the ill spread does">?</button></span><span class="val" id="v-sd1"></span></label>
+      <label for="s-sd1"><span class="nm">Biomarker spread, ill<button class="tip" data-tip="A wider spread puts more ill people below the cut-off." aria-label="What the ill spread does">?</button></span><span class="val" id="v-sd1"></span></label>
       <input type="range" id="s-sd1" min="0.4" max="2.2" step="0.05" value="1">
     </div>
     <div class="row" data-m="test">
-      <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="The cut-off. Drag it on the chart too." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
+      <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="The cut-off, which you can also drag on the chart." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
       <input type="range" id="s-thr" min="-7" max="11" step="0.05" value="1.4">
     </div>
     <div class="row" data-m="test">
@@ -289,6 +291,8 @@ details.grp > summary + *{margin-top:0}
   <li>In confidence intervals, drop the sample size to 3 and switch between the two critical values. Both hold near 95 percent when they are used honestly, and the z intervals all have the same length while the t intervals vary wildly, because each one is guessing the spread from three numbers.</li>
   <li>In the screening test, set the disease to 1 in 1000 and the test to 3 sd apart, which is a good test. Most people who test positive still do not have the disease. Then find the threshold that makes the false alarms and the missed cases roughly equal, and see what it costs.</li>
 </ul>
+<h3>Keyboard</h3>
+<p class="keys"><kbd>Space</kbd> pause, <kbd>R</kbd> reset the machine, <kbd>1</kbd>-<kbd>5</kbd> machines, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
 <div class="more-box"><div class="more-body">
 <h3>Why pegs make a bell</h3>
 <p>Each peg gives a ball one nudge, left or right, independent of every nudge before it. After n rows the landing column is fixed by the number of rightward nudges, so the column counts follow the binomial distribution B(n, p) exactly. De Moivre showed in 1733 that this distribution approaches the normal curve as n grows, and the board turns his theorem into an object. The dashed curve is</p>
@@ -302,7 +306,7 @@ details.grp > summary + *{margin-top:0}
 <h3>What 95 percent confidence promises, and to whom</h3>
 <p>An interval built from a sample of n measurements is</p>
 <span class="eq">x&#772; &plusmn; c &middot; (spread) / &radic;n</span>
-<p>Neyman's 1937 formulation, the one this machine animates, makes a promise about the procedure: run it many times and 95 percent of the intervals it produces will contain the truth. The single interval in your hand either contains the truth or does not, and no probability attaches to it after the fact. That is why the tally at the bottom of the screen is the honest way to state the guarantee, and it is also the reason the phrase is so often misreported.</p>
+<p>Neyman's 1937 formulation, the one this machine animates, makes a promise about the procedure: run it many times and 95 percent of the intervals it produces will contain the truth. The single interval in your hand either contains the truth or does not, and no probability attaches to it after the fact. That is why the running tally, and not any single interval, is the honest way to state the guarantee.</p>
 <h3>Why the choice between z and t exists</h3>
 <p>The interval needs the spread of the population, and there are two situations.</p>
 <p>When &sigma; is genuinely known, from a long calibration history of the instrument or from a physical argument, the standardised error follows a normal distribution and the critical value comes from it: 1.96 for 95 percent, whatever n is. Every interval then has the same length, since only the sample mean changes from experiment to experiment.</p>

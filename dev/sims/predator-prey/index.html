@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#050c0a">
 <meta name="color-scheme" content="only dark">
 <meta name="darkreader-lock">
-<title>Hare &amp; Lynx — a living model of predator–prey cycles</title>
+<title>Hare and Lynx, a living model of predator and prey cycles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -558,7 +558,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 <header>
   <p class="eyebrow">Agent-based ecology · population dynamics</p>
   <h1><span class="a">Hare</span> <span class="amp">&amp;</span> <span class="b">Lynx</span></h1>
-  <p class="sub">A living model. Every dot is one animal moving, grazing, hunting, and breeding on its own energy budget — and the population cycles emerge from those simple rules.</p>
+  <p class="sub">A living model. Every dot is one animal moving, grazing, hunting, and breeding on its own energy budget, and the population cycles emerge from those simple rules.</p>
 </header>
 
 <div class="actions" id="fsbar">
@@ -732,26 +732,21 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     </ul>
   
 <div class="more-box"><div class="more-body">
-<h3>Why the two curves chase each other</h3>
-    <p><span class="hl">Hares</span> breed quickly when grass is easy to find, so they climb first. A field crowded with hares is easy hunting, so the <span class="hr">lynx</span> feed well and climb afterwards. Once there are enough lynx, hares are being caught faster than they are being born, and the hare population turns over and falls. The lynx are then hunting an empty field, and they starve back. Grass regrows, the surviving hares find it, and the whole thing starts again.</p>
+<h3>Why the lynx peak arrives late</h3>
     <p>Each population is driven by the size of the other one, and that delay is why the lynx peak always arrives after the hare peak rather than with it, by roughly a quarter of a cycle. Alfred Lotka and Vito Volterra described the same lag with a pair of differential equations in the 1920s. Switch the trace to <b>Phase orbit</b> to watch it directly: the graph drops time and plots hares against lynx, so the state of the whole field becomes one point tracing a loop.</p>
     <h3>Energy sets the ceiling</h3>
     <p>Follow the energy and the numbers stop being mysterious. Sunlight is stored in grass, some of that reaches a hare, and a smaller share again reaches a lynx, because every animal burns energy simply staying alive. That loss at each step is why any healthy field holds far more hares than lynx. It is also why food chains are short, why top predators are rare enough to be the first thing a shrinking habitat loses, and why a given area of land feeds many more people growing crops than grazing cattle.</p>
     <p>The <b>Plant regrowth</b> slider is the carrying capacity of the land, the ceiling on how many hares it can feed. Turn it down, as the Sparse habitat preset does, and you get a small population living close to the edge. Turning it up is riskier than it sounds. Rich land lets the hares boom higher, which lets the lynx boom higher, and the swings grow until one of the crashes reaches zero. Michael Rosenzweig named this the paradox of enrichment in 1971, and the preset of that name sets it up for you. The same warning applies to nutrient runoff into a lake, where fertilising the bottom of a food web has repeatedly destabilised everything above it.</p>
-    <h3>How it compares with the real record</h3>
-    <p>Snowshoe hares and Canadian lynx cycle with a period of about ten years. The Hudson's Bay Company recorded the pelts it bought for well over a century, and those ledgers became one of the longest population datasets in ecology. Field studies since have shown that the real cycle is driven by food supply and predation together, which is close to what this model contains. What you get here is the same shape of behaviour from a much simpler world.</p>
-    <h3>Where individual animals matter</h3>
-    <p>The classic equations treat a population as a smooth quantity that can fall to a fraction of an animal and recover. This model counts whole animals instead, so two things appear that the equations cannot show. The period wanders from run to run, and a population that gets low enough can disappear for good, because the last few animals never happen to meet. Extinction by bad luck is a real feature of small populations, and it is a large part of why conservation biologists talk about a minimum viable population rather than simply keeping the number above zero.</p>
     <h3>The textbook model, and how this one differs</h3>
 <p>The classical description is the Lotka-Volterra system, derived independently by Lotka (1925) and Volterra (1926), with prey N and predators P:</p>
 <span class="eq">dN/dt = rN &minus; aNP<br>dP/dt = &epsilon;aNP &minus; mP</span>
 <p>Prey grow exponentially, predators meet prey by mass action at rate aNP, convert them to offspring with efficiency &epsilon;, and die at rate m. The system has a neutrally stable centre, so it produces closed cycles whose amplitude is fixed entirely by the initial conditions, with a period of about 2&pi;/&radic;(rm) near the equilibrium, and predators peaking a quarter of a cycle behind prey. That quarter-period lag is the one prediction from the model that survives essentially every later modification. The neutral stability is an artefact, and any small change to the functional form turns the cycles into either a spiral into equilibrium or a growing oscillation.</p>
-<p>The Rosenzweig-MacArthur model repairs the two worst assumptions by giving prey logistic self-limitation and predators a saturating Holling type II functional response, a/(1 + ahN). This has a stable equilibrium that loses stability through a Hopf bifurcation as prey carrying capacity rises, producing a genuine limit cycle whose amplitude grows until the trough of the cycle is low enough for extinction. Rosenzweig (1971) named the consequence the paradox of enrichment: adding resources to a predator-prey system can destabilise it and drive both species extinct. The <b>energy from grass</b> and <b>plant regrowth</b> sliders in this simulation are that experiment, and they reproduce the effect.</p>
+<p>The Rosenzweig-MacArthur model repairs the two worst assumptions by giving prey logistic self-limitation and predators a saturating Holling type II functional response, a/(1 + ahN). This has a stable equilibrium that loses stability through a Hopf bifurcation as prey carrying capacity rises, producing a genuine limit cycle whose amplitude grows until the trough of the cycle is low enough for extinction. That is the paradox of enrichment in its formal dress: adding resources to a predator and prey system can destabilise it and drive both species extinct. The <b>energy from grass</b> and <b>plant regrowth</b> sliders in this simulation are that experiment, and they reproduce the effect.</p>
 
 <h3>What individual-based means here</h3>
-<p>Nothing in this code integrates those equations, and there is no aNP term anywhere in it. Encounters happen because one animal is inside another's search radius, so the effective attack rate emerges from movement speed, sensing radius, and the spatial arrangement of both populations. Three things follow that the differential equations cannot express. Populations are integers, so a trough of two animals behaves quite differently from a trough of 0.4 and the system can go extinct by chance, which is demographic stochasticity. Animals are individuals with unequal energy, so selection and variance in reproductive success exist. And the field has space, so populations decorrelate locally: prey survive in patches the predators have not reached, and you can watch waves travel across the arena while the population as a whole does something else. Spatial refuges of exactly this kind were what allowed Huffaker (1958) to keep a predatory mite and its prey coexisting in the laboratory, where a simple homogeneous arena, as in Gause's (1934) experiments, gave rapid extinction. The practical descendant of that result is the refuge strategy in pest control, where a deliberately untreated patch of crop is left standing to stop the pest population from being pushed through the bottleneck that selects for resistance.</p>
+<p>Nothing in this code integrates those equations, and there is no aNP term anywhere in it. Encounters happen because one animal is inside another's search radius, so the effective attack rate emerges from movement speed, sensing radius, and the spatial arrangement of both populations. Three things follow that the differential equations cannot express. Populations are integers, so a trough of two animals behaves quite differently from a trough of 0.4: the classical equations let a population fall to a fraction of an animal and recover, while here the last few animals can simply fail to meet and the species is gone for good. That is demographic stochasticity, and it is a large part of why conservation biologists talk about a minimum viable population rather than about keeping the number above zero. Animals are individuals with unequal energy, so selection and variance in reproductive success exist. And the field has space, so populations decorrelate locally: prey survive in patches the predators have not reached, and you can watch waves travel across the arena while the population as a whole does something else. Spatial refuges of exactly this kind were what allowed Huffaker (1958) to keep a predatory mite and its prey coexisting in the laboratory, where a simple homogeneous arena, as in Gause's (1934) experiments, gave rapid extinction. The practical descendant of that result is the refuge strategy in pest control, where a deliberately untreated patch of crop is left standing to stop the pest population from being pushed through the bottleneck that selects for resistance.</p>
 
-<h3>The famous data, and what it can support</h3>
+<h3>The hare and lynx record, and what it can support</h3>
 <p>The hare and lynx pelt records of the Hudson's Bay Company, popularised by Elton and Nicholson (1942), show a cycle of roughly ten years over more than a century, and they appear in every textbook next to these equations. The modern interpretation is more complicated than predation alone. The Kluane project, a decade of large-scale field manipulations summarised by Krebs et al. (1995), found that excluding predators roughly doubled hare density, adding food roughly tripled it, and doing both together increased it far more than the sum of the two, so food supply and predation interact rather than acting independently. Pelt records also measure trapping effort alongside animal abundance. The cycle you see here is genuine behaviour of this model, and it should be read as an illustration of the mechanism rather than as evidence about Canadian lynx.</p>
 
 <h3>Limits of the model</h3>
@@ -1020,10 +1015,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       mark:'#ffffff', note:'A parched field. Worth a look to see how much of your reading of the scene came from the colour green rather than from the animals.'},
     slate: {name:'Value only', grass:['#1f2a33','#27333d','#2f3d49'], hare:'#e8eef4', lynx:'#ff4d6d',
       bg:'#0c1015', vig:'0,0,0', va:0.4, gbg:'#101720', gink:'#7b8794', gline:'140,160,180',
-      mark:'#ffffff', note:'Hue taken out of the habitat. The cycle stays perfectly legible, which is the point: the shape of the swing does the work, not the colour.'},
+      mark:'#ffffff', note:'Hue taken out of the habitat. The cycle stays perfectly legible, which is the point: the shape of the swing does the work rather than the colour.'},
     thermal: {name:'Thermal', grass:['#2a1a4d','#36225f','#432b73'], hare:'#00e5ff', lynx:'#ff2fb0',
       bg:'#090614', vig:'0,0,0', va:0.5, gbg:'#0e0a1c', gink:'#8b83a8', gline:'150,140,200',
-      mark:'#ffffff', note:'A false-colour ramp of the kind used for heat maps. Nothing here is a temperature, it is simply a different look-up table over the same three quantities.'}
+      mark:'#ffffff', note:'A false-colour ramp of the kind used for heat maps. Nothing here is a temperature, so read it as one more look-up table over the same three quantities.'}
   };
   const clampU = t => t<0?0:(t>1?1:t);
   const rgbOf = h => { const n=parseInt(h.slice(1),16); return [n>>16&255, n>>8&255, n&255]; };
@@ -1266,8 +1261,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     el('cGrass').textContent = Math.round(grownFraction()*100)+'%';
     el('cTick').textContent = tick;
     let msg='';
-    if(lynx.length===0 && hares.length>0) msg='Lynx extinct — with no predator, watch hares climb to the plant ceiling.';
-    else if(hares.length===0 && lynx.length>0) msg='Hares extinct — the lynx have nothing left to eat and will starve.';
+    if(lynx.length===0 && hares.length>0) msg='Lynx extinct. With no predator, watch the hares climb to the plant ceiling.';
+    else if(hares.length===0 && lynx.length>0) msg='Hares extinct. The lynx have nothing left to eat and will starve.';
     else if(hares.length===0 && lynx.length===0) msg='Total collapse. Try slower predators or faster plant regrowth, then Reset.';
     if(msg){ extEl.textContent=msg; extEl.classList.add('show'); }
     else extEl.classList.remove('show');
