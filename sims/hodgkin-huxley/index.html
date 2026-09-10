@@ -170,7 +170,9 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .theatre{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#06141b;flex:none}
 .plots{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0d1a16;flex:none}
 .theatre canvas,.plots canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
-.note{position:absolute;left:0;top:0;max-width:min(70%,660px);padding:11px 34px 12px 14px;
+/* the fire button sits at left:14 top:14 and is 38px tall, so the drug note starts
+   below it instead of underneath it */
+.note{position:absolute;left:0;top:56px;max-width:min(70%,660px);padding:11px 34px 12px 14px;
   font-size:14px;line-height:1.5;color:var(--muted);pointer-events:none;
   background:linear-gradient(105deg,rgba(4,12,10,.86) 60%,rgba(4,12,10,0));text-shadow:0 1px 3px rgba(0,0,0,.9)}
 .note b{color:var(--ink);font-weight:600}
@@ -190,7 +192,9 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .block[open] > .grp-title::after{transform:rotate(45deg)}
 .block[open] > .grp-title{margin-bottom:12px}
 .block[hidden]{display:none}
-.sublabel{font-family:var(--body);font-size:13.5px;font-weight:400;color:var(--muted);margin:14px 0 9px;display:flex;align-items:center;gap:7px}
+/* the bubble on a sublabel anchors to the sublabel. Without this it anchored to the
+   scrolling panel and was drawn above its top edge, where nothing can be seen. */
+.sublabel{position:relative;font-family:var(--body);font-size:13.5px;font-weight:400;color:var(--muted);margin:14px 0 9px;display:flex;align-items:center;gap:7px}
 .sub .ctl:last-child{margin-bottom:0}
 .block{border-top:1px solid var(--line);padding-top:12px;margin-top:13px}
 .block:first-of-type{border-top:0;padding-top:0;margin-top:0}
@@ -203,6 +207,10 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .ctl:last-child{margin-bottom:0}
 .ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 3px;position:static}
 .ctl label{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink)}
+/* a slider whose feature is switched off greys out with its label and its number,
+   so the panel reads as unavailable rather than broken */
+.ctl.off label,.ctl.off .num{opacity:.4}
+.ctl.off input[type=range]{opacity:.4;pointer-events:none}
 .ctl .num{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ctl .num em{font-style:normal;font-size:11.5px;margin-left:2px}
 /* Anything that used to be a native title is a bubble over the group it belongs to.
@@ -241,9 +249,6 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .readout dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .readout dd.warn{color:var(--danger)}
 .readout dd.good{color:var(--accent)}
-.verdict{margin-top:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;
-  background:rgba(86,224,194,.07);border:1px solid var(--line);color:var(--muted)}
-.verdict b{color:var(--ink);font-weight:600}
 
 /* ---- explainer ----------------------------------------------------- */
 dialog.about{width:min(780px,calc(100vw - 28px))}
@@ -330,7 +335,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
         <div class="chips" id="recChips"></div>
         <div class="ctl" id="icmdCtl" hidden style="margin-top:13px">
           <div class="row">
-            <label for="icmd" title="Nothing happens below about 2.5.">Command current</label>
+            <label for="icmd" title="The size of the current step, raised sweep by sweep until the cell fires.">Command current</label>
             <span class="num" id="icmdV"></span>
           </div>
           <input type="range" id="icmd" min="-30" max="200" step="0.5" value="8">
@@ -360,21 +365,21 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           <button class="chip on" id="myelinOn" aria-pressed="false"><i></i>Myelin sheath</button>
           <button class="chip" id="lesionOn" aria-pressed="false"><i></i>Stripped patch</button>
         </div>
-        <div class="ctl">
+        <div class="ctl off">
           <div class="row">
             <label for="wraps" title="Each wrap adds resistance and divides the capacitance.">Sheath layers</label>
             <span class="num" id="wrapsV"></span>
           </div>
           <input type="range" id="wraps" min="5" max="200" step="5" value="80" disabled>
         </div>
-        <div class="ctl">
+        <div class="ctl off">
           <div class="row">
             <label for="inode" title="A longer jump is faster, until the signal arrives too weak to fire.">Node spacing</label>
             <span class="num" id="inodeV"></span>
           </div>
           <input type="range" id="inode" min="0.9" max="4.8" step="0.3" value="2.4" disabled>
         </div>
-        <div class="ctl">
+        <div class="ctl off">
           <div class="row">
             <label for="lesion" title="Bare membrane mid-axon, which soaks up charge.">Stripped length</label>
             <span class="num" id="lesionV"></span>
@@ -409,7 +414,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           </div>
           <input type="range" id="npulse" min="1" max="2" step="1" value="1">
         </div>
-        <div class="ctl" id="gapCtl">
+        <div class="ctl off" id="gapCtl">
           <div class="row">
             <label for="gap" title="Shorten it until the second spike fails.">Gap between pulses</label>
             <span class="num" id="gapV"></span>
@@ -427,8 +432,6 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           <button class="go" id="fire">Fire pulse</button>
           <button id="reset">Reset</button>
         </div>
-        <div class="verdict" id="verdict" hidden></div>
-        <p class="foot">Space fires the electrode, R resets it, P pauses, H hides the panels, F is fullscreen.</p>
             </details>
 
       <details class="block grp">
@@ -452,13 +455,18 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           </div>
           <input type="range" id="speed" min="0.01" max="1" step="0.01" value="0.10">
         </div>
+        <div class="ctl">
+          <div class="row">
+            <label for="xzoom">Time window</label>
+            <span class="num" id="xzoomV"></span>
+          </div>
+          <input type="range" id="xzoom" min="0.5" max="3" step="0.05" value="1">
+        </div>
         <div class="chips">
           <button class="chip on" id="showIons" aria-pressed="true"><i></i>Ions</button>
           <button class="chip on" id="showCharge" aria-pressed="true"><i></i>Charge layer</button>
           <button class="chip on" id="playing" aria-pressed="true"><i></i>Running</button>
         </div>
-        <p class="foot">Point at anything in the picture to find out what it is.</p>
-        <p class="foot">Squid giant axon, Hodgkin and Huxley 1952 parameters, at 6.3 &#176;C.</p>
             </details>
   </div>
 </div>
@@ -467,17 +475,16 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
 <dialog class="about" id="explainer"><div class="about-inner sheet">
 
 <h2>What am I looking at?</h2>
-<p>A patch of nerve membrane, magnified, running the equations Alan Hodgkin and Andrew Huxley fitted to the giant axon of the squid in 1952. The picture on the left is the membrane itself, with the channels sitting in it and the ions on either side of it. The trace on the right is the voltage across that membrane, measured in millivolts, as it changes.</p>
-<p>Three things set that voltage in this model, and only three.</p>
+<p>A patch of nerve membrane, magnified, running the equations Alan Hodgkin and Andrew Huxley fitted to the giant axon of a squid in 1952. In the picture, the band across the middle is the membrane, the shapes lodged in it are ion channels, and the drifting dots are ions. Sodium is crowded on the outside, potassium on the inside, and each gated channel passes mainly one of them. The pump turning in the membrane is what keeps that arrangement in place across a lifetime of firing. Here the concentrations are simply held fixed.</p>
+<p>Alongside the picture are three plots, stacked, sharing one time axis in milliseconds.</p>
 <ul>
-  <li><b>The gradients.</b> There is more sodium outside the cell than inside, and more potassium inside than outside. Each ion therefore has a voltage it would drag the membrane to if it were the only one that could cross: about +50 mV for sodium, about &minus;77 mV for potassium.</li>
-  <li><b>The gates.</b> Sodium and potassium cross through separate channels, and those channels open and close depending on the voltage they currently sit at. Sodium opens fast, then closes itself off. Potassium opens slowly and stays open.</li>
-  <li><b>The leak.</b> A small conductance that does not care about voltage, 0.3 mS/cm&sup2;, carrying background ions toward about &minus;54 mV. It is what drags a nudge that was too small back down to rest.</li>
+  <li><b>membrane potential, mV.</b> The voltage across the membrane, which is what everything else is about. It rests near &minus;65 mV, and a spike carries it briefly above 0.</li>
+  <li><b>opening likelihood, %.</b> The state of the gates, drawn as three curves labelled m, h, and n. m opens the sodium channels and n opens the potassium ones. h is the plug on the inside of a sodium channel, so it sits high while the channel is free and falls as the channel shuts itself off. A sodium channel needs three m gates and h open at the same moment, so m reaching the top of the panel still leaves most channels shut.</li>
+  <li><b>ionic current, &micro;A/cm&sup2;.</b> What is actually crossing the membrane. Sodium arriving is drawn below the line and potassium leaving above it, with the current from your electrode in green on the right-hand scale.</li>
 </ul>
-<p>The sodium-potassium pump is drawn in the membrane, and it is deliberately outside the arithmetic. Its job is slow. It spends ATP carrying sodium back out and potassium back in over seconds and minutes, which is what stops the gradients running down over a lifetime of firing, and Hodgkin and Huxley left it out of the 1952 equations because across the two milliseconds of one spike it moves a negligible amount of charge. So the pump on screen tells you where the gradients come from, and it puts no current into the voltage trace: its turning is illustration, paced by how much sodium has arrived inside. That is also why there is no pump blocker in the drug list.</p>
-<p>Everything you see follows from those. At rest, potassium leaks out and holds the membrane near &minus;65 mV. Push the voltage up far enough with the electrode and sodium channels open, sodium floods in, and the voltage those channels are responding to is the same voltage they are changing. The rise feeds itself, and the spike goes all the way to the top with no further help from you. Sodium then shuts itself off while the slow potassium channels are still opening, so the voltage overshoots downward before settling. The whole event takes about two milliseconds.</p>
-<p>That two milliseconds is the unit every nervous system is built from. Every thought, every sensation, and every muscle you move is carried by this event repeated along billions of fibres, which is why so much of medicine ends up interfering with it deliberately. The injection at the dentist works by blocking the sodium channel in this model. Pufferfish poisoning blocks the same channel with a toxin, and the patient stays awake and paralysed. Several drugs for epilepsy, for heart rhythm, and for chronic pain act on close relatives of these gates, and the reason a nerve conduction test in a clinic can locate an injury is that the speed of this spike along a nerve is measurable to the metre per second.</p>
-<p><b>Fire pulse</b> injects current at the strength and duration set in the panel. The interesting settings are the ones near the edge: just under threshold gives nothing at all, just over gives a full-height spike, and a second pulse arriving too early gives nothing however hard you push, because the sodium channels have not reset yet. The electrode chips change what the apparatus is doing rather than what the axon is doing. Current clamp injects current and lets the voltage move, while voltage clamp holds the voltage where you put it and measures the current needed, which is the experiment the equations were fitted to. The drug chips block one channel type each, and each chip explains itself if you hover it.</p>
+<p>Read together, they tell the whole story of a spike. Nudge the voltage up with the electrode and sodium channels begin to open, sodium pours in, and the voltage those channels are responding to is the voltage they are changing, so the rise feeds itself and reaches the top with no further help from you. Sodium then plugs itself while the slower potassium gates are still opening, so the voltage falls past rest before settling. The whole event lasts about two milliseconds, and for five or six more the membrane will not repeat it at any strength.</p>
+<p>That brief event is the basic signal of most nerve cells, which is why so much of medicine interferes with it on purpose. The injection at the dentist blocks the mammalian cousin of this sodium channel, pufferfish poisoning blocks it outright and often leaves the patient awake and paralysed, and drugs for epilepsy, heart rhythm, and chronic pain act on close relatives of these gates. When a clinic measures how fast a signal travels down your arm, it is measuring this event moving along a nerve, which is what <b>Whole axon</b> shows.</p>
+<p><b>Worth trying.</b> Fire a pulse just under threshold and then just over: a small passive bump that fades, then a full-height spike, with almost nothing in between. Fire two pulses and shorten the gap until the second one fails. Drop TTX in the bath and watch the electrode charge a membrane that can no longer answer. Then switch to Whole axon, wrap it in myelin, and see how much faster the same spike travels.</p>
 <h3>Keys</h3>
     <p><kbd>Space</kbd> fire, <kbd>R</kbd> reset, <kbd>P</kbd> pause, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
     
@@ -497,7 +504,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
     <p>Below threshold the leak wins and the voltage sags back. Above threshold the sodium feedback wins and the spike goes to the same height however hard you pushed. Nudge the pulse strength half a unit at a time through 7 &micro;A/cm&sup2; and watch the trace snap from one behaviour to the other. There is no half-spike. This is also why a nerve carries intensity as a firing rate: a single fibre cannot make a bigger spike to signal a harder pinch, so it makes more of them.</p>
 
     <h3>Why you have to wait</h3>
-    <p>Straight after a spike, h is near zero, which means the sodium channels are inactivated, plugged from the inside by their own ball-and-chain, and n is still high, so potassium is still pouring out. Set the sharp electrode to two pulses and shorten the gap. At 16 milliseconds the second spike fires normally. Below about 8 milliseconds nothing works at any strength, which is the absolute refractory period, and it is why a spike only ever travels forwards down an axon. In between, the second spike is possible and costs more current.</p>
+    <p>Straight after a spike, h is near zero, which means the sodium channels are inactivated, plugged from the inside by their own ball-and-chain, and n is still high, so potassium is still pouring out. Set the sharp electrode to two pulses and shorten the gap. At 16 milliseconds the second spike fires normally. At 8 milliseconds it takes a stronger pulse, and below about 6 milliseconds nothing works at any strength, which is the absolute refractory period, and it is why a spike only ever travels forwards down an axon. The pulse slider stops at 150 &micro;A/cm&sup2;, so on screen the wall is at 7 milliseconds. In between, the second spike is possible and costs more current.</p>
 
     <h3>Four ways to put an electrode on it</h3>
     <p>The recording configuration decides what the traces are able to show you, because each one is a physically different experiment.</p>
@@ -2165,13 +2172,26 @@ function clearClamp(){
 function pushHist(s){
   HIST.t.push(s.t); HIST.V.push(s.V); HIST.m.push(s.m); HIST.h.push(s.h); HIST.n.push(s.n);
   HIST.iNa.push(s.iNa); HIST.iK.push(s.iK); HIST.iL.push(s.iL); HIST.iSt.push(s.iStim);
-  const cut=s.t-WIN_PATCH-2;
+  const cut=s.t-WIN_PATCH*2-2;
   let k=0; while(k<HIST.t.length && HIST.t[k]<cut) k++;
   if(k>200) for(const key in HIST) HIST[key].splice(0,k);
 }
 function clearHist(){ for(const k in HIST) HIST[k].length=0; }
 function clearCHist(){ for(const k in CHIST) CHIST[k].length=0; }
 
+/* Every value axis scales itself to whatever the trace is doing. The time axis
+   does not, so that is the one the reader is given: Time window in the Display
+   panel sets how many milliseconds fit across the plots. Each recording keeps its
+   own natural span at 1.00 (46 ms free running, one sweep under a clamp, 18 ms for
+   a travelling impulse) and the slider divides it, so dragging right zooms in on
+   the shape of the spike and dragging left shows more of the train. */
+function baseWin(){
+  if(S.mode==='cable') return CWIN;
+  return isClamp() ? clampWindow() : WIN_PATCH;
+}
+function xwin(){ return baseWin()/S.xzoom; }
+function tickStep(span){ return span>60?20 : span>30?10 : span>12?5 : span>6?2 : 1; }
+function vAxis(){ return [VREST-30, VREST+123]; }
 function gridPanel(g,x,y,w,h,title){
   g.fillStyle='#0d1015'; g.fillRect(x,y,w,h);
   g.strokeStyle='#22262e'; g.lineWidth=1;
@@ -2277,7 +2297,8 @@ function drawCurrentClamp(g, train){
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.47), h2=Math.round(ph*0.24), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;
   const tN = HIST.t.length ? HIST.t[HIST.t.length-1] : 0;
-  const t0 = Math.max(0, tN-WIN_PATCH), t1 = Math.max(WIN_PATCH, tN);
+  const TW = xwin();
+  const t0 = Math.max(0, tN-TW), t1 = Math.max(TW, tN);
   const X = t => L + (t-t0)/(t1-t0)*pw;
 
   gridPanel(g,L,y1,pw,h1,'membrane potential · mV');
@@ -2291,7 +2312,7 @@ function drawCurrentClamp(g, train){
     const xa=X(Math.max(t0,p.t0)), xb=X(Math.min(t1,p.t0+p.dur));
     g.fillRect(xa,y1,Math.max(1.2,xb-xa),y3+h3-y1);
   }
-  const vLo=-95, vHi=58, Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
+  const [vLo,vHi]=vAxis(), Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
   g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
   for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.5)'],[0,'0','rgba(255,255,255,.14)'],
                             [VREST,'rest −65','rgba(255,255,255,.16)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.5)']]){
@@ -2363,7 +2384,7 @@ function drawCurrentClamp(g, train){
   g.textAlign='left'; g.fillStyle='rgba(124,224,176,.85)';
   g.fillText('+'+sT, L+pw+5, Y3s(sMax)+9);
   g.fillText('−'+sT, L+pw+5, Y3s(-sMax)-3);
-  timeAxis(g, L, pw, y3+h3, H, t0, t1, (t1-t0)>30?10:5);
+  timeAxis(g, L, pw, y3+h3, H, t0, t1, tickStep(t1-t0));
 }
 
 /* ---------------- whole-cell current clamp: a family of spikes ---------------- */
@@ -2373,13 +2394,13 @@ function drawCCSweeps(g){
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.22), h2=Math.round(ph*0.52), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;
-  const win=clampWindow(), X=t=>L+clamp(t/win,0,1)*pw;
+  const win=xwin(), X=t=>L+clamp(t/win,0,1)*pw;
 
   gridPanel(g,L,y1,pw,h1,'current injected · µA/cm²');
   commandPanel(g, L, y1, h1, pw, X, win, 0, S.icmd, v=>v.toFixed(1));
 
   gridPanel(g,L,y2,pw,h2,'membrane potential · mV');
-  const vLo=-95, vHi=58, Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
+  const [vLo,vHi]=vAxis(), Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
   g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
   for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.45)'],[0,'0','rgba(255,255,255,.13)'],
                             [VREST,'rest −65','rgba(255,255,255,.15)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.45)']]){
@@ -2407,7 +2428,7 @@ function drawCCSweeps(g){
 
   gridPanel(g,L,y3,pw,h3,'opening likelihood · %');
   gatesPanel(g, L, y3, pw, h3, CLAMP.t, CLAMP.m, CLAMP.h, CLAMP.n, X, -1);
-  timeAxis(g, L, pw, y3+h3, H, 0, win, win>25?10:5);
+  timeAxis(g, L, pw, y3+h3, H, 0, win, tickStep(win));
 }
 
 /* ---------------- whole-cell voltage clamp ---------------- */
@@ -2417,7 +2438,7 @@ function drawVoltageClamp(g){
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.24), h2=Math.round(ph*0.50), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;
-  const win=clampWindow(), X=t=>L+clamp(t/win,0,1)*pw;
+  const win=xwin(), X=t=>L+clamp(t/win,0,1)*pw;
 
   gridPanel(g,L,y1,pw,h1,'command voltage · mV');
   commandPanel(g, L, y1, h1, pw, X, win, VHOLD, S.vcmd, v=>(v>0?'+':'')+v.toFixed(0));
@@ -2426,7 +2447,7 @@ function drawVoltageClamp(g){
   let iMax=300;
   for(const arr of [CLAMP.y].concat(SWEEPS.map(s=>s.y)))
     for(const v of arr) iMax=Math.max(iMax, Math.abs(v));
-  iMax*=1.1;
+  iMax=iMax*1.1;
   const zy=y2+h2/2, Y2=v=>zy-clamp(v,-iMax,iMax)/iMax*(h2/2-6);
   g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1;
   g.beginPath(); g.moveTo(L,zy); g.lineTo(L+pw,zy); g.stroke();
@@ -2453,7 +2474,7 @@ function drawVoltageClamp(g){
 
   gridPanel(g,L,y3,pw,h3,'opening likelihood · %');
   gatesPanel(g, L, y3, pw, h3, CLAMP.t, CLAMP.m, CLAMP.h, CLAMP.n, X, -1);
-  timeAxis(g, L, pw, y3+h3, H, 0, win, win>25?10:5);
+  timeAxis(g, L, pw, y3+h3, H, 0, win, tickStep(win));
 }
 
 /* ---------------- cell-attached: single channels ---------------- */
@@ -2463,7 +2484,7 @@ function drawSingleChannel(g){
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.18), h2=Math.round(ph*0.42), h3=ph-h1-h2-8;
   const y1=T, y2=T+h1+4, y3=y2+h2+4;
-  const win=clampWindow(), X=t=>L+clamp(t/win,0,1)*pw;
+  const win=xwin(), X=t=>L+clamp(t/win,0,1)*pw;
 
   gridPanel(g,L,y1,pw,h1,'command voltage · mV');
   commandPanel(g, L, y1, h1, pw, X, win, VHOLD, S.vcmd, v=>(v>0?'+':'')+v.toFixed(0));
@@ -2524,7 +2545,7 @@ function drawSingleChannel(g){
   g.fillText(SCAVG.sweeps
     ? SCAVG.sweeps+' sweep'+(SCAVG.sweeps>1?'s':'')+' averaged — the shape of the macroscopic sodium current'
     : 'run sweeps and the average of the flickering builds the smooth current', L+10, y3+15);
-  timeAxis(g, L, pw, y3+h3, H, 0, win, win>25?10:5);
+  timeAxis(g, L, pw, y3+h3, H, 0, win, tickStep(win));
 }
 
 /* ---------------- whole axon ---------------- */
@@ -2536,7 +2557,7 @@ function drawCablePlots(g){
   g.clearRect(0,0,W,H); g.fillStyle='#101318'; g.fillRect(0,0,W,H);
   const pw=W-L-R, ph=H-T-B, h1=Math.round(ph*0.64), h2=ph-h1-6;
   const y1=T, y2=T+h1+6;
-  const X = t => L + clamp(t/CWIN,0,1)*pw;
+  const TW = xwin(), X = t => L + clamp(t/TW,0,1)*pw;
   const extra = S.recCable==='extra';
 
   gridPanel(g,L,y1,pw,h1, extra ? 'potential just outside the membrane · arbitrary scale'
@@ -2545,7 +2566,7 @@ function drawCablePlots(g){
   if(extra){
     let m=1e-6;
     for(const k of ['ea','eb']) for(const v of CHIST[k]) m=Math.max(m,Math.abs(v));
-    m*=1.2;
+    m=m*1.2;
     Y1=v=>y1+h1/2-clamp(v,-m,m)/m*(h1/2-8);
     keys=[['ea','#f4efe4'],['eb','#ffb45c']];
     g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1;
@@ -2553,7 +2574,7 @@ function drawCablePlots(g){
     g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
     g.fillText('0', L-6, y1+h1/2+4);
   } else {
-    const vLo=-95,vHi=58; Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
+    const [vLo,vHi]=vAxis(); Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
     keys=[['a','#f4efe4'],['b','#ffb45c']];
     g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right';
     for(const [v,lab] of [[0,'0'],[VREST,'−65']]){
@@ -2599,7 +2620,7 @@ function drawCablePlots(g){
   gridPanel(g,L,y2,pw,h2, pw<620 ? 'opening likelihood · %'
                                 : 'opening likelihood at electrode A · %');
   gatesPanel(g, L, y2, pw, h2, CHIST.t, CHIST.m, CHIST.h, CHIST.n, X, -1);
-  timeAxis(g, L, pw, y2+h2, H, 0, CWIN, 3);
+  timeAxis(g, L, pw, y2+h2, H, 0, TW, tickStep(TW));
 }
 
 /* ============================================================
@@ -2609,7 +2630,7 @@ const el = id => document.getElementById(id);
 const S = {
   mode:'patch', rec:'sharp', recCable:'intra',
   amp:10.5, dur:1, npulse:1, gap:16, hold:0, speed:0.10, vcmd:0, icmd:8,
-  ions:true, charge:true, playing:true, repeat:false,
+  ions:true, charge:true, playing:true, repeat:false, xzoom:1,
   drugs:{ ttx:false, lidocaine:false, tea:false, fap:false, pronase:false },
   myelin:false, wraps:80, inode:2.4, lesion:false, lesionLen:6
 };
@@ -2641,7 +2662,6 @@ function resetAll(){
   if(S.mode==='patch'){
     patch=newPatch(); train=[]; clearHist(); spikeTimes=[]; spikeUp=false; clearClamp();
     layoutTheatre(narrow); assignBlocks(S.drugs);
-    el('verdict').hidden=true;
   } else {
     resetCable(cable); rebuildCable(); resetCableRun();
     clearCHist(); cableStim={t0:1e9,amp:0,dur:0};
@@ -2654,7 +2674,7 @@ function fire(){
       patch=newPatch(); clearClamp(); clampRunning=true;
     } else {
       train = makeTrain(patch.t+0.3, S.amp, S.dur, S.npulse, S.gap);
-      spikeTimes=[]; spikeUp=false; el('verdict').hidden=true;
+      spikeTimes=[]; spikeUp=false;
     }
   } else {
     resetCable(cable); rebuildCable(); resetCableRun();
@@ -2676,14 +2696,21 @@ function slider(id, key, fmt, after){
   inp._sync=()=>{ inp.value=S[key]; out.innerHTML=fmt(S[key]); };
   upd();
 }
+/* a control that cannot do anything is disabled and greyed out together, so the
+   sheath sliders and the gap between pulses never look broken instead of off */
+function setLive(id, live){
+  const inp=el(id); if(!inp) return;
+  inp.disabled=!live;
+  const box=inp.closest('.ctl'); if(box) box.classList.toggle('off', !live);
+}
 function syncInputs(){
-  for(const id of ['amp','dur','npulse','gap','hold','speed','vcmd','icmd','wraps','inode','lesion']){
+  for(const id of ['amp','dur','npulse','gap','hold','speed','xzoom','vcmd','icmd','wraps','inode','lesion']){
     const inp=el(id); if(inp && inp._sync) inp._sync();
   }
   setChip('myelinOn',S.myelin); setChip('lesionOn',S.lesion);
-  el('wraps').disabled=!S.myelin; el('inode').disabled=!S.myelin;
-  el('lesion').disabled=!(S.myelin&&S.lesion);
-  el('gap').disabled=(S.npulse<2);
+  setLive('wraps', S.myelin); setLive('inode', S.myelin);
+  setLive('lesion', S.myelin&&S.lesion);
+  setLive('gap', S.npulse>1);
   for(const k in S.drugs) setChip('drug_'+k, S.drugs[k]);
   setChip('repeat', S.repeat);
   for(const k of ['sharp','cc','vc','attached','intra','extra']) setChip('rec_'+k,
@@ -2792,7 +2819,6 @@ function setMode(m){
   el('modeCable').setAttribute('aria-pressed', m==='cable');
   el('axonBlock').hidden = (m!=='cable');
   el('holdCtl').hidden = el('npulseCtl').hidden = el('gapCtl').hidden = (m!=='patch');
-  if(m!=='patch') el('verdict').hidden=true;
   const amp=el('amp');
   if(m==='cable'){ amp.min=0; amp.max=800; amp.step=10; if(S.amp<100) S.amp=400; }
   else { amp.min=-60; amp.max=150; amp.step=0.5; if(S.amp>150) S.amp=+(THR1*1.5).toFixed(1); }
@@ -2841,7 +2867,6 @@ function advancePatch(dtModel, dtWall){
     if(sampleAcc>=SAMPLE_MS){ pushHist(patch); sampleAcc=0; }
   }
   finishPatchFrame(dtModel, dtWall, null);
-  updateVerdict();
 }
 function stepInProgress(){ return clampRunning && clampT>=2 && clampT<2+S.dur; }
 function advanceClamp(dtModel, dtWall){
@@ -2911,21 +2936,6 @@ function finishPatchFrame(dtModel, dtWall, sampler){
   tickParticles(dtWall, patch.V);
   tickPump(dtWall);
 }
-function updateVerdict(){
-  if(S.mode!=='patch' || isClamp() || S.npulse<2 || !train.length) return;
-  const last=train[train.length-1];
-  if(patch.t < last.t0+14) return;
-  const v=el('verdict');
-  if(!v.hidden) return;
-  const after=spikeTimes.filter(t=>t>=last.t0-0.2).length;
-  const before=spikeTimes.filter(t=>t<last.t0-0.2).length;
-  v.hidden=false;
-  v.innerHTML = before===0
-    ? 'Neither pulse reached threshold. <b>Turn the pulse up.</b>'
-    : (after>0
-      ? 'Second pulse fired after a <b>'+S.gap.toFixed(1)+' ms</b> gap. Shorten the gap until it stops working.'
-      : 'Second pulse <b>failed</b> at a '+S.gap.toFixed(1)+' ms gap — the membrane is still refractory. Lengthen the gap, or push harder.');
-}
 const ELEC_H = 0.05;
 function extraAt(c, e){
   let sum=0;
@@ -2955,7 +2965,7 @@ function advanceCable(dtModel, dtWall){
       if(CB.tA>=0 && CB.tB>CB.tA)
         CB.vel = ((pB-pA)*CAB_DX)/(CB.tB-CB.tA)*10;
     }
-    if(cable.t<=CWIN){
+    if(cable.t<=CWIN*2){
       chistAcc+=dt;
       if(chistAcc>=0.03){
         CHIST.t.push(cable.t); CHIST.a.push(cable.V[pA]); CHIST.b.push(cable.V[pB]);
@@ -3021,20 +3031,22 @@ function boot(){
   buildDrugs();
 
   slider('amp','amp', v=> (S.mode==='cable'?v.toFixed(0):v.toFixed(1))+' <em>µA/cm²</em>');
-  slider('dur','dur', v=> v.toFixed(1)+' <em>ms</em>', resetAvg);
-  slider('npulse','npulse', v=> v===1?'one':'two', ()=>{ el('gap').disabled=S.npulse<2; });
+  slider('dur','dur', v=> v.toFixed(1)+' <em>ms</em>', ()=>{ resetAvg(); const x=el('xzoom'); if(x&&x._sync) x._sync(); });
+  slider('npulse','npulse', v=> v===1?'one':'two', ()=>{ setLive('gap', S.npulse>1); });
   slider('gap','gap', v=> v.toFixed(1)+' <em>ms</em>');
   slider('hold','hold', v=> v.toFixed(1)+' <em>µA/cm²</em>');
   slider('vcmd','vcmd', v=> (v>0?'+':'')+v.toFixed(0)+' <em>mV</em>');
   slider('icmd','icmd', v=> (v>0?'+':'')+v.toFixed(1)+' <em>µA/cm²</em>');
   slider('speed','speed', v=> (v*60).toFixed(1)+' <em>ms per second</em>');
+  slider('xzoom','xzoom', v=> Math.round(baseWin()/v)+' <em>ms across</em>');
   slider('wraps','wraps', v=> v.toFixed(0)+' <em>layers</em>', ()=>{ rebuildCable(); });
   slider('inode','inode', v=> v.toFixed(1)+' <em>mm</em>', ()=>{ rebuildCable(); });
   slider('lesion','lesionLen', v=> v.toFixed(1)+' <em>mm</em>', ()=>{ rebuildCable(); });
 
   chip('showIons','ions'); chip('showCharge','charge'); chip('playing','playing');
   chip('repeat','repeat', ()=>{ if(S.repeat && !clampRunning) fire(); });
-  chip('myelinOn','myelin', ()=>{ syncInputs(); rebuildCable(); fire(); });
+  /* a stripped patch is a hole in a sheath, so it cannot outlive the sheath */
+  chip('myelinOn','myelin', ()=>{ if(!S.myelin) S.lesion=false; syncInputs(); rebuildCable(); fire(); });
   chip('lesionOn','lesion', ()=>{
     if(S.lesion && !S.myelin) S.myelin=true;
     syncInputs(); rebuildCable(); fire();

@@ -256,6 +256,12 @@
     .modes .seg button{padding:5px 9px;font-size:13px}
     .tools .seg button{padding:8px 7px}
   }
+
+  /* Short laptops: the panel sections tighten so the whole panel fits a 620px
+     frame without a scrollbar. Nothing is hidden, only tightened. */
+  @media (max-height:840px){
+    .panel > section, .panel > details{padding:11px 16px}
+  }
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <script src="../../assets/js/sim-mobile.js" defer></script>
