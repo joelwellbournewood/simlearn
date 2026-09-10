@@ -336,8 +336,7 @@
       <dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>presets</dd>
       <dt><kbd>Scroll</kbd></dt><dd>zoom</dd>
       <dt><kbd>Right-drag</kbd></dt><dd>orbit in 3D, pan in 2D</dd>
-      <dt><kbd>Shift-drag</kbd></dt><dd>slide the whole 3D scene</dd>
-      <dt><kbd>Middle-drag</kbd></dt><dd>slide the scene as well</dd>
+      <dt><kbd>Shift-drag</kbd></dt><dd>slide the whole 3D scene sideways</dd>
       <dt><kbd>Double-click</kbd></dt><dd>reset the view</dd>
     </dl>
   </details>
@@ -2370,14 +2369,15 @@ $('mode3d').addEventListener('click', () => setMode('3d'));
 
 /* ---------------- tools & pointer ---------------- */
 const HINTS = {
-  orbit: 'Drag to look around, scroll to zoom. Pick a tool to touch the flock.',
-  attract: mode => mode === '3d' ? 'Hold on the box to pull the flock toward the pointer. Right-drag to orbit.' : 'Hold anywhere to pull the flock toward the pointer. Scroll to zoom, right-drag to move.',
-  repel: mode => mode === '3d' ? 'Hold to push the flock away. Right-drag to orbit.' : 'Hold to push the flock away from the pointer. Scroll to zoom, right-drag to move.',
+  orbit: m => m === '3d' ? 'Drag to look around, scroll to zoom, shift-drag to slide the whole scene. Pick a tool to touch the flock.'
+                         : 'Drag to look around, scroll to zoom. Pick a tool to touch the flock.',
+  attract: mode => mode === '3d' ? 'Hold on the box to pull the flock toward the pointer. Right-drag to orbit, shift-drag to slide the scene.' : 'Hold anywhere to pull the flock toward the pointer. Scroll to zoom, right-drag to move.',
+  repel: mode => mode === '3d' ? 'Hold to push the flock away. Right-drag to orbit, shift-drag to slide the scene.' : 'Hold to push the flock away from the pointer. Scroll to zoom, right-drag to move.',
   obstacle: (m) => obShape === 'free' && m === '2d'
     ? 'Draw a loop with the pointer, like a lasso, and it closes into a solid shape.'
     : (obShape === 'box' || obShape === 'cyl')
       ? (m === '3d'
-        ? 'Drag to set the two sides lying on the lit plane, and the Depth slider sets the third. X Y Z pick the plane, [ and ] slide it.'
+        ? 'Drag to set the two sides lying on the lit plane, and the Depth slider sets the third. X Y Z pick the plane, [ and ] slide it, shift-drag slides the scene.'
         : 'Drag out the width and the height separately. The Depth slider sets the third side.')
       : (m === '3d' ? 'Press and drag to size a new obstacle. It lands on the lit plane: pick the axis and slide the plane to set its depth. X Y Z pick the axis, [ and ] slide it.'
                   : 'Press and drag to size a new obstacle.'),
@@ -2386,6 +2386,8 @@ const HINTS = {
 };
 function setHint(text) {
   if (text === undefined) { const h = HINTS[ctx.tool]; text = typeof h === 'function' ? h(mode) : h; }
+  /* the scene-slide modifier is always stated below the tools while in 3D */
+  if (mode === '3d' && !/shift-drag/i.test(text)) text += ' Shift-drag slides the whole scene.';
   $('hint').textContent = text;
 }
 const TOOL_WORD = {orbit:'Orbit', attract:'Attract', repel:'Repel', obstacle:'Obstacle', predator:'Predator', erase:'Erase'};
@@ -2513,9 +2515,10 @@ stage.addEventListener('pointerdown', e => {
     orbiting = false; panning = false; scenePanning = false; ctx.mouse.active = false; ctx.draft = null; return;
   }
   const rightButton = e.button === 2 || e.button === 1;
+  /* Shift, and only Shift, slides the whole scene. Everything else behaves as it always did:
+     right or middle drag orbits in 3D and pans in 2D, the Orbit tool orbits on the left button. */
   if (mode === '3d' && e.shiftKey && view3d) { scenePanning = true; return; }
-  if (mode === '3d' && (ctx.tool === 'orbit' || rightButton)) {
-    if (e.shiftKey || e.button === 1) scenePanning = true; else orbiting = true; return; }
+  if (mode === '3d' && (ctx.tool === 'orbit' || rightButton)) { orbiting = true; return; }
   if (mode === '2d' && rightButton) { panning = true; return; }
   const p = worldFromEvent(e); if (!p) return;
   const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
@@ -2530,6 +2533,8 @@ stage.addEventListener('pointerdown', e => {
   }
 });
 stage.addEventListener('pointermove', e => {
+  /* if no button is down there is no drag, whatever a lost pointerup may have left behind */
+  if (e.buttons === 0 && (orbiting || panning || scenePanning)) { orbiting = panning = scenePanning = false; }
   const rec = pointers.get(e.pointerId);
   if (rec) { rec.x = e.clientX; rec.y = e.clientY; interacting = 20; }
   if (pointers.size === 2) {
@@ -2562,7 +2567,7 @@ function endPointer(e) {
   pointers.delete(e.pointerId);
   if (pointers.size < 2) { pinchDist = 0; pinchMid = null; }
   if (pointers.size === 0) {
-    orbiting = false; panning = false; ctx.mouse.active = false;
+    orbiting = false; panning = false; scenePanning = false; ctx.mouse.active = false;
     if (lasso) lassoEnd();
     else if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push(d); flock.obstaclesVersion++; }
   }

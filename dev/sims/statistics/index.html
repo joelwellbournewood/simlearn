@@ -238,12 +238,12 @@ details.grp > summary + *{margin-top:0}
     </div>
     <div class="row" data-m="test">
       <label for="s-trate"><span class="nm">People per second<button class="tip" data-tip="How fast the queue is screened." aria-label="What people per second does">?</button></span><span class="val" id="v-trate"></span></label>
-      <input type="range" id="s-trate" min="0" max="2.6" step="0.05" value="1.15">
+      <input type="range" id="s-trate" min="0" max="4.7" step="0.05" value="1.15">
     </div>
 
     <div class="row" data-m="pi">
       <label for="s-darts"><span class="nm">Darts per second<button class="tip" data-tip="Throw rate. The estimate improves with the square root of the total, so patience gets expensive." aria-label="What darts per second does">?</button></span><span class="val" id="v-darts"></span></label>
-      <input type="range" id="s-darts" min="0" max="3" step="0.05" value="1.3">
+      <input type="range" id="s-darts" min="0" max="4" step="0.05" value="1.3">
     </div>
   </details>
 </div>
@@ -260,7 +260,7 @@ details.grp > summary + *{margin-top:0}
   <li><b>Population sampling.</b> Draw one value at a time from height, wealth, geyser waiting times, asteroid diameters, lottery balls, or a coin, average each handful, and drop the average into a histogram. At one draw per sample you are looking at the population itself. Raise the sample size and every one of those populations, however lopsided or spiky, produces the same bell.</li>
   <li><b>Confidence intervals.</b> One fixed truth, measured over and over by small samples, each measurement wrapped in an interval. Green intervals caught the truth, red ones missed, and the tally at the bottom is the only thing entitled to the words <i>95 percent</i>.</li>
   <li><b>Screening test.</b> A blood marker overlaps between the healthy and the ill. You choose where to call a result positive, and the two ways of being wrong, a false alarm and a missed case, trade against each other with every step of the threshold. The table fills with real people as they are screened.</li>
-  <li><b>Monte Carlo darts.</b> Darts thrown blindly at a square of side 2 measure the area of the circle inside it. Count the fraction that land in the circle, multiply by four, and you have &pi; out of pure noise.</li>
+  <li><b>Monte Carlo darts.</b> Darts thrown blindly at a square of side 2, with a circle of radius 1 inside it, measure the area of that circle. Count the fraction that land in the circle, multiply by four, and you have &pi; out of pure noise.</li>
 </ul>
 <h3>Things to try</h3>
 <ul>
@@ -398,7 +398,10 @@ const GB={
   geom(){
     const A=area();
     const sx=Math.max(13,Math.min(30,A.w/36));
-    const binBot=A.bot-34, pegLow=binBot-96, top=A.y+40;
+    const binBot=A.bot-34;
+    /* the bin shelf: 2.5x the old 96px where there is room for it, less on a short window */
+    const binH=Math.max(96,Math.min(213,(binBot-A.y)*0.42));
+    const pegLow=binBot-binH, top=A.y+40;
     const span=pegLow-top-40;
     const sy=Math.max(11,Math.min(28,span/19));
     const Rmax=clamp(1+Math.floor(span/sy),2,20);
@@ -425,7 +428,6 @@ const GB={
     if(Math.abs(j)>g.half){ if(mine) this.off++; this.total++; return; }
     this.counts[j+HALFMAX]++; this.total++;
     if(mine){ this.segN++; this.segS+=j; this.segS2+=j*j; }
-    const cap=Math.max(6,Math.floor((g.pegLow+60-40)/7));
     let mx=0; for(let i=0;i<this.counts.length;i++) if(this.counts[i]>mx) mx=this.counts[i];
     const room=Math.max(6,Math.floor((g.binBot-(g.pegBot+18))/7));
     while(mx/this.upd>room) this.upd*=2;
@@ -757,10 +759,15 @@ const TEST={
     const b=this.cellBox(g,c);
     this.people.push({v,sick,pos,c,t:0,tx:b.x+14+rnd()*(b.w-28),ty:b.y+b.h-12-rnd()*(b.h-40)});
   },
+  tally(){ const sick=rnd()<this.prev; const v=(sick?this.sep:0)+gauss();
+    this[this.cellOf(sick,v>=this.thr)]++; },
   step(dt){
     const g=this.geom();
     this.acc+=this.rate*dt;
-    while(this.acc>=1){ this.acc--; if(this.people.length<220) this.spawn(g); }
+    let budget=6000;
+    while(this.acc>=1&&budget-->0){ this.acc--;
+      if(this.people.length<220) this.spawn(g); else this.tally(); }
+    if(budget<=0) this.acc=0;
     for(const p of this.people){ p.t+=dt*1.5;
       if(p.t>=1&&!p.counted){ p.counted=true; this[p.c]++; }
       if(p.t>=2.6) p.dead=true; }
@@ -837,7 +844,8 @@ const TEST={
 /* ================= 5. MONTE CARLO DARTS ================= */
 const PI={
   rate:20, N:0, inside:0, dots:null, dctx:null, rings:[], acc:0,
-  reset(){ this.N=0; this.inside=0; this.rings=[];
+  px:0, py:0, pan:false, lx:0, ly:0,
+  reset(){ this.N=0; this.inside=0; this.rings=[]; this.px=0; this.py=0; this.pan=false;
     if(this.dots) this.dctx.clearRect(0,0,this.dots.width,this.dots.height); },
   geom(){ const A=area();
     const side=Math.max(160,Math.min(A.w-300,A.h-206));
@@ -861,45 +869,54 @@ const PI={
     for(const r of this.rings) r.t+=dt*3; this.rings=this.rings.filter(r=>r.t<1); },
   draw(){
     const g=this.geom(); this.ensure();
+    ctx.save(); ctx.translate(this.px,this.py);
     const cx=g.sx+g.side/2, cy=g.sy+g.side/2, R=g.side/2;
     ctx.strokeStyle=LINES; ctx.lineWidth=1.2; ctx.strokeRect(g.sx,g.sy,g.side,g.side);
     ctx.beginPath(); ctx.arc(cx,cy,R,0,6.2832); ctx.stroke();
     ctx.drawImage(this.dots,0,0,W,H);
     for(const r of this.rings){ ctx.strokeStyle=(r.inn?'rgba(86,224,194,':'rgba(255,125,92,')+(1-r.t)+')';
       ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(r.x,r.y,2+r.t*9,0,6.2832); ctx.stroke(); }
-    /* the geometry, stated once and quietly: side 2, radius 1 */
-    const tick=(x0,y0,x1,y1)=>line(x0,y0,x1,y1,'rgba(160,190,175,.55)',1);
+    /* the geometry, stated once and quietly: radius 1, and the two areas */
     dash([3,4]);
-    tick(cx,cy,cx+R,cy); dash();
-    disc(cx,cy,1.8,'rgba(160,190,175,.8)');
-    txt('r = 1',cx+R/2,cy-8,'center','rgba(180,205,192,.9)','11px '+MONO);
-    const dy=g.sy+g.side+18;
-    tick(g.sx,dy,g.sx+g.side,dy); tick(g.sx,dy-4,g.sx,dy+4); tick(g.sx+g.side,dy-4,g.sx+g.side,dy+4);
-    ctx.fillStyle=FIELD; ctx.fillRect(cx-26,dy-8,52,16);
-    txt('side 2',cx,dy+4,'center','rgba(180,205,192,.9)','11px '+MONO);
-    txt('square area 4',g.sx+8,g.sy+16,'left',MUTED,'10.5px '+MONO);
-    txt('circle area '+String.fromCharCode(960),g.sx+g.side-8,g.sy+16,'right',ACC,'10.5px '+MONO);
-    /* the estimate, as the ratio it is */
+    line(cx,cy,cx+R,cy,'rgba(160,190,175,.55)',1); dash();
+    disc(cx,cy,2.2,'rgba(160,190,175,.85)');
+    txt('r = 1',cx+R/2,cy-10,'center','rgba(190,214,202,.95)','13.5px '+MONO);
+    txt('square area 4',g.sx+10,g.sy+20,'left','rgba(178,200,188,.95)','13px '+MONO);
+    txt('circle area '+String.fromCharCode(960),g.sx+g.side-10,g.sy+20,'right',ACC,'13px '+MONO);
+    /* the estimate, as the ratio it is. The number of decimals follows the noise:
+       one digit past the typical error, so the last digit shown is one you can trust. */
     const est=this.N?4*this.inside/this.N:0;
+    const sd=this.N?Math.sqrt(Math.PI*(4-Math.PI)/this.N):1;      /* sd of the estimate */
+    const dp=clamp(1-Math.floor(Math.log10(sd)),4,10);
+    const pctSd=100*sd/Math.PI;
+    const dpp=clamp(1-Math.floor(Math.log10(pctSd)),2,7);
     const y=g.rT;
-    const parts=[['4 \u00d7 ','15px '+MONO,MUTED],
-      [fmtN(this.inside)+' in','15px '+MONO,ACC],
-      [' / ','15px '+MONO,MUTED],
-      [fmtN(this.N)+' thrown','15px '+MONO,INK],
-      ['  =  ','15px '+MONO,MUTED],
-      [this.N?est.toFixed(4):'--','30px '+MONO,ACC]];
+    const parts=[['4 \u00d7 ','19px '+MONO,MUTED],
+      [fmtN(this.inside)+' in','19px '+MONO,ACC],
+      [' / ','19px '+MONO,MUTED],
+      [fmtN(this.N)+' thrown','19px '+MONO,INK],
+      ['  =  ','19px '+MONO,MUTED],
+      [this.N?est.toFixed(dp):'--','38px '+MONO,ACC]];
     let wsum=0; for(const p of parts){ ctx.font=p[1]; wsum+=ctx.measureText(p[0]).width; }
     let x=g.A.cx-wsum/2;
     for(const p of parts){ ctx.font=p[1]; ctx.fillStyle=p[2]; ctx.textAlign='left';
-      ctx.fillText(p[0],x,y+10); x+=ctx.measureText(p[0]).width; }
+      ctx.fillText(p[0],x,y+13); x+=ctx.measureText(p[0]).width; }
     txt('the fraction of darts inside the circle is the circle\u2019s share of the square, '
-      +String.fromCharCode(960)+'/4',g.A.cx,y-16,'center',MUTED,'10.5px '+MONO);
-    txt(this.N?('true '+String.fromCharCode(960)+' = 3.14159   off by '
-      +(100*Math.abs(est-Math.PI)/Math.PI).toFixed(2)+'%   typical error at this many darts \u00b1'
-      +(100*Math.sqrt(Math.PI*(4-Math.PI)/this.N)/Math.PI).toFixed(2)+'%   click to throw 500')
-      :'click to throw 500 darts',g.A.cx,y+36,'center',MUTED);
+      +String.fromCharCode(960)+'/4',g.A.cx,y-18,'center',MUTED,'13px '+MONO);
+    txt(this.N?('true '+String.fromCharCode(960)+' = '+Math.PI.toFixed(dp)+'   off by '
+      +(100*Math.abs(est-Math.PI)/Math.PI).toFixed(dpp)+'%   typical error at this many darts \u00b1'
+      +pctSd.toFixed(dpp)+'%   click to throw 500')
+      :'click to throw 500 darts',g.A.cx,y+46,'center',MUTED,'13px '+MONO);
+    ctx.restore();
   },
-  down(){ this.throwN(500); }, move(){}, up(){}
+  /* right-drag slides the whole board, dots, labels and readout together */
+  down(x,y,e){ if(e&&(e.button===2||e.button===1)){ this.pan=true; this.lx=x; this.ly=y; return; }
+    this.throwN(500); },
+  move(x,y){ if(!this.pan) return;
+    const A=area();
+    this.px=clamp(this.px+(x-this.lx),-A.w,A.w); this.py=clamp(this.py+(y-this.ly),-A.h,A.h);
+    this.lx=x; this.ly=y; },
+  up(){ this.pan=false; }
 };
 /* ================= wiring ================= */
 const MODES={
@@ -951,7 +968,7 @@ bind('s-cirate','v-cirate',v=>Math.pow(10,v).toFixed(1)+' /s',v=>{ CI.rate=Math.
 bind('s-prev','v-prev',v=>'1 in '+fmtN(Math.round(Math.pow(10,v))),v=>{ TEST.prev=1/Math.pow(10,v); TEST.reset(); });
 bind('s-sep','v-sep',v=>v.toFixed(1)+' sd apart',v=>{ TEST.sep=v; TEST.thr=Math.min(TEST.thr,v+3); TEST.reset(); });
 bind('s-thr','v-thr',v=>v.toFixed(2)+' sd',v=>{ TEST.thr=v; TEST.reset(); });
-bind('s-trate','v-trate',v=>pow10(v)+' /s',v=>{ TEST.rate=pow10(v); });
+bind('s-trate','v-trate',v=>fmtN(pow10(v))+' /s',v=>{ TEST.rate=pow10(v); });
 bind('s-darts','v-darts',v=>fmtN(pow10(v))+' /s',v=>{ PI.rate=pow10(v); });
 function syncRows(R){ const e=el('s-rows'); if(+e.value!==R){ e.value=R;
   e.dispatchEvent(new Event('input',{bubbles:true})); } }
@@ -985,8 +1002,10 @@ el('b-close').addEventListener('click',()=>dlg.close());
 dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
 /* pointer on canvas */
 function local(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top]; }
-cv.addEventListener('pointerdown',e=>{ const [x,y]=local(e); cv.setPointerCapture(e.pointerId); MODES[mode].o.down(x,y); });
-cv.addEventListener('pointermove',e=>{ const [x,y]=local(e); MODES[mode].o.move(x,y); });
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{ if((e.button===2||e.button===1)&&mode!=='pi') return;
+  const [x,y]=local(e); cv.setPointerCapture(e.pointerId); MODES[mode].o.down(x,y,e); });
+cv.addEventListener('pointermove',e=>{ if(e.buttons===0) MODES[mode].o.up(); const [x,y]=local(e); MODES[mode].o.move(x,y,e); });
 cv.addEventListener('pointerup',e=>{ MODES[mode].o.up(); });
 cv.addEventListener('pointercancel',()=>{ MODES[mode].o.up(); });
 window.addEventListener('keydown',e=>{
