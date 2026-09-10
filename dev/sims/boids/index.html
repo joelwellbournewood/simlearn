@@ -151,6 +151,11 @@
   .placebar .pb-at{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:112px;text-align:center}
   .placebar .pb-tg{padding:4px 11px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:11.5px}
   .placebar .pb-tg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  .depth-pill{gap:9px;align-items:center;padding:4px 13px;font-size:11.5px;color:var(--muted)}
+  .depth-pill input[type=range]{width:104px}
+  .depth-pill output{font-family:var(--mono);font-size:11.5px;color:var(--text);min-width:26px;text-align:right}
+  .erase-all{padding:5px 13px;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--text);font-size:12px;transition:border-color .18s,background .18s}
+  .erase-all:hover{border-color:var(--danger);color:var(--danger)}
   .tool-name{display:none;font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--text);text-shadow:0 1px 9px rgba(0,0,0,.8)}
   #stage.light ~ .tools .tool-name{text-shadow:0 1px 8px rgba(255,255,255,.75);color:#22362e}
   #stage.light ~ .tools .hint{text-shadow:0 1px 8px rgba(255,255,255,.7);color:#5c6b62}
@@ -330,7 +335,9 @@
       <dt><kbd>D</kbd></dt><dd>performance readout</dd>
       <dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>presets</dd>
       <dt><kbd>Scroll</kbd></dt><dd>zoom</dd>
-      <dt><kbd>Right-drag</kbd></dt><dd>move the view</dd>
+      <dt><kbd>Right-drag</kbd></dt><dd>orbit in 3D, pan in 2D</dd>
+      <dt><kbd>Shift-drag</kbd></dt><dd>slide the whole 3D scene</dd>
+      <dt><kbd>Middle-drag</kbd></dt><dd>slide the scene as well</dd>
       <dt><kbd>Double-click</kbd></dt><dd>reset the view</dd>
     </dl>
   </details>
@@ -411,7 +418,11 @@
     <output class="pb-at" id="planeAt"></output>
     <button class="pb-tg" id="planeSnap" aria-pressed="true" title="Snap the point to the grid on the plane">Snap</button>
   </div>
+  <div class="seg depth-pill" id="obDepthWrap" hidden>
+    <label for="obDepth">Depth</label><input type="range" id="obDepth" min="12" max="220" step="4" value="44" aria-label="Depth of the next box or column"><output id="obDepthRead">44</output>
+  </div>
   <div class="tool-name" id="toolName" aria-hidden="true">Attract</div>
+  <button class="erase-all" id="eraseAll" hidden>Erase all</button>
   <div class="seg" role="group" aria-label="Pointer tool" id="tools">
     <button data-tool="orbit" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M3.5 14.5c-1.3-3.6 4-8 11-9.5s12 1 12.5 4.5M20.5 9.5c1.3 3.6-4 8-11 9.5S-2 18 -2.5 14.5"/></svg>Orbit</button>
     <button data-tool="attract" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg>Attract</button>
@@ -1746,6 +1757,13 @@ class View3D {
     this.renderer.setClearColor(col, 1);
     this.scene.fog = new THREE.Fog(col, 900, 3200);
     const ink = dark ? 0xffffff : 0x1a2030;
+    /* the placement plane has to read against whatever the scene is painted */
+    this.placeGrid.material.color.setHex(dark ? 0xff8aa4 : 0x8a0b28);
+    this.placeGrid.material.opacity = dark ? 0.55 : 0.60;
+    this.placeFill.material.color.setHex(dark ? 0xff6f8d : 0x6d0a20);
+    this.placeFill.material.opacity = dark ? 0.13 : 0.10;
+    this.placeCross.material.color.setHex(dark ? 0xffd7e0 : 0x50000f);
+    this.placeCross.material.opacity = 1;
     this.box.material.color.setHex(ink); this.gridHelper.material.color.setHex(ink);
     this.obstacleMat.color.setHex(ink); this.obstacleWire.color.setHex(ink); this.pointerRing.material.color.setHex(ink);
     this.trailMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
@@ -1788,7 +1806,20 @@ class View3D {
     for (let i = 0; i < flock.n; i++) if (flock.species[i] === 1) test(flock.px[i], flock.py[i], flock.pz[i], 28, () => ({ type: 'predator', index: i }));
     return res;
   }
-  resetCamera() { Object.assign(this.cam, { theta: 0.65, phi: 1.12, rTarget: 1500 }); }
+  /* shift-drag slides the whole scene: the look-at point moves across the screen plane */
+  panScene(dx, dy) {
+    const c = this.cam, k = c.r * 0.0016;
+    const sp = Math.sin(c.theta), cp = Math.cos(c.theta);
+    this.target.x += (dx * sp - dy * cp * Math.cos(c.phi)) * k;
+    this.target.z += (-dx * cp - dy * sp * Math.cos(c.phi)) * k;
+    this.target.y += dy * Math.sin(c.phi) * k;
+    const W = this.W, lo = W.lo, sz = W.size, m = 1.2;
+    this.target.x = clamp(this.target.x, lo[0] - sz[0] * m, lo[0] + sz[0] * (1 + m));
+    this.target.y = clamp(this.target.y, lo[1] - sz[1] * m, lo[1] + sz[1] * (1 + m));
+    this.target.z = clamp(this.target.z, lo[2] - sz[2] * m, lo[2] + sz[2] * (1 + m));
+    requestDraw();
+  }
+  resetCamera() { Object.assign(this.cam, { theta: 0.65, phi: 1.12, rTarget: 1500 }); this.target.set(0, 0, 0); }
   updateCamera(dt, interacting) {
     const c = this.cam;
     c.phi = clamp(c.phi, 0.15, Math.PI - 0.15);
@@ -2344,10 +2375,14 @@ const HINTS = {
   repel: mode => mode === '3d' ? 'Hold to push the flock away. Right-drag to orbit.' : 'Hold to push the flock away from the pointer. Scroll to zoom, right-drag to move.',
   obstacle: (m) => obShape === 'free' && m === '2d'
     ? 'Draw a loop with the pointer, like a lasso, and it closes into a solid shape.'
-    : (m === '3d' ? 'Press and drag to size a new obstacle. It lands on the lit plane: pick the axis and slide the plane to set its depth. X Y Z pick the axis, [ and ] slide it.'
+    : (obShape === 'box' || obShape === 'cyl')
+      ? (m === '3d'
+        ? 'Drag to set the two sides lying on the lit plane, and the Depth slider sets the third. X Y Z pick the plane, [ and ] slide it.'
+        : 'Drag out the width and the height separately. The Depth slider sets the third side.')
+      : (m === '3d' ? 'Press and drag to size a new obstacle. It lands on the lit plane: pick the axis and slide the plane to set its depth. X Y Z pick the axis, [ and ] slide it.'
                   : 'Press and drag to size a new obstacle.'),
   predator: (m) => m === '3d' ? 'Click to release a predator on the lit plane. Pick the axis and slide the plane to choose where.' : 'Click to release a predator where you point.',
-  erase: 'Click an obstacle or predator to remove it. Right-click to clear every obstacle at once.',
+  erase: 'Click an obstacle or predator to remove it, or press Erase all to clear the lot.',
 };
 function setHint(text) {
   if (text === undefined) { const h = HINTS[ctx.tool]; text = typeof h === 'function' ? h(mode) : h; }
@@ -2357,16 +2392,41 @@ const TOOL_WORD = {orbit:'Orbit', attract:'Attract', repel:'Repel', obstacle:'Ob
 /* ---- obstacle shapes. Round is the original sphere and is unchanged; Box and Column
    are solids with the same avoidance rule applied to their own surface; Freehand lays a
    line of small round obstacles along the pointer and is 2D only. ---- */
-let obShape = 'sphere';
+let obShape = 'sphere', obDepth = 44;
 function makeObstacle(x, y, z, r, kind) {
   r = Math.max(12, r);
   if (kind === 'box') { const h = r * 0.85; return { kind: 'box', x, y, z, hx: h, hy: h, hz: h, r: h * 1.7321 }; }
   if (kind === 'cyl') { const cr = r * 0.72, ch = r * 1.5; return { kind: 'cyl', x, y, z, hx: cr, hy: ch, r: Math.hypot(cr, ch) }; }
   return { kind: 'sphere', x, y, z, r };
 }
+/* a drag sets the two sides you can see; the third one gets the depth slider, so a box
+   or a column can be any shape on any axis without a second gesture */
+function shapeDraft(d, p) {
+  const dd = [Math.abs(p.x - d.x), Math.abs(p.y - d.y), Math.abs(p.z - d.z)];
+  if (d.kind === 'box') {
+    let h;
+    if (mode === '3d' && view3d) {
+      const [u, v] = view3d.planeAxes(), n = 3 - u - v;
+      h = [0, 0, 0]; h[u] = Math.max(10, dd[u]); h[v] = Math.max(10, dd[v]); h[n] = obDepth;
+    } else { h = [Math.max(10, dd[0]), Math.max(10, dd[1]), Math.max(10, Math.max(dd[0], dd[1]))]; }
+    return { kind: 'box', x: d.x, y: d.y, z: d.z, hx: h[0], hy: h[1], hz: h[2], r: Math.hypot(h[0], h[1], h[2]) };
+  }
+  if (d.kind === 'cyl') {
+    const rad = Math.max(10, Math.hypot(p.x - d.x, p.z - d.z));
+    const hh = dd[1] > 14 ? dd[1] : obDepth;
+    return { kind: 'cyl', x: d.x, y: d.y, z: d.z, hx: rad, hy: hh, r: Math.hypot(rad, hh) };
+  }
+  return makeObstacle(d.x, d.y, d.z, Math.hypot(p.x - d.x, p.y - d.y, p.z - d.z), d.kind);
+}
+function depthBarUpdate() {
+  const w = $('obDepthWrap'); if (!w) return;
+  w.hidden = !(ctx.tool === 'obstacle' && (obShape === 'box' || obShape === 'cyl'));
+  const o = $('obDepthRead'); if (o) o.value = Math.round(obDepth);
+}
 function shapesForMode() {
   const box = $('shapes'); if (!box) return;
   box.hidden = ctx.tool !== 'obstacle';
+  depthBarUpdate();
   box.querySelector('[data-shape="cyl"]').hidden = mode === '2d';
   box.querySelector('[data-shape="free"]').hidden = mode === '3d';
   if (mode === '2d' && obShape === 'cyl') selectShape('sphere');
@@ -2375,11 +2435,13 @@ function shapesForMode() {
 function selectShape(k) {
   obShape = k;
   document.querySelectorAll('#shapes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shape === k)));
+  depthBarUpdate();
   setHint();
 }
 document.querySelectorAll('#shapes button').forEach(b => b.addEventListener('click', () => selectShape(b.dataset.shape)));
 function selectTool(t) {
   ctx.tool = t;
+  const ea = $('eraseAll'); if (ea) ea.hidden = t !== 'erase';
   ctx.mouse.mode = t;
   const tn = $('toolName'); if (tn) tn.textContent = TOOL_WORD[t] || '';
   document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
@@ -2419,9 +2481,13 @@ document.querySelectorAll('#planeAxes button').forEach(b => b.addEventListener('
 $('planeD').addEventListener('input', e => { planeVal = parseFloat(e.target.value); placeBarUpdate(); });
 $('planeSnap').addEventListener('click', () => { planeSnap = !planeSnap; placeBarUpdate(); });
 document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => selectTool(b.dataset.tool)));
+$('eraseAll').addEventListener('click', () => { clearObstacles(); });
+$('obDepth').addEventListener('input', e => { obDepth = parseFloat(e.target.value); depthBarUpdate();
+  if (ctx.draft && lastDragPt) ctx.draft = shapeDraft(ctx.draft, lastDragPt); requestDraw(); });
 
 const pointers = new Map();
-let orbiting = false, panning = false, pinchDist = 0, pinchMid = null, lastX = 0, lastY = 0, interacting = 0;
+let lastDragPt = null;
+let orbiting = false, panning = false, scenePanning = false, pinchDist = 0, pinchMid = null, lastX = 0, lastY = 0, interacting = 0;
 function worldFromEvent(e) {
   if (mode === '2d') return view2d.toWorld(e.clientX, e.clientY);
   const nx = (e.clientX / width) * 2 - 1, ny = -(e.clientY / height) * 2 + 1;
@@ -2444,11 +2510,12 @@ stage.addEventListener('pointerdown', e => {
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()]; pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
     pinchMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    orbiting = false; panning = false; ctx.mouse.active = false; ctx.draft = null; return;
+    orbiting = false; panning = false; scenePanning = false; ctx.mouse.active = false; ctx.draft = null; return;
   }
   const rightButton = e.button === 2 || e.button === 1;
-  if (rightButton && ctx.tool === 'erase') { clearObstacles(); return; }
-  if (mode === '3d' && (ctx.tool === 'orbit' || rightButton)) { orbiting = true; return; }
+  if (mode === '3d' && e.shiftKey && view3d) { scenePanning = true; return; }
+  if (mode === '3d' && (ctx.tool === 'orbit' || rightButton)) {
+    if (e.shiftKey || e.button === 1) scenePanning = true; else orbiting = true; return; }
   if (mode === '2d' && rightButton) { panning = true; return; }
   const p = worldFromEvent(e); if (!p) return;
   const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
@@ -2475,6 +2542,8 @@ stage.addEventListener('pointermove', e => {
     pinchDist = d; pinchMid = mid; return;
   }
   if (panning) { view2d.pan(e.clientX - lastX, e.clientY - lastY); lastX = e.clientX; lastY = e.clientY; return; }
+  if (scenePanning && view3d) { view3d.panScene(e.clientX - lastX, e.clientY - lastY);
+    lastX = e.clientX; lastY = e.clientY; return; }
   if (orbiting && view3d) {
     view3d.cam.theta += (e.clientX - lastX) * 0.006;
     view3d.cam.phi -= (e.clientY - lastY) * 0.006;
@@ -2485,10 +2554,7 @@ stage.addEventListener('pointermove', e => {
   const p = worldFromEvent(e); if (!p) return;
   const m = ctx.mouse; m.x = p.x; m.y = p.y; m.z = p.z;
   if (lasso) lassoMove(p);
-  else if (ctx.draft) {
-    const d = ctx.draft, r = Math.max(12, Math.hypot(p.x - d.x, p.y - d.y, p.z - d.z));
-    ctx.draft = makeObstacle(d.x, d.y, d.z, r, d.kind);
-  }
+  else if (ctx.draft) { lastDragPt = p; ctx.draft = shapeDraft(ctx.draft, p); }
   else if (rec && ctx.tool === 'erase' && mode === '2d') erase(p);
   else markPlacement(p);
 });
