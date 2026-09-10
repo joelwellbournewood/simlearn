@@ -975,7 +975,7 @@ function layoutTheatre(narrow){
     return out.length?out:TH.channels.slice(-2);
   })();
 
-  TH.gw = narrow ? 14 : 22; TH.gh = 4;
+  TH.gw = narrow ? 14 : 22; TH.gh = 7;
   TH.gOut = new Int16Array(TH.gw*TH.gh);
   TH.gIn  = new Int16Array(TH.gw*TH.gh);
 }
@@ -1141,14 +1141,13 @@ function balancePools(dtWall){
     const n=Math.min(9, Math.ceil(Math.abs(d)/5));
     const [type,side]=POOLINFO[k];
     if(d>0){
-      /* retire the ones furthest from the membrane, so the ions actually
-         doing something near a pore stay on screen */
+      /* retire a surplus ion at random. This used to prefer the ones furthest
+         from the membrane, which over a train of spikes swept the whole
+         population into a crust against the membrane. */
       let picked=0, guard=0;
       while(picked<n && guard++<400){
         const p=TH.parts[(Math.random()*TH.parts.length)|0];
         if(!p||p.tr||p.dying||p.inPump||p.type!==type||p.side!==side) continue;
-        const dm = side<0 ? TH.memTop-p.y : p.y-TH.memBot;
-        if(dm < 60 && guard < 260) continue;
         p.dying=true; picked++;
       }
     } else {
@@ -1177,7 +1176,12 @@ function tickParticles(dtWall, V){
     if(p.side<0){ const gy=clamp((p.y/outH)|0,0,gh-1); gO[gy*gw+gx]++; }
     else        { const gy=clamp(((p.y-inBot)/inH)|0,0,gh-1); gI[gy*gw+gx]++; }
   }
-  const at=(g,x,y)=> (x<0||x>=gw||y<0||y>=gh) ? -1 : g[y*gw+x];
+  /* sample with the index clamped to the edge, so a boundary cell differences
+     against itself on the missing side: a one-sided gradient instead of none.
+     The row hard against the membrane is where the pores and the pump drop their
+     ions, and with a -1 sentinel it was the one row that never felt its own
+     crowding, so the ions piled up in a rind along the membrane. */
+  const at=(g,x,y)=> g[clamp(y,0,gh-1)*gw+clamp(x,0,gw-1)];
   const DIFF=34, jit=46, drag=1.7;
 
   const gone=[];
@@ -1193,6 +1197,7 @@ function tickParticles(dtWall, V){
     } else if(p.fade<1){
       p.fade = Math.min(1, p.fade + dtWall/0.42);
     }
+    if(p.pumpCool>0) p.pumpCool-=dtWall;
     if(p.tr){
       const t=p.tr;
       t.u += dtWall/0.32;
@@ -1225,8 +1230,8 @@ function tickParticles(dtWall, V){
     const gy = p.side<0 ? clamp((p.y/outH)|0,0,gh-1)
                         : clamp(((p.y-inBot)/inH)|0,0,gh-1);
     const l=at(g,gx-1,gy), r=at(g,gx+1,gy), u=at(g,gx,gy-1), d=at(g,gx,gy+1);
-    if(l>=0 && r>=0) p.vx += (l-r)*DIFF*dtWall;
-    if(u>=0 && d>=0) p.vy += (u-d)*DIFF*dtWall;
+    p.vx += (l-r)*DIFF*dtWall;
+    p.vy += (u-d)*DIFF*dtWall;
 
     p.vx += (Math.random()-.5)*jit; p.vy += (Math.random()-.5)*jit;
     const dp=Math.exp(-drag*dtWall); p.vx*=dp; p.vy*=dp;
@@ -1279,15 +1284,22 @@ function pumpSlot(i, n, where){
 }
 function pumpCapture(kind, side, n){
   const pump=TH.pumpCh, mouthY = side<0 ? TH.memTop : TH.memBot;
+  /* Take from a WIDE pool, at random inside it, and never take an ion the pump
+     has just put down. Always grabbing the nearest and dropping it back a moment
+     later recycled the same handful of ions in place, which is what built the
+     clump of pump ions sitting against the membrane. */
   const cands=[];
   for(const p of TH.parts){
     if(p.tr||p.inPump||p.dying||p.type!==kind||p.side!==side) continue;
+    if(p.pumpCool>0) continue;
     cands.push([Math.abs(p.x-pump.cx) + Math.abs(p.y-mouthY)*0.7, p]);
   }
   cands.sort((a,b)=>a[0]-b[0]);
+  const pool=cands.slice(0, Math.max(n, Math.min(cands.length, 6*n)));
+  for(let i=pool.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
   const out=[];
   for(let i=0;i<n;i++){
-    let p = cands[i] && cands[i][1];
+    let p = pool[i] && pool[i][1];
     if(!p){                       // the inside pool is small; never go empty-handed
       p = {type:kind, side,
            x:pump.cx+(Math.random()-.5)*54,
@@ -1303,9 +1315,10 @@ function pumpCapture(kind, side, n){
 function pumpRelease(cargo, side){
   for(const p of cargo){
     p.inPump=null; p.side=side;
-    p.x += (Math.random()-.5)*34;
-    p.y = side<0 ? TH.memTop-17 : TH.memBot+17;
-    p.vx=(Math.random()-.5)*54; p.vy=(side<0?-1:1)*(32+Math.random()*30);
+    p.pumpCool=3.5;                       /* seconds before this ion can be pumped again */
+    p.x += (Math.random()-.5)*90;
+    p.y = side<0 ? TH.memTop-24 : TH.memBot+24;
+    p.vx=(Math.random()-.5)*54; p.vy=(side<0?-1:1)*(46+Math.random()*34);
     if(p.type==='na') TH.naIn += side>0?1:-1;
     if(p.type==='k')  TH.kOut += side<0?1:-1;
   }

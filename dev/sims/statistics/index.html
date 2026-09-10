@@ -44,9 +44,9 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
   background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:16px;padding:14px 17px}
 .panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
-  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid var(--line-strong);
   border-radius:12px;padding:9px 14px;margin-bottom:9px;transition:background .18s,border-color .18s}
-.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.about-btn:hover{border-color:var(--accent);background:var(--accent-dim)}
 .label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:0 0 6px}
 .presets{display:grid;gap:5px;margin-bottom:11px}
 .preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
@@ -186,10 +186,10 @@ details.grp > summary + *{margin-top:0}
 
     <div class="seglabel" data-m="clt"><span class="nm">Population<button class="tip" data-tip="A real quantity with that shape. The point is that the shape stops mattering once you average." aria-label="What population does">?</button></span></div>
     <div class="segrow wrap" data-m="clt" id="seg-pop">
-      <button class="seg" data-v="height" aria-pressed="true">Height</button>
+      <button class="seg" data-v="height" aria-pressed="false">Height</button>
       <button class="seg" data-v="wealth" aria-pressed="false">Wealth</button>
       <button class="seg" data-v="lottery" aria-pressed="false">Lottery</button>
-      <button class="seg" data-v="geyser" aria-pressed="false">Geyser</button>
+      <button class="seg" data-v="geyser" aria-pressed="true">Finch beaks</button>
       <button class="seg" data-v="coin" aria-pressed="false">Coin</button>
       <button class="seg" data-v="asteroid" aria-pressed="false">Asteroids</button>
     </div>
@@ -229,12 +229,20 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-prev" min="0.3" max="4" step="0.05" value="1.7">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="The gap between the ill and the healthy, in standard deviations. A perfect test would separate them completely." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
+      <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="The gap between the two peaks. Drag either curve along the chart to move it by hand." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
       <input type="range" id="s-sep" min="0.5" max="4" step="0.1" value="2.2">
     </div>
     <div class="row" data-m="test">
+      <label for="s-sd0"><span class="nm">Biomarker spread, healthy<button class="tip" data-tip="How much healthy people differ from each other. A noisier marker overlaps the ill more." aria-label="What the healthy spread does">?</button></span><span class="val" id="v-sd0"></span></label>
+      <input type="range" id="s-sd0" min="0.4" max="2.2" step="0.05" value="1">
+    </div>
+    <div class="row" data-m="test">
+      <label for="s-sd1"><span class="nm">Biomarker spread, ill<button class="tip" data-tip="How much ill people differ from each other. Widen it and the tail reaches down past the cut-off." aria-label="What the ill spread does">?</button></span><span class="val" id="v-sd1"></span></label>
+      <input type="range" id="s-sd1" min="0.4" max="2.2" step="0.05" value="1">
+    </div>
+    <div class="row" data-m="test">
       <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="The cut-off. Drag it on the chart too: every step right trades false alarms for missed cases." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
-      <input type="range" id="s-thr" min="-3" max="5" step="0.05" value="1.4">
+      <input type="range" id="s-thr" min="-7" max="11" step="0.05" value="1.4">
     </div>
     <div class="row" data-m="test">
       <label for="s-trate"><span class="nm">People per second<button class="tip" data-tip="How fast the queue is screened." aria-label="What people per second does">?</button></span><span class="val" id="v-trate"></span></label>
@@ -244,6 +252,14 @@ details.grp > summary + *{margin-top:0}
     <div class="row" data-m="pi">
       <label for="s-darts"><span class="nm">Darts per second<button class="tip" data-tip="Throw rate. The estimate improves with the square root of the total, so patience gets expensive." aria-label="What darts per second does">?</button></span><span class="val" id="v-darts"></span></label>
       <input type="range" id="s-darts" min="0" max="4" step="0.05" value="1.3">
+    </div>
+
+    <div class="seglabel"><span class="nm">Look<button class="tip" data-tip="Colour only. Nothing about the mathematics changes." aria-label="What look does">?</button></span></div>
+    <div class="segrow" id="seg-look">
+      <button class="seg" data-v="field" aria-pressed="true">Field</button>
+      <button class="seg" data-v="dusk" aria-pressed="false">Dusk</button>
+      <button class="seg" data-v="ember" aria-pressed="false">Ember</button>
+      <button class="seg" data-v="ice" aria-pressed="false">Ice</button>
     </div>
   </details>
 </div>
@@ -257,7 +273,7 @@ details.grp > summary + *{margin-top:0}
 <p>Pick a machine on the left. In every one, the red dashed line is a prediction made from the settings alone, before any data lands, and the coloured shapes are what the machine actually did. Watching the two meet is the whole exercise.</p>
 <ul>
   <li><b>Galton board.</b> Balls fall through rows of pegs, going left or right at each one with no memory of the last. Drag the funnel sideways to move where the bell forms, or downwards to take rows away, and the prediction re-forms at the new starting point while the bins beneath stay where they are.</li>
-  <li><b>Population sampling.</b> Draw one value at a time from height, wealth, geyser waiting times, asteroid diameters, lottery balls, or a coin, average each handful, and drop the average into a histogram. At one draw per sample you are looking at the population itself. Raise the sample size and every one of those populations, however lopsided or spiky, produces the same bell.</li>
+  <li><b>Population sampling.</b> Draw one value at a time from height, wealth, finch beaks, asteroid diameters, lottery balls, or a coin, average each handful, and drop the average into a histogram. At one draw per sample you are looking at the population itself. Raise the sample size and every one of those populations, however lopsided or spiky, produces the same bell.</li>
   <li><b>Confidence intervals.</b> One fixed truth, measured over and over by small samples, each measurement wrapped in an interval. Green intervals caught the truth, red ones missed, and the tally at the bottom is the only thing entitled to the words <i>95 percent</i>.</li>
   <li><b>Screening test.</b> A blood marker overlaps between the healthy and the ill. You choose where to call a result positive, and the two ways of being wrong, a false alarm and a missed case, trade against each other with every step of the threshold. The table fills with real people as they are screened.</li>
   <li><b>Monte Carlo darts.</b> Darts thrown blindly at a square of side 2, with a circle of radius 1 inside it, measure the area of that circle. Count the fraction that land in the circle, multiply by four, and you have &pi; out of pure noise.</li>
@@ -280,7 +296,7 @@ details.grp > summary + *{margin-top:0}
 <p>The theorem says that the mean of n independent draws from a population with mean &mu; and finite standard deviation &sigma; has a distribution that approaches</p>
 <span class="eq">x&#772; &sim; N(&mu;, &sigma;/&radic;n)</span>
 <p>as n grows, whatever the shape of the population. Three details do the real work. The approach is asymptotic, so at small n the answer depends on the population, which is why the red line here is the exact distribution of the mean rather than the normal approximation: it is the population's own distribution convolved with itself n times, computed numerically, and at n = 1 and n = 2 you can see it disagree with any bell. The rate of approach depends on how skewed and how heavy tailed the population is, so the familiar rule of thumb that thirty is enough is a summary of the easy cases, not a theorem. And the width shrinks like 1/&radic;n, so halving your error costs four times the sample, which is the arithmetic behind the price of every poll and every clinical trial.</p>
-<p>The populations offered here are the standard cast, in the sense that each is a real quantity known to take that shape: adult height is close to normal, household wealth is lognormal with a long right tail, waiting times between Old Faithful's eruptions are famously bimodal, asteroid diameters follow a power law with countless small bodies and a few enormous ones, and lottery balls are as flat as anything gets.</p>
+<p>The populations offered here are the standard cast, in the sense that each is a real quantity known to take that shape: adult height is close to normal, household wealth is lognormal with a long right tail, the bills of the black-bellied seedcracker, a west African finch, come in a large morph and a small one with almost nothing in between, asteroid diameters follow a power law with countless small bodies and a few enormous ones, and lottery balls are as flat as anything gets.</p>
 <h3>What 95 percent confidence promises, and to whom</h3>
 <p>An interval built from a sample of n measurements is</p>
 <span class="eq">x&#772; &plusmn; c &middot; (spread) / &radic;n</span>
@@ -335,9 +351,48 @@ function resize(){
   DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
   cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
 }
-const INK='#eaf5ef', MUTED='#9db9ac', ACC='#56e0c2', DGR='#ff7d5c',
-      LINE='rgba(150,190,170,.18)', LINES='rgba(150,190,170,.38)', FIELD='#0f2019';
-const WARN='#f6c667';
+/* ---------- looks ----------
+   Every colour on the canvas comes from the active look. The four are built from
+   the same six roles, so the meaning of a colour never changes: accent is the
+   thing being counted, danger is a false alarm, warn is a missed case. */
+const LOOKS={
+  field:{ nm:'Field', by:'The house green',
+    bg:'#102019', field:'#0f2019', panel:'rgba(22,44,36,.84)', panel2:'#1b352c',
+    ink:[234,245,239], neu:[150,190,170], acc:[86,224,194], dgr:[255,125,92], wrn:[246,198,103],
+    muted:'#9db9ac' },
+  dusk:{ nm:'Dusk', by:'Violet, low light',
+    bg:'#140f22', field:'#130f20', panel:'rgba(38,28,60,.84)', panel2:'#241b3b',
+    ink:[240,235,252], neu:[172,164,205], acc:[186,148,255], dgr:[255,110,140], wrn:[255,206,120],
+    muted:'#a99fc4' },
+  ember:{ nm:'Ember', by:'Warm, like firelight',
+    bg:'#1b120e', field:'#19110d', panel:'rgba(56,32,24,.84)', panel2:'#33201a',
+    ink:[252,238,228], neu:[201,168,148], acc:[255,178,102], dgr:[255,99,88], wrn:[255,226,138],
+    muted:'#c3a493' },
+  ice:{ nm:'Ice', by:'Cold blue and steel',
+    bg:'#0b1622', field:'#0a1420', panel:'rgba(20,40,60,.84)', panel2:'#152c42',
+    ink:[233,244,255], neu:[150,180,205], acc:[124,212,255], dgr:[255,124,150], wrn:[255,214,110],
+    muted:'#9db3c8' }
+};
+let P=LOOKS.field;
+const rgba=(t,a)=>'rgba('+t[0]+','+t[1]+','+t[2]+','+a+')';
+const PACC=a=>rgba(P.acc,a), PNEU=a=>rgba(P.neu,a), PINK=a=>rgba(P.ink,a),
+      Dg=a=>rgba(P.dgr,a), Wn=a=>rgba(P.wrn,a);
+let INK='#eaf5ef', MUTED='#9db9ac', ACC='#56e0c2', DGR='#ff7d5c',
+    LINE=PNEU('.18'), LINES=PNEU('.38'), FIELD='#0f2019', WARN='#f6c667';
+const hex=t=>'#'+t.map(v=>v.toString(16).padStart(2,'0')).join('');
+function applyLook(k){
+  P=LOOKS[k]||LOOKS.field;
+  INK=hex(P.ink); MUTED=P.muted; ACC=hex(P.acc); DGR=hex(P.dgr); WARN=hex(P.wrn);
+  LINE=PNEU('.18'); LINES=PNEU('.38'); FIELD=P.field;
+  const r=document.documentElement.style;
+  r.setProperty('--bg',P.bg); r.setProperty('--field',P.field);
+  r.setProperty('--panel',P.panel); r.setProperty('--panel-2',P.panel2);
+  r.setProperty('--line',PNEU('.20')); r.setProperty('--line-strong',PNEU('.36'));
+  r.setProperty('--ink',INK); r.setProperty('--muted',MUTED);
+  r.setProperty('--accent',ACC); r.setProperty('--accent-dim',PACC('.14'));
+  r.setProperty('--danger',DGR);
+  try{ localStorage.setItem('simlearn-stats-look',k); }catch(e){}
+}
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const MONO='"Space Mono",monospace', DISP='"Space Grotesk",sans-serif';
 /* ---------- randomness and quantiles ---------- */
@@ -465,30 +520,30 @@ const GB={
     ctx.strokeStyle=this.dragging?ACC:LINES; ctx.lineWidth=1.4;
     ctx.beginPath(); ctx.moveTo(fx-16,fy-4); ctx.lineTo(fx-5,fy+12);
     ctx.moveTo(fx+16,fy-4); ctx.lineTo(fx+5,fy+12); ctx.stroke();
-    disc(fx,fy-12,3.2,this.dragging?ACC:'rgba(160,190,175,.75)');
+    disc(fx,fy-12,3.2,this.dragging?ACC:PNEU('.75'));
     txt('drag me',fx,fy-20,'center',this.dragging?ACC:MUTED,'10px '+MONO);
     if(this.dragging){
-      ctx.strokeStyle='rgba(86,224,194,.35)'; ctx.lineWidth=1; dash([2,5]);
+      ctx.strokeStyle=PACC('.35'); ctx.lineWidth=1; dash([2,5]);
       ctx.beginPath(); ctx.moveTo(fx,g.A.y+16); ctx.lineTo(fx,g.binBot); ctx.stroke(); dash();
       txt(R+' rows',fx+24,fy-8,'left',ACC,'10px '+MONO);
     }
     /* pegs */
     for(let r=0;r<R;r++) for(let i=0;i<=r;i++){
       const x=this.colx(g,this.ox+i-r/2);
-      if(x>g.A.x-4&&x<g.A.x+g.A.w+4) disc(x,g.pegTop+r*g.sy,2.2,'rgba(150,180,165,.85)');
+      if(x>g.A.x-4&&x<g.A.x+g.A.w+4) disc(x,g.pegTop+r*g.sy,2.2,PNEU('.85'));
     }
     /* fixed bin grid: walls drawn strongly enough to read as buckets */
     { const yT=g.pegBot+18;
       for(let j=-g.half;j<=g.half;j++){ const x=this.colx(g,j)-g.sx/2;
-        if((j+1000)%2===0) { ctx.fillStyle='rgba(150,190,170,.045)'; ctx.fillRect(x,yT,g.sx,g.binBot-yT); } }
+        if((j+1000)%2===0) { ctx.fillStyle=PNEU('.045'); ctx.fillRect(x,yT,g.sx,g.binBot-yT); } }
       for(let j=-g.half;j<=g.half+1;j++){ const x=this.colx(g,j)-g.sx/2;
-        if(x>g.A.x&&x<g.A.x+g.A.w){ line(x,yT,x,g.binBot,'rgba(150,190,170,.30)',1);
+        if(x>g.A.x&&x<g.A.x+g.A.w){ line(x,yT,x,g.binBot,PNEU('.30'),1);
           line(x,g.binBot-9,x,g.binBot,LINES,1.4); } } }
-    line(g.A.x,g.binBot,g.A.x+g.A.w,g.binBot,'rgba(150,190,170,.55)',1.4);
+    line(g.A.x,g.binBot,g.A.x+g.A.w,g.binBot,PNEU('.55'),1.4);
     /* stacked discs */
     for(let j=-g.half;j<=g.half;j++){ const n=Math.round(this.counts[j+HALFMAX]/this.upd);
       if(!n) continue; const x=this.colx(g,j);
-      for(let i=0;i<n;i++) disc(x,g.binBot-4-i*7,3,'rgba(86,224,194,.9)'); }
+      for(let i=0;i<n;i++) disc(x,g.binBot-4-i*7,3,PACC('.9')); }
     /* theory for the CURRENT funnel position, growing with the balls dropped there */
     { const q=1-this.p, pk=new Array(R+1); pk[0]=Math.pow(q,R);
       for(let k=1;k<=R;k++) pk[k]=pk[k-1]*(R-k+1)/k*this.p/q;
@@ -501,17 +556,8 @@ const GB={
     }
     /* balls */
     for(const b of this.balls){ const [x,y]=this.ballXY(b); disc(x,y,3.4,INK); }
-    /* readout */
-    const m=this.segN?this.segS/this.segN:0;
-    const v=this.segN>1?(this.segS2-this.segS*m)/(this.segN-1):0;
-    const sgn=x=>(x>=0?'+':'')+x.toFixed(2);
-    let s=fmtN(this.segN)+' balls from here';
-    if(this.segN>1) s+='   mean '+sgn(m)+' (theory '+sgn(this.ox+R*(this.p-0.5))+')   sd '
-      +Math.sqrt(Math.max(0,v)).toFixed(2)+' (theory '+Math.sqrt(R*this.p*(1-this.p)).toFixed(2)+')';
-    s+='   columns from centre';
-    if(this.upd>1) s+='   each dot = '+this.upd+' balls';
-    if(this.off) s+='   '+fmtN(this.off)+' fell off the board, so the mean above is truncated';
-    txt(s,g.A.cx,g.binBot+20,'center',MUTED);
+    /* no running readout under the bins: the picture is the point.
+       The counters are still kept, and still reported through window.__dbg. */
   },
   down(x,y){ const g=this.geom();
     if(Math.abs(x-this.colx(g,this.ox))<44&&Math.abs(y-g.fy)<40){
@@ -546,7 +592,7 @@ const POPS={
     make:()=>gridFromPdf(x=>x<=0.002?0:Math.exp(-0.5*((Math.log(x)-Math.log(0.16))/0.62)**2)/x)},
   lottery:{lab:'Lottery', note:'lottery balls: every value equally likely',
     make:()=>gridFromPdf(()=>1)},
-  geyser:{lab:'Geyser', note:'Old Faithful waits: two peaks, short and long',
+  geyser:{lab:'Finch beaks', note:'seedcracker bills: two sizes, little between',
     make:()=>gridFromPdf(x=>0.45*Math.exp(-0.5*((x-0.3)/0.06)**2)+0.55*Math.exp(-0.5*((x-0.72)/0.07)**2))},
   coin:{lab:'Coin', note:'a coin flip: two outcomes, nothing between',
     make:()=>gridFromAtoms([[0.125,0.5],[0.875,0.5]])},
@@ -568,7 +614,7 @@ function convolve(a,b){ const r=new Float64Array(a.length+b.length-1);
 function pmfPow(w,n){ let r=null,b=w;
   while(n>0){ if(n&1) r=r?convolve(r,b):b; n>>=1; if(n) b=convolve(b,b); } return r; }
 const CLT={
-  pop:'height', n:1, rate:6, NB:64, bins:null, total:0, sum:0, sum2:0, anims:[], acc:0,
+  pop:'geyser', n:1, rate:6, NB:64, bins:null, total:0, sum:0, sum2:0, anims:[], acc:0,
   tkey:'', q:null,
   reset(){ this.bins=new Float64Array(this.NB); this.total=0; this.sum=0; this.sum2=0;
     this.anims=[]; this.acc=0; },
@@ -617,18 +663,18 @@ const CLT={
     { let mx=0; for(let i=0;i<PG;i++) mx=Math.max(mx,P.w[i]);
       const h=g.popB-g.popT-16, atoms=(this.pop==='coin');
       if(atoms){ for(let i=0;i<PG;i++){ if(P.w[i]<1e-9) continue;
-          line(this.xpix(g,gx(i)),g.popB,this.xpix(g,gx(i)),g.popB-P.w[i]/mx*h,'rgba(160,190,175,.8)',3); } }
+          line(this.xpix(g,gx(i)),g.popB,this.xpix(g,gx(i)),g.popB-P.w[i]/mx*h,PNEU('.8'),3); } }
       else { const pts=[]; for(let i=0;i<PG;i++) pts.push([this.xpix(g,gx(i)),g.popB-P.w[i]/mx*h]);
-        ctx.fillStyle='rgba(150,180,165,.18)'; ctx.beginPath(); ctx.moveTo(g.x0,g.popB);
+        ctx.fillStyle=PNEU('.18'); ctx.beginPath(); ctx.moveTo(g.x0,g.popB);
         for(const p of pts) ctx.lineTo(p[0],p[1]); ctx.lineTo(g.x1,g.popB); ctx.fill();
-        curve(pts,'rgba(160,190,175,.75)',1.2); } }
+        curve(pts,PNEU('.75'),1.2); } }
     line(this.xpix(g,P.mu),g.popB-4,this.xpix(g,P.mu),g.popB+4,ACC,1.4);
     /* falling samples */
     for(const a of this.anims){ const t=a.t;
-      if(t<0.5){ for(const v of a.xs) disc(this.xpix(g,v),g.popB-5,2.2,'rgba(233,244,238,.85)'); }
+      if(t<0.5){ for(const v of a.xs) disc(this.xpix(g,v),g.popB-5,2.2,PINK('.85')); }
       else if(t<0.9){ const u=(t-0.5)/0.4;
         for(const v of a.xs){ const x=this.xpix(g,v)+(this.xpix(g,a.m)-this.xpix(g,v))*u*u*(3-2*u);
-          disc(x,g.popB-5,2.2,'rgba(233,244,238,.85)'); } }
+          disc(x,g.popB-5,2.2,PINK('.85')); } }
       else { const u=Math.min(1,(t-0.9)/0.65);
         disc(this.xpix(g,a.m),g.popB-5+(this.histY(g,a.m)-g.popB+5)*u*u,3.4,ACC); } }
     /* histogram of sample means, drawn as fractions so the theory fits before any data */
@@ -638,7 +684,7 @@ const CLT={
     let mq=0; for(let i=0;i<this.NB;i++) mq=Math.max(mq,q[i]);
     const scale=(g.hBot-g.hTop)/Math.max(1e-6,Math.max(fo,mq)*1.08);
     const bw=(g.x1-g.x0)/this.NB;
-    ctx.fillStyle='rgba(86,224,194,.42)';
+    ctx.fillStyle=PACC('.42');
     if(this.total) for(let i=0;i<this.NB;i++){ if(!this.bins[i]) continue;
       const h=this.bins[i]/this.total*scale;
       ctx.fillRect(g.x0+i*bw,g.hBot-h,Math.max(1,bw-1),h); }
@@ -710,21 +756,21 @@ const CI={
     { const pts=[], h=g.popB-g.popT-20;
       for(let i=0;i<=180;i++){ const x=i/180;
         pts.push([this.xpix(g,x),g.popB-Math.exp(-0.5*((x-this.mu)/this.sig)**2)*h]); }
-      ctx.fillStyle='rgba(150,180,165,.14)'; ctx.beginPath(); ctx.moveTo(g.x0,g.popB);
+      ctx.fillStyle=PNEU('.14'); ctx.beginPath(); ctx.moveTo(g.x0,g.popB);
       for(const p of pts) ctx.lineTo(p[0],p[1]); ctx.lineTo(g.x1,g.popB); ctx.fill();
-      curve(pts,'rgba(160,190,175,.7)',1.2); }
+      curve(pts,PNEU('.7'),1.2); }
     line(this.xpix(g,this.mu),g.popT+14,this.xpix(g,this.mu),g.stkB,ACC,1.2);
     txt('true mean',this.xpix(g,this.mu)+7,g.popT+24,'left',ACC,'11px '+MONO);
     /* current experiment: dots, then collapse to their mean */
     if(this.anim){ const a=this.anim, t=a.t;
-      if(t<0.45){ for(const v of a.xs) disc(this.xpix(g,v),g.popB-6,2.2,'rgba(233,244,238,.9)'); }
+      if(t<0.45){ for(const v of a.xs) disc(this.xpix(g,v),g.popB-6,2.2,PINK('.9')); }
       else{ const u=Math.min(1,(t-0.45)/0.4);
         for(const v of a.xs){ const x=this.xpix(g,v)+(this.xpix(g,a.m)-this.xpix(g,v))*u*u*(3-2*u);
-          disc(x,g.popB-6,2.2,'rgba(233,244,238,.9)'); } } }
+          disc(x,g.popB-6,2.2,PINK('.9')); } } }
     /* stack of intervals, newest on top */
     let y=g.stkT;
     for(const r of this.rows){
-      const c=r.hit?'rgba(86,224,194,.92)':DGR;
+      const c=r.hit?PACC('.92'):DGR;
       const xL=this.xpix(g,r.m-r.half), xR=this.xpix(g,r.m+r.half);
       ctx.globalAlpha=Math.max(0.3,1-(y-g.stkT)/(g.stkB-g.stkT)*0.8);
       line(xL,y,xR,y,c,r.hit?1.4:2.2);
@@ -748,14 +794,23 @@ function ncdf(x){ /* Abramowitz and Stegun 26.2.17, |error| < 7.5e-8 */
   return 0.5*(1+s*y);
 }
 const TEST={
-  prev:0.02, sep:2.2, thr:1.4, rate:14,
-  TP:0, FP:0, FN:0, TN:0, people:[], acc:0, drag:false,
+  prev:0.02, sep:2.2, thr:1.4, rate:14, mu0:0, sd0:1, sd1:1,
+  TP:0, FP:0, FN:0, TN:0, people:[], acc:0, drag:null, gOff:0, aMin:null, aMax:null,
+  mu1(){ return this.mu0+this.sep; },
+  /* The axis follows the two populations, but it is EASED rather than recomputed
+     every frame: if it snapped, dragging a curve would slide the axis under the
+     cursor and the curve would run away from the mouse. It is frozen outright
+     while a drag is in progress, so a drag is one to one with the pointer. */
+  axisT(){ const lo=Math.min(this.mu0-3.6*this.sd0,this.mu1()-3.6*this.sd1);
+    const hi=Math.max(this.mu0+3.6*this.sd0,this.mu1()+3.6*this.sd1);
+    return [lo-0.3,hi+0.3]; },
   reset(){ this.TP=this.FP=this.FN=this.TN=0; this.people=[]; this.acc=0; },
   geom(){ const A=area();
     const axY=A.y+clamp(A.h*0.26,132,220), mT=axY+64;
-    const mB=clamp(A.bot-56,mT+150,mT+340);
+    const mB=clamp(A.bot-84,mT+140,mT+330);
     const x0=A.x+70, x1=A.x+A.w-70;
-    return {A,cT:A.y+34,axY,mT,mB,x0,x1,vmin:-3.6,vmax:this.sep+3.6}; },
+    const a=this.aMin===null?this.axisT():[this.aMin,this.aMax];
+    return {A,cT:A.y+34,axY,mT,mB,x0,x1,vmin:a[0],vmax:a[1]}; },
   xv(g,v){ return g.x0+(v-g.vmin)/(g.vmax-g.vmin)*(g.x1-g.x0); },
   vx(g,x){ return g.vmin+(x-g.x0)/(g.x1-g.x0)*(g.vmax-g.vmin); },
   cellOf(sick,pos){ return sick?(pos?'TP':'FN'):(pos?'FP':'TN'); },
@@ -766,14 +821,19 @@ const TEST={
   },
   spawn(g){
     const sick=rnd()<this.prev;
-    const v=(sick?this.sep:0)+gauss();
+    const v=(sick?this.mu1()+gauss()*this.sd1:this.mu0+gauss()*this.sd0);
     const pos=v>=this.thr, c=this.cellOf(sick,pos);
     const b=this.cellBox(g,c);
     this.people.push({v,sick,pos,c,t:0,tx:b.x+14+rnd()*(b.w-28),ty:b.y+b.h-12-rnd()*(b.h-40)});
   },
-  tally(){ const sick=rnd()<this.prev; const v=(sick?this.sep:0)+gauss();
+  tally(){ const sick=rnd()<this.prev;
+    const v=(sick?this.mu1()+gauss()*this.sd1:this.mu0+gauss()*this.sd0);
     this[this.cellOf(sick,v>=this.thr)]++; },
   step(dt){
+    const t=this.axisT();
+    if(this.aMin===null){ this.aMin=t[0]; this.aMax=t[1]; }
+    else if(!this.drag){ const k=1-Math.exp(-5*dt);
+      this.aMin+=(t[0]-this.aMin)*k; this.aMax+=(t[1]-this.aMax)*k; }
     const g=this.geom();
     this.acc+=this.rate*dt;
     let budget=6000;
@@ -785,35 +845,49 @@ const TEST={
       if(p.t>=2.6) p.dead=true; }
     this.people=this.people.filter(p=>!p.dead);
   },
-  colOf(c){ return c==='TP'?ACC:c==='TN'?'rgba(150,180,165,.85)':c==='FP'?DGR:WARN; },
+  colOf(c){ return c==='TP'?ACC:c==='TN'?PNEU('.85'):c==='FP'?DGR:WARN; },
   draw(){
     const g=this.geom(), H0=g.axY-g.cT-10;
-    const dens=(v,m)=>Math.exp(-0.5*(v-m)*(v-m));
-    const pdfPts=(m,scale)=>{ const p=[];
+    const dens=(v,m,sd)=>Math.exp(-0.5*((v-m)/sd)*((v-m)/sd));
+    const pdfPts=(m,sd,scale)=>{ const p=[];
       for(let i=0;i<=200;i++){ const v=g.vmin+(g.vmax-g.vmin)*i/200;
-        p.push([this.xv(g,v),g.axY-dens(v,m)*H0*scale]); } return p; };
-    /* the two populations, scaled so both shapes stay readable */
-    const shWell=Math.sqrt(1-this.prev), shSick=Math.max(0.22,Math.sqrt(this.prev));
-    const well=pdfPts(0,shWell), sick=pdfPts(this.sep,shSick);
+        p.push([this.xv(g,v),g.axY-dens(v,m,sd)*H0*scale]); } return p; };
+    /* Each curve is drawn at a height proportional to (share of the crowd)/(spread),
+       so widening a population flattens it and the area it covers is preserved.
+       Everything is then divided by the tallest, so the pair always fits the box. */
+    const hW=Math.sqrt(1-this.prev)/this.sd0, hS=Math.max(0.22,Math.sqrt(this.prev))/this.sd1;
+    const nrm=Math.max(1,hW,hS), sW=hW/nrm, sS=hS/nrm;
+    const mu1=this.mu1();
+    const well=pdfPts(this.mu0,this.sd0,sW), sick=pdfPts(mu1,this.sd1,sS);
     const clipFill=(pts,from,to,fill)=>{ ctx.save(); ctx.beginPath();
       ctx.rect(this.xv(g,from),g.cT-20,Math.max(0,this.xv(g,to)-this.xv(g,from)),g.axY-g.cT+20); ctx.clip();
       ctx.fillStyle=fill; ctx.beginPath(); ctx.moveTo(pts[0][0],g.axY);
       for(const p of pts) ctx.lineTo(p[0],p[1]); ctx.lineTo(pts[pts.length-1][0],g.axY); ctx.fill(); ctx.restore(); };
-    clipFill(well,this.thr,g.vmax,'rgba(255,125,92,.32)');       /* false positives */
-    clipFill(sick,g.vmin,this.thr,'rgba(246,198,103,.30)');      /* false negatives */
-    curve(well,'rgba(160,190,175,.85)',1.4);
+    clipFill(well,this.thr,g.vmax,Dg('.32'));       /* false positives */
+    clipFill(sick,g.vmin,this.thr,Wn('.30'));      /* false negatives */
+    curve(well,PNEU('.85'),1.4);
     curve(sick,ACC,1.4);
     line(g.x0,g.axY,g.x1,g.axY,LINES,1.2);
-    txt('healthy',this.xv(g,0),g.axY-dens(0,0)*H0*shWell-8,'center','rgba(180,205,192,.9)','11px '+MONO);
-    txt('has the disease',this.xv(g,this.sep),g.axY-H0*shSick-8,'center',ACC,'11px '+MONO);
+    const yW=g.axY-H0*sW-8, yS=g.axY-H0*sS-8;
+    txt(this.drag==='well'?'healthy   drag':'healthy',this.xv(g,this.mu0),yW,'center',
+        this.drag==='well'?INK:PINK('.9'),'11px '+MONO);
+    txt(this.drag==='sick'?'has the disease   drag':'has the disease',this.xv(g,mu1),yS,'center',
+        this.drag==='sick'?INK:ACC,'11px '+MONO);
+    /* a grab tab under each peak, so it is obvious the curves move */
+    for(const [mx,my,on] of [[this.mu0,yW,this.drag==='well'],[mu1,yS,this.drag==='sick']]){
+      const x=this.xv(g,mx);
+      ctx.strokeStyle=on?INK:PNEU('.45'); ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(x-11,my+6); ctx.lineTo(x-16,my+11); ctx.lineTo(x-11,my+16);
+      ctx.moveTo(x+11,my+6); ctx.lineTo(x+16,my+11); ctx.lineTo(x+11,my+16); ctx.stroke();
+    }
     /* threshold */
-    const tx=this.xv(g,this.thr);
-    line(tx,g.cT-16,tx,g.axY+16,this.drag?ACC:INK,1.6);
-    ctx.fillStyle=this.drag?ACC:INK;
+    const tx=this.xv(g,this.thr), dT=this.drag==='thr';
+    line(tx,g.cT-16,tx,g.axY+16,dT?ACC:INK,1.6);
+    ctx.fillStyle=dT?ACC:INK;
     ctx.beginPath(); ctx.moveTo(tx-6,g.cT-22); ctx.lineTo(tx+6,g.cT-22); ctx.lineTo(tx,g.cT-13); ctx.fill();
-    txt('call it positive above here   drag',tx+10,g.cT-24,'left',this.drag?ACC:MUTED,'10.5px '+MONO);
-    txt('type I: healthy, told they are ill',this.xv(g,Math.max(this.thr+0.7,this.thr+0.7)),g.axY+16,'left',DGR,'10.5px '+MONO);
-    txt('type II: ill, told they are fine',this.xv(g,this.thr-0.7),g.axY+16,'right',WARN,'10.5px '+MONO);
+    txt('call it positive above here   drag',tx+10,g.cT-24,'left',dT?ACC:MUTED,'10.5px '+MONO);
+    txt('type I: healthy, told they are ill',this.xv(g,this.thr+0.7*this.sd0),g.axY+16,'left',DGR,'10.5px '+MONO);
+    txt('type II: ill, told they are fine',this.xv(g,this.thr-0.7*this.sd1),g.axY+16,'right',WARN,'10.5px '+MONO);
     /* people falling into the table */
     for(const p of this.people){
       const b=this.cellBox(g,p.c), sx=this.xv(g,p.v), sy=g.axY-6;
@@ -831,27 +905,50 @@ const TEST={
       txt(fmtN(this[c]),b.x+10,b.y+42,'left',this.colOf(c),'22px '+MONO);
     }
     /* the numbers that matter, measured and predicted */
-    const sens=1-ncdf(this.thr-this.sep), spec=ncdf(this.thr);
-    const ppv=this.prev*sens/Math.max(1e-9,this.prev*sens+(1-this.prev)*(1-spec));
+    const sens=1-ncdf((this.thr-this.mu1())/this.sd1), spec=ncdf((this.thr-this.mu0)/this.sd0);
+    const pPos=this.prev*sens+(1-this.prev)*(1-spec);
+    const pNeg=this.prev*(1-sens)+(1-this.prev)*spec;
+    const ppv=this.prev*sens/Math.max(1e-9,pPos);
+    /* the other error, in the same shape: of the people sent home, how many are ill */
+    const fal=this.prev*(1-sens)/Math.max(1e-9,pNeg);
     const pc=v=>(100*v).toFixed(1)+'%';
+    const rare=(v,d)=>v<=0?'nobody':(v<0.01?'1 in '+fmtN(Math.round(1/v)):(100*v).toFixed(d||1)+'%');
     const mSens=(this.TP+this.FN)?this.TP/(this.TP+this.FN):0;
     const mSpec=(this.TN+this.FP)?this.TN/(this.TN+this.FP):0;
     const mPpv=(this.TP+this.FP)?this.TP/(this.TP+this.FP):0;
+    const mFal=(this.TN+this.FN)?this.FN/(this.TN+this.FN):0;
     txt('catches '+pc(sens)+' of the ill (sensitivity)   clears '+pc(spec)
       +' of the healthy (specificity)   1 in '+fmtN(Math.round(1/this.prev))+' has it',
       (g.x0+g.x1)/2,g.mT-30,'center',MUTED);
+    const cx=(g.x0+g.x1)/2;
     txt('of everyone who tests positive, '+pc(ppv)+' really have it'
       +(tot>40?'   measured '+pc(mPpv):''),
-      (g.x0+g.x1)/2,g.mB+22,'center',ppv<0.5?WARN:ACC,'13px '+MONO);
+      cx,g.mB+22,'center',ppv<0.5?DGR:ACC,'13px '+MONO);
+    /* the mirror image, coloured like the missed cases it counts */
+    txt('of everyone who tests negative, '+rare(fal)+' has it anyway, against '
+      +rare(this.prev)+' before the test'+(tot>40?'   measured '+rare(mFal):''),
+      cx,g.mB+44,'center',fal>this.prev/3?WARN:ACC,'13px '+MONO);
     txt(fmtN(tot)+' people screened   measured sensitivity '+pc(mSens)+'   specificity '+pc(mSpec),
-      (g.x0+g.x1)/2,g.mB+42,'center',MUTED);
+      cx,g.mB+64,'center',MUTED);
   },
   down(x,y){ const g=this.geom();
-    if(y<g.axY+30){ this.drag=true; this.move(x,y); }
+    if(y<g.axY+30){
+      /* the threshold line wins where they overlap, then each curve near its peak */
+      const dT=Math.abs(x-this.xv(g,this.thr));
+      const dW=Math.abs(x-this.xv(g,this.mu0)), dS=Math.abs(x-this.xv(g,this.mu1()));
+      this.drag = dT<18 ? 'thr' : (dW<34&&dW<=dS) ? 'well' : dS<34 ? 'sick' : 'thr';
+      this.gOff = (this.drag==='well'?this.mu0:this.mu1())-this.vx(g,x);
+      this.move(x,y);
+    }
     else { for(let i=0;i<40;i++) this.spawn(g); } },
-  move(x,y){ if(!this.drag) return; const g=this.geom();
-    this.thr=clamp(this.vx(g,x),-3,this.sep+3); syncThr(this.thr); },
-  up(){ this.drag=false; }
+  move(x,y){ if(!this.drag) return; const g=this.geom(); const v=this.vx(g,x);
+    if(this.drag==='thr'){ this.thr=clamp(v,g.vmin+0.1,g.vmax-0.1); syncThr(this.thr); return; }
+    const w=v+this.gOff;
+    if(this.drag==='well'){ const mu1=this.mu1();
+      this.mu0=clamp(w,-3,3); this.sep=clamp(mu1-this.mu0,0.5,4); this.mu0=mu1-this.sep; }
+    else { this.sep=clamp(w-this.mu0,0.5,4); }
+    syncSep(this.sep); this.reset(); },
+  up(){ this.drag=null; }
 };
 /* ================= 5. MONTE CARLO DARTS ================= */
 const PI={
@@ -872,7 +969,7 @@ const PI={
       const x=rnd(), y=rnd(), inn=((x-0.5)**2+(y-0.5)**2)<=0.25;
       this.N++; if(inn) this.inside++;
       const px=g.sx+x*g.side, py=g.sy+y*g.side;
-      this.dctx.fillStyle=inn?'rgba(86,224,194,.8)':'rgba(255,125,92,.72)';
+      this.dctx.fillStyle=inn?PACC('.8'):Dg('.72');
       this.dctx.fillRect(px-0.9,py-0.9,1.8,1.8);
       if(this.rings.length<24&&rnd()<Math.min(1,8/k)) this.rings.push({x:px,y:py,t:0,inn});
     }
@@ -889,14 +986,14 @@ const PI={
     ctx.strokeStyle=LINES; ctx.lineWidth=1.2; ctx.strokeRect(g.sx,g.sy,g.side,g.side);
     ctx.beginPath(); ctx.arc(cx,cy,R,0,6.2832); ctx.stroke();
     ctx.drawImage(this.dots,0,0,W,H);
-    for(const r of this.rings){ ctx.strokeStyle=(r.inn?'rgba(86,224,194,':'rgba(255,125,92,')+(1-r.t)+')';
+    for(const r of this.rings){ ctx.strokeStyle=(r.inn?PACC(1-r.t):Dg(1-r.t));
       ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(r.x,r.y,2+r.t*9,0,6.2832); ctx.stroke(); }
     /* the geometry, stated once and quietly: radius 1, and the two areas */
     dash([3,4]);
-    line(cx,cy,cx+R,cy,'rgba(160,190,175,.55)',1); dash();
-    disc(cx,cy,2.2,'rgba(160,190,175,.85)');
-    txt('r = 1',cx+R/2,cy-11,'center','rgba(190,214,202,.95)','15px '+MONO);
-    txt('square area 4',g.sx+12,g.sy+24,'left','rgba(178,200,188,.95)','16px '+MONO);
+    line(cx,cy,cx+R,cy,PNEU('.55'),1); dash();
+    disc(cx,cy,2.2,PNEU('.85'));
+    txt('r = 1',cx+R/2,cy-11,'center',PINK('.95'),'15px '+MONO);
+    txt('square area 4',g.sx+12,g.sy+24,'left',PINK('.95'),'16px '+MONO);
     txt('circle area '+String.fromCharCode(960),g.sx+g.side-12,g.sy+24,'right',ACC,'16px '+MONO);
     /* the estimate, as the ratio it is. The number of decimals follows the noise:
        one digit past the typical error, so the last digit shown is one you can trust. */
@@ -942,7 +1039,7 @@ const MODES={
   ci:{o:CI, b:'Confidence intervals', tag:'What 95% confident actually means',
     hint:'Green intervals caught the true mean, red ones missed. R starts a new truth.'},
   test:{o:TEST, b:'Screening test', tag:'False alarms and missed cases in a diagnosis',
-    hint:'Drag the threshold. Every step right trades missed cases for false alarms.'},
+    hint:'Drag the threshold, or drag either population along the axis. Every step right trades missed cases for false alarms.'},
   pi:{o:PI, b:'Monte Carlo darts', tag:'Measuring \u03c0 by throwing at random',
     hint:'Click to throw 500 darts at once. Scroll to grow the board. The error shrinks as 1/\u221aN.'}
 };
@@ -981,14 +1078,18 @@ bind('s-conf','v-conf',v=>v+'%',v=>{ CI.conf=v; CI.clear(); });
 bind('s-cisig','v-cisig',v=>v.toFixed(2),v=>{ CI.sig=v; CI.clear(); });
 bind('s-cirate','v-cirate',v=>Math.pow(10,v).toFixed(1)+' /s',v=>{ CI.rate=Math.pow(10,v); });
 bind('s-prev','v-prev',v=>'1 in '+fmtN(Math.round(Math.pow(10,v))),v=>{ TEST.prev=1/Math.pow(10,v); TEST.reset(); });
-bind('s-sep','v-sep',v=>v.toFixed(1)+' sd apart',v=>{ TEST.sep=v; TEST.thr=Math.min(TEST.thr,v+3); TEST.reset(); });
-bind('s-thr','v-thr',v=>v.toFixed(2)+' sd',v=>{ TEST.thr=v; TEST.reset(); });
+bind('s-sep','v-sep',v=>v.toFixed(1)+' apart',v=>{ TEST.sep=v; TEST.reset(); });
+bind('s-sd0','v-sd0',v=>v.toFixed(2),v=>{ TEST.sd0=v; TEST.reset(); });
+bind('s-sd1','v-sd1',v=>v.toFixed(2),v=>{ TEST.sd1=v; TEST.reset(); });
+bind('s-thr','v-thr',v=>v.toFixed(2),v=>{ TEST.thr=v; TEST.reset(); });
 bind('s-trate','v-trate',v=>fmtN(pow10(v))+' /s',v=>{ TEST.rate=pow10(v); });
 bind('s-darts','v-darts',v=>fmtN(pow10(v))+' /s',v=>{ PI.rate=pow10(v); });
 function syncRows(R){ const e=el('s-rows'); if(+e.value!==R){ e.value=R;
   e.dispatchEvent(new Event('input',{bubbles:true})); } }
 function syncThr(v){ const e=el('s-thr'); if(Math.abs(+e.value-v)>0.005){ e.value=v.toFixed(2);
-  el('v-thr').textContent=v.toFixed(2)+' sd'; e.dispatchEvent(new Event('input',{bubbles:true})); } }
+  el('v-thr').textContent=v.toFixed(2); e.dispatchEvent(new Event('input',{bubbles:true})); } }
+function syncSep(v){ const e=el('s-sep'); if(Math.abs(+e.value-v)>0.005){ e.value=v.toFixed(2);
+  el('v-sep').textContent=v.toFixed(1)+' apart'; } }
 /* segmented rows */
 function seg(id,set){
   const box=el(id);
@@ -999,6 +1100,14 @@ function seg(id,set){
   });
 }
 seg('seg-pop',v=>{ CLT.pop=v; CLT.reset(); });
+seg('seg-look',v=>applyLook(v));
+(function initLook(){
+  let k='field'; try{ k=localStorage.getItem('simlearn-stats-look')||'field'; }catch(e){}
+  if(!LOOKS[k]) k='field';
+  applyLook(k);
+  document.querySelectorAll('#seg-look .seg').forEach(b=>
+    b.setAttribute('aria-pressed', b.dataset.v===k?'true':'false'));
+})();
 seg('seg-meth',v=>{ CI.meth=v; CI.clear(); });
 /* icon buttons */
 const bp=el('b-pause'), bc=el('b-clean');
@@ -1054,6 +1163,7 @@ window.__dbg=()=>({mode,paused,gb:GB.total,gbSeg:GB.segN,gbOff:GB.off,gbR:GB.R,g
   cltq:Array.from(CLT.theory()), cltbins:Array.from(CLT.bins),
   ci:CI.tried, ciC:CI.caught, ciMeth:CI.meth,
   tTP:TEST.TP,tFP:TEST.FP,tFN:TEST.FN,tTN:TEST.TN,tThr:TEST.thr,
+  tMu0:TEST.mu0,tSep:TEST.sep,tSd0:TEST.sd0,tSd1:TEST.sd1,tDrag:TEST.drag,
   pi:PI.N, piE:PI.N?4*PI.inside/PI.N:0, balls:GB.balls.length});
 resize(); renderPresets(); applyMode('galton');
 requestAnimationFrame(loop);
