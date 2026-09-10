@@ -170,7 +170,9 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .theatre{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#06141b;flex:none}
 .plots{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0d1a16;flex:none}
 .theatre canvas,.plots canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
-.note{position:absolute;left:0;top:0;max-width:min(70%,660px);padding:11px 34px 12px 14px;
+/* the fire button sits at left:14 top:14 and is 38px tall, so the drug note starts
+   below it instead of underneath it */
+.note{position:absolute;left:0;top:56px;max-width:min(70%,660px);padding:11px 34px 12px 14px;
   font-size:14px;line-height:1.5;color:var(--muted);pointer-events:none;
   background:linear-gradient(105deg,rgba(4,12,10,.86) 60%,rgba(4,12,10,0));text-shadow:0 1px 3px rgba(0,0,0,.9)}
 .note b{color:var(--ink);font-weight:600}
@@ -190,7 +192,9 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .block[open] > .grp-title::after{transform:rotate(45deg)}
 .block[open] > .grp-title{margin-bottom:12px}
 .block[hidden]{display:none}
-.sublabel{font-family:var(--body);font-size:13.5px;font-weight:400;color:var(--muted);margin:14px 0 9px;display:flex;align-items:center;gap:7px}
+/* the bubble on a sublabel anchors to the sublabel. Without this it anchored to the
+   scrolling panel and was drawn above its top edge, where nothing can be seen. */
+.sublabel{position:relative;font-family:var(--body);font-size:13.5px;font-weight:400;color:var(--muted);margin:14px 0 9px;display:flex;align-items:center;gap:7px}
 .sub .ctl:last-child{margin-bottom:0}
 .block{border-top:1px solid var(--line);padding-top:12px;margin-top:13px}
 .block:first-of-type{border-top:0;padding-top:0;margin-top:0}
@@ -203,6 +207,10 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .ctl:last-child{margin-bottom:0}
 .ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 3px;position:static}
 .ctl label{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink)}
+/* a slider whose feature is switched off greys out with its label and its number,
+   so the panel reads as unavailable rather than broken */
+.ctl.off label,.ctl.off .num{opacity:.4}
+.ctl.off input[type=range]{opacity:.4;pointer-events:none}
 .ctl .num{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ctl .num em{font-style:normal;font-size:11.5px;margin-left:2px}
 /* Anything that used to be a native title is a bubble over the group it belongs to.
@@ -241,9 +249,6 @@ body.clean #views{left:14px;right:14px;bottom:14px}
 .readout dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .readout dd.warn{color:var(--danger)}
 .readout dd.good{color:var(--accent)}
-.verdict{margin-top:11px;padding:10px 12px;border-radius:10px;font-size:13.5px;
-  background:rgba(86,224,194,.07);border:1px solid var(--line);color:var(--muted)}
-.verdict b{color:var(--ink);font-weight:600}
 
 /* ---- explainer ----------------------------------------------------- */
 dialog.about{width:min(780px,calc(100vw - 28px))}
@@ -330,7 +335,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
         <div class="chips" id="recChips"></div>
         <div class="ctl" id="icmdCtl" hidden style="margin-top:13px">
           <div class="row">
-            <label for="icmd" title="Nothing happens below about 2.5.">Command current</label>
+            <label for="icmd" title="The size of the current step, raised sweep by sweep until the cell fires.">Command current</label>
             <span class="num" id="icmdV"></span>
           </div>
           <input type="range" id="icmd" min="-30" max="200" step="0.5" value="8">
@@ -360,21 +365,21 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           <button class="chip on" id="myelinOn" aria-pressed="false"><i></i>Myelin sheath</button>
           <button class="chip" id="lesionOn" aria-pressed="false"><i></i>Stripped patch</button>
         </div>
-        <div class="ctl">
+        <div class="ctl off">
           <div class="row">
             <label for="wraps" title="Each wrap adds resistance and divides the capacitance.">Sheath layers</label>
             <span class="num" id="wrapsV"></span>
           </div>
           <input type="range" id="wraps" min="5" max="200" step="5" value="80" disabled>
         </div>
-        <div class="ctl">
+        <div class="ctl off">
           <div class="row">
             <label for="inode" title="A longer jump is faster, until the signal arrives too weak to fire.">Node spacing</label>
             <span class="num" id="inodeV"></span>
           </div>
           <input type="range" id="inode" min="0.9" max="4.8" step="0.3" value="2.4" disabled>
         </div>
-        <div class="ctl">
+        <div class="ctl off">
           <div class="row">
             <label for="lesion" title="Bare membrane mid-axon, which soaks up charge.">Stripped length</label>
             <span class="num" id="lesionV"></span>
@@ -409,7 +414,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           </div>
           <input type="range" id="npulse" min="1" max="2" step="1" value="1">
         </div>
-        <div class="ctl" id="gapCtl">
+        <div class="ctl off" id="gapCtl">
           <div class="row">
             <label for="gap" title="Shorten it until the second spike fails.">Gap between pulses</label>
             <span class="num" id="gapV"></span>
@@ -427,8 +432,6 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           <button class="go" id="fire">Fire pulse</button>
           <button id="reset">Reset</button>
         </div>
-        <div class="verdict" id="verdict" hidden></div>
-        <p class="foot">Space fires the electrode, R resets it, P pauses, H hides the panels, F is fullscreen.</p>
             </details>
 
       <details class="block grp">
@@ -452,13 +455,18 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
           </div>
           <input type="range" id="speed" min="0.01" max="1" step="0.01" value="0.10">
         </div>
+        <div class="ctl">
+          <div class="row">
+            <label for="yzoom" title="Stretches the graphs vertically. A trace taller than its panel is cut off at the edge.">Y axis scale</label>
+            <span class="num" id="yzoomV"></span>
+          </div>
+          <input type="range" id="yzoom" min="0.6" max="2.4" step="0.05" value="1">
+        </div>
         <div class="chips">
           <button class="chip on" id="showIons" aria-pressed="true"><i></i>Ions</button>
           <button class="chip on" id="showCharge" aria-pressed="true"><i></i>Charge layer</button>
           <button class="chip on" id="playing" aria-pressed="true"><i></i>Running</button>
         </div>
-        <p class="foot">Point at anything in the picture to find out what it is.</p>
-        <p class="foot">Squid giant axon, Hodgkin and Huxley 1952 parameters, at 6.3 &#176;C.</p>
             </details>
   </div>
 </div>
@@ -2172,6 +2180,13 @@ function pushHist(s){
 function clearHist(){ for(const k in HIST) HIST[k].length=0; }
 function clearCHist(){ for(const k in CHIST) CHIST[k].length=0; }
 
+/* One gain for every value axis in the plots, set by Y axis scale in the Display
+   panel. Above 1 the axis is tighter and the trace is drawn taller, and anything
+   past the edge of its panel is cut off, which is how the gain knob on an
+   oscilloscope behaves. The time axis, the 0 to 100 per cent gate axis and the
+   command waveform are left alone: none of them is a measurement to be magnified. */
+function yz(m){ return m/S.yzoom; }
+function vAxis(){ return [VREST-30/S.yzoom, VREST+123/S.yzoom]; }
 function gridPanel(g,x,y,w,h,title){
   g.fillStyle='#0d1015'; g.fillRect(x,y,w,h);
   g.strokeStyle='#22262e'; g.lineWidth=1;
@@ -2291,7 +2306,7 @@ function drawCurrentClamp(g, train){
     const xa=X(Math.max(t0,p.t0)), xb=X(Math.min(t1,p.t0+p.dur));
     g.fillRect(xa,y1,Math.max(1.2,xb-xa),y3+h3-y1);
   }
-  const vLo=-95, vHi=58, Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
+  const [vLo,vHi]=vAxis(), Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
   g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
   for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.5)'],[0,'0','rgba(255,255,255,.14)'],
                             [VREST,'rest −65','rgba(255,255,255,.16)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.5)']]){
@@ -2320,7 +2335,7 @@ function drawCurrentClamp(g, train){
     sMax=Math.max(sMax, Math.abs(HIST.iSt[i]));
   }
   iHold=Math.max(iMax*1.06, iHold*0.97); sHold=Math.max(sMax*1.18, sHold*0.97);
-  iMax=niceMax(iHold); sMax=niceMax(sHold);
+  iMax=niceMax(yz(iHold)); sMax=niceMax(yz(sHold));
   const zy=y3+h3/2, half=h3/2-4;
   const Y3  = v=>zy-clamp(v,-iMax,iMax)/iMax*half;
   const Y3s = v=>zy-clamp(v,-sMax,sMax)/sMax*half;
@@ -2379,7 +2394,7 @@ function drawCCSweeps(g){
   commandPanel(g, L, y1, h1, pw, X, win, 0, S.icmd, v=>v.toFixed(1));
 
   gridPanel(g,L,y2,pw,h2,'membrane potential · mV');
-  const vLo=-95, vHi=58, Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
+  const [vLo,vHi]=vAxis(), Y2=v=>y2+h2-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h2;
   g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right'; const used=[];
   for(const [v,lab,col] of [[ENA,lvl('E_Na',ENA),'rgba(255,154,60,.45)'],[0,'0','rgba(255,255,255,.13)'],
                             [VREST,'rest −65','rgba(255,255,255,.15)'],[EK,lvl('E_K',EK),'rgba(165,139,255,.45)']]){
@@ -2426,7 +2441,7 @@ function drawVoltageClamp(g){
   let iMax=300;
   for(const arr of [CLAMP.y].concat(SWEEPS.map(s=>s.y)))
     for(const v of arr) iMax=Math.max(iMax, Math.abs(v));
-  iMax*=1.1;
+  iMax=yz(iMax*1.1);
   const zy=y2+h2/2, Y2=v=>zy-clamp(v,-iMax,iMax)/iMax*(h2/2-6);
   g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1;
   g.beginPath(); g.moveTo(L,zy); g.lineTo(L+pw,zy); g.stroke();
@@ -2473,6 +2488,7 @@ function drawSingleChannel(g){
   const unit = Math.abs(singleChannelPA(S.vcmd, ENA)) || 1;
   let pMax = unit*1.55;
   for(const v of SC.i) pMax = Math.max(pMax, Math.abs(v)*1.12);
+  pMax=yz(pMax);
   gridPanel(g,L,y2,pw,h2,'current through the channels under the tip · pA');
   const zy=y2+h2/2, Y2=v=>zy-clamp(v,-pMax,pMax)/pMax*(h2/2-8);
   g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=1; g.setLineDash([2,4]);
@@ -2501,6 +2517,7 @@ function drawSingleChannel(g){
     const v=SCAVG.sum[i]/SCAVG.cnt[i];
     aMax=Math.max(aMax,Math.abs(v)*1.3);
   }
+  aMax=yz(aMax);
   void aMin;
   gridPanel(g,L,y3,pw,h3,'average of every sweep so far · pA');
   const zy3=y3+h3/2, Y3=v=>zy3-clamp(v,-aMax,aMax)/aMax*(h3/2-8);
@@ -2545,7 +2562,7 @@ function drawCablePlots(g){
   if(extra){
     let m=1e-6;
     for(const k of ['ea','eb']) for(const v of CHIST[k]) m=Math.max(m,Math.abs(v));
-    m*=1.2;
+    m=yz(m*1.2);
     Y1=v=>y1+h1/2-clamp(v,-m,m)/m*(h1/2-8);
     keys=[['ea','#f4efe4'],['eb','#ffb45c']];
     g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1;
@@ -2553,7 +2570,7 @@ function drawCablePlots(g){
     g.textAlign='right'; g.fillStyle='#7d766b'; g.font='500 10.5px "Space Grotesk",sans-serif';
     g.fillText('0', L-6, y1+h1/2+4);
   } else {
-    const vLo=-95,vHi=58; Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
+    const [vLo,vHi]=vAxis(); Y1=v=>y1+h1-((clamp(v,vLo,vHi)-vLo)/(vHi-vLo))*h1;
     keys=[['a','#f4efe4'],['b','#ffb45c']];
     g.font='500 10.5px "Space Grotesk",sans-serif'; g.textAlign='right';
     for(const [v,lab] of [[0,'0'],[VREST,'−65']]){
@@ -2609,7 +2626,7 @@ const el = id => document.getElementById(id);
 const S = {
   mode:'patch', rec:'sharp', recCable:'intra',
   amp:10.5, dur:1, npulse:1, gap:16, hold:0, speed:0.10, vcmd:0, icmd:8,
-  ions:true, charge:true, playing:true, repeat:false,
+  ions:true, charge:true, playing:true, repeat:false, yzoom:1,
   drugs:{ ttx:false, lidocaine:false, tea:false, fap:false, pronase:false },
   myelin:false, wraps:80, inode:2.4, lesion:false, lesionLen:6
 };
@@ -2641,7 +2658,6 @@ function resetAll(){
   if(S.mode==='patch'){
     patch=newPatch(); train=[]; clearHist(); spikeTimes=[]; spikeUp=false; clearClamp();
     layoutTheatre(narrow); assignBlocks(S.drugs);
-    el('verdict').hidden=true;
   } else {
     resetCable(cable); rebuildCable(); resetCableRun();
     clearCHist(); cableStim={t0:1e9,amp:0,dur:0};
@@ -2654,7 +2670,7 @@ function fire(){
       patch=newPatch(); clearClamp(); clampRunning=true;
     } else {
       train = makeTrain(patch.t+0.3, S.amp, S.dur, S.npulse, S.gap);
-      spikeTimes=[]; spikeUp=false; el('verdict').hidden=true;
+      spikeTimes=[]; spikeUp=false;
     }
   } else {
     resetCable(cable); rebuildCable(); resetCableRun();
@@ -2676,14 +2692,21 @@ function slider(id, key, fmt, after){
   inp._sync=()=>{ inp.value=S[key]; out.innerHTML=fmt(S[key]); };
   upd();
 }
+/* a control that cannot do anything is disabled and greyed out together, so the
+   sheath sliders and the gap between pulses never look broken instead of off */
+function setLive(id, live){
+  const inp=el(id); if(!inp) return;
+  inp.disabled=!live;
+  const box=inp.closest('.ctl'); if(box) box.classList.toggle('off', !live);
+}
 function syncInputs(){
-  for(const id of ['amp','dur','npulse','gap','hold','speed','vcmd','icmd','wraps','inode','lesion']){
+  for(const id of ['amp','dur','npulse','gap','hold','speed','yzoom','vcmd','icmd','wraps','inode','lesion']){
     const inp=el(id); if(inp && inp._sync) inp._sync();
   }
   setChip('myelinOn',S.myelin); setChip('lesionOn',S.lesion);
-  el('wraps').disabled=!S.myelin; el('inode').disabled=!S.myelin;
-  el('lesion').disabled=!(S.myelin&&S.lesion);
-  el('gap').disabled=(S.npulse<2);
+  setLive('wraps', S.myelin); setLive('inode', S.myelin);
+  setLive('lesion', S.myelin&&S.lesion);
+  setLive('gap', S.npulse>1);
   for(const k in S.drugs) setChip('drug_'+k, S.drugs[k]);
   setChip('repeat', S.repeat);
   for(const k of ['sharp','cc','vc','attached','intra','extra']) setChip('rec_'+k,
@@ -2792,7 +2815,6 @@ function setMode(m){
   el('modeCable').setAttribute('aria-pressed', m==='cable');
   el('axonBlock').hidden = (m!=='cable');
   el('holdCtl').hidden = el('npulseCtl').hidden = el('gapCtl').hidden = (m!=='patch');
-  if(m!=='patch') el('verdict').hidden=true;
   const amp=el('amp');
   if(m==='cable'){ amp.min=0; amp.max=800; amp.step=10; if(S.amp<100) S.amp=400; }
   else { amp.min=-60; amp.max=150; amp.step=0.5; if(S.amp>150) S.amp=+(THR1*1.5).toFixed(1); }
@@ -2841,7 +2863,6 @@ function advancePatch(dtModel, dtWall){
     if(sampleAcc>=SAMPLE_MS){ pushHist(patch); sampleAcc=0; }
   }
   finishPatchFrame(dtModel, dtWall, null);
-  updateVerdict();
 }
 function stepInProgress(){ return clampRunning && clampT>=2 && clampT<2+S.dur; }
 function advanceClamp(dtModel, dtWall){
@@ -2910,21 +2931,6 @@ function finishPatchFrame(dtModel, dtWall, sampler){
   }
   tickParticles(dtWall, patch.V);
   tickPump(dtWall);
-}
-function updateVerdict(){
-  if(S.mode!=='patch' || isClamp() || S.npulse<2 || !train.length) return;
-  const last=train[train.length-1];
-  if(patch.t < last.t0+14) return;
-  const v=el('verdict');
-  if(!v.hidden) return;
-  const after=spikeTimes.filter(t=>t>=last.t0-0.2).length;
-  const before=spikeTimes.filter(t=>t<last.t0-0.2).length;
-  v.hidden=false;
-  v.innerHTML = before===0
-    ? 'Neither pulse reached threshold. <b>Turn the pulse up.</b>'
-    : (after>0
-      ? 'Second pulse fired after a <b>'+S.gap.toFixed(1)+' ms</b> gap. Shorten the gap until it stops working.'
-      : 'Second pulse <b>failed</b> at a '+S.gap.toFixed(1)+' ms gap — the membrane is still refractory. Lengthen the gap, or push harder.');
 }
 const ELEC_H = 0.05;
 function extraAt(c, e){
@@ -3022,19 +3028,21 @@ function boot(){
 
   slider('amp','amp', v=> (S.mode==='cable'?v.toFixed(0):v.toFixed(1))+' <em>µA/cm²</em>');
   slider('dur','dur', v=> v.toFixed(1)+' <em>ms</em>', resetAvg);
-  slider('npulse','npulse', v=> v===1?'one':'two', ()=>{ el('gap').disabled=S.npulse<2; });
+  slider('npulse','npulse', v=> v===1?'one':'two', ()=>{ setLive('gap', S.npulse>1); });
   slider('gap','gap', v=> v.toFixed(1)+' <em>ms</em>');
   slider('hold','hold', v=> v.toFixed(1)+' <em>µA/cm²</em>');
   slider('vcmd','vcmd', v=> (v>0?'+':'')+v.toFixed(0)+' <em>mV</em>');
   slider('icmd','icmd', v=> (v>0?'+':'')+v.toFixed(1)+' <em>µA/cm²</em>');
   slider('speed','speed', v=> (v*60).toFixed(1)+' <em>ms per second</em>');
+  slider('yzoom','yzoom', v=> v.toFixed(2)+' <em>x</em>');
   slider('wraps','wraps', v=> v.toFixed(0)+' <em>layers</em>', ()=>{ rebuildCable(); });
   slider('inode','inode', v=> v.toFixed(1)+' <em>mm</em>', ()=>{ rebuildCable(); });
   slider('lesion','lesionLen', v=> v.toFixed(1)+' <em>mm</em>', ()=>{ rebuildCable(); });
 
   chip('showIons','ions'); chip('showCharge','charge'); chip('playing','playing');
   chip('repeat','repeat', ()=>{ if(S.repeat && !clampRunning) fire(); });
-  chip('myelinOn','myelin', ()=>{ syncInputs(); rebuildCable(); fire(); });
+  /* a stripped patch is a hole in a sheath, so it cannot outlive the sheath */
+  chip('myelinOn','myelin', ()=>{ if(!S.myelin) S.lesion=false; syncInputs(); rebuildCable(); fire(); });
   chip('lesionOn','lesion', ()=>{
     if(S.lesion && !S.myelin) S.myelin=true;
     syncInputs(); rebuildCable(); fire();
