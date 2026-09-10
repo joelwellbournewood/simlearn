@@ -87,6 +87,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 @media (max-width:1000px){.hint{left:20px;transform:none;text-align:left;max-width:calc(100% - 300px)}}
 @media (max-width:820px){.hint{display:none}}
 body.clean .brand,body.clean .panel,body.clean .hint{display:none}
+.about-inner kbd{font-family:"Space Mono",monospace;font-size:11.5px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.about-inner p.keys{color:var(--muted);font-size:12.5px}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
@@ -185,7 +187,7 @@ details.grp > summary + *{margin-top:0}
   <details class="grp" open>
     <summary>Controls</summary>
   <div class="row">
-    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="Near identical pendulums, released together." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many near identical pendulums are released together." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
   </div>
   <div class="row">
@@ -193,7 +195,7 @@ details.grp > summary + *{margin-top:0}
     <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
   </div>
   <div class="row">
-    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="Lift before release. Chaotic above about 20 degrees." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="Lift before release, which sets the energy." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
     <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
   </div>
   <div class="row">
@@ -222,7 +224,7 @@ details.grp > summary + *{margin-top:0}
 
 </div>
 
-<div class="hint">Right-drag to move the view (left-drag works too), scroll to zoom, click the field to re-release, R restarts.</div>
+<div class="hint">Drag to move the view, scroll to zoom, click the field to release again.</div>
 
 <dialog class="about" id="about"><div class="about-inner">
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
@@ -239,43 +241,31 @@ details.grp > summary + *{margin-top:0}
 <p><b>Release angle</b> is the important slider, because it sets the energy. Start the arms low and the motion stays regular and repetitive, and the copies stay together for a long time. Somewhere above the height at which the lower arm can just swing over the top, the behaviour changes character and the flipping begins. <b>Lower arm length</b> changes the geometry, <b>copies released</b> and <b>trail length</b> change what is drawn, and <b>time speed</b> changes only the playback rate.</p>
 <h3>Things to try</h3>
     <ul>
-      <li>Set spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together. Then set it a hundred times wider and time it again. The difference is much smaller than most people expect.</li>
-      <li>Watch how long the fan stays one line, then how quickly it fills the whole disc once it starts to fray. Each halving of the time to spread corresponds to a hundredfold worse starting measurement, which is what an exponent looks like from the outside.</li>
+      <li>Set the spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together as one line. Then set it a hundred times wider and time it again. It holds for less time, but nowhere near a hundred times less, because a worse starting measurement costs you a fixed amount of warning rather than a proportional one.</li>
       <li>Give the lower arm a length of 1.6 and release from 180 degrees. The tip trace fills the whole disc it can reach.</li>
     </ul>
   
+<h3>Keyboard</h3>
+<p class="keys"><kbd>Space</kbd> pause, <kbd>R</kbd> re-release, <kbd>1</kbd>-<kbd>5</kbd> experiments, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
 <div class="more-box"><div class="more-body">
 <h3>The demonstration</h3>
-    <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree. For the first few seconds they move as one thick line, because for practical purposes they are the same pendulum. Then the line frays and splits, and within about fifteen seconds the hundred copies are scattered over every angle, with no memory of their shared start.</p>
-    <p>Nothing was added. No noise was injected and no forcing applied. The tiny difference they began with was simply <b>stretched</b>, at a roughly constant exponential rate, until it reached the size of the whole system. That rate is the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days however good the measurements get.</p>
-    <h3>The cost of sensitive dependence</h3>
-    <p>If errors grow exponentially, one more decimal place of accuracy in the starting measurement buys a fixed extra amount of forecast time rather than a proportional one. Instruments ten times better do not give ten times the warning. The horizon belongs to the system itself, and better technology moves it only by a constant.</p>
-    <h3>Regular motion is available too</h3>
-    <p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again. The copies stay together for minutes. At small amplitudes the system behaves like two coupled linear oscillators and is perfectly well behaved. What decides the character of the motion here is the energy you release it with, and the machine itself is the same either way.</p>
-    <h3>How this one is computed</h3>
-    <p>Everything in this section serves one claim: the divergence you watch is a property of the pendulum, and never an artefact of the arithmetic.</p>
-    <ul>
-      <li>Integration is fourth-order Runge-Kutta with small substeps, and total energy is held to a fraction of a percent over a run. The separation you see on screen is therefore dynamics, and the arithmetic is not contributing to it in any visible way.</li>
-      <li>Given long enough, floating-point error alone would separate two identical copies. That is why the copies here are given a real, stated starting spread instead of being launched identically.</li>
-      <li>The rods are massless and the bobs are points. Real hardware has friction, and eventually stops.</li>
-    </ul>
+    <p>Press <b class="hl">Fan of a hundred</b>. A hundred pendulums are released across a total spread of a tenth of a degree, thinner than the line drawn for them. After that nothing is added: no noise is injected and no forcing applied. The difference they began with is simply <b>stretched</b>, at a roughly constant exponential rate, until it is the size of the whole system. That rate is the <b>Lyapunov exponent</b>, and it is the reason weather forecasts stop being useful after about ten days however good the measurements get.</p>
+    <h3>How fast the copies separate</h3>
+    <p>Nearby trajectories separate on average as</p>
+<span class="eq">&delta;(t) &asymp; &delta;(0) e<sup>&lambda;t</sup></span>
+<p>where &lambda; is the largest Lyapunov exponent, positive in the chaotic regime and zero on a torus. Rearranged, the horizon of prediction is t &asymp; (1/&lambda;) ln(&delta;<sub>tol</sub>/&delta;(0)). The starting error sits inside a logarithm, so an instrument ten times better buys a fixed extra amount of prediction time rather than ten times as much: the horizon belongs to the system, and better equipment moves it only by a constant. That logarithm is the whole quantitative content of the phrase butterfly effect, and it applies with equal force to weather models. The fan of copies on screen is a visual estimate of &lambda;, since the time it takes to spread to a visible angle scales with 1/&lambda;.</p>
+<p>The behaviour survives contact with real hardware. Shinbrot et al. (1992) built a physical double pendulum, measured its divergence and its Poincare sections, and used it as a laboratory demonstration of sensitive dependence, with Levien and Tan (1993) following up on the experimental side.</p>
+    <h3>Regular and chaotic motion in the same machine</h3>
+<p>Drop <b class="hl">Release angle</b> to 15 degrees and release the fan again: the copies now stay together for minutes. At low energy the motion is close to two coupled harmonic oscillators, trajectories lie on invariant tori in phase space, and a Poincare section through them shows closed curves. The Kolmogorov-Arnold-Moser theorem guarantees that most of these tori survive a small nonlinear perturbation, which is why gentle swinging is predictable. As energy rises the resonances between the two normal modes overlap, tori break up, and a connected chaotic sea appears in the section, with islands of regular motion embedded in it. The double pendulum is the standard teaching example of that transition because the threshold has a physical meaning you can watch for: chaos becomes widespread once there is enough energy for the lower arm to pass over its own pivot. The machine is the same either way, and the energy you release it with decides which behaviour you get.</p>
     <h3>Equations of motion</h3>
 <p>The standard derivation is Lagrangian. With arm lengths L1, L2, masses m1, m2, and angles &theta;1, &theta;2 measured from vertical, the Lagrangian L = T &minus; V is written out and the two Euler-Lagrange equations give a pair of coupled second-order equations that can be arranged as</p>
 <span class="eq">M(&theta;1, &theta;2) &middot; (&theta;&#776;1, &theta;&#776;2)&#7488; = f(&theta;1, &theta;2, &theta;&#775;1, &theta;&#775;2)</span>
 <p>where M is a 2x2 mass matrix depending on the difference of the angles, so the angular accelerations are obtained by inverting a matrix at every timestep. The nonlinearity comes from the sines and cosines of the angles, and from the centrifugal terms in f, which are quadratic in the velocities. There is no closed-form solution and none is expected.</p>
 <p>Two degrees of freedom means a four-dimensional phase space. Energy is conserved, which confines the motion to a three-dimensional surface inside it. There are no other conserved quantities, and that absence is what makes chaos possible rather than the number of moving parts: with one more conserved quantity the system would be integrable and every trajectory would be quasi-periodic.</p>
 
-<h3>Regular and chaotic motion in the same machine</h3>
-<p>At low energy the motion is close to two coupled harmonic oscillators. Trajectories lie on invariant tori in phase space, and a Poincare section through them shows closed curves. The Kolmogorov-Arnold-Moser theorem guarantees that most of these tori survive a small nonlinear perturbation, which is why gentle swinging is predictable. As energy rises the resonances between the two normal modes overlap, tori break up, and a connected chaotic sea appears in the section, with islands of regular motion embedded in it. The double pendulum is the standard teaching example of this transition because the threshold has a physical meaning you can watch for: chaos becomes widespread once there is enough energy for the lower arm to pass over its own pivot.</p>
-
-<h3>Quantifying the divergence</h3>
-<p>Nearby trajectories separate on average as</p>
-<span class="eq">&delta;(t) &asymp; &delta;(0) e<sup>&lambda;t</sup></span>
-<p>where &lambda; is the largest Lyapunov exponent, positive in the chaotic regime and zero on a torus. Rearranged, the horizon of prediction is t &asymp; (1/&lambda;) ln(&delta;<sub>tol</sub>/&delta;(0)). Because the initial error appears inside a logarithm, improving your measurement by a factor of ten buys the same fixed extra amount of prediction time each time you do it. That logarithm is the whole quantitative content of the phrase butterfly effect, and it applies with equal force to weather models. The fan of copies on screen is a visual estimate of &lambda;, since the time the fan takes to spread to a visible angle scales with 1/&lambda;.</p>
-<p>The behaviour survives contact with real hardware. Shinbrot et al. (1992) built a physical double pendulum, measured its divergence and its Poincare sections, and used it as a laboratory demonstration of sensitive dependence, with Levien and Tan (1993) following up on the experimental side.</p>
-
 <h3>Numerics, and how to tell physics from arithmetic</h3>
-<p>The equations here are integrated with fourth-order Runge-Kutta, with each animation frame subdivided into several substeps so the step size stays small when the arms are moving fast. Energy drift is the diagnostic behind that choice, since an integrator with a small enough step holds total energy nearly constant, and measurable drift would mean the separation you see on screen came partly from the integrator's error rather than from the physics. Measured here, the leading copy loses under two ten-thousandths of a percent of its energy over a minute of swinging, so what you see spreading apart is the physics. In a chaotic system, after a few seconds a single simulated pendulum has departed from the ideal one at any tolerance you care to set, because floating-point rounding is itself a perturbation and then grows as e<sup>&lambda;t</sup>. Statistical properties survive that, meaning how quickly the ensemble spreads and which regions it visits, while the exact position of copy number 37 at t = 20 s is fiction.</p>
+<p>This section serves one claim: the divergence you watch is a property of the pendulum, and never an artefact of the arithmetic. The equations are integrated with fourth-order Runge-Kutta, with each animation frame subdivided into several substeps so the step size stays small when the arms are moving fast. Energy drift is the diagnostic behind that choice, since an integrator with a small enough step holds total energy nearly constant, and measurable drift would mean the separation on screen came partly from the integrator's error. Measured here, the leading copy loses under two ten-thousandths of a percent of its energy over a minute of swinging.</p>
+<p>Given long enough, floating-point rounding alone would pull two identical copies apart, which is why the copies here are given a real, stated starting spread instead of being launched together. Rounding is itself a perturbation, and it grows as e<sup>&lambda;t</sup> like any other, so after a few seconds a single simulated pendulum has departed from the ideal one at any tolerance you care to set. Statistical properties survive that, meaning how quickly the ensemble spreads and which regions it visits, while the exact position of copy number 37 at t = 20 s is fiction.</p>
 
 <h3>Limits of the model</h3>
 <p>The bobs here are point masses on massless rigid arms, the hinges are frictionless, there is no air resistance, and the motion is confined to a plane. A real double pendulum loses energy and eventually hangs still, so chaos in hardware is a transient, albeit a long one. Adding damping and a periodic drive gives the forced damped pendulum, in which chaos is sustained indefinitely on a strange attractor instead of filling an energy shell, and that version is the closer model for machinery that keeps being fed energy, such as a crane under an operator's hand.</p>

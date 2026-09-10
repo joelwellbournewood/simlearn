@@ -117,7 +117,7 @@
       "dynamical systems"
     ],
     "difficulty": "Intermediate",
-    "description": "The first picture of chaos anyone plotted. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate it, and release a swarm to watch identical starts come apart.",
+    "description": "Three lines of arithmetic, plotted in three dimensions. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate the attractor, and release a swarm of near identical starts to watch them come apart.",
     "status": "live",
     "hook": "The first picture of chaos",
     "visible": false
@@ -133,7 +133,7 @@
       "pattern formation"
     ],
     "difficulty": "Intermediate",
-    "description": "Natural patterns arising from a uniform, featureless start.",
+    "description": "Two chemicals react and spread through a sheet of tissue that starts perfectly even, and spots, stripes, and labyrinths appear with no blueprint anywhere. Twelve presets on a live map of the chemistry, a growing field that inserts new stripes as it stretches, and diffusion you can point along one axis.",
     "status": "live",
     "hook": "Two chemicals, no blueprint",
     "visible": true

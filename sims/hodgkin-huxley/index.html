@@ -482,7 +482,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
   <li><b>opening likelihood, %.</b> The state of the gates, drawn as three curves labelled m, h, and n. m opens the sodium channels and n opens the potassium ones. h is the plug on the inside of a sodium channel, so it sits high while the channel is free and falls as the channel shuts itself off. A sodium channel needs three m gates and h open at the same moment, so m reaching the top of the panel still leaves most channels shut.</li>
   <li><b>ionic current, &micro;A/cm&sup2;.</b> What is actually crossing the membrane. Sodium arriving is drawn below the line and potassium leaving above it, with the current from your electrode in green on the right-hand scale.</li>
 </ul>
-<p>Read together, they tell the whole story of a spike. Nudge the voltage up with the electrode and sodium channels begin to open, sodium pours in, and the voltage those channels are responding to is the voltage they are changing, so the rise feeds itself and reaches the top with no further help from you. Sodium then plugs itself while the slower potassium gates are still opening, so the voltage falls past rest before settling. The whole event lasts about two milliseconds, and for five or six more the membrane will not repeat it at any strength.</p>
+<p>Read together, they tell the whole story of a spike. Nudge the voltage up with the electrode and sodium channels begin to open, sodium pours in, and the voltage those channels are responding to is the voltage they are changing, so the rise feeds itself and reaches the top with no further help from you. Sodium then plugs itself while the slower potassium gates are still opening, so the voltage falls past rest before settling. The whole event lasts about two milliseconds, and for roughly four more the membrane will not repeat it at any strength.</p>
 <p>That brief event is the basic signal of most nerve cells, which is why so much of medicine interferes with it on purpose. The injection at the dentist blocks the mammalian cousin of this sodium channel, pufferfish poisoning blocks it outright and often leaves the patient awake and paralysed, and drugs for epilepsy, heart rhythm, and chronic pain act on close relatives of these gates. When a clinic measures how fast a signal travels down your arm, it is measuring this event moving along a nerve, which is what <b>Whole axon</b> shows.</p>
 <p><b>Worth trying.</b> Fire a pulse just under threshold and then just over: a small passive bump that fades, then a full-height spike, with almost nothing in between. Fire two pulses and shorten the gap until the second one fails. Drop TTX in the bath and watch the electrode charge a membrane that can no longer answer. Then switch to Whole axon, wrap it in myelin, and see how much faster the same spike travels.</p>
 <h3>Keys</h3>
@@ -490,70 +490,63 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
     
 <div class="more-box"><div class="more-body">
 <h3>The three gates</h3>
-    <p>Hodgkin and Huxley described the whole thing with three numbers between 0 and 1, plotted under the voltage trace:</p>
+    <p>The whole model runs on three numbers between 0 and 1, and they are the m, h, and n curves in the <b>opening likelihood</b> plot. Each is the chance that one kind of gate is open, and each chases a target set by the present voltage, at its own speed.</p>
     <ul>
-      <li><b>m</b>, the sodium activation gate. Fast, and it opens on depolarisation. Sodium conductance goes as m&sup3;, so three of these have to line up.</li>
-      <li><b>h</b>, the sodium inactivation gate. Slow, and it works backwards, since depolarisation <i>shuts</i> it. This is what ends the spike, and it is why you cannot fire again immediately.</li>
-      <li><b>n</b>, the potassium gate. Slow, opens on depolarisation, and its conductance goes as n&#8308;. Potassium leaving pulls the voltage back down and overshoots past rest.</li>
+      <li><b>m</b> opens the sodium channel, and it is fast. A channel carries three m gates and needs all three at once, so the sodium conductance follows m&sup3; and still lags behind m itself.</li>
+      <li><b>h</b> plugs the sodium channel from the inside. It sits high at rest, and depolarisation slowly closes it, so the sodium current shuts itself off about a millisecond after it starts. This is what ends the spike.</li>
+      <li><b>n</b> opens the potassium channel, slowly. Four gates, so the conductance follows n&#8308;: late to arrive and late to leave, which is why the voltage undershoots past rest before it settles.</li>
     </ul>
-    <p>A sodium channel conducts only when all three m subunits and the h gate are open at once. In the theatre the individual channels flicker independently, sampled from the same rate constants that drive the smooth curves below. Real channels are stochastic, and the smooth curve is what you get by averaging thousands of them.</p>
-
-    <div class="eq">C dV/dt = I<sub>stim</sub> &minus; g&#772;<sub>Na</sub>&middot;m&sup3;h&middot;(V&minus;50) &minus; g&#772;<sub>K</sub>&middot;n&#8308;&middot;(V+77) &minus; 0.3&middot;(V+54.4)</div>
+    <p>In the picture the individual channels flicker open and shut at random, drawn from the same rates that drive the smooth curves. Real channels behave that way, and the smooth curve is the average of thousands of them, which is what any whole-cell recording gives you.</p>
 
     <h3>Why it is all-or-none</h3>
-    <p>Below threshold the leak wins and the voltage sags back. Above threshold the sodium feedback wins and the spike goes to the same height however hard you pushed. Nudge the pulse strength half a unit at a time through 7 &micro;A/cm&sup2; and watch the trace snap from one behaviour to the other. There is no half-spike. This is also why a nerve carries intensity as a firing rate: a single fibre cannot make a bigger spike to signal a harder pinch, so it makes more of them.</p>
+    <p>Nothing in the equations names a threshold. It is simply the point where inward sodium current starts to outrun the outward potassium and leak currents, so the loop closes and the rise carries itself. Below it the voltage sags back. Above it the spike goes to the same height however hard you pushed. Step the pulse strength half a unit at a time through about 7 &micro;A/cm&sup2; on the sharp electrode and the trace snaps from a bump that fades to a full spike, with nothing in between.</p>
+    <p>That is why a nerve carries intensity as a rate. One fibre cannot make a bigger spike to report a harder pinch, so it makes more of them. Since the threshold is a consequence rather than a setting, this simulation measures it by running the model, which matters the moment you put a blocker in the bath and it moves. In dynamical terms it is the boundary between the basins of attraction around the resting state, and steady current tips the cell into repetitive firing through a Hopf bifurcation; Izhikevich (2007) sets out the classification.</p>
 
     <h3>Why you have to wait</h3>
-    <p>Straight after a spike, h is near zero, which means the sodium channels are inactivated, plugged from the inside by their own ball-and-chain, and n is still high, so potassium is still pouring out. Set the sharp electrode to two pulses and shorten the gap. At 16 milliseconds the second spike fires normally. At 8 milliseconds it takes a stronger pulse, and below about 6 milliseconds nothing works at any strength, which is the absolute refractory period, and it is why a spike only ever travels forwards down an axon. The pulse slider stops at 150 &micro;A/cm&sup2;, so on screen the wall is at 7 milliseconds. In between, the second spike is possible and costs more current.</p>
+    <p>Just after a spike, h is near zero and n is still high, so the sodium channels are plugged from the inside while potassium is still pouring out. No stimulus of any size can open a channel that is inactivated. Set the sharp electrode to two pulses and shorten the gap: at 16 milliseconds the second spike is normal, at 8 it needs a stronger pulse and comes out smaller, and below about 6 nothing works at all. The pulse slider stops at 150 &micro;A/cm&sup2;, so the wall you can reach on screen is at 7 milliseconds.</p>
+    <p>That dead time is why an impulse only ever travels forwards: the stretch of membrane it just came from cannot answer again yet. It also caps how much a single fibre can say per second, since each spike here costs the axon roughly six milliseconds of silence.</p>
 
     <h3>Four ways to put an electrode on it</h3>
-    <p>The recording configuration decides what the traces are able to show you, because each one is a physically different experiment.</p>
+    <p>Each recording configuration is a physically different experiment, and it decides what the plots are able to show.</p>
     <ul>
-      <li><b>Sharp microelectrode.</b> A fine tip through the membrane, running freely. You set the current with a second electrode and the membrane picks its own voltage. This is the only way to watch an action potential happen by itself.</li>
-      <li><b>Whole-cell current clamp.</b> A blunt pipette sealed on and the patch broken through, passing a set current for a set time, one sweep at a time. Raise the command a step at a time and the sweeps stack up behind each other: nothing below about 2.5 &micro;A/cm&sup2;, then one spike, then a train, then the membrane jams.</li>
-      <li><b>Whole-cell voltage clamp.</b> The amplifier holds the voltage wherever you put it and reports the current it has to supply to keep it there. This is the experiment the equations came from. Step to a few different voltages and the family builds up: a fast inward sodium current that grows, peaks around 0 mV, and vanishes at +50 mV, which is E<sub>Na</sub>, and a slow outward potassium current that just keeps growing. Add TEA or TTX to take one of them away.</li>
-      <li><b>Cell-attached patch.</b> The seal is left intact, so you record only the three sodium channels under the tip. Openings are square steps of about one picoamp, one protein at a time. Most sweeps show nothing at all, which is exactly why you have to average. Leave it repeating and the average of the flickering turns into the smooth macroscopic current from the voltage-clamp trace.</li>
+      <li><b>Sharp microelectrode.</b> A fine tip through the membrane. You set the current, the membrane picks its own voltage, and this is the only setting where you watch an action potential happen by itself.</li>
+      <li><b>Whole-cell current clamp.</b> A blunt pipette sealed on and the patch broken through, delivering a set current for a set time, one sweep at a time. Raise the command step by step and the sweeps stack up: nothing, then a single spike, then a train, then a membrane too depolarised to fire.</li>
+      <li><b>Whole-cell voltage clamp.</b> The amplifier holds the voltage where you put it and reports the current it takes to keep it there. Step to several voltages and the family builds up: a fast inward sodium current that peaks around 0 mV and disappears at +50 mV, where sodium has nothing left to gain, and a slow outward potassium current that only grows. This is the experiment the equations came from, so add TTX or TEA and watch one of the two currents leave.</li>
+      <li><b>Cell-attached patch.</b> The seal is left intact, so you record the handful of sodium channels under the tip. Openings are square steps, one protein at a time, and most sweeps show nothing at all, which is why the experiment lives on averaging. Leave it repeating and the average of the flicker turns into the smooth current the voltage clamp gave you.</li>
     </ul>
-    <p>On the whole axon the choice is between microelectrodes pushed inside, which give clean monophasic spikes, and electrodes resting on the surface, which is what a clinical nerve conduction study actually records: much smaller, biphasic, and with the same delay between the two sites.</p>
+    <p>On the whole axon the choice is between microelectrodes pushed inside, which give clean single-humped spikes, and electrodes resting on the surface, which is what a clinical nerve conduction study records: much smaller, swinging both ways, and with the same delay between the two sites.</p>
 
     <h3>The drugs</h3>
-    <p>Five things to put in the bath. Blocked channels go grey and show the drug molecule lodged in the pore, and the partial blockers take out a fraction of the channels, which is what a partial block physically is.</p>
+    <p>Five things to drop in the bath. A blocked channel goes grey and shows the molecule lodged in its pore, and the partial blockers take out a fraction of the channels, which is what a partial block physically is.</p>
     <ul>
-      <li><b>TTX</b> plugs the sodium pore from outside, completely. The membrane can still be charged by the electrode, and it cannot make a spike of its own.</li>
-      <li><b>Lidocaine</b> takes about 40% of the sodium channels out of action from inside, which is what a modest concentration does to an axon sitting at rest. Threshold roughly doubles, from 6.9 to 12.2 &micro;A/cm&sup2; measured by running this model, and pushing the pulse harder brings a full-height spike back, which is the difference between an anaesthetic and a poison. Real lidocaine also grips channels that have just opened far more tightly, so a nerve firing fast gets blocked much harder than a resting one, and that use dependence is not in these equations.</li>
-      <li><b>TEA</b> blocks the delayed rectifier from inside. The background potassium channels that hold the resting potential are a different, TEA-insensitive population and stay open, so the membrane still sits at &minus;65 mV. The spike fires about 6 mV taller and repolarisation is left to the slow leak, so measured above &minus;20 mV it lasts 3.5 ms against 1.7 ms in control, about twice as long.</li>
-      <li><b>4-AP</b> is a milder potassium block. Try it on a stripped patch in the axon view.</li>
-      <li><b>Pronase</b> digests the inactivation gate off most sodium channels. Nothing shuts the sodium current off, so the spike becomes a permanent plateau near +20 mV. Wash it out to recover.</li>
+      <li><b>TTX</b>, from the pufferfish, plugs the sodium pore from outside and does it completely. The electrode can still charge the membrane, and the membrane can no longer answer. Diners poisoned this way have been described as awake and paralysed.</li>
+      <li><b>Lidocaine</b> takes about 40% of the sodium channels out of action from the inside, which is roughly what a modest dose does to a resting axon. Threshold about doubles, from 6.9 to 12.2 &micro;A/cm&sup2; measured by running this model, and pushing harder still brings back a full spike. That recoverability is the difference between an anaesthetic and a poison.</li>
+      <li><b>TEA</b> blocks the delayed rectifier from the inside. The background potassium channels that hold the resting potential are a different, insensitive population, so the membrane still sits near &minus;65 mV, but repolarisation is left to the slow leak and the spike lasts about twice as long, 3.5 milliseconds against 1.7 measured above &minus;20 mV.</li>
+      <li><b>4-AP</b> is a gentler potassium block. Its moment comes on a stripped patch in the whole axon view.</li>
+      <li><b>Pronase</b> is an enzyme that digests the inactivation gate off most sodium channels. Nothing shuts the sodium current down, so the spike becomes a plateau stuck near +20 mV. Wash it out to recover.</li>
     </ul>
+    <p>One honest gap: real local anaesthetics grip channels that have just opened much more tightly, so a nerve firing hard is blocked far harder than a quiet one. That use dependence is what makes them work on the nerve you are trying to numb, and it is not in these equations. Here the block you set is the block you get at any firing rate.</p>
 
     <h3>The whole axon</h3>
-    <p>Switch to <b>Whole axon</b> and the same equations run at two hundred points along a cable, coupled by the resistance of the cytoplasm. A spike at one end charges its neighbour, which spikes and charges the next. Two recording electrodes sit 4.2 cm apart, and that distance divided by the delay between their traces is the conduction velocity.</p>
-    <p>Bare, the model axon runs at roughly 12 m/s. Wrap it in myelin and the internode barely stores charge, so current from one node reaches the next almost undiminished and the spike jumps node to node three times faster. Strip the sheath off a patch and two things go wrong: the bare stretch soaks up charge, and potassium channels that were sequestered under the wrap are now exposed and shunt the signal away. Past a few millimetres, conduction stops dead. Now add 4-AP or TEA. The exposed potassium channels are blocked and conduction comes back, and that is the logic behind giving 4-aminopyridine to some people with multiple sclerosis.</p>
+    <p>Switch to <b>Whole axon</b> and the same equations run at two hundred points along a cable, joined by the resistance of the fluid inside. A spike at one end charges its neighbour, which fires and charges the next. Two recording electrodes sit 4.2 cm apart, and that distance divided by the delay between their traces is the conduction velocity, which is exactly the number a nerve conduction study puts on a clinic report.</p>
+    <p>Bare, this axon runs at about 12 m/s. In an unmyelinated fibre speed grows only with the square root of diameter, which is why the squid had to evolve an axon a millimetre across to work its escape jet, and why Hodgkin and Huxley could get a wire inside one.</p>
+    <p>Wrap it in myelin and the sheathed stretches barely store or leak charge, so current from one node arrives at the next almost undiminished and the spike jumps from node to node about three times faster. Huxley and St&auml;mpfli showed that jumping in single frog fibres in 1949. Strip the sheath off a patch and two things go wrong at once: the bare stretch soaks up charge, and potassium channels that had been sequestered under the wrap are now exposed and drain the signal away. Past a few millimetres the impulse dies. Now add 4-AP. The exposed potassium channels are blocked, conduction comes back, and that is the reasoning behind prescribing 4-aminopyridine to some people with multiple sclerosis.</p>
 
     <h3>The equations</h3>
-<p>The membrane is treated as a capacitor in parallel with three conductances, giving one current-balance equation and three gating equations:</p>
+    <p>The membrane is a capacitor in parallel with three conductances, which gives one equation for the voltage and one for each gate:</p>
 <span class="eq">C<sub>m</sub> dV/dt = I &minus; g&#772;<sub>Na</sub> m&sup3;h (V &minus; E<sub>Na</sub>) &minus; g&#772;<sub>K</sub> n&#8308; (V &minus; E<sub>K</sub>) &minus; g<sub>L</sub> (V &minus; E<sub>L</sub>)<br>dx/dt = &alpha;<sub>x</sub>(V)(1 &minus; x) &minus; &beta;<sub>x</sub>(V) x&nbsp;&nbsp;for x = m, h, n</span>
-<p>m is sodium activation, h is sodium inactivation, and n is potassium activation. Each is a probability between 0 and 1, relaxing toward a voltage-dependent steady state with a voltage-dependent time constant. The exponents carry real content. Hodgkin and Huxley chose m&sup3;h and n&#8308; because those powers fitted the sigmoid onset of the measured conductances, and the numbers were later read as the count of independent gating particles that must be in place for a channel to conduct. In the original paper the maximal conductances are 120 mS/cm&sup2; for sodium and 36 mS/cm&sup2; for potassium, with a leak of 0.3, at 6.3 &deg;C. Rate constants scale steeply with temperature, roughly a factor of 3 per 10 &deg;C, which is why a squid axon at room temperature fires a much narrower spike.</p>
+    <p>The exponents carry real content. Hodgkin and Huxley picked m&sup3;h and n&#8308; because those powers fitted the S-shaped onset of the measured conductances, and they were later read as the number of gating particles that have to be in place before a channel conducts. The potassium channel did turn out to be built from four subunits, and the sodium channel from four domains, one of which carries the inactivation machinery, so the correspondence is close for n&#8308; and looser for m&sup3;h. The maximal conductances here are the ones from the paper, 120 mS/cm&sup2; for sodium and 36 for potassium, with a leak of 0.3, at 6.3 &deg;C. Rate constants roughly triple for every 10 &deg;C, so the same axon at room temperature fires a much narrower spike.</p>
 
-<h3>Where the numbers came from</h3>
-<p>The measurement problem was that membrane current depends on voltage while voltage depends on current. Cole and Marmont's feedback amplifier, the voltage clamp, broke the loop by holding the voltage at a commanded value and recording the current the amplifier had to supply. Hodgkin and Huxley combined that with ion substitution to separate the sodium and potassium components, published the analysis as a series of papers in the Journal of Physiology in 1952, and integrated the resulting equations by hand on a mechanical calculator, which took weeks per simulated spike. The predicted action potential shape, threshold, and conduction velocity all matched recordings that had not been used in the fit. They shared the 1963 Nobel Prize in Physiology or Medicine with John Eccles. The voltage clamp mode in this simulation is that experiment, and the current traces it produces are the ones the model was built from.</p>
+    <h3>Where the numbers came from</h3>
+    <p>The problem was circular: membrane current depends on voltage, and voltage depends on current. The voltage clamp, an amplifier built by Cole and Marmont, broke the loop by holding the voltage at a commanded value and recording the current it had to supply. Hodgkin and Huxley added ion substitution to separate sodium from potassium, published the analysis as five papers in the Journal of Physiology in 1952, and integrated the resulting equations by hand on a mechanical calculator, weeks of work for each simulated spike. The predicted spike shape, threshold, and conduction velocity matched recordings that had never gone into the fit, which is why the model stuck. They shared the 1963 Nobel Prize with John Eccles.</p>
 
-<h3>Threshold emerges from the dynamics</h3>
-<p>There is no comparator in these equations and no value written down as a firing level. The apparent threshold is where the inward sodium current begins to exceed the outward potassium and leak currents, so that the positive feedback loop wins. In the space-clamped model it is a very steep boundary rather than a mathematically sharp one, and in dynamical terms it corresponds to the boundary between the basins of attraction around the resting state, with the transition to repetitive firing under steady current occurring through a Hopf bifurcation. Izhikevich (2007) sets out the classification. This is why threshold in this simulation is measured by running the model instead of being looked up, since adding a channel blocker to the bath moves it a long way.</p>
-
-<h3>Refractoriness, blockers, and propagation</h3>
-<p>The absolute refractory period is h, sodium inactivation, sitting near zero, and no stimulus of any size can recruit channels that are inactivated. The relative refractory period that follows is h recovering while n is still elevated, so a larger stimulus is required and the resulting spike is smaller. Tetrodotoxin, the pufferfish toxin, binds the outer pore of the voltage-gated sodium channel and abolishes the spike while leaving the potassium current intact, a selectivity that made it a standard tool for dissecting the two currents (Narahashi, Moore, &amp; Scott, 1964). Tetraethylammonium does the reverse and blocks the potassium channel, broadening the spike.</p>
-<p>Propagation along an axon needs one more ingredient, the cable equation, in which local circuit current from an active patch depolarises the patch ahead of it. In an unmyelinated fibre conduction velocity scales with the square root of diameter, which is the reason the squid evolved a millimetre-wide axon to work its escape jet and the reason Hodgkin and Huxley could get an electrode inside one. Myelin raises membrane resistance and lowers capacitance between nodes, so the depolarisation jumps from node to node, which Huxley and Stampfli (1949) demonstrated in single frog fibres. The myelinated axon in this simulation is a chain of Hodgkin-Huxley nodes coupled by axial resistance, and stripping the sheath slows or blocks it in the way a demyelinating lesion does.</p>
-
-<h3>What is in the equations, and what is not</h3>
-<p>Everything on the voltage trace comes from four terms. The current you inject, a sodium current g&#772;<sub>Na</sub> m&sup3;h (V &minus; E<sub>Na</sub>), a potassium current g&#772;<sub>K</sub> n&#8308; (V &minus; E<sub>K</sub>), and a leak g<sub>L</sub> (V &minus; E<sub>L</sub>), all charging a membrane capacitance of 1 &micro;F/cm&sup2;. The reversal potentials are held at +50, &minus;77, and &minus;54.4 mV throughout. Those values come from the concentrations listed in this module. The Nernst equation applied to them gives +51 mV for sodium and &minus;79 mV for potassium at 6.3 &deg;C, so holding the reversal potentials there is the right choice for this preparation, and a pore blocker in the bath changes none of it.</p>
-<p>Absent from the arithmetic: any pump or exchanger current, any drift in the ion concentrations, calcium of any kind, and any randomness. The ions drawn crossing the membrane, the running count of sodium inside, and the turning pump are all illustration driven by those same gating variables, and none of them feeds back into the voltage.</p>
-<p>The drugs are handled the way a pore blocker behaves in a real bath. Each one removes a fraction of one channel population, or in the case of pronase removes the inactivation gate, and none of them touches a concentration. That is faithful, because a blocker changes how permeable the membrane is rather than what is dissolved either side of it, and the bath is enormous compared with the axon. The one drug that would break the assumption is a pump blocker such as ouabain, whose entire effect is to let the gradients run down over minutes, and it is left out for exactly that reason.</p>
-<h3>Limits of the model</h3>
-<p>The concentration gradients are held fixed, as they are in the original equations. A real spike moves about one sodium ion in a hundred thousand and the pump carries it back out over the following seconds, so one spike barely dents the gradients, and this model does not track them at all. Two consequences are worth knowing. Firing a real axon hard piles potassium up in the narrow space just outside the membrane, which drags E<sub>K</sub> positive and shrinks each spike, and that effect is largest under a potassium blocker, so a long TEA or 4-AP train here stays tidier than the bench would. Blocking the pump in a real preparation shrinks the spike over minutes of firing, an experiment this simulation cannot offer, because no pump current exists in it. The pump drawn on screen runs far too fast, and the drawn channels are far too few and far too large, since a square micrometre of real axon holds hundreds of them. The myelinated axon is a lumped node-and-internode cable rather than an anatomically faithful one, so its velocities have the right shape and only roughly the right size.</p>
-<p>The blockers are tonic and constant, so the use dependence that makes a local anaesthetic work on a firing nerve better than a quiet one is missing, and the block you set is the block you get at any firing rate. The equations themselves are deterministic, while real channels are stochastic, so this model has no channel noise and no spontaneous firing. These are also the 1952 squid equations at 6.3 &deg;C, held there throughout, and a mammalian axon at body temperature uses faster kinetics and additional channel types. Real neurons carry a dozen or more channel types, including calcium and several potassium variants that the squid axon largely lacks, and the shapes of spikes in mammalian cortex depend on them. Later structural work also showed that inactivation is a separate mechanism from activation rather than a fourth identical gating particle. Within the range they were fitted to, the equations remain accurate, and they are the foundation of every conductance-based neuron model since.</p>
+    <h3>Limits of the model</h3>
+    <p>The concentrations either side of the membrane are held fixed, as they are in the original equations, and so are the reversal potentials at +50, &minus;77, and &minus;54.4 mV. That is a fair approximation, because one spike moves about one sodium ion in a hundred thousand. It does mean two real effects are missing. Firing a real axon hard piles potassium up in the narrow space just outside it, which shrinks each successive spike, most of all under a potassium blocker, so a long TEA train here stays tidier than a bench experiment would. And blocking the pump with ouabain, whose whole effect is to let the gradients run down over minutes, is an experiment this simulation cannot offer at all.</p>
+    <p>The ions crossing the membrane, the running count of sodium inside, and the turning pump are illustration. They are driven by the same gating variables as the traces, and none of them feeds back into the voltage. The drawn channels are far too few and far too large, since a square micrometre of real membrane holds hundreds, and the pump turns far too fast to watch otherwise.</p>
+    <p>The equations are deterministic, so there is no channel noise and no spontaneous firing. These are the squid equations at 6.3 &deg;C, held there throughout; a mammalian axon at body temperature runs faster kinetics and carries other channel types, and real neurons have a dozen or more, including calcium channels that the squid axon largely lacks and that shape the spikes in your cortex. Later structural work also showed that inactivation is a separate mechanism rather than a fourth gating particle of the same kind. The myelinated axon here is a lumped chain of nodes and internodes rather than an anatomically faithful one, so its velocities have the right shape and only roughly the right size. Within the range they were fitted to, the equations still hold, and every conductance-based neuron model since is built on them.</p>
 
 <h3>References</h3>
+
 <ul class="refs">
   <li>Hodgkin, A. L., &amp; Huxley, A. F. (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve. Journal of Physiology, 117, 500-544. (Last of a series of five papers that year.) <a class="doi" href="https://doi.org/10.1113/jphysiol.1952.sp004764" target="_blank" rel="noopener" title="10.1113/jphysiol.1952.sp004764">DOI</a></li>
   <li>Huxley, A. F., &amp; Stampfli, R. (1949). Evidence for saltatory conduction in peripheral myelinated nerve fibres. Journal of Physiology. <a class="doi" href="https://doi.org/10.1113/jphysiol.1949.sp004335" target="_blank" rel="noopener" title="10.1113/jphysiol.1949.sp004335">DOI</a></li>
@@ -563,7 +556,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
 </ul>
 </div></div>
 <button class="close" id="closeExplainer">Close</button>
-
+</div>
   </dialog>
 
 
@@ -1669,7 +1662,7 @@ function sharpElectrode(g, V){
   g.textAlign='right'; g.fillText(V.toFixed(1)+' mV', tipX-12, tipY+5);
   return {tipX, tipY, w:52, h:60,
     title:'Sharp microelectrode',
-    note:'A fine tip pushed through the membrane, reading the potential inside against the bath. Now '+V.toFixed(1)+' mV. Current is passed by the stimulating electrode, so the voltage is free to do what it likes.'};
+    note:'A fine tip pushed through the membrane, reading the voltage inside against the bath. Now '+V.toFixed(1)+' mV. Current is passed by the stimulating electrode, so the voltage is free to do what it likes.'};
 }
 /* a blunt patch pipette sealed onto the surface */
 function patchPipette(g, cfg, V, cmdText){
@@ -1710,7 +1703,7 @@ function patchPipette(g, cfg, V, cmdText){
       g.stroke();
     }
     g.fillStyle='rgba(200,220,240,.75)'; g.font='500 11.5px "Space Grotesk",sans-serif';
-    g.textAlign='center'; g.fillText('patch ruptured — whole cell', cx, memTop-40);
+    g.textAlign='center'; g.fillText('patch ruptured, whole cell', cx, memTop-40);
   } else {
     /* seal intact: the membrane bulges into the tip, channels trapped under it */
     g.strokeStyle='rgba(124,224,176,.5)'; g.lineWidth=2; g.setLineDash([4,4]);
@@ -1722,7 +1715,7 @@ function patchPipette(g, cfg, V, cmdText){
       rr(g, c.cx-c.w/2-7, TH.memTop-13, c.w+14, (TH.memBot-TH.memTop)+34, 8); g.stroke();
     }
     g.fillStyle='rgba(150,225,190,.8)'; g.font='500 11.5px "Space Grotesk",sans-serif';
-    g.textAlign='center'; g.fillText('seal intact — '+TH.patchCh.length+' sodium channels under the tip', cx, memTop-40);
+    g.textAlign='center'; g.fillText('seal intact, '+TH.patchCh.length+' sodium channels under the tip', cx, memTop-40);
   }
   g.textAlign='center';
   g.fillStyle='rgba(255,232,190,.95)'; g.font='500 15px "Space Grotesk",sans-serif';
@@ -1798,7 +1791,7 @@ function drawHover(g){
 
 /* ---------------- compose ---------------- */
 function naState(ch){
-  if(ch.blk) return DRUGS[ch.blk].label+' is in the pore — this one is out of action.';
+  if(ch.blk) return DRUGS[ch.blk].label+' is in the pore, so this one is out of action.';
   const m=ch.mS[0]+ch.mS[1]+ch.mS[2];
   if(ch.noH) return 'Inactivation gate digested away. '+m+' of 3 m gates open.';
   if(!ch.hS) return 'Inactivated: the ball is plugging it from inside. It cannot reopen until h recovers.';
@@ -1822,7 +1815,7 @@ function renderTheatre(g, s, opt){
   if(opt.charge) drawChargeLayer(g, s.V);
   drawBilayer(g, s.V);
   hitPush(0,memTop,LW,memBot-memTop,'Lipid bilayer',
-    'Five nanometres of fat, and a capacitor. Charge piles up on both faces — the + and − marks — which is why voltage takes time to change.',4);
+    'Five nanometres of fat, and a capacitor. Charge piles up on the + and − faces, which is why the voltage takes time to change.',4);
 
   const whole = (opt.rec==='cc'||opt.rec==='vc');
   const hidden = whole ? TH.patchCh : [];
@@ -2110,8 +2103,8 @@ function renderCableTheatre(g, c, opt){
     hitPush(px-20, Math.min(tipY,below)-16, 44, 70,
       (extra?'Surface electrode ':'Intracellular microelectrode ')+name,
       (extra
-        ? 'Resting on the outside of the axon, like a clinical nerve conduction study. It sees the current flowing in and out of nearby membrane, so the waveform is biphasic and much smaller. '
-        : 'Pushed through the membrane, reading the potential inside against the bath — a clean monophasic spike. ')
+        ? 'Resting on the outside of the axon, like a clinical nerve conduction study. It sees the current flowing in and out of nearby membrane, so the waveform swings both ways and is much smaller. '
+        : 'Pushed through the membrane, reading the voltage inside against the bath, so the spike comes out clean and one-sided. ')
       + (tt>=0 ? 'The impulse passed here at '+tt.toFixed(2)+' ms. ' : 'Nothing has passed here yet. ')
       + 'A and B sit '+((CB.probeB-CB.probeA)*CAB_LEN).toFixed(1)+' cm apart; that distance over the delay between them is the conduction velocity.');
     g.fillStyle='rgba(230,238,246,.85)'; g.font='500 12.5px "Space Grotesk",sans-serif'; g.textAlign='center';
@@ -2543,7 +2536,7 @@ function drawSingleChannel(g){
   g.textAlign='left'; g.font='500 11px "Space Grotesk",sans-serif';
   g.fillStyle='rgba(185,176,160,.9)';
   g.fillText(SCAVG.sweeps
-    ? SCAVG.sweeps+' sweep'+(SCAVG.sweeps>1?'s':'')+' averaged — the shape of the macroscopic sodium current'
+    ? SCAVG.sweeps+' sweep'+(SCAVG.sweeps>1?'s':'')+' averaged, and the shape of the whole-cell sodium current appears'
     : 'run sweeps and the average of the flickering builds the smooth current', L+10, y3+15);
   timeAxis(g, L, pw, y3+h3, H, 0, win, tickStep(win));
 }
@@ -2724,7 +2717,7 @@ function drugNote(){
   const on=Object.keys(DRUGS).filter(k=>S.drugs[k]);
   if(!on.length){ box.hidden=true; box.innerHTML=''; return; }
   box.hidden=false;
-  box.innerHTML = on.map(k=>'<div><b>'+DRUGS[k].label+'</b> — '+DRUGS[k].short+'</div>').join('');
+  box.innerHTML = on.map(k=>'<div><b>'+DRUGS[k].label+'</b>: '+DRUGS[k].short+'</div>').join('');
 }
 /* ---------------- recording configurations ---------------- */
 const RECS = {
@@ -2744,9 +2737,9 @@ const RECS = {
   ],
   cable:[
     {key:'intra', label:'Intracellular',
-     tip:'Microelectrodes pushed into the axon at A and B. Clean monophasic spikes.', defs:()=>({})},
+     tip:'Tips pushed inside the axon at A and B. Clean, one-sided spikes.', defs:()=>({})},
     {key:'extra', label:'Surface electrodes',
-     tip:'Electrodes resting on the outside, as in a clinical nerve conduction study. Much smaller, biphasic, but the delay is identical.', defs:()=>({})}
+     tip:'Resting on the outside, the way a clinic records a nerve. Much smaller, swinging both ways, same delay.', defs:()=>({})}
   ]
 };
 function recList(){ return RECS[S.mode==='patch'?'patch':'cable']; }
@@ -2984,7 +2977,7 @@ function cmdText(){
   const stepping = stepInProgress();
   if(S.rec==='cc')
     return [(S.icmd>0?'+':'')+S.icmd.toFixed(1)+' µA/cm²',
-            stepping ? 'passing current' : (clampRunning?'before the step':'ready — run a sweep')];
+            stepping ? 'passing current' : (clampRunning?'before the step':'ready to run a sweep')];
   return [(S.vcmd>0?'+':'')+S.vcmd.toFixed(0)+' mV',
           stepping ? 'stepped to command' : 'holding at −65 mV'];
 }

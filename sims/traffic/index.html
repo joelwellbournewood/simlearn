@@ -110,6 +110,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
 .sel .acts button:hover{border-color:var(--line-strong)}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+.about-inner p.keys{color:var(--muted);font-size:12.5px}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
@@ -240,7 +241,7 @@ body.clean .tapwrap{display:none}
     <input type="range" id="s-T" min="0.5" max="2.4" step="0.05" value="1.35">
   </div>
   <div class="row">
-    <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="Share with no wobble and a strictly held gap." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
+    <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="The share of cars that hold a steady gap without ever over-braking." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
     <input type="range" id="s-av" min="0" max="100" step="5" value="0">
   </div>
   
@@ -253,7 +254,7 @@ body.clean .tapwrap{display:none}
     <button class="tg" id="t-circle">Back to a circle <kbd>D</kbd></button>
   </div>
   <div class="row" id="row-truck" hidden>
-    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="Share of a car's speed on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
+    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="The truck's top speed, as a share of what a car holds on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
     <input type="range" id="s-truck" min="20" max="95" step="5" value="55">
   </div>
   </details>
@@ -298,15 +299,11 @@ body.clean .tapwrap{display:none}
       <li>Raise the self-driving share slowly. A fifth of the cars barely helps and the waves keep coming. It takes most of the road before the stop-and-go flattens out, and with every car under control the loop settles to one steady speed. Smoothing traffic takes a large minority, and a handful of considerate drivers cannot manage it alone.</li>
     </ul>
   
+<h3>Keyboard</h3>
+<p class="keys"><kbd>Space</kbd> pause, <kbd>B</kbd> tap the brakes, <kbd>R</kbd> rebuild the road, <kbd>1</kbd>-<kbd>4</kbd> presets, <kbd>L</kbd> second lane, <kbd>D</kbd> back to a circle, <kbd>H</kbd> hide the panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
 <div class="more-box"><div class="more-body">
-<h3>Start here</h3>
-    <p>The road opens steady. Every driver has a comfortable gap and nothing is going wrong. Press <kbd>B</kbd> and one driver, chosen at random, brakes for no reason and then carries on as before. The driver behind brakes a little harder to restore the gap, the next harder still, and a few cars back somebody stops dead. The road never recovers. That single dab of the pedal has become a wave that outlives the car that caused it.</p>
-    <h3>The rule, exactly</h3>
-    <p>This is the Intelligent Driver Model. A driver's acceleration is a free term minus an interaction term. The free term pushes towards the desired speed. The interaction term is the ratio between the gap the driver wants and the gap they actually have, squared, so it is almost nothing at a comfortable distance and enormous once the gap collapses. The wanted gap grows with speed, since it is a following time rather than a following distance, and it grows again whenever the driver is closing on the car ahead. Every human driver also carries a small random wobble on the pedal, which is the seed a jam grows from.</p>
-    <h3>Why the density matters so much</h3>
-    <p>Below about fifty cars on this kilometre the wobble dies away, the road is stable, and a brake tap is absorbed. Above it the same wobble grows instead, and nobody has to touch anything for a jam to appear. That threshold is the whole subject. A road that is fine at nine in the morning and solid at nine fifteen has not changed, and neither have the drivers; only the density has.</p>
-    <h3>The diagram on the right</h3>
-    <p>That is a space-time diagram, the standard way traffic engineers see a jam. Position around the ring runs left to right, time runs downward, and each streak is one car. Free flow makes a family of parallel diagonal lines. A jam makes a dark band leaning the other way, because the congestion moves backwards through the traffic while every car in it is moving forwards. The slope of that band works out at roughly fifteen kilometres per hour upstream, and it barely depends on what the cars are doing.</p>
+<h3>Where the tipping point is on this road</h3>
+    <p>The threshold is sharp, and you can find it with one slider. On the single-lane kilometre, at the default following gap, a brake tap is absorbed and forgotten with 28 cars on the ring: 25 seconds later the jam counter still reads zero and the loop is running at a steady 62 km/h. Put 30 cars on and the same tap leaves a wave that is still circulating after the same 25 seconds, with the mean speed down to 53 km/h. At 55 cars there are three waves and the loop averages 20 km/h. Nothing about the drivers changed between those runs. Only the density did, which is why a road that flows at nine and is solid at quarter past has usually not changed at all.</p>
     <h3>The car-following model</h3>
 <p>Each vehicle is an instance of the Intelligent Driver Model (Treiber, Hennecke, &amp; Helbing, 2000). For car &alpha; with speed v, gap s to the vehicle ahead, and approach rate &Delta;v:</p>
 <span class="eq">dv/dt = a [ 1 &minus; (v/v&#8320;)<sup>&delta;</sup> &minus; (s*(v,&Delta;v)/s)&sup2; ]<br>s*(v,&Delta;v) = s&#8320; + max(0, vT + v&Delta;v / (2&radic;(ab)) )</span>
@@ -318,7 +315,7 @@ body.clean .tapwrap{display:none}
 <p>Sugiyama et al. (2008) demonstrated this experimentally by asking twenty-two human drivers to circulate on a 230 m single-lane ring at a uniform speed. The uniform state survived for a short time and then collapsed into a backward-propagating stop-and-go wave, with no obstacle present and no instruction to brake. The experiment is the physical version of exactly this simulation.</p>
 
 <h3>The space-time diagram</h3>
-<p>The plot beside the road is the standard representation in traffic science: position along the road on one axis, time on the other, and each car's world line drawn as a trace. Jams appear as dark stripes with a negative slope, and that slope is the propagation speed of the jam, which in motorway field data comes out consistently around 15 to 20 km/h upstream and is remarkably insensitive to the details of the traffic. Plotting flow against density instead gives the fundamental diagram, which rises to a maximum at the critical density and then falls, so a road carries the most vehicles per hour just before it becomes unstable. Motorways are at their most fragile when they are working hardest. There is also a measurable capacity drop, in which flow after a jam has formed is lower than the flow just before it, and recovering that lost capacity is the reason variable speed limits and ramp metering exist. When a gantry drops the limit to 50 mph on an empty-looking road, it is holding the density below the threshold you can move past with the cars slider.</p>
+<p>The plot beside the road is the standard representation in traffic science, and the standard way an engineer sees a jam: position around the ring runs left to right, time runs downward, and each streak is one car's path. Free flow draws a family of parallel diagonals. A jam appears as a dark stripe leaning the other way, because the congestion travels backwards through the traffic while every car in it is moving forwards. That slope is the propagation speed of the jam, and that slope is the propagation speed of the jam, which in motorway field data comes out consistently around 15 to 20 km/h upstream and is remarkably insensitive to the details of the traffic. Plotting flow against density instead gives the fundamental diagram, which rises to a maximum at the critical density and then falls, so a road carries the most vehicles per hour just before it becomes unstable. Motorways are at their most fragile when they are working hardest. There is also a measurable capacity drop, in which flow after a jam has formed is lower than the flow just before it, and recovering that lost capacity is the reason variable speed limits and ramp metering exist. When a gantry drops the limit to 50 mph on an empty-looking road, it is holding the density below the threshold you can move past with the cars slider.</p>
 
 <h3>Autonomous vehicles</h3>
 <p>Because the instability belongs to the collective response, a minority of vehicles running a different control law can stabilise the whole platoon. Stern et al. (2018) repeated the ring experiment with twenty-one human drivers and one autonomous vehicle running a controller designed to damp waves, and the stop-and-go oscillations were substantially suppressed, with measured reductions in fuel consumption for every vehicle on the ring. The <b>self-driving cars</b> slider is that result. The mechanism is that a controller which refuses to over-brake, and which holds its own speed steady instead of tracking the car in front exactly, breaks the amplification chain. Real deployments complicate the picture, because many production adaptive cruise control systems are tuned for comfort at short headways and have been measured to be string-unstable themselves, so the cars already on the road are not yet the cars in this slider.</p>
