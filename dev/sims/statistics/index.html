@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>The Shape of Chance | SimLearn</title>
+<meta name="description" content="The Shape of Chance: six physical machines for statistics. A Galton board, the central limit theorem, confidence intervals, the law of large numbers, random walkers, and Monte Carlo darts.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:16px;padding:14px 17px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:9px 14px;margin-bottom:9px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:0 0 6px}
+.presets{display:grid;gap:5px;margin-bottom:11px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:6px 11px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:9px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.row .nm{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.row .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--body);font-size:10px;font-weight:600;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--c,var(--accent)),var(--c,var(--accent))) 0/var(--p,0%) 100% no-repeat,rgba(255,255,255,.14);border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
+input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
+input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+.hint{position:absolute;left:50%;right:auto;bottom:18px;transform:translateX(calc(-50% + 52px));
+  text-align:center;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 570px)}
+@media (max-width:1000px){.hint{left:20px;transform:none;text-align:left;max-width:calc(100% - 300px)}}
+@media (max-width:820px){.hint{display:none}}
+body.clean .brand,body.clean .panel,body.clean .hint{display:none}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(92vh,940px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:15.5px;line-height:1.62}
+.about-inner p{margin:0 0 10px;max-width:62ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+
+/* ---------- folding sections: boids is the reference ----------
+   One hairline between sections, a 16px display heading with an 8px chevron, 12px of
+   air under an open heading. The panel got long enough to need a scrollbar, and a
+   scrollbar in a control panel is a design failure, so the sections fold instead. */
+details.grp{border-top:1px solid var(--line);margin:0;padding:12px 0 13px}
+details.grp:first-of-type{border-top:0;padding-top:2px}
+details.grp:last-of-type{padding-bottom:2px}
+details.grp > summary{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;
+  font-variation-settings:'opsz' 24;color:var(--ink);cursor:pointer;list-style:none;display:flex;
+  align-items:center;justify-content:space-between;gap:10px;margin:0;user-select:none}
+details.grp > summary:hover{color:var(--accent)}
+details.grp > summary::-webkit-details-marker{display:none}
+details.grp > summary::after{content:'';width:8px;height:8px;flex:none;
+  border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
+  transform:rotate(-45deg);transition:transform .2s;margin-right:4px}
+details.grp[open] > summary::after{transform:rotate(45deg)}
+details.grp[open] > summary{margin-bottom:12px}
+details.grp > summary + *{margin-top:0}
+/* ---------- machine-specific additions ---------- */
+.segrow{display:flex;gap:5px;margin:9px 0}
+.segrow .seg{flex:1;padding:5px 4px;border:1px solid var(--line);border-radius:8px;background:transparent;
+  color:var(--muted);font-family:var(--display);font-weight:600;font-size:11.5px;line-height:1.2;transition:border-color .18s,background .18s,color .18s}
+.segrow .seg:hover{border-color:var(--line-strong)}
+.segrow .seg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+.seglabel{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;margin:9px 0 4px;position:relative}
+/* short laptops: compact the six machine cards to a 2-column grid so the panel
+   never needs an internal scrollbar with everything open */
+@media (max-height:820px) and (min-width:821px){
+  .presets{grid-template-columns:1fr 1fr}
+  .preset small{display:none}
+  .preset{padding:7px 9px}
+}
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="brand">
+  <p class="kicker">Probability made visible</p>
+  <h1>The Shape of Chance</h1>
+  <p>Six machines that turn raw randomness into structure you can predict.</p>
+</div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="Restart (R)" aria-label="Restart">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel">
+  <button class="about-btn" id="b-about">What am I looking at?</button>
+  <details class="grp" open>
+    <summary>Machine</summary>
+    <div class="presets" id="presets"></div>
+  </details>
+  <details class="grp" open>
+    <summary>Controls</summary>
+
+    <div class="row" data-m="galton">
+      <label for="s-rows"><span class="nm">Rows of pegs<button class="tip" data-tip="Each row is one coin flip, so more rows means more flips per ball and a wider, smoother bell." aria-label="What rows of pegs does">?</button></span><span class="val" id="v-rows"></span></label>
+      <input type="range" id="s-rows" min="4" max="14" step="1" value="11">
+    </div>
+    <div class="row" data-m="galton">
+      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="The chance a ball bounces right at each peg. Off centre, the bell moves and leans." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
+      <input type="range" id="s-bias" min="0.05" max="0.95" step="0.01" value="0.5">
+    </div>
+    <div class="row" data-m="galton">
+      <label for="s-rate"><span class="nm">Drop rate<button class="tip" data-tip="Balls released per second. Turn it up to watch the histogram converge in seconds." aria-label="What drop rate does">?</button></span><span class="val" id="v-rate"></span></label>
+      <input type="range" id="s-rate" min="0" max="2.7" step="0.05" value="1.1">
+    </div>
+
+    <div class="seglabel" data-m="clt"><span class="nm">Population shape<button class="tip" data-tip="The distribution each raw draw comes from. The point is that its shape stops mattering." aria-label="What population shape does">?</button></span></div>
+    <div class="segrow" data-m="clt" id="seg-pop">
+      <button class="seg" data-v="uniform" aria-pressed="true">Flat</button>
+      <button class="seg" data-v="skew" aria-pressed="false">Skewed</button>
+      <button class="seg" data-v="bimodal" aria-pressed="false">Two peaks</button>
+      <button class="seg" data-v="coin" aria-pressed="false">Coin</button>
+    </div>
+    <div class="row" data-m="clt">
+      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="How many raw values are averaged into each falling ball. Set it to 1 to see the population itself." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
+      <input type="range" id="s-cltn" min="1" max="64" step="1" value="1">
+    </div>
+    <div class="row" data-m="clt">
+      <label for="s-cltrate"><span class="nm">Samples per second<button class="tip" data-tip="How fast new sample means fall into the histogram." aria-label="What samples per second does">?</button></span><span class="val" id="v-cltrate"></span></label>
+      <input type="range" id="s-cltrate" min="0" max="2" step="0.05" value="0.8">
+    </div>
+
+    <div class="row" data-m="ci">
+      <label for="s-cin"><span class="nm">Sample size<button class="tip" data-tip="Measurements taken for each interval. Bigger samples make shorter intervals, never surer ones." aria-label="What sample size does">?</button></span><span class="val" id="v-cin"></span></label>
+      <input type="range" id="s-cin" min="3" max="60" step="1" value="10">
+    </div>
+    <div class="row" data-m="ci">
+      <label for="s-conf"><span class="nm">Confidence level<button class="tip" data-tip="The fraction of intervals that should catch the true mean in the long run." aria-label="What confidence level does">?</button></span><span class="val" id="v-conf"></span></label>
+      <input type="range" id="s-conf" min="50" max="99" step="1" value="95">
+    </div>
+    <div class="seglabel" data-m="ci"><span class="nm">Critical value<button class="tip" data-tip="The z shortcut uses the normal value with the sample's own spread, which is too short for small samples." aria-label="What critical value does">?</button></span></div>
+    <div class="segrow" data-m="ci" id="seg-meth">
+      <button class="seg" data-v="t" aria-pressed="true">Student's t</button>
+      <button class="seg" data-v="z" aria-pressed="false">z shortcut</button>
+    </div>
+    <div class="seglabel" data-m="ci"><span class="nm">True mean<button class="tip" data-tip="In real experiments the truth stays hidden, and you never learn which intervals missed." aria-label="What true mean does">?</button></span></div>
+    <div class="segrow" data-m="ci" id="seg-truth">
+      <button class="seg" data-v="shown" aria-pressed="true">Shown</button>
+      <button class="seg" data-v="hidden" aria-pressed="false">Hidden</button>
+    </div>
+    <div class="row" data-m="ci">
+      <label for="s-cirate"><span class="nm">Experiments per second<button class="tip" data-tip="How fast new intervals are produced and stacked." aria-label="What experiments per second does">?</button></span><span class="val" id="v-cirate"></span></label>
+      <input type="range" id="s-cirate" min="0" max="1.3" step="0.05" value="0.45">
+    </div>
+
+    <div class="row" data-m="lln">
+      <label for="s-coinp"><span class="nm">Coin bias<button class="tip" data-tip="The true chance of heads, which the running average slowly betrays." aria-label="What coin bias does">?</button></span><span class="val" id="v-coinp"></span></label>
+      <input type="range" id="s-coinp" min="0.05" max="0.95" step="0.01" value="0.5">
+    </div>
+    <div class="row" data-m="lln">
+      <label for="s-fliprate"><span class="nm">Flips per second<button class="tip" data-tip="Log scale up to ten thousand a second, because the law only shows itself at scale." aria-label="What flips per second does">?</button></span><span class="val" id="v-fliprate"></span></label>
+      <input type="range" id="s-fliprate" min="0" max="4" step="0.05" value="1.7">
+    </div>
+
+    <div class="row" data-m="walk">
+      <label for="s-walkers"><span class="nm">Walkers<button class="tip" data-tip="How many particles wander at once. More walkers make the envelope obvious sooner." aria-label="What walkers does">?</button></span><span class="val" id="v-walkers"></span></label>
+      <input type="range" id="s-walkers" min="40" max="1200" step="10" value="420">
+    </div>
+    <div class="row" data-m="walk">
+      <label for="s-drift"><span class="nm">Drift<button class="tip" data-tip="A steady push added to every random step, like a current under diffusing ink." aria-label="What drift does">?</button></span><span class="val" id="v-drift"></span></label>
+      <input type="range" id="s-drift" min="-1" max="1" step="0.02" value="0">
+    </div>
+    <div class="row" data-m="walk">
+      <label for="s-step"><span class="nm">Step size<button class="tip" data-tip="The size of each random step. The cone width scales with it, still as the square root of time." aria-label="What step size does">?</button></span><span class="val" id="v-step"></span></label>
+      <input type="range" id="s-step" min="0.3" max="2" step="0.05" value="1">
+    </div>
+
+    <div class="row" data-m="pi">
+      <label for="s-darts"><span class="nm">Darts per second<button class="tip" data-tip="Throw rate. The estimate improves with the square root of the total, so patience gets expensive." aria-label="What darts per second does">?</button></span><span class="val" id="v-darts"></span></label>
+      <input type="range" id="s-darts" min="0" max="3" step="0.05" value="1.3">
+    </div>
+  </details>
+</div>
+
+<div class="hint" id="hint">Click the board to pour a burst of balls, or drag the funnel sideways.</div>
+
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>Six small machines, each built from nothing but raw chance, and each producing something you can predict. A single coin flip is as unpredictable as anything in nature. A million coin flips are so predictable that casinos, insurers, pollsters, and particle physicists stake their livelihoods on them. This page is about the road between those two facts.</p>
+<p>Pick a machine on the left. Each one runs a genuinely random process in front of you, physical where that helps, and shows the raw randomness and the structure it settles into side by side.</p>
+<ul>
+  <li><b>Galton board.</b> Balls rattle down through rows of pegs, bouncing left or right at each one with no memory and no plan. The bins underneath fill into a bell curve, every time, and the curve drawn over the bins was computed before a single ball fell.</li>
+  <li><b>Sample means.</b> Draws from a population of any shape you like, flat, lopsided, twin peaked, or a bare coin, are averaged in small handfuls, and each average falls into a histogram. The histogram of averages comes out bell shaped whatever the population looked like. This is the central limit theorem, and it is the reason the bell curve is everywhere.</li>
+  <li><b>Confidence intervals.</b> A truth is fixed, an experiment measures it with a small sample, and the measurement is wrapped in an interval that claims 95 percent confidence. Watch a hundred experiments stack up and count how many intervals actually caught the truth. Then hide the truth and notice that your own interval, the one experiment you actually ran, never tells you whether it was one of the unlucky ones.</li>
+  <li><b>Law of large numbers.</b> A coin is flipped up to ten thousand times a second. The running fraction of heads settles onto the true bias, while the raw surplus of heads over tails wanders further and further from zero. Both curves are drawn, because the difference between them is exactly the mistake the gambler's fallacy is made of.</li>
+  <li><b>Random walkers.</b> Hundreds of particles each take one blind step at a time, and the swarm spreads into a cone that grows with the square root of time. This is diffusion, seen from close enough to watch the individual accidents it is made of.</li>
+  <li><b>Monte Carlo darts.</b> Darts thrown blindly at a square measure the area of the circle inside it, and out of pure noise comes a steadily sharpening estimate of &pi;. Randomness used as an instrument.</li>
+</ul>
+<p>One idea runs through all six. Individual random events stay lawless, and no streak, hunch, or system changes that. Aggregates of random events obey laws as reliable as mechanics. Everything from opinion polling and drug trials to noise in electronics and the price of your insurance rests on that single asymmetry.</p>
+<h3>Things to try</h3>
+<ul>
+  <li>On the Galton board, drag the funnel sideways. The bell follows it, because the bell's position remembers the start while its width remembers only the pegs. Then push the peg bias to 0.8 and watch the bell walk right and lean.</li>
+  <li>In sample means, set the population to Coin and draws per sample to 1. The histogram is two bare spikes, about as far from a bell as a distribution can get. Now slide draws per sample up to 30 and watch a bell assemble itself out of coin flips.</li>
+  <li>In confidence intervals, drop the sample size to 3 and switch to the z shortcut. The tally sinks toward 80 percent while still claiming 95, which is the exact mistake Student's t was invented to fix, and the reason it exists on every stats formula sheet.</li>
+  <li>In the law of large numbers, wait for ten thousand flips and look at the two charts together: the fraction pinned to the bias, the surplus drifting tens of heads away from zero. A coin that has just produced seven tails owes you nothing.</li>
+  <li>In random walkers, hold the pointer to one side of the cone and you become the wind. Let go and the cone forgets you at the rate the envelope allows, and no faster.</li>
+</ul>
+<div class="more-box"><div class="more-body">
+<h3>Why pegs make a bell</h3>
+<p>Each peg gives a ball one nudge, left or right, independent of every nudge before it. After n rows the ball's bin is simply the number of rightward nudges, so the bin counts follow the binomial distribution B(n, p). De Moivre showed in 1733 that this distribution approaches the normal curve as n grows, and the board makes his theorem a physical object: the curve drawn over the bins is</p>
+<span class="eq">mean &mu; = np,&ensp;spread &sigma; = &radic;(np(1&minus;p))</span>
+<p>computed from the slider values alone, before any ball has landed. The readout under the bins compares the balls' measured mean and spread against those predictions, and the agreement typically sets in within a few hundred balls.</p>
+<h3>The central limit theorem</h3>
+<p>The Galton board averages coin flips. The second machine averages draws from any distribution with a finite variance, and the theorem says the result is the same: the mean of n independent draws from a population with mean &mu; and standard deviation &sigma; approaches a normal distribution</p>
+<span class="eq">x&#772; &sim; N(&mu;, &sigma;/&radic;n)</span>
+<p>whatever the population's shape. Two things are worth watching for. The bell appears fast, with n around 30 already convincing even for the lopsided populations, which is where the folklore threshold of 30 in statistics courses comes from. And the bell narrows like 1/&radic;n, so each doubling of sample size buys only a factor of 1.41 in precision. That square root governs the cost of every poll, survey, and clinical trial: to halve the error you must quadruple the sample, which is why precision is expensive and why polls stop near a thousand respondents.</p>
+<h3>What 95 percent confidence actually promises</h3>
+<p>An interval built from a sample of n measurements is</p>
+<span class="eq">x&#772; &plusmn; t<sub>&nu;</sub> &middot; s/&radic;n</span>
+<p>where s is the sample's own spread and t<sub>&nu;</sub> is Student's critical value with &nu; = n&minus;1 degrees of freedom. Neyman's 1937 formulation, the one this machine animates, promises only this: the procedure, run many times, catches the truth in 95 percent of runs. The promise belongs to the factory, never to the single interval in your hand, which either contains the truth or does not. The Hidden setting makes that concrete, since the intervals look identical when you cannot see &mu;, and real experimenters never can. The t versus z switch shows why the small print matters: the z shortcut treats the sample's spread as if it were the truth, its intervals come out less than half the honest length at n = 3, and the coverage tally sinks to the low eighties while still claiming 95.</p>
+<h3>Averages settle, totals wander</h3>
+<p>The law of large numbers says the fraction of heads converges to p. It says nothing about the count of heads minus the count of tails, and that count follows a random walk whose typical size grows as &radic;n, without bound. After a run of tails the coin does not owe heads; the fraction recovers by dilution, not by correction. Roulette systems, hot hands at slot machines, and the feeling that a lottery number is due are all bets against this distinction, and the envelope drawn on both charts is the house's side of the argument.</p>
+<h3>Diffusion is the same mathematics wearing physics</h3>
+<p>A walker's position after t steps is a sum of t random nudges, so the swarm's spread is &sigma;&radic;t, the same square root as the sample mean's error and the Galton bell's width. Einstein's 1905 analysis of Brownian motion used exactly this argument to predict how far a pollen grain should wander, Perrin measured it, and the agreement was the evidence that finally made atoms respectable. Add drift and you get transport plus spreading, which is how smoke leaves a chimney, how a drug spreads from an injection site, and why contamination plumes in groundwater grow long before they grow wide.</p>
+<h3>Randomness as an instrument</h3>
+<p>The dart board estimates &pi; as 4 times the fraction of uniform darts landing inside the circle. The estimate's error shrinks as 1/&radic;N, slowly, and that slowness is the honest price printed on every Monte Carlo method. The technique earns its keep where honest alternatives are worse: integrals over hundreds of dimensions, neutron transport, financial risk, and rendering the light in animated films are all computed by throwing darts, because in high dimensions a random sample beats any grid you could afford.</p>
+<h3>How this one is computed</h3>
+<ul>
+  <li>Randomness comes from the browser's pseudo-random generator, with normal draws made by the Box-Muller transform. Nothing is staged, so runs differ every time, and a slow start on the coverage tally is chance doing what chance does.</li>
+  <li>Galton balls decide left or right once per row, which makes the bin counts exactly binomial. The bounce you watch is animation over that decision, so the physics look does not disturb the arithmetic the theory curve is checked against.</li>
+  <li>Student's t critical values come from a series approximation in 1/&nu; accurate to a few parts in a thousand for &nu; &ge; 2, and the normal quantile from a standard rational approximation.</li>
+  <li>Every overlay curve is computed from the sliders before the data lands, never fitted to the data afterwards, because the whole point is prediction.</li>
+</ul>
+<h3>Limits of the model</h3>
+<p>Everything here assumes draws that are independent and identically distributed, and most statistical disasters in the wild are failures of that assumption rather than of arithmetic. Survey respondents cluster, financial returns move together in a crash, and one contaminated batch correlates a thousand measurements, so real errors shrink slower than &radic;n promises, and sometimes barely shrink at all. The central limit theorem also needs a finite variance, and heavy-tailed quantities such as insurance losses from natural catastrophes or market moves keep their skew far longer than the folklore n of 30 suggests. And a confidence interval guards only against sampling luck, never against a biased instrument or a leading question, which no sample size can fix. The machines here are the world at its most cooperative, and knowing that is part of the lesson.</p>
+<h3>References</h3>
+<ul class="refs">
+  <li>Galton, F. (1889). Natural Inheritance. Macmillan. (The original quincunx.) <a class="doi" href="https://doi.org/10.5962/bhl.title.32181" target="_blank" rel="noopener" title="10.5962/bhl.title.32181">DOI</a></li>
+  <li>Neyman, J. (1937). Outline of a theory of statistical estimation based on the classical theory of probability. Philosophical Transactions of the Royal Society A. <a class="doi" href="https://doi.org/10.1098/rsta.1937.0005" target="_blank" rel="noopener" title="10.1098/rsta.1937.0005">DOI</a></li>
+  <li>Metropolis, N., &amp; Ulam, S. (1949). The Monte Carlo method. Journal of the American Statistical Association. <a class="doi" href="https://doi.org/10.1080/01621459.1949.10483310" target="_blank" rel="noopener" title="10.1080/01621459.1949.10483310">DOI</a></li>
+  <li>Einstein, A. (1905). &Uuml;ber die von der molekularkinetischen Theorie der W&auml;rme geforderte Bewegung von in ruhenden Fl&uuml;ssigkeiten suspendierten Teilchen. Annalen der Physik. <a class="doi" href="https://doi.org/10.1002/andp.19053220806" target="_blank" rel="noopener" title="10.1002/andp.19053220806">DOI</a></li>
+  <li>Student (1908). The probable error of a mean. Biometrika. <a class="doi" href="https://doi.org/10.1093/biomet/6.1.1" target="_blank" rel="noopener" title="10.1093/biomet/6.1.1">DOI</a></li>
+</ul>
+</div></div>
+</div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+if(window.self!==window.top) document.body.classList.add('in-frame');
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const el=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.parentNode.getBoundingClientRect();
+  W=Math.max(320,r.width); H=Math.max(240,r.height);
+  const native=Math.min(window.devicePixelRatio||1,2); const BUDGET=3.2e6;
+  let d=native; if(W*H*d*d>BUDGET) d=Math.max(1,Math.sqrt(BUDGET/(W*H)));
+  DPR=d; cv.width=Math.round(W*d); cv.height=Math.round(H*d);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(d,0,0,d,0,0);
+}
+const INK='#e3efe9', MUTED='#88a397', ACC='#56e0c2', DGR='#ff7d5c',
+      LINE='rgba(130,170,150,.14)', LINES='rgba(130,170,150,.30)', FIELD='#07120f';
+const MONO='"Space Mono",monospace', DISP='"Space Grotesk",sans-serif';
+/* ---------- randomness and quantiles ---------- */
+const rnd=Math.random;
+let gCache=null;
+function gauss(){ if(gCache!==null){const v=gCache;gCache=null;return v;}
+  let u=0,v=0; while(!u)u=rnd(); v=rnd();
+  const m=Math.sqrt(-2*Math.log(u)); gCache=m*Math.sin(6.283185307*v); return m*Math.cos(6.283185307*v); }
+/* inverse normal cdf, Acklam-style rational approximation */
+function zq(p){
+  const a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+        b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+        c=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+        d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742];
+  const pl=0.02425; let q,r;
+  if(p<pl){ q=Math.sqrt(-2*Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p>1-pl){ return -zq(1-p); }
+  q=p-0.5; r=q*q;
+  return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+/* Student t quantile via Cornish-Fisher style series in 1/nu */
+function tq(p,nu){
+  const z=zq(p), z3=z*z*z, z5=z3*z*z, z7=z5*z*z;
+  return z + (z3+z)/(4*nu) + (5*z5+16*z3+3*z)/(96*nu*nu) + (3*z7+19*z5+17*z3-15*z)/(384*nu*nu*nu);
+}
+function binomSample(k,p){ /* heads among k flips */
+  if(k<=0) return 0;
+  if(k<40){ let h=0; for(let i=0;i<k;i++) if(rnd()<p) h++; return h; }
+  const m=k*p, s=Math.sqrt(k*p*(1-p));
+  return Math.max(0,Math.min(k,Math.round(m+s*gauss())));
+}
+const fmtN=n=>Math.round(n).toLocaleString('en-US');
+/* ---------- layout ---------- */
+function area(){
+  const small=W<900;
+  const l=small?14:352, r=small?14:26, t=small?60:76, b=small?16:50;
+  return {x:l, y:t, w:Math.max(120,W-l-r), h:Math.max(120,H-t-b), cx:l+(W-l-r)/2, bot:H-b};
+}
+function txt(s,x,y,align,color,font){
+  ctx.font=font||('11.5px '+MONO); ctx.fillStyle=color||MUTED;
+  ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic'; ctx.fillText(s,x,y);
+}
+function dash(on){ ctx.setLineDash(on||[]); }
+function line(x0,y0,x1,y1,st,w){ ctx.strokeStyle=st; ctx.lineWidth=w||1; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); }
+function disc(x,y,r,fill){ ctx.fillStyle=fill; ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill(); }
+function curve(pts,st,w,dsh){ if(pts.length<2)return; ctx.strokeStyle=st; ctx.lineWidth=w||1.2; dash(dsh);
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]); ctx.stroke(); dash(); }
+/* ================= 1. GALTON BOARD =================
+   Left/right is decided once per row, so bin counts are exactly binomial;
+   the bounce you watch is animation layered over that decision. */
+const GB={
+  R:11, p:0.5, rate:12, fo:0, counts:null, balls:[], landed:0, sum:0, sum2:0,
+  upd:1, spawnAcc:0, dragging:false,
+  geom(){
+    const A=area(), R=this.R;
+    const sx=Math.min(A.w/(R+7), 40), sy=Math.min((A.h*0.52)/Math.max(1,R-1), 34);
+    const pegTop=A.y+56, pegBot=pegTop+sy*(R-1);
+    const binTop=pegBot+26, binBot=A.bot-30;
+    return {A,sx,sy,pegTop,pegBot,binTop,binBot,bx:A.cx,J:5};
+  },
+  reset(){ const g=this.geom(); this.counts=new Float64Array(this.R+1+2*g.J); this.balls=[];
+    this.landed=0; this.sum=0; this.sum2=0; this.upd=1; this.spawnAcc=0; },
+  binx(g,j){ return g.bx+(j-this.R/2)*g.sx; }, /* j may exceed 0..R by fo */
+  spawn(g,burst){
+    if(this.balls.length>650) return;
+    this.balls.push({k:0,c:0,fo:this.fo,t:burst?-rnd()*0.25:0, x0:this.binx(g,this.R/2+this.fo)+(rnd()-0.5)*3, y0:g.pegTop-34, x1:this.binx(g,this.R/2+this.fo), y1:g.pegTop, dur:0.14});
+  },
+  advance(b,g){
+    if(b.k>=this.R){ /* landed */
+      const j=b.c+(b.fo||0)+g.J; this.counts[j]++; this.landed++; this.sum+=b.c; this.sum2+=b.c*b.c;
+      const cap=Math.max(6,Math.floor((g.binBot-g.binTop)/7));
+      let mx=0; for(let i=0;i<this.counts.length;i++) mx=Math.max(mx,this.counts[i]);
+      while(mx/this.upd>cap) this.upd*=2;
+      b.dead=true; return;
+    }
+    const right=rnd()<this.p?1:0; const k2=b.k+1, c2=b.c+right;
+    b.x0=b.x1; b.y0=b.y1;
+    b.x1=g.bx+(c2-k2/2)*g.sx+(b.fo||0)*g.sx; b.t=0;
+    if(k2>this.R-1){ /* fall to bin floor */
+      const j=c2+(b.fo||0)+g.J; const hgt=Math.min(this.counts[j]/this.upd,999);
+      b.y1=g.binBot-hgt*7-4; b.dur=0.26;
+    } else { b.y1=g.pegTop+k2*g.sy; b.dur=0.12; }
+    b.k=k2; b.c=c2;
+  },
+  step(dt){
+    const g=this.geom();
+    this.spawnAcc+=this.rate*dt;
+    while(this.spawnAcc>=1){ this.spawnAcc--; this.spawn(g,false); }
+    for(const b of this.balls){
+      b.t+=dt/b.dur;
+      if(b.t>=1) this.advance(b,g);
+    }
+    this.balls=this.balls.filter(b=>!b.dead);
+  },
+  ballXY(b){
+    const t=Math.max(0,b.t), te=t*t*(3-2*t);
+    const x=b.x0+(b.x1-b.x0)*te;
+    const arc=Math.sin(Math.PI*t)*(b.y1-b.y0>20?2:6);
+    const y=b.y0+(b.y1-b.y0)*(t*t)+ -arc;
+    return [x,y];
+  },
+  draw(){
+    const g=this.geom(), R=this.R;
+    /* funnel */
+    const fx=this.binx(g,R/2+this.fo);
+    ctx.strokeStyle=LINES; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(fx-16,g.pegTop-52); ctx.lineTo(fx-5,g.pegTop-36);
+    ctx.moveTo(fx+16,g.pegTop-52); ctx.lineTo(fx+5,g.pegTop-36); ctx.stroke();
+    txt('drag me',fx,g.pegTop-58,'center',this.dragging?ACC:MUTED,'10px '+MONO);
+    /* pegs */
+    for(let r=0;r<R;r++) for(let i=0;i<=r;i++)
+      disc(g.bx+(i-r/2)*g.sx+this.fo*g.sx, g.pegTop+r*g.sy, 2.2, 'rgba(136,163,151,.8)');
+    /* bins: hairline separators over landing span */
+    const j0=-g.J, j1=R+g.J;
+    ctx.strokeStyle=LINE;
+    for(let j=j0;j<=j1+1;j++){ const x=this.binx(g,j)-g.sx/2;
+      if(x>g.A.x&&x<g.A.x+g.A.w) line(x,g.binTop,x,g.binBot,LINE,1); }
+    line(g.A.x,g.binBot,g.A.x+g.A.w,g.binBot,LINES,1.2);
+    /* stacked discs */
+    ctx.fillStyle=ACC;
+    for(let j=j0;j<=j1;j++){ const n=Math.round(this.counts[j+g.J]/this.upd); const x=this.binx(g,j);
+      for(let i=0;i<n;i++) disc(x,g.binBot-4-i*7,3,'rgba(86,224,194,.85)'); }
+    /* theory: binomial pmf over bins, scaled to disc stacks */
+    if(this.landed>8){
+      const q=1-this.p; let pk=new Array(R+1); pk[0]=Math.pow(q,R);
+      for(let k=1;k<=R;k++) pk[k]=pk[k-1]*(R-k+1)/k*this.p/q;
+      const pts=[]; const tot=this.landed/this.upd;
+      for(let k=0;k<=R;k++) pts.push([this.binx(g,k+this.fo), g.binBot-4-pk[k]*tot*7]);
+      curve(pts,DGR,1.4,[5,4]);
+    }
+    /* balls */
+    for(const b of this.balls){ const [x,y]=this.ballXY(b); disc(x,y,3.4,INK); }
+    /* readout */
+    const m=this.landed?this.sum/this.landed:0, v=this.landed>1?(this.sum2-this.sum*m)/(this.landed-1):0;
+    let s=fmtN(this.landed)+' balls';
+    if(this.landed>1) s+='  ·  mean '+m.toFixed(2)+' (theory '+(R*this.p).toFixed(2)+')  ·  sd '+Math.sqrt(Math.max(0,v)).toFixed(2)+' (theory '+Math.sqrt(R*this.p*(1-this.p)).toFixed(2)+')';
+    if(this.upd>1) s+='  ·  each dot = '+this.upd+' balls';
+    txt(s,g.bx,g.binBot+18,'center',MUTED);
+  },
+  down(x,y){ const g=this.geom(); const fx=this.binx(g,this.R/2+this.fo);
+    if(Math.abs(x-fx)<40&&y<g.pegTop-20){ this.dragging=true; return; }
+    for(let i=0;i<28;i++) this.spawn(g,true); },
+  move(x){ if(!this.dragging) return; const g=this.geom();
+    const maxo=Math.max(0,Math.floor((g.A.w/2-(this.R/2)*g.sx-30)/g.sx));
+    const lim=Math.min(g.J,maxo);
+    this.fo=Math.max(-lim,Math.min(lim,Math.round((x-g.bx)/g.sx))); },
+  up(){ this.dragging=false; }
+};
+/* ================= 2. SAMPLE MEANS (CLT) ================= */
+const POPS={
+  uniform:{lab:'Flat', mu:0.5, sd:Math.sqrt(1/12), draw:()=>rnd(),
+    pdf:x=>1},
+  skew:{lab:'Skewed', mu:0.25, sd:Math.sqrt(1/7-1/16), draw:()=>{const u=rnd();return u*u*u;},
+    pdf:x=>x<0.004?4:Math.min(4,Math.pow(x,-2/3)/3)},
+  bimodal:{lab:'Two peaks', mu:0.5, sd:Math.sqrt(0.0064+0.04), draw:()=>{
+      let x=(rnd()<0.5?0.3:0.7)+gauss()*0.08; return Math.max(0.001,Math.min(0.999,x));},
+    pdf:x=>{const g=(m)=>Math.exp(-0.5*((x-m)/0.08)**2)/(0.08*Math.sqrt(6.2832));
+      return 0.5*g(0.3)+0.5*g(0.7);}},
+  coin:{lab:'Coin', mu:0.5, sd:0.4, draw:()=>rnd()<0.5?0.1:0.9, pdf:null}
+};
+const CLT={
+  pop:'uniform', n:1, rate:6, bins:null, NB:64, total:0, sum:0, sum2:0,
+  anims:[], acc:0,
+  reset(){ this.bins=new Float64Array(this.NB); this.total=0; this.sum=0; this.sum2=0; this.anims=[]; this.acc=0; },
+  geom(){ const A=area(); const popB=A.y+86; const hTop=popB+70, hBot=A.bot-30;
+    return {A,popT:A.y+8,popB,hTop,hBot,x0:A.x+30,x1:A.x+A.w-30}; },
+  land(m){ const b=Math.max(0,Math.min(this.NB-1,Math.floor(m*this.NB)));
+    this.bins[b]++; this.total++; this.sum+=m; this.sum2+=m*m; },
+  makeSample(animate,g){
+    const P=POPS[this.pop]; const xs=[]; let s=0;
+    for(let i=0;i<this.n;i++){ const v=P.draw(); xs.push(v); s+=v; }
+    const m=s/this.n;
+    if(animate&&this.anims.length<14) this.anims.push({xs,m,t:0});
+    else this.land(m);
+  },
+  step(dt){
+    const g=this.geom();
+    this.acc+=this.rate*dt;
+    while(this.acc>=1){ this.acc--; this.makeSample(true,g); }
+    for(const a of this.anims){ a.t+=dt*1.9; if(a.t>=1.55){ this.land(a.m); a.dead=true; } }
+    this.anims=this.anims.filter(a=>!a.dead);
+  },
+  xpix(g,v){ return g.x0+v*(g.x1-g.x0); },
+  draw(){
+    const g=this.geom(), P=POPS[this.pop];
+    /* population strip */
+    line(g.x0,g.popB,g.x1,g.popB,LINES,1.2);
+    txt('population',g.x0,g.popT+4,'left',MUTED,'10.5px '+MONO);
+    if(P.pdf){ const pts=[]; let mx=0; const N=140;
+      for(let i=0;i<=N;i++){ mx=Math.max(mx,P.pdf(i/N)); }
+      for(let i=0;i<=N;i++){ const x=i/N; pts.push([this.xpix(g,x), g.popB-P.pdf(x)/mx*(g.popB-g.popT-14)]); }
+      ctx.fillStyle='rgba(136,163,151,.16)'; ctx.beginPath(); ctx.moveTo(g.x0,g.popB);
+      for(const p of pts) ctx.lineTo(p[0],p[1]); ctx.lineTo(g.x1,g.popB); ctx.fill();
+      curve(pts,'rgba(136,163,151,.7)',1.2);
+    } else { /* coin spikes */
+      for(const v of[0.1,0.9]){ line(this.xpix(g,v),g.popB,this.xpix(g,v),g.popT+16,'rgba(136,163,151,.7)',3); }
+    }
+    /* falling samples */
+    for(const a of this.anims){
+      const t=a.t;
+      if(t<0.5){ for(const v of a.xs){ disc(this.xpix(g,v),g.popB-5,2.2,'rgba(227,239,233,.8)'); } }
+      else if(t<0.9){ const u=(t-0.5)/0.4;
+        for(const v of a.xs){ const x=this.xpix(g,v)+(this.xpix(g,a.m)-this.xpix(g,v))*u*u*(3-2*u);
+          disc(x,g.popB-5,2.2,'rgba(227,239,233,.8)'); } }
+      else { const u=(t-0.9)/0.65, uu=Math.min(1,u);
+        const y=g.popB-5+(this.histY(g,a.m)-g.popB+5)*uu*uu;
+        disc(this.xpix(g,a.m),y,3.4,ACC); }
+    }
+    /* histogram of means */
+    line(g.x0,g.hBot,g.x1,g.hBot,LINES,1.2);
+    let mx=1; for(const b of this.bins) mx=Math.max(mx,b);
+    const bw=(g.x1-g.x0)/this.NB;
+    ctx.fillStyle='rgba(86,224,194,.4)';
+    for(let i=0;i<this.NB;i++){ if(!this.bins[i])continue;
+      const h=this.bins[i]/mx*(g.hBot-g.hTop);
+      ctx.fillRect(g.x0+i*bw,g.hBot-h,Math.max(1,bw-1),h); }
+    /* theory overlay: N(mu, sd/sqrt(n)), same normalisation as bars */
+    if(this.total>2){
+      const se=P.sd/Math.sqrt(this.n), pts=[];
+      const peak=this.total*(1/this.NB)/(se*Math.sqrt(6.2832)); /* expected count in modal bin approx */
+      for(let i=0;i<=160;i++){ const x=i/160;
+        const f=Math.exp(-0.5*((x-P.mu)/se)**2)/(se*Math.sqrt(6.2832));
+        pts.push([this.xpix(g,x), g.hBot-(f*this.total/this.NB)/mx*(g.hBot-g.hTop)]); }
+      curve(pts,DGR,1.4,[5,4]);
+    }
+    txt('means of '+this.n+(this.n>1?' draws':' draw'),g.x0,g.hTop-8,'left',MUTED,'10.5px '+MONO);
+    const m=this.total?this.sum/this.total:0,
+          v=this.total>1?(this.sum2-this.sum*m)/(this.total-1):0;
+    let s=fmtN(this.total)+' samples';
+    if(this.total>1) s+='  ·  mean of means '+m.toFixed(3)+' (theory '+P.mu.toFixed(3)+')  ·  sd '+Math.sqrt(Math.max(0,v)).toFixed(3)+' (theory '+(P.sd/Math.sqrt(this.n)).toFixed(3)+')';
+    txt(s,(g.x0+g.x1)/2,g.hBot+18,'center',MUTED);
+  },
+  histY(g,m){ const b=Math.max(0,Math.min(this.NB-1,Math.floor(m*this.NB)));
+    let mx=1; for(const q of this.bins) mx=Math.max(mx,q);
+    return g.hBot-this.bins[b]/mx*(g.hBot-g.hTop)-4; },
+  down(){ for(let i=0;i<10;i++) this.makeSample(false); this.makeSample(true); },
+  move(){}, up(){}
+};
+/* ================= 3. CONFIDENCE INTERVALS ================= */
+const CI={
+  n:10, conf:95, meth:'t', truth:'shown', rate:3, mu:0.5, sig:0.12,
+  rows:[], tried:0, caught:0, acc:0, anim:null, peek:false,
+  reset(){ this.mu=0.4+rnd()*0.2; this.rows=[]; this.tried=0; this.caught=0; this.acc=0; this.anim=null; },
+  geom(){ const A=area(); const popB=A.y+74; return {A,popT:A.y+8,popB,stkT:popB+34,stkB:A.bot-30,x0:A.x+40,x1:A.x+A.w-40}; },
+  xpix(g,v){ return g.x0+v*(g.x1-g.x0); },
+  experiment(){
+    let s=0,s2=0; const xs=[];
+    for(let i=0;i<this.n;i++){ const v=this.mu+this.sig*gauss(); xs.push(v); s+=v; }
+    const m=s/this.n; for(const v of xs) s2+=(v-m)*(v-m);
+    const sd=Math.sqrt(s2/(this.n-1));
+    const a=1-(1-this.conf/100)/2;
+    const half=(this.meth==='t'? tq(a,this.n-1) : zq(a))*sd/Math.sqrt(this.n);
+    const hit=Math.abs(m-this.mu)<=half;
+    this.tried++; if(hit) this.caught++;
+    return {xs,m,half,hit,t:0};
+  },
+  step(dt){
+    this.acc+=this.rate*dt;
+    if(this.anim){ this.anim.t+=dt*2.4;
+      if(this.anim.t>=1){ this.rows.unshift(this.anim); this.anim=null;
+        const g=this.geom(); const maxRows=Math.floor((g.stkB-g.stkT)/14);
+        if(this.rows.length>maxRows) this.rows.length=maxRows; } }
+    while(this.acc>=1){ this.acc--;
+      if(this.anim){ this.rows.unshift(this.anim); this.anim=null; }
+      this.anim=this.experiment();
+      const g=this.geom(); const maxRows=Math.floor((g.stkB-g.stkT)/14);
+      if(this.rows.length>maxRows) this.rows.length=maxRows;
+    }
+  },
+  draw(){
+    const g=this.geom(); const show=this.truth==='shown'||this.peek;
+    /* population strip */
+    line(g.x0,g.popB,g.x1,g.popB,LINES,1.2);
+    txt('one truth, many experiments'+(show?'':'   (truth hidden: hold the mouse down to peek)'),g.x0,g.popT+4,'left',MUTED,'10.5px '+MONO);
+    if(show){
+      const pts=[]; for(let i=0;i<=140;i++){ const x=i/140;
+        const f=Math.exp(-0.5*((x-this.mu)/this.sig)**2);
+        pts.push([this.xpix(g,x),g.popB-f*(g.popB-g.popT-16)]); }
+      curve(pts,'rgba(136,163,151,.55)',1.2);
+      line(this.xpix(g,this.mu),g.popT+12,this.xpix(g,this.mu),g.stkB,ACC,1.2);
+      txt('μ',this.xpix(g,this.mu)+6,g.popT+22,'left',ACC,'12px '+MONO);
+    }
+    /* current experiment: dots then collapse */
+    if(this.anim){ const a=this.anim, t=a.t;
+      if(t<0.45){ for(const v of a.xs) disc(this.xpix(g,v),g.popB-6,2.2,'rgba(227,239,233,.85)'); }
+      else{ const u=Math.min(1,(t-0.45)/0.4);
+        for(const v of a.xs){ const x=this.xpix(g,v)+(this.xpix(g,a.m)-this.xpix(g,v))*u*u*(3-2*u);
+          disc(x,g.popB-6,2.2,'rgba(227,239,233,.85)'); } }
+    }
+    /* stack of intervals, newest at top */
+    let y=g.stkT;
+    const col=r=>show?(r.hit?'rgba(86,224,194,.9)':'#ff7d5c'):'rgba(227,239,233,.65)';
+    for(const r of this.rows){
+      const c=col(r), xL=this.xpix(g,r.m-r.half), xR=this.xpix(g,r.m+r.half);
+      ctx.globalAlpha=Math.max(0.25,1-(y-g.stkT)/(g.stkB-g.stkT)*0.85);
+      line(xL,y,xR,y,c,r.hit||!show?1.4:2.2);
+      line(xL,y-3,xL,y+3,c,1.2); line(xR,y-3,xR,y+3,c,1.2);
+      disc(this.xpix(g,r.m),y,2.4,c);
+      ctx.globalAlpha=1;
+      y+=14; if(y>g.stkB) break;
+    }
+    /* tally */
+    const pct=this.tried?(100*this.caught/this.tried):0;
+    let s;
+    if(show) s=fmtN(this.tried)+' experiments  ·  claimed '+this.conf+'%  ·  caught '+fmtN(this.caught)+' ('+(this.tried?pct.toFixed(1):'0')+'%)';
+    else s=fmtN(this.tried)+' experiments  ·  about '+Math.round(this.tried*(1-this.conf/100))+' should have missed, and nothing on screen tells you which';
+    txt(s,(g.x0+g.x1)/2,g.stkB+18,'center',MUTED);
+  },
+  down(){ this.peek=true; }, move(){}, up(){ this.peek=false; }
+};
+/* ================= 4. LAW OF LARGE NUMBERS ================= */
+const LLN={
+  p:0.5, rate:50, N:0, Hd:0, pts:[], ex:[], ghosts:[], strip:[], NMAX:100,
+  reset(full){ if(this.N>1&&this.pts.length>2){ this.ghosts.push(this.pts); if(this.ghosts.length>3) this.ghosts.shift(); }
+    this.N=0; this.Hd=0; this.pts=[]; this.ex=[]; this.strip=[]; this.NMAX=100; },
+  geom(){ const A=area(); const stripB=A.y+34; const mid=stripB+ (A.bot-30-stripB)*0.55;
+    return {A,stripB,pT:stripB+26,pB:mid-14,eT:mid+30,eB:A.bot-34,x0:A.x+44,x1:A.x+A.w-16}; },
+  step(dt){
+    let k=Math.round(this.rate*dt); if(this.rate>0&&k<1) k=(rnd()<this.rate*dt)?1:0;
+    if(k>0){ const h=binomSample(k,this.p); this.N+=k; this.Hd+=h;
+      for(let i=0;i<Math.min(k,5);i++) this.strip.push(rnd()<this.p);
+      while(this.strip.length>46) this.strip.shift();
+      while(this.N>this.NMAX) this.NMAX*=10;
+      const lx=Math.log10(Math.max(1,this.N));
+      const last=this.pts[this.pts.length-1];
+      if(!last||lx-last[0]>0.004||this.pts.length<4){
+        this.pts.push([lx,this.Hd/this.N]); this.ex.push([lx,this.Hd-this.p*this.N]); }
+      else { last[1]=this.Hd/this.N; this.ex[this.ex.length-1][1]=this.Hd-this.p*this.N; }
+    }
+  },
+  xp(g,lx){ return g.x0+(lx/Math.log10(this.NMAX))*(g.x1-g.x0); },
+  draw(){
+    const g=this.geom();
+    /* flip strip */
+    for(let i=0;i<this.strip.length;i++)
+      disc(g.x0+8+i*13,g.A.y+14,4.4,this.strip[i]?ACC:'rgba(136,163,151,.5)');
+    txt('heads',g.x0+8+47*13,g.A.y+11,'left',ACC,'10px '+MONO);
+    txt('tails',g.x0+8+47*13,g.A.y+23,'left',MUTED,'10px '+MONO);
+    /* proportion chart */
+    const PT=g.pT,PB=g.pB;
+    line(g.x0,PB,g.x1,PB,LINES,1.2); line(g.x0,PT,g.x0,PB,LINES,1.2);
+    const ypr=v=>PB-v*(PB-PT);
+    line(g.x0,ypr(this.p),g.x1,ypr(this.p),'rgba(136,163,151,.6)',1); 
+    for(const v of[0,0.5,1]) txt(v.toFixed(1),g.x0-6,ypr(v)+4,'right',MUTED,'10px '+MONO);
+    /* envelope p ± 1.96 sqrt(pq/n) */
+    const env=[],env2=[];
+    for(let i=0;i<=120;i++){ const lx=i/120*Math.log10(this.NMAX), n=Math.pow(10,lx);
+      const e=1.96*Math.sqrt(this.p*(1-this.p)/Math.max(1,n));
+      env.push([this.xp(g,lx),ypr(Math.min(1,this.p+e))]); env2.push([this.xp(g,lx),ypr(Math.max(0,this.p-e))]); }
+    curve(env,'rgba(136,163,150,.35)',1,[3,4]); curve(env2,'rgba(136,163,150,.35)',1,[3,4]);
+    for(const gh of this.ghosts) curve(gh.map(p=>[this.xp(g,p[0]),ypr(p[1])]),'rgba(136,163,151,.3)',1);
+    curve(this.pts.map(p=>[this.xp(g,p[0]),ypr(p[1])]),ACC,1.6);
+    txt('fraction of heads  ·  settles onto p = '+this.p.toFixed(2),g.x0,PT-7,'left',MUTED,'10.5px '+MONO);
+    /* excess chart */
+    const ET=g.eT,EB=g.eB, ymid=(ET+EB)/2;
+    let mxe=10; for(const q of this.ex) mxe=Math.max(mxe,Math.abs(q[1]));
+    const eN=1.96*Math.sqrt(Math.max(1,this.N)*this.p*(1-this.p)); mxe=Math.max(mxe,eN)*1.15;
+    const ye=v=>ymid-(v/mxe)*(EB-ET)/2;
+    line(g.x0,ymid,g.x1,ymid,'rgba(136,163,151,.6)',1);
+    line(g.x0,ET,g.x0,EB,LINES,1.2);
+    const en1=[],en2=[];
+    for(let i=0;i<=120;i++){ const lx=i/120*Math.log10(this.NMAX), n=Math.pow(10,lx);
+      const e=1.96*Math.sqrt(n*this.p*(1-this.p));
+      en1.push([this.xp(g,lx),ye(e)]); en2.push([this.xp(g,lx),ye(-e)]); }
+    curve(en1,'rgba(136,163,150,.35)',1,[3,4]); curve(en2,'rgba(136,163,150,.35)',1,[3,4]);
+    curve(this.ex.map(p=>[this.xp(g,p[0]),ye(p[1])]),DGR,1.5);
+    txt('surplus heads − expected  ·  wanders like √n, never settles',g.x0,ET-7,'left',MUTED,'10.5px '+MONO);
+    txt('±'+fmtN(mxe/1.15),g.x0-6,ET+8,'right',MUTED,'10px '+MONO);
+    /* log x labels */
+    for(let d=0;d<=Math.log10(this.NMAX);d++){ const x=this.xp(g,d);
+      txt(d===0?'1':'10'+(d>1?'^'+d:''),x,EB+14,'center',MUTED,'10px '+MONO);
+      line(x,EB,x,EB+3,LINES,1); }
+    txt(fmtN(this.N)+' flips  ·  '+fmtN(this.Hd)+' heads ('+(this.N?(100*this.Hd/this.N).toFixed(2):'0')+'%)  ·  surplus '+fmtN(this.Hd-this.p*this.N),(g.x0+g.x1)/2,g.eB+30,'center',MUTED);
+  },
+  down(){ this.reset(); }, move(){}, up(){}
+};
+/* ================= 5. RANDOM WALKERS ================= */
+const WALK={
+  n:420, drift:0, stepsz:1, ws:[], trail:null, tctx:null, bins:null, NB:72,
+  landed:0, wind:0, pdown:false, px:0, SPEED:46, SIG:26,
+  reset(){
+    this.ws=[]; this.bins=new Float64Array(this.NB); this.landed=0;
+    const g=this.geom();
+    for(let i=0;i<this.n;i++){ const y=rnd()*(g.hTop-g.top);
+      const t=y/this.SPEED, s=this.SIG*this.stepsz*Math.sqrt(t);
+      this.ws.push({y, x:gauss()*s+this.drift*this.SIG*1.4*t}); }
+    if(this.trail){ this.tctx.clearRect(0,0,this.trail.width,this.trail.height); }
+  },
+  geom(){ const A=area(); return {A,top:A.y+26,hTop:A.bot-118,hBot:A.bot-30,cx:A.cx}; },
+  ensureTrail(){
+    if(!this.trail||this.trail.width!==cv.width||this.trail.height!==cv.height){
+      this.trail=document.createElement('canvas'); this.trail.width=cv.width; this.trail.height=cv.height;
+      this.tctx=this.trail.getContext('2d'); this.tctx.setTransform(DPR,0,0,DPR,0,0); }
+  },
+  step(dt){
+    const g=this.geom(); this.ensureTrail();
+    while(this.ws.length<this.n){ this.ws.push({y:0,x:0}); }
+    if(this.ws.length>this.n) this.ws.length=this.n;
+    const w=this.wind*(this.pdown?1:0);
+    const drift=(this.drift+w)*this.SIG*1.4;
+    const s=this.SIG*this.stepsz*Math.sqrt(dt);
+    /* erase, never paint over: repeated low-alpha dark fills round toward black */
+    this.tctx.globalCompositeOperation='destination-out';
+    this.tctx.fillStyle='rgba(0,0,0,0.035)'; this.tctx.fillRect(0,0,W,H);
+    this.tctx.globalCompositeOperation='source-over';
+    this.tctx.fillStyle='rgba(227,239,233,.65)';
+    for(const p of this.ws){
+      p.y+=this.SPEED*dt; p.x+=gauss()*s+drift*dt;
+      if(p.y>=g.hTop-g.top){ 
+        const b=Math.floor(((p.x/(this.SIG*4))+1)/2*this.NB);
+        if(b>=0&&b<this.NB){ this.bins[b]++; this.landed++; }
+        p.y=0; p.x=0; continue; }
+      this.tctx.fillRect(g.cx+p.x-1,g.top+p.y-1,2,2);
+    }
+  },
+  draw(){
+    const g=this.geom();
+    if(this.trail) ctx.drawImage(this.trail,0,0,W,H);
+    /* envelopes: sigma sqrt(t) and 2 sigma sqrt(t), plus drift line */
+    const T=(g.hTop-g.top)/this.SPEED;
+    for(const kmul of[1,2]){ const e1=[],e2=[];
+      for(let i=0;i<=80;i++){ const t=T*i/80, y=g.top+t*this.SPEED;
+        const s=this.SIG*this.stepsz*Math.sqrt(t)*kmul, cx0=g.cx+this.drift*this.SIG*1.4*t;
+        e1.push([cx0-s,y]); e2.push([cx0+s,y]); }
+      curve(e1,kmul===1?'rgba(86,224,194,.55)':'rgba(136,163,151,.4)',1.2,[5,4]);
+      curve(e2,kmul===1?'rgba(86,224,194,.55)':'rgba(136,163,151,.4)',1.2,[5,4]); }
+    if(Math.abs(this.drift)>0.01){ const d=[];
+      for(let i=0;i<=40;i++){ const t=T*i/40; d.push([g.cx+this.drift*this.SIG*1.4*t,g.top+t*this.SPEED]); }
+      curve(d,DGR,1,[2,4]); }
+    txt('one blind step at a time  ·  the cone edge is ±σ√t and 2σ√t',g.A.x+16,g.top-6,'left',MUTED,'10.5px '+MONO);
+    if(this.pdown) txt('wind '+(this.wind>0?'→':'←'),g.cx+this.wind*180,g.top+12,'center',DGR,'12px '+MONO);
+    /* landing histogram */
+    line(g.A.x+16,g.hBot,g.A.x+g.A.w-16,g.hBot,LINES,1.2);
+    let mx=1; for(const b of this.bins) mx=Math.max(mx,b);
+    const x0=g.cx-this.SIG*4, bw=this.SIG*8/this.NB;
+    ctx.fillStyle='rgba(86,224,194,.4)';
+    for(let i=0;i<this.NB;i++){ if(!this.bins[i])continue;
+      const h=this.bins[i]/mx*(g.hBot-g.hTop-16);
+      ctx.fillRect(x0+i*bw,g.hBot-h,Math.max(1,bw-1),h); }
+    if(this.landed>8){ const s=this.SIG*this.stepsz*Math.sqrt(T), m=this.drift*this.SIG*1.4*T, pts=[];
+      const peak=this.landed*(bw/(s*Math.sqrt(6.2832)));
+      for(let i=0;i<=140;i++){ const x=-this.SIG*4+i/140*this.SIG*8;
+        const f=Math.exp(-0.5*((x-m)/s)**2);
+        pts.push([g.cx+x,g.hBot-f*peak/mx*(g.hBot-g.hTop-16)]); }
+      curve(pts,DGR,1.3,[5,4]); }
+    txt(fmtN(this.landed)+' walkers finished  ·  hold the pointer left or right of the cone to add wind',g.cx,g.hBot+18,'center',MUTED);
+  },
+  down(x){ this.pdown=true; this.movewind(x); },
+  move(x){ if(this.pdown) this.movewind(x); },
+  movewind(x){ const g=this.geom(); this.wind=Math.max(-1,Math.min(1,(x-g.cx)/(g.A.w*0.35))); },
+  up(){ this.pdown=false; this.wind=0; }
+};
+/* ================= 6. MONTE CARLO DARTS ================= */
+const PI={
+  rate:20, N:0, inside:0, dots:null, dctx:null, rings:[], trace:[],
+  reset(){ this.N=0; this.inside=0; this.rings=[]; this.trace=[];
+    if(this.dots) this.dctx.clearRect(0,0,this.dots.width,this.dots.height); },
+  geom(){ const A=area(); const side=Math.min(A.w-40,A.h-150);
+    const sx=A.cx-side/2, sy=A.y+18;
+    return {A,side,sx,sy,trT:sy+side+30,trB:A.bot-26,x0:A.x+44,x1:A.x+A.w-16}; },
+  ensure(){ if(!this.dots||this.dots.width!==cv.width||this.dots.height!==cv.height){
+      this.dots=document.createElement('canvas'); this.dots.width=cv.width; this.dots.height=cv.height;
+      this.dctx=this.dots.getContext('2d'); this.dctx.setTransform(DPR,0,0,DPR,0,0); this.reset(); } },
+  throwN(k){
+    const g=this.geom(); this.ensure();
+    for(let i=0;i<k;i++){
+      const x=rnd(),y=rnd(); const inn=((x-0.5)**2+(y-0.5)**2)<=0.25;
+      this.N++; if(inn) this.inside++;
+      const px=g.sx+x*g.side, py=g.sy+y*g.side;
+      this.dctx.fillStyle=inn?'rgba(86,224,194,.75)':'rgba(255,125,92,.7)';
+      this.dctx.fillRect(px-0.9,py-0.9,1.8,1.8);
+      if(this.rings.length<24&&rnd()<Math.min(1,8/k)) this.rings.push({x:px,y:py,t:0,inn});
+    }
+    const lx=Math.log10(Math.max(1,this.N));
+    const last=this.trace[this.trace.length-1];
+    const est=4*this.inside/Math.max(1,this.N);
+    if(!last||lx-last[0]>0.006) this.trace.push([lx,est]); else last[1]=est;
+  },
+  step(dt){ this.acc=(this.acc||0)+this.rate*dt;
+    const k=Math.floor(this.acc); if(k>0){ this.acc-=k; this.throwN(k); }
+    for(const r of this.rings) r.t+=dt*3; this.rings=this.rings.filter(r=>r.t<1); },
+  draw(){
+    const g=this.geom(); this.ensure();
+    ctx.strokeStyle=LINES; ctx.lineWidth=1.2; ctx.strokeRect(g.sx,g.sy,g.side,g.side);
+    ctx.beginPath(); ctx.arc(g.sx+g.side/2,g.sy+g.side/2,g.side/2,0,6.2832); ctx.stroke();
+    ctx.drawImage(this.dots,0,0,W,H);
+    for(const r of this.rings){ ctx.strokeStyle=r.inn?'rgba(86,224,194,'+(1-r.t)+')':'rgba(255,125,92,'+(1-r.t)+')';
+      ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(r.x,r.y,2+r.t*9,0,6.2832); ctx.stroke(); }
+    /* convergence trace */
+    const yv=v=>g.trB-(v-2.6)/(3.7-2.6)*(g.trB-g.trT);
+    line(g.x0,g.trB,g.x1,g.trB,LINES,1.2); line(g.x0,g.trT,g.x0,g.trB,LINES,1.2);
+    line(g.x0,yv(Math.PI),g.x1,yv(Math.PI),'rgba(136,163,151,.6)',1);
+    txt('π',g.x0-10,yv(Math.PI)+4,'right',MUTED,'11px '+MONO);
+    const LMAX=Math.max(2,Math.log10(Math.max(10,this.N)));
+    const xp=lx=>g.x0+lx/LMAX*(g.x1-g.x0);
+    /* 2 sigma band: pi ± 2*sqrt(pi(4-pi)/n) */
+    const b1=[],b2=[];
+    for(let i=1;i<=100;i++){ const lx=i/100*LMAX, n=Math.pow(10,lx);
+      const e=2*Math.sqrt(Math.PI*(4-Math.PI)/n);
+      b1.push([xp(lx),yv(Math.min(3.7,Math.PI+e))]); b2.push([xp(lx),yv(Math.max(2.6,Math.PI-e))]); }
+    curve(b1,'rgba(136,163,150,.35)',1,[3,4]); curve(b2,'rgba(136,163,150,.35)',1,[3,4]);
+    curve(this.trace.map(p=>[xp(p[0]),yv(Math.max(2.6,Math.min(3.7,p[1])))]),ACC,1.5);
+    const est=this.N?4*this.inside/this.N:0;
+    txt('estimate of π against darts thrown (log scale)',g.x0,g.trT-7,'left',MUTED,'10.5px '+MONO);
+    txt(fmtN(this.N)+' darts  ·  π̂ = '+(this.N?est.toFixed(4):'—')+(this.N?'  ·  off by '+(100*Math.abs(est-Math.PI)/Math.PI).toFixed(2)+'%':'')+'  ·  click to throw 500',(g.x0+g.x1)/2,g.trB+18,'center',MUTED);
+  },
+  down(){ this.throwN(500); }, move(){}, up(){}
+};
+/* ================= wiring ================= */
+const MODES={
+  galton:{o:GB, b:'Galton board', s:'A bell curve, one bounce at a time',
+    hint:'Click the board to pour a burst of balls, or drag the funnel sideways.'},
+  clt:{o:CLT, b:'Sample means', s:'Any population, averaged, turns normal',
+    hint:'Click to draw extra samples. Slide draws per sample up and watch the bell assemble.'},
+  ci:{o:CI, b:'Confidence intervals', s:'What 95% actually promises',
+    hint:'Hold the mouse down to peek at the hidden truth. R draws a new one.'},
+  lln:{o:LLN, b:'Law of large numbers', s:'Averages settle, totals wander',
+    hint:'Click to start a fresh run. Old runs stay as ghosts.'},
+  walk:{o:WALK, b:'Random walkers', s:'Diffusion is √t, watched from inside',
+    hint:'Hold the pointer beside the cone to add wind, release to let it forget.'},
+  pi:{o:PI, b:'Monte Carlo darts', s:'Measuring π with pure noise',
+    hint:'Click to throw 500 darts at once. The error shrinks as 1/√N.'}
+};
+let mode='galton', paused=false;
+const hintEl=el('hint');
+function renderPresets(){
+  const box=el('presets'); box.innerHTML='';
+  Object.keys(MODES).forEach((k,i)=>{
+    const m=MODES[k], b=document.createElement('button');
+    b.className='preset'; b.setAttribute('aria-pressed',k===mode?'true':'false');
+    b.innerHTML='<b>'+(i+1)+'. '+m.b+'</b><small>'+m.s+'</small>';
+    b.addEventListener('click',()=>applyMode(k)); box.appendChild(b);
+  });
+}
+function applyMode(k){
+  mode=k; MODES[k].o.reset();
+  document.querySelectorAll('#presets .preset').forEach((b,i)=>
+    b.setAttribute('aria-pressed',Object.keys(MODES)[i]===k?'true':'false'));
+  document.querySelectorAll('[data-m]').forEach(n=>{ n.style.display=n.dataset.m===k?'':'none'; });
+  hintEl.textContent=MODES[k].hint;
+}
+/* sliders */
+function bind(id,vid,fmt,set){
+  const s=el(id),v=el(vid);
+  const f=()=>{ v.textContent=fmt(parseFloat(s.value)); set(parseFloat(s.value)); };
+  s.addEventListener('input',f); f();
+}
+const pow10=v=>Math.round(Math.pow(10,v));
+bind('s-rows','v-rows',v=>v+' rows',v=>{ GB.R=v; GB.reset(); });
+bind('s-bias','v-bias',v=>(100*v).toFixed(0)+'% right',v=>{ GB.p=v; GB.reset(); });
+bind('s-rate','v-rate',v=>pow10(v)+' /s',v=>{ GB.rate=pow10(v); });
+bind('s-cltn','v-cltn',v=>v+'',v=>{ CLT.n=v; CLT.reset(); });
+bind('s-cltrate','v-cltrate',v=>pow10(v)+' /s',v=>{ CLT.rate=pow10(v); });
+bind('s-cin','v-cin',v=>v+'',v=>{ CI.n=v; CI.rows=[]; CI.tried=0; CI.caught=0; });
+bind('s-conf','v-conf',v=>v+'%',v=>{ CI.conf=v; CI.rows=[]; CI.tried=0; CI.caught=0; });
+bind('s-cirate','v-cirate',v=>Math.pow(10,v).toFixed(1)+' /s',v=>{ CI.rate=Math.pow(10,v); });
+bind('s-coinp','v-coinp',v=>(100*v).toFixed(0)+'% heads',v=>{ LLN.p=v; LLN.reset(); });
+bind('s-fliprate','v-fliprate',v=>fmtN(pow10(v))+' /s',v=>{ LLN.rate=pow10(v); });
+bind('s-walkers','v-walkers',v=>fmtN(v),v=>{ WALK.n=v; });
+bind('s-drift','v-drift',v=>v.toFixed(2),v=>{ WALK.drift=v; WALK.bins=new Float64Array(WALK.NB); WALK.landed=0; });
+bind('s-step','v-step',v=>v.toFixed(2)+'×',v=>{ WALK.stepsz=v; WALK.bins=new Float64Array(WALK.NB); WALK.landed=0; });
+bind('s-darts','v-darts',v=>fmtN(pow10(v))+' /s',v=>{ PI.rate=pow10(v); });
+/* segmented rows */
+function seg(id,set){
+  const box=el(id);
+  box.addEventListener('click',e=>{
+    const b=e.target.closest('.seg'); if(!b) return;
+    box.querySelectorAll('.seg').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+    set(b.dataset.v);
+  });
+}
+seg('seg-pop',v=>{ CLT.pop=v; CLT.reset(); });
+seg('seg-meth',v=>{ CI.meth=v; CI.rows=[]; CI.tried=0; CI.caught=0; });
+seg('seg-truth',v=>{ CI.truth=v; });
+/* icon buttons */
+const bp=el('b-pause'), bc=el('b-clean');
+function setPaused(v){ paused=v; bp.dataset.on=v?'true':'false'; }
+bp.addEventListener('click',()=>setPaused(!paused));
+el('b-reset').addEventListener('click',()=>{ MODES[mode].o.reset(); });
+bc.addEventListener('click',()=>{
+  const on=document.body.classList.toggle('clean'); bc.dataset.on=on?'true':'false'; });
+el('b-full').addEventListener('click',()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{}); });
+/* dialog */
+const dlg=el('about');
+el('b-about').addEventListener('click',()=>dlg.showModal());
+el('b-close').addEventListener('click',()=>dlg.close());
+dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+/* pointer on canvas */
+function local(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top]; }
+cv.addEventListener('pointerdown',e=>{ const [x,y]=local(e); cv.setPointerCapture(e.pointerId); MODES[mode].o.down(x,y); });
+cv.addEventListener('pointermove',e=>{ const [x,y]=local(e); MODES[mode].o.move(x,y); });
+cv.addEventListener('pointerup',e=>{ MODES[mode].o.up(); });
+cv.addEventListener('pointercancel',()=>{ MODES[mode].o.up(); });
+window.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  const k=e.key;
+  if(k===' '){ e.preventDefault(); setPaused(!paused); }
+  else if(k==='r'||k==='R') MODES[mode].o.reset();
+  else if(k==='h'||k==='H') bc.click();
+  else if(k==='f'||k==='F') el('b-full').click();
+  else if(k==='?'){ dlg.open?dlg.close():dlg.showModal(); }
+  else if(k>='1'&&k<='6'){ const ks=Object.keys(MODES)[+k-1]; if(ks) applyMode(ks); }
+});
+let rt=null;
+window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resize(); MODES[mode].o.reset(); },150); });
+let last=performance.now();
+function loop(now){
+  let dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(!paused){ MODES[mode].o.step(dt); }
+  ctx.fillStyle=FIELD; ctx.fillRect(0,0,W,H);
+  MODES[mode].o.draw();
+  requestAnimationFrame(loop);
+}
+window.__dbg=()=>({mode,paused,gb:GB.landed,clt:CLT.total,ci:CI.tried,lln:LLN.N,walk:WALK.landed,pi:PI.N,
+  gbm:GB.landed?GB.sum/GB.landed:0, gbsd:GB.landed>1?Math.sqrt((GB.sum2-GB.sum*GB.sum/GB.landed)/(GB.landed-1)):0,
+  cltm:CLT.total?CLT.sum/CLT.total:0, cltsd:CLT.total>1?Math.sqrt((CLT.sum2-CLT.sum*CLT.sum/CLT.total)/(CLT.total-1)):0,
+  ciC:CI.caught, ciT:CI.tried, llnH:LLN.Hd, piE:PI.N?4*PI.inside/PI.N:0, balls:GB.balls.length});
+resize(); renderPresets(); applyMode('galton');
+requestAnimationFrame(loop);
+})();
+</script>
+<script src="../../assets/js/explainer.js" defer></script>
+<script>/* harmonised sliders: keep --p in step with the value, boids style */
+(function(){function u(r){var mn=parseFloat(r.min===''?0:r.min),mx=parseFloat(r.max===''?100:r.max),v=parseFloat(r.value);
+if(!isFinite(mn)||!isFinite(mx)||!isFinite(v)||mx===mn)return;var p=(v-mn)/(mx-mn);p=p<0?0:p>1?1:p;
+r.style.setProperty('--p',(p*100).toFixed(2)+'%')}
+function all(){var l=document.querySelectorAll('input[type=range]');for(var i=0;i<l.length;i++)u(l[i])}
+function tap(e){if(e.target&&e.target.type==='range')u(e.target);else setTimeout(all,0)}
+addEventListener('input',tap,true);addEventListener('change',tap,true);
+addEventListener('click',function(){setTimeout(all,0)},true);
+addEventListener('keyup',function(){setTimeout(all,0)},true);
+document.addEventListener('DOMContentLoaded',all);addEventListener('load',all);
+setTimeout(all,150);setTimeout(all,800);})();</script>
+</body></html>

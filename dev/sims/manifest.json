@@ -155,6 +155,22 @@
     "visible": true
   },
   {
+    "id": "statistics",
+    "title": "The Shape of Chance",
+    "category": "Probability",
+    "tags": [
+      "statistics",
+      "Galton board",
+      "central limit theorem",
+      "Monte Carlo"
+    ],
+    "difficulty": "Beginner",
+    "description": "Six machines built from raw randomness: a Galton board, sample means from any population, confidence intervals you can audit, the law of large numbers, diffusing random walkers, and darts that measure pi. Single events stay lawless; aggregates obey laws.",
+    "status": "live",
+    "hook": "Order rises out of randomness",
+    "visible": true
+  },
+  {
     "id": "segregation",
     "title": "Schelling's Segregation Model",
     "category": "Social Dynamics",
