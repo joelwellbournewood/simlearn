@@ -604,19 +604,19 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   <details class="group hare">
     <summary class="group-title">Hares</summary>
     <div class="row">
-      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Hares dropped on the field, applied when you press Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
+      <label for="s_startHare"><span class="nm">Starting hares<span class="tip" role="button" tabindex="0" aria-label="What starting hares means" data-tip="Applied on Reset.">?</span></span><span class="val" id="v_startHare"></span></label>
       <input type="range" id="s_startHare" min="0" max="400" step="5" value="120">
     </div>
     <div class="row">
-      <label for="s_hareBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed hare reproduces.">?</span></span><span class="val" id="v_hareBirth"></span></label>
+      <label for="s_hareBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed hare breeds.">?</span></span><span class="val" id="v_hareBirth"></span></label>
       <input type="range" id="s_hareBirth" min="0" max="15" step="1" value="4">
     </div>
     <div class="row">
-      <label for="s_grassEnergy"><span class="nm">Energy from grass<span class="tip" role="button" tabindex="0" aria-label="What energy from grass means" data-tip="Food value of one grazed patch.">?</span></span><span class="val" id="v_grassEnergy"></span></label>
+      <label for="s_grassEnergy"><span class="nm">Energy from grass</span><span class="val" id="v_grassEnergy"></span></label>
       <input type="range" id="s_grassEnergy" min="1" max="12" step="1" value="4">
     </div>
     <div class="row">
-      <label for="s_hareVision"><span class="nm">Eyesight<span class="tip" role="button" tabindex="0" aria-label="What eyesight means" data-tip="How far hares spot grass to graze and lynx to flee.">?</span></span><span class="val" id="v_hareVision"></span></label>
+      <label for="s_hareVision"><span class="nm">Eyesight<span class="tip" role="button" tabindex="0" aria-label="What eyesight means" data-tip="How far hares see grass and lynx.">?</span></span><span class="val" id="v_hareVision"></span></label>
       <input type="range" id="s_hareVision" min="1" max="6" step="1" value="3">
     </div>
   </details>
@@ -625,19 +625,19 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   <details class="group lynx">
     <summary class="group-title">Lynx</summary>
     <div class="row">
-      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Lynx dropped on the field, applied when you press Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
+      <label for="s_startLynx"><span class="nm">Starting lynx<span class="tip" role="button" tabindex="0" aria-label="What starting lynx means" data-tip="Applied on Reset.">?</span></span><span class="val" id="v_startLynx"></span></label>
       <input type="range" id="s_startLynx" min="0" max="150" step="2" value="28">
     </div>
     <div class="row">
-      <label for="s_lynxBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed lynx reproduces.">?</span></span><span class="val" id="v_lynxBirth"></span></label>
+      <label for="s_lynxBirth"><span class="nm">Birth rate<span class="tip" role="button" tabindex="0" aria-label="What birth rate means" data-tip="Chance per step a well-fed lynx breeds.">?</span></span><span class="val" id="v_lynxBirth"></span></label>
       <input type="range" id="s_lynxBirth" min="0" max="15" step="1" value="5">
     </div>
     <div class="row">
-      <label for="s_preyEnergy"><span class="nm">Energy from a kill<span class="tip" role="button" tabindex="0" aria-label="What energy from a kill means" data-tip="Food value of catching one hare.">?</span></span><span class="val" id="v_preyEnergy"></span></label>
+      <label for="s_preyEnergy"><span class="nm">Energy from a kill</span><span class="val" id="v_preyEnergy"></span></label>
       <input type="range" id="s_preyEnergy" min="5" max="40" step="1" value="20">
     </div>
     <div class="row">
-      <label for="s_lynxVision"><span class="nm">Hunting range<span class="tip" role="button" tabindex="0" aria-label="What hunting range means" data-tip="How far lynx detect and chase hares.">?</span></span><span class="val" id="v_lynxVision"></span></label>
+      <label for="s_lynxVision"><span class="nm">Hunting range</span><span class="val" id="v_lynxVision"></span></label>
       <input type="range" id="s_lynxVision" min="1" max="8" step="1" value="4">
     </div>
   </details>
@@ -646,11 +646,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   <details class="group habitat">
     <summary class="group-title">Habitat</summary>
     <div class="row">
-      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="How fast grazed patches grow back, which sets how many animals the land can carry.">?</span></span><span class="val" id="v_plant"></span></label>
+      <label for="s_plant"><span class="nm">Plant regrowth<span class="tip" role="button" tabindex="0" aria-label="What plant regrowth means" data-tip="Sets how many animals the land can carry.">?</span></span><span class="val" id="v_plant"></span></label>
       <input type="range" id="s_plant" min="1" max="10" step="1" value="6">
     </div>
     <div class="row">
-      <label for="s_metab"><span class="nm">Metabolic cost<span class="tip" role="button" tabindex="0" aria-label="What metabolic cost means" data-tip="Energy every animal burns each step just to stay alive.">?</span></span><span class="val" id="v_metab"></span></label>
+      <label for="s_metab"><span class="nm">Metabolic cost<span class="tip" role="button" tabindex="0" aria-label="What metabolic cost means" data-tip="Burned every step just to stay alive.">?</span></span><span class="val" id="v_metab"></span></label>
       <input type="range" id="s_metab" min="0.5" max="2.5" step="0.1" value="1">
     </div>
   </details>

@@ -155,6 +155,23 @@
     "visible": true
   },
   {
+    "id": "statistics",
+    "title": "The Shape of Chance",
+    "category": "Probability",
+    "tags": [
+      "statistics",
+      "Galton board",
+      "central limit theorem",
+      "type I and type II errors",
+      "Monte Carlo"
+    ],
+    "difficulty": "Beginner",
+    "description": "Five machines built from raw randomness: a Galton board you can drag apart, sampling from height, wealth and asteroid sizes, confidence intervals you can audit, a screening test where the two ways of being wrong trade against each other, and darts that measure pi.",
+    "status": "live",
+    "hook": "Order rises out of randomness",
+    "visible": true
+  },
+  {
     "id": "segregation",
     "title": "Schelling's Segregation Model",
     "category": "Social Dynamics",

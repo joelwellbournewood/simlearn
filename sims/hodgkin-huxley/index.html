@@ -324,20 +324,20 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
     <button id="modeCable" aria-pressed="false">Whole axon</button>
   </div>
         <div class="sub" id="recBlock">
-        <p class="sublabel">Recording electrode <span class="tip" tabindex="0" data-tip="A sharp microelectrode only watches, while a clamp takes control of either the current or the voltage.">?</span></p>
+        <p class="sublabel">Recording electrode <span class="tip" tabindex="0" data-tip="A microelectrode watches. A clamp takes control.">?</span></p>
 
         
         <div class="chips" id="recChips"></div>
         <div class="ctl" id="icmdCtl" hidden style="margin-top:13px">
           <div class="row">
-            <label for="icmd" title="The current the amplifier pushes in during the step, which does nothing at all below about 2.5.">Command current</label>
+            <label for="icmd" title="Nothing happens below about 2.5.">Command current</label>
             <span class="num" id="icmdV"></span>
           </div>
           <input type="range" id="icmd" min="-30" max="200" step="0.5" value="8">
         </div>
         <div class="ctl" id="vcmdCtl" hidden style="margin-top:13px">
           <div class="row">
-            <label for="vcmd" title="The potential the amplifier holds the membrane at during the step.">Command voltage</label>
+            <label for="vcmd">Command voltage</label>
             <span class="num" id="vcmdV"></span>
           </div>
           <input type="range" id="vcmd" min="-90" max="60" step="5" value="0">
@@ -362,21 +362,21 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
         </div>
         <div class="ctl">
           <div class="row">
-            <label for="wraps" title="Layers of membrane wrapped around the axon, each adding resistance and dividing the capacitance.">Sheath layers</label>
+            <label for="wraps" title="Each wrap adds resistance and divides the capacitance.">Sheath layers</label>
             <span class="num" id="wrapsV"></span>
           </div>
           <input type="range" id="wraps" min="5" max="200" step="5" value="80" disabled>
         </div>
         <div class="ctl">
           <div class="row">
-            <label for="inode" title="Distance between the bare nodes where the channels live, where a longer jump is faster until the signal arrives too weak to fire.">Node spacing</label>
+            <label for="inode" title="A longer jump is faster, until the signal arrives too weak to fire.">Node spacing</label>
             <span class="num" id="inodeV"></span>
           </div>
           <input type="range" id="inode" min="0.9" max="4.8" step="0.3" value="2.4" disabled>
         </div>
         <div class="ctl">
           <div class="row">
-            <label for="lesion" title="Length of sheath stripped away mid-axon, leaving bare membrane that soaks up charge.">Stripped length</label>
+            <label for="lesion" title="Bare membrane mid-axon, which soaks up charge.">Stripped length</label>
             <span class="num" id="lesionV"></span>
           </div>
           <input type="range" id="lesion" min="1.2" max="12" step="0.6" value="6" disabled>
@@ -390,7 +390,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
         
         <div class="ctl">
           <div class="row">
-            <label for="amp" title="Current forced across the membrane by the electrode, positive current pushing charge in and depolarising.">Pulse strength</label>
+            <label for="amp" title="Positive current pushes charge in and depolarises.">Pulse strength</label>
             <span class="num" id="ampV"></span>
           </div>
           <input type="range" id="amp" min="-60" max="150" step="0.5" value="10.5">
@@ -404,21 +404,21 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
         </div>
         <div class="ctl" id="npulseCtl">
           <div class="row">
-            <label for="npulse" title="Fire one pulse or a pair, a pair being how you measure the refractory period.">Pulses</label>
+            <label for="npulse" title="A pair measures the refractory period.">Pulses</label>
             <span class="num" id="npulseV"></span>
           </div>
           <input type="range" id="npulse" min="1" max="2" step="1" value="1">
         </div>
         <div class="ctl" id="gapCtl">
           <div class="row">
-            <label for="gap" title="Delay between the first and second pulse, which you shorten until the second spike fails.">Gap between pulses</label>
+            <label for="gap" title="Shorten it until the second spike fails.">Gap between pulses</label>
             <span class="num" id="gapV"></span>
           </div>
           <input type="range" id="gap" min="1" max="40" step="0.5" value="16" disabled>
         </div>
         <div class="ctl" id="holdCtl">
           <div class="row">
-            <label for="hold" title="A steady current left on throughout, which fires the axon over and over between about 8 and 15.">Steady background current</label>
+            <label for="hold" title="Left on throughout. Fires over and over between about 8 and 15.">Steady background current</label>
             <span class="num" id="holdV"></span>
           </div>
           <input type="range" id="hold" min="-20" max="240" step="0.5" value="0">
@@ -447,7 +447,7 @@ dialog.about{width:min(780px,calc(100vw - 28px))}
         
         <div class="ctl">
           <div class="row">
-            <label for="speed" title="How much model time passes per second of real time, since a real spike lasts only two milliseconds.">Playback</label>
+            <label for="speed" title="A real spike lasts only two milliseconds.">Playback</label>
             <span class="num" id="speedV"></span>
           </div>
           <input type="range" id="speed" min="0.01" max="1" step="0.01" value="0.10">
@@ -591,15 +591,15 @@ function phiOf(T){ return Math.pow(3, (T-6.3)/10); }   // Q10 = 3
    which is not what the classic experiment shows.                            */
 const DRUGS = {
   ttx:      {short:'sodium pore plugged from outside, no spike at any strength', label:'TTX',       target:'na',   block:1.00, mouth:'out',
-             tip:'Tetrodotoxin, from pufferfish. Plugs the sodium pore from outside. Complete block: no spike at any stimulus.'},
+             tip:'Pufferfish toxin. Plugs the sodium pore. No spike at any stimulus.'},
   lidocaine:{short:'about 40% of sodium channels blocked, threshold roughly doubles', label:'Lidocaine', target:'na',   block:0.40, mouth:'in',
-             tip:'Local anaesthetic. Blocks about 40% of sodium channels from inside, which roughly doubles threshold, 6.9 to 12.2 uA/cm2 here. Push the pulse harder and the spike comes back.'},
+             tip:'Local anaesthetic. Blocks 40% of sodium channels, doubling threshold. Push harder and the spike returns.'},
   tea:      {short:'delayed-rectifier potassium blocked from inside, so the spike broadens', label:'TEA',       target:'k',    block:0.90, mouth:'in',
-             tip:'Tetraethylammonium. Plugs the delayed-rectifier potassium channel from inside. The spike gets about 6 mV taller and lasts about twice as long.'},
+             tip:'Plugs the potassium channel. The spike gets taller and lasts about twice as long.'},
   fap:      {short:'potassium partly blocked, a milder version of TEA', label:'4-AP',      target:'k',    block:0.60, mouth:'in',
-             tip:'4-aminopyridine, a milder potassium blocker. Prescribed to some people with multiple sclerosis. Try it on a stripped patch in the axon view.'},
+             tip:'A milder potassium blocker, prescribed in multiple sclerosis. Try it on a stripped patch.'},
   pronase:  {short:'inactivation gate digested off most sodium channels, so the spike never shuts itself off', label:'Pronase',   target:'h',    block:0.70, mouth:null,
-             tip:'A protease. Digests the inactivation gate off most sodium channels, so the spike never switches itself off and the membrane locks up depolarised.'}
+             tip:'Digests the inactivation gate off, so the spike never switches itself off.'}
 };
 /* Two blockers on the same channel act independently. Potassium block is
    capped: above ~93% the model membrane latches at a depolarised steady state
@@ -883,7 +883,7 @@ const TH = {
   channels:[], parts:[], transits:[], drugMol:[],
   naIn:0, naIn0:0, kOut:0, kOut0:0, pumpPhase:0,
   pump:{phase:0, stage:null, frac:0, cargo:[]}, pumpCh:null, patchCh:[], rec:'sharp', naDebt:0, kDebt:0, lDebt:0,
-  gw:22, gh:4, gOut:null, gIn:null, setW:0, setH:0,
+  gw:26, gh:8, gOut:null, gIn:null, setW:0, setH:0,
   mx:null, my:null, hits:[], recV:VREST
 };
 
@@ -975,7 +975,7 @@ function layoutTheatre(narrow){
     return out.length?out:TH.channels.slice(-2);
   })();
 
-  TH.gw = narrow ? 14 : 22; TH.gh = 4;
+  TH.gw = narrow ? 14 : 22; TH.gh = 7;
   TH.gOut = new Int16Array(TH.gw*TH.gh);
   TH.gIn  = new Int16Array(TH.gw*TH.gh);
 }
@@ -1010,7 +1010,17 @@ const DRUGCOL = { ttx:'#ff5a4a', lidocaine:'#ffd166', tea:'#b9a2ff',
                   fap:'#6fd0ff', pronase:'#7ce0b0' };
 
 /* ---------------- stochastic single channels ---------------- */
-function tickChannels(V, dtModel, phi, dtWall){
+/* The four pores on screen are a stochastic cartoon of a patch that really holds
+   thousands, so left to their own coin flips only one or two are open at the moment
+   of the inward rush and the biggest current of the whole spike looks like a trickle.
+   While the model's own Na conductance is high we therefore SHOWCASE the rush: three
+   of every four unblocked pores (all of them if fewer are on screen) are held with
+   their m gates open and the inactivation ball out. Nothing conducts with the ball in,
+   and the forcing fades out as gNa falls, so inactivation still shuts the pores on
+   screen at the right moment. The current itself is untouched: it comes from the
+   Hodgkin-Huxley equations, not from counting these pores. Voltage clamp is exempt,
+   because there the pores ARE the measurement. */
+function tickChannels(V, dtModel, phi, dtWall, gNa){
   const am=a_m(V)*phi, bm=b_m(V)*phi, ah=a_h(V)*phi, bh=b_h(V)*phi,
         an=a_n(V)*phi, bn=b_n(V)*phi;
   const P=r=>1-Math.exp(-r*dtModel);
@@ -1042,13 +1052,31 @@ function tickChannels(V, dtModel, phi, dtWall){
     ch.glow = ease(ch.glow, ch.cond?1:0, dtWall, 0.05);
     ch.sway += dtWall*1.7;
   }
+  showcaseNa(gNa, dtWall);
+}
+const NASHOW = { f:0 };
+function showcaseNa(gNa, dtWall){
+  const clamped = (typeof isClamp==='function') && isClamp();
+  const target = clamped ? 0 : clamp(((gNa===undefined?0:gNa)-4)/8, 0, 1);
+  NASHOW.f = ease(NASHOW.f, target, dtWall, 0.02);
+  if(NASHOW.f<0.02) return;
+  const na = TH.channels.filter(c=>c.type==='na' && !c.blk);
+  if(!na.length) return;
+  const want = Math.min(na.length, Math.max(1, Math.ceil(0.75*na.length*NASHOW.f)));
+  na.sort((a,b)=>(b.cond?1:0)-(a.cond?1:0));   /* keep the ones already open */
+  for(let i=0;i<want;i++){
+    const ch=na[i];
+    ch.mS[0]=ch.mS[1]=ch.mS[2]=1; ch.hS=1; ch.cond=true;
+    ch.act   = ease(ch.act,   1, dtWall, 0.030);
+    ch.inact = ease(ch.inact, 1, dtWall, 0.045);
+  }
 }
 
 /* ---------------- ion transit ---------------- */
 function sendThrough(ch, kind, count, dirDown){
   const srcSide = dirDown ? -1 : 1;
   for(let i=0;i<count;i++){
-    if(TH.transits.length>95) return;
+    if(TH.transits.length>130) return;
     /* sample a handful at random and take the nearest of those, so the pool
        near a busy channel does not get hollowed out into a visible hole */
     let best=null, bd=Infinity;
@@ -1067,6 +1095,7 @@ function sendThrough(ch, kind, count, dirDown){
     if(kind==='k')  TH.kOut += dirDown?-1:1;
   }
 }
+const RR = {};
 function pushFlux(kind, count, dirDown){
   if(kind==='leak_cl'){                       // the always-open background trickle
     const lk = TH.channels.filter(c=>c.type==='leak');
@@ -1076,8 +1105,12 @@ function pushFlux(kind, count, dirDown){
   }
   const open = TH.channels.filter(c=>c.type===kind && c.cond);
   if(!open.length) return;                    // blocked or shut: nothing crosses
-  for(let i=0;i<count;i++)
-    sendThrough(open[(Math.random()*open.length)|0], kind, 1, dirDown);
+  /* round robin, not a random pick: with four pores a random pick leaves one
+     pore doing all the work half the time, which reads as a weaker current */
+  for(let i=0;i<count;i++){
+    RR[kind]=(RR[kind]||0)+1;
+    sendThrough(open[RR[kind]%open.length], kind, 1, dirDown);
+  }
 }
 
 const POOLKEY = { 'na-1':'nao', 'na1':'nai', 'k-1':'ko', 'k1':'ki',
@@ -1108,14 +1141,13 @@ function balancePools(dtWall){
     const n=Math.min(9, Math.ceil(Math.abs(d)/5));
     const [type,side]=POOLINFO[k];
     if(d>0){
-      /* retire the ones furthest from the membrane, so the ions actually
-         doing something near a pore stay on screen */
+      /* retire a surplus ion at random. This used to prefer the ones furthest
+         from the membrane, which over a train of spikes swept the whole
+         population into a crust against the membrane. */
       let picked=0, guard=0;
       while(picked<n && guard++<400){
         const p=TH.parts[(Math.random()*TH.parts.length)|0];
         if(!p||p.tr||p.dying||p.inPump||p.type!==type||p.side!==side) continue;
-        const dm = side<0 ? TH.memTop-p.y : p.y-TH.memBot;
-        if(dm < 60 && guard < 260) continue;
         p.dying=true; picked++;
       }
     } else {
@@ -1144,8 +1176,13 @@ function tickParticles(dtWall, V){
     if(p.side<0){ const gy=clamp((p.y/outH)|0,0,gh-1); gO[gy*gw+gx]++; }
     else        { const gy=clamp(((p.y-inBot)/inH)|0,0,gh-1); gI[gy*gw+gx]++; }
   }
-  const at=(g,x,y)=> (x<0||x>=gw||y<0||y>=gh) ? -1 : g[y*gw+x];
-  const DIFF=34, jit=46, drag=1.7;
+  /* sample with the index clamped to the edge, so a boundary cell differences
+     against itself on the missing side: a one-sided gradient instead of none.
+     The row hard against the membrane is where the pores and the pump drop their
+     ions, and with a -1 sentinel it was the one row that never felt its own
+     crowding, so the ions piled up in a rind along the membrane. */
+  const at=(g,x,y)=> g[clamp(y,0,gh-1)*gw+clamp(x,0,gw-1)];
+  const DIFF=150, jit=70, drag=1.7;
 
   const gone=[];
   for(let pi=0;pi<TH.parts.length;pi++){
@@ -1160,6 +1197,7 @@ function tickParticles(dtWall, V){
     } else if(p.fade<1){
       p.fade = Math.min(1, p.fade + dtWall/0.42);
     }
+    if(p.pumpCool>0) p.pumpCool-=dtWall;
     if(p.tr){
       const t=p.tr;
       t.u += dtWall/0.32;
@@ -1192,12 +1230,12 @@ function tickParticles(dtWall, V){
     const gy = p.side<0 ? clamp((p.y/outH)|0,0,gh-1)
                         : clamp(((p.y-inBot)/inH)|0,0,gh-1);
     const l=at(g,gx-1,gy), r=at(g,gx+1,gy), u=at(g,gx,gy-1), d=at(g,gx,gy+1);
-    if(l>=0 && r>=0) p.vx += (l-r)*DIFF*dtWall;
-    if(u>=0 && d>=0) p.vy += (u-d)*DIFF*dtWall;
+    p.vx += (l-r)*DIFF*dtWall;
+    p.vy += (u-d)*DIFF*dtWall;
 
     p.vx += (Math.random()-.5)*jit; p.vy += (Math.random()-.5)*jit;
     const dp=Math.exp(-drag*dtWall); p.vx*=dp; p.vy*=dp;
-    const sp=Math.hypot(p.vx,p.vy), mx=56;
+    const sp=Math.hypot(p.vx,p.vy), mx=135;
     if(sp>mx){ p.vx*=mx/sp; p.vy*=mx/sp; }
     p.x += p.vx*dtWall; p.y += p.vy*dtWall;
     if(p.x<8){p.x=8;p.vx=Math.abs(p.vx);} if(p.x>TH.LW-8){p.x=TH.LW-8;p.vx=-Math.abs(p.vx);}
@@ -1246,15 +1284,22 @@ function pumpSlot(i, n, where){
 }
 function pumpCapture(kind, side, n){
   const pump=TH.pumpCh, mouthY = side<0 ? TH.memTop : TH.memBot;
+  /* Take from a WIDE pool, at random inside it, and never take an ion the pump
+     has just put down. Always grabbing the nearest and dropping it back a moment
+     later recycled the same handful of ions in place, which is what built the
+     clump of pump ions sitting against the membrane. */
   const cands=[];
   for(const p of TH.parts){
     if(p.tr||p.inPump||p.dying||p.type!==kind||p.side!==side) continue;
+    if(p.pumpCool>0) continue;
     cands.push([Math.abs(p.x-pump.cx) + Math.abs(p.y-mouthY)*0.7, p]);
   }
   cands.sort((a,b)=>a[0]-b[0]);
+  const pool=cands.slice(0, Math.max(n, Math.min(cands.length, 6*n)));
+  for(let i=pool.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
   const out=[];
   for(let i=0;i<n;i++){
-    let p = cands[i] && cands[i][1];
+    let p = pool[i] && pool[i][1];
     if(!p){                       // the inside pool is small; never go empty-handed
       p = {type:kind, side,
            x:pump.cx+(Math.random()-.5)*54,
@@ -1270,9 +1315,10 @@ function pumpCapture(kind, side, n){
 function pumpRelease(cargo, side){
   for(const p of cargo){
     p.inPump=null; p.side=side;
-    p.x += (Math.random()-.5)*34;
-    p.y = side<0 ? TH.memTop-17 : TH.memBot+17;
-    p.vx=(Math.random()-.5)*54; p.vy=(side<0?-1:1)*(32+Math.random()*30);
+    p.pumpCool=3.5;                       /* seconds before this ion can be pumped again */
+    p.x += (Math.random()-.5)*90;
+    p.y = side<0 ? TH.memTop-24 : TH.memBot+24;
+    p.vx=(Math.random()-.5)*54; p.vy=(side<0?-1:1)*(46+Math.random()*34);
     if(p.type==='na') TH.naIn += side>0?1:-1;
     if(p.type==='k')  TH.kOut += side<0?1:-1;
   }
@@ -2657,16 +2703,16 @@ function drugNote(){
 const RECS = {
   patch:[
     {key:'sharp', label:'Sharp microelectrode',
-     tip:'A fine tip through the membrane. You set the current and the membrane decides its own voltage — this is how you see an action potential at all.',
+     tip:'You set the current. The membrane decides its own voltage.',
      defs:()=>({dur:1, npulse:1, hold:0, speed:0.10, amp:+(THR1*1.5).toFixed(1)})},
     {key:'cc', label:'Whole-cell current clamp',
-     tip:'A blunt pipette sealed on and the patch broken through, passing a set current for a set time. Raise the command a step at a time: nothing, then one spike, then a train, then the membrane jams.',
+     tip:'A set current for a set time. Step it up: nothing, one spike, a train, then jamming.',
      defs:()=>({dur:30, icmd:8, speed:0.30, repeat:false})},
     {key:'vc', label:'Whole-cell voltage clamp',
-     tip:'The amplifier holds the voltage where you put it and reports the current it needs. This is the experiment the equations came from.',
+     tip:'The amplifier holds the voltage and reports the current. The experiment the equations came from.',
      defs:()=>({dur:12, vcmd:0, speed:0.16, repeat:false})},
     {key:'attached', label:'Cell-attached patch',
-     tip:'The seal is left intact, so you record only the channels under the tip. Openings appear as square steps, one protein at a time.',
+     tip:'Only the channels under the tip. Openings appear as square steps.',
      defs:()=>({dur:20, vcmd:0, speed:0.30, repeat:true})}
   ],
   cable:[
@@ -2847,7 +2893,7 @@ function advanceClamp(dtModel, dtWall){
 function finishPatchFrame(dtModel, dtWall, sampler){
   const nsub = Math.min(48, Math.max(1, Math.ceil(dtModel/0.05)));
   for(let i=0;i<nsub;i++){
-    tickChannels(patch.V, dtModel/nsub, PHI, dtWall/nsub);
+    tickChannels(patch.V, dtModel/nsub, PHI, dtWall/nsub, patch.gNa);
     if(sampler) sampler((i+1)/nsub);
   }
   if(S.ions){
@@ -2855,8 +2901,8 @@ function finishPatchFrame(dtModel, dtWall, sampler){
     TH.naDebt += Math.abs(patch.iNa)*dtModel*k;
     TH.kDebt  += Math.abs(patch.iK )*dtModel*k;
     TH.lDebt  += Math.abs(patch.iL )*dtModel*k*0.5;
-    let na=Math.min(8, Math.floor(TH.naDebt)); TH.naDebt-=na;
-    let kk=Math.min(8, Math.floor(TH.kDebt));  TH.kDebt -=kk;
+    let na=Math.min(12, Math.floor(TH.naDebt)); TH.naDebt-=na;
+    let kk=Math.min(12, Math.floor(TH.kDebt));  TH.kDebt -=kk;
     let ll=Math.min(2, Math.floor(TH.lDebt));  TH.lDebt -=ll;
     if(na) pushFlux('na', na, patch.iNa<0);
     if(kk) pushFlux('k',  kk, patch.iK <0);

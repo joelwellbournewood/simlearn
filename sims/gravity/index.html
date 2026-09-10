@@ -90,6 +90,9 @@ input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba
 input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
 .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg.four{grid-template-columns:repeat(4,1fr)}
+.seg + .sublab{margin-top:10px}
+.sublab{font-size:13px;font-weight:500;margin:2px 0 5px;display:flex;align-items:center;gap:6px;position:relative}
 .seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
 .seg button:hover{border-color:var(--line-strong);color:var(--ink)}
 .seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
@@ -204,34 +207,34 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Bodies</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="The light bodies that get pushed around rather than do the pushing." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Small bodies<button class="tip" data-tip="Pushed around rather than pushing." aria-label="What small bodies does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="0" max="100" step="1" value="30">
   </div>
   <div class="row">
-    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy bodies that do the pushing: stars, galaxy nuclei, massive seeds." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
+    <label for="s-nl"><span class="nm">Large bodies<button class="tip" data-tip="The heavy ones: stars, galaxy nuclei." aria-label="What large bodies does">?</button></span><span class="val" id="v-nl"></span></label>
     <input type="range" id="s-nl" min="0" max="5" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging on empty space and releasing." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
+    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
     <input type="range" id="s-launch" min="0" max="100" step="1" value="42">
   </div>
   </details>
   <details class="grp">
   <summary class="grp-title">Physics</summary>
   <div class="row">
-    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair, so orbits tighten as you raise it and drift apart as you lower it." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
+    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Treats each body as a fuzzy sphere, so the force stops growing once two bodies are closer than their sizes." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
+    <label for="s-soft"><span class="nm">Softening<button class="tip" data-tip="Bodies act as fuzzy spheres, so close passes stay finite." aria-label="What softening does">?</button></span><span class="val" id="v-soft"></span></label>
     <input type="range" id="s-soft" min="0.25" max="2" step="0.05" value="0.7">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with extra substeps added automatically so close passes stay accurate." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed</span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.1" max="8" step="0.05" value="1">
   </div>
   <div class="row">
-    <label><span class="nm">Collisions<button class="tip" data-tip="Two bodies that touch merge into one heavier body." aria-label="What collisions does">?</button></span></label>
+    <label><span class="nm">Collisions<button class="tip" data-tip="Touching bodies merge." aria-label="What collisions does">?</button></span></label>
     <div class="toggles"><button class="tg" id="t-merge" aria-pressed="false">Merge on contact</button></div>
   </div>
   </details>
@@ -248,8 +251,15 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Look</summary>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each path stays on screen, drawn in whichever reference frame you are watching from." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length</span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="55">
+  </div>
+  <div class="sublab"><span class="nm">Palette</span></div>
+  <div class="seg four" id="palettes">
+    <button data-p="deep" aria-pressed="true">Deep field</button>
+    <button data-p="nebula" aria-pressed="false">Nebula</button>
+    <button data-p="ember" aria-pressed="false">Ember</button>
+    <button data-p="ice" aria-pressed="false">Ice</button>
   </div>
   <div class="toggles">
     <button class="tg" id="t-orbit" aria-pressed="true">Orbit of selected</button>
@@ -606,16 +616,81 @@ function applyDPR(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   buildStars();
 }
+/* The sky is one tile drawn four times as the camera drifts, so anything painted
+   on it has to wrap. Every cloud is therefore stamped nine times, at each offset of
+   plus or minus one tile, and its radius is kept under half a tile so no edge shows. */
 function buildStars(){
   stars=document.createElement('canvas');
   stars.width=Math.round(W*DPR); stars.height=Math.round(H*DPR);
   const s=stars.getContext('2d'); s.setTransform(DPR,0,0,DPR,0,0);
-  const n=Math.round(W*H/5200);
+  const R=Math.min(W,H)*0.42;
+  s.globalCompositeOperation='lighter';
+  /* one soft ellipse, stamped at every wrapped offset so the tile has no seam */
+  const blob=(x,y,rx,ry,rot,c,a)=>{
+    const R=Math.max(rx,ry);
+    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
+      const gx=x+dx*W, gy=y+dy*H;
+      if(gx<-R||gx>W+R||gy<-R||gy>H+R) continue;
+      s.save(); s.translate(gx,gy); s.rotate(rot); s.scale(1,ry/rx);
+      const gr=s.createRadialGradient(0,0,rx*0.06,0,0,rx);
+      gr.addColorStop(0,'rgba('+c[0]+','+c[1]+','+c[2]+','+a.toFixed(3)+')');
+      gr.addColorStop(0.45,'rgba('+c[0]+','+c[1]+','+c[2]+','+(a*0.34).toFixed(3)+')');
+      gr.addColorStop(1,'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+      s.fillStyle=gr; s.beginPath(); s.arc(0,0,rx,0,TAU); s.fill(); s.restore();
+    }
+  };
+  const sky=P.sky||'clear';
+  if(sky==='clouds'){
+    /* Nebula: round billows, the emission-nebula look */
+    for(const [cr,cg,cb,cn] of (P.neb||[])){
+      for(let i=0;i<cn;i++){
+        const rad=R*(0.55+Math.random()*0.45);
+        blob(Math.random()*W,Math.random()*H,rad,rad*(0.8+Math.random()*0.4),
+             Math.random()*TAU,[cr,cg,cb],0.065+Math.random()*0.055);
+      }
+      for(let i=0;i<90;i++){ const rad=R*(0.05+Math.random()*0.16);
+        blob(Math.random()*W,Math.random()*H,rad,rad,0,[cr,cg,cb],0.05); }
+    }
+  } else if(sky==='filaments'){
+    /* Ember: long thin wisps at a shared drift angle, a supernova remnant rather
+       than a cloud, so the sky reads differently and not just in colour */
+    const base=Math.random()*Math.PI;
+    for(const [cr,cg,cb,cn] of (P.neb||[])){
+      for(let i=0;i<cn+2;i++){
+        const rx=R*(0.7+Math.random()*0.35), rot=base+(Math.random()-0.5)*0.85;
+        blob(Math.random()*W,Math.random()*H,rx,rx*(0.09+Math.random()*0.11),rot,
+             [cr,cg,cb],0.085+Math.random()*0.055);
+      }
+      for(let i=0;i<40;i++){ const rx=R*(0.10+Math.random()*0.20);
+        blob(Math.random()*W,Math.random()*H,rx,rx*(0.22+Math.random()*0.25),
+             base+(Math.random()-0.5)*1.1,[cr,cg,cb],0.075); }
+    }
+  } else if(sky==='band'){
+    /* Ice: one broad ribbon across the sky, the plane of a cold galaxy, with the
+       clumps strung along it rather than scattered */
+    const ang=0.30+Math.random()*0.12, cy=H*(0.3+Math.random()*0.4);
+    const neb=P.neb||[];
+    for(let i=0;i<9;i++){
+      const x=(i+0.5)/9*W, y=cy+Math.tan(ang)*(x-W/2)+(Math.random()-0.5)*H*0.06;
+      const c=neb[i%Math.max(1,neb.length)]||[120,160,220];
+      blob(x,y,R*(0.42+Math.random()*0.22),R*(0.10+Math.random()*0.06),ang,c,
+           0.055+Math.random()*0.04);
+    }
+    for(const [cr,cg,cb] of neb){
+      for(let i=0;i<26;i++){
+        const x=Math.random()*W, y=cy+Math.tan(ang)*(x-W/2)+(Math.random()-0.5)*H*0.22;
+        const rad=R*(0.04+Math.random()*0.13);
+        blob(x,y,rad,rad*(0.5+Math.random()*0.5),ang,[cr,cg,cb],0.045);
+      }
+    }
+  }
+  const st=P.star, n=Math.round(W*H/5200*(P.starK||1));
   for(let i=0;i<n;i++){
     const x=Math.random()*W, y=Math.random()*H, a=0.05+Math.random()*0.22, r=Math.random()<0.12?1.5:0.85;
-    s.fillStyle='rgba(200,232,220,'+a.toFixed(3)+')';
+    s.fillStyle='rgba('+st[0]+','+st[1]+','+st[2]+','+a.toFixed(3)+')';
     s.beginPath(); s.arc(x,y,r,0,TAU); s.fill();
   }
+  s.globalCompositeOperation='source-over';
 }
 /* resolution governor: step the pixel ratio down under load, back up when calm */
 let ftEMA=16, govT=0;
@@ -658,18 +733,54 @@ function heavyCount(){
 }
 function twoHeaviest(){ let A=null,B=null; for(const b of bodies){ if(!A||b.m>A.m){ B=A; A=b; } else if(!B||b.m>B.m) B=b; } return [A,B]; }
 
-/* teal -> gold -> coral by mass, log scale */
+/* ---------- looks ----------
+   Each look is a three stop ramp for body mass, a sky, and the chrome tokens.
+   None of it touches the integrator, the masses or the units. */
+const LOOKS={
+  deep:{ nm:'Deep field', field:'#07120f', bg:'#0a1712', panel:'rgba(15,31,26,.84)', panel2:'#1b352c',
+    ink:[227,239,233], neu:[150,190,170], acc:[86,224,194], muted:'#9db9ac',
+    star:[200,232,220], neb:[], sky:'clear', starK:1 },
+  nebula:{ nm:'Nebula', field:'#080615', bg:'#0d0a1e', panel:'rgba(26,20,48,.84)', panel2:'#241b3b',
+    ink:[236,233,252], neu:[160,150,200], acc:[186,148,255], muted:'#a99fc4',
+    sky:'clouds', starK:0.95,
+    star:[228,228,255], neb:[[126,72,214,3],[214,80,170,3],[60,110,220,2]],
+    ramp:[[120,180,255],[214,132,255],[255,138,178]] },
+  ember:{ nm:'Ember', field:'#130a07', bg:'#1b120e', panel:'rgba(46,26,20,.84)', panel2:'#33201a',
+    ink:[252,238,228], neu:[190,150,128], acc:[255,178,102], muted:'#c3a493',
+    sky:'filaments', starK:0.85,
+    star:[255,232,206], neb:[[226,104,38,3],[186,36,54,3],[240,170,60,2]],
+    ramp:[[255,226,138],[255,150,60],[214,52,60]] },
+  ice:{ nm:'Ice', field:'#050d16', bg:'#0b1622', panel:'rgba(16,32,50,.84)', panel2:'#152c42',
+    ink:[233,244,255], neu:[140,175,205], acc:[124,212,255], muted:'#9db3c8',
+    sky:'band', starK:1.3,
+    star:[236,248,255], neb:[[42,96,200,3],[86,180,240,3],[150,90,220,2]],
+    ramp:[[52,96,220],[124,212,255],[236,250,255]] }
+};
+LOOKS.deep.ramp=[[86,224,194],[230,195,79],[255,125,92]];
+let P=LOOKS.deep;
+const rgba=(t,a)=>'rgba('+t[0]+','+t[1]+','+t[2]+','+a+')';
+const PACC=a=>rgba(P.acc,a), N=a=>rgba(P.neu,a), K=a=>rgba(P.ink,a);
+const hexOf=t=>'#'+t.map(v=>v.toString(16).padStart(2,'0')).join('');
 const NB=32;
 function massT(m){ return Math.max(0,Math.min(1,(Math.log(m)-Math.log(0.4))/(Math.log(6000)-Math.log(0.4)))); }
 function colourAt(t){
-  let r,g,b;
-  if(t<0.5){ const u=t/0.5; r=86+(230-86)*u; g=224+(195-224)*u; b=194+(79-194)*u; }
-  else { const u=(t-0.5)/0.5; r=230+(255-230)*u; g=195+(125-195)*u; b=79+(92-79)*u; }
-  return [r|0,g|0,b|0];
+  const R=P.ramp, i=t<0.5?0:1, u=t<0.5?t/0.5:(t-0.5)/0.5, a=R[i], b=R[i+1];
+  return [(a[0]+(b[0]-a[0])*u)|0,(a[1]+(b[1]-a[1])*u)|0,(a[2]+(b[2]-a[2])*u)|0];
+}
+function applyLook(k){
+  P=LOOKS[k]||LOOKS.deep;
+  const r=document.documentElement.style;
+  r.setProperty('--bg',P.bg); r.setProperty('--panel',P.panel); r.setProperty('--panel-2',P.panel2);
+  r.setProperty('--line',N('.20')); r.setProperty('--line-strong',N('.36'));
+  r.setProperty('--ink',hexOf(P.ink)); r.setProperty('--muted',P.muted);
+  r.setProperty('--accent',hexOf(P.acc)); r.setProperty('--accent-dim',PACC('.14'));
+  buildSprites(); buildStars();
+  try{ localStorage.setItem('simlearn-gravity-look',k); }catch(e){}
 }
 function bucketOf(m){ return Math.min(NB-1,Math.floor(massT(m)*NB)); }
 const glowSprites=[], coreSprites=[], bucketRGB=[];
-(function buildSprites(){
+function buildSprites(){
+  glowSprites.length=0; coreSprites.length=0; bucketRGB.length=0;
   for(let k=0;k<NB;k++){
     const [r,g,b]=colourAt((k+0.5)/NB); bucketRGB.push('rgb('+r+','+g+','+b+')');
     const gs=document.createElement('canvas'); gs.width=gs.height=96;
@@ -682,7 +793,8 @@ const glowSprites=[], coreSprites=[], bucketRGB=[];
     cc.fillStyle='rgba(255,255,255,.55)'; cc.beginPath(); cc.arc(24-22*0.28,24-22*0.3,22*0.3,0,TAU); cc.fill();
     coreSprites.push(cs);
   }
-})();
+}
+buildSprites();
 
 /* ---------- reference frame & camera ---------- */
 const frame={mode:'fixed',ox:0,oy:0,th:0,c:1,s:0,vx:0,vy:0,w:0,idA:-1,idB:-1};
@@ -1082,7 +1194,7 @@ let drag=null, panning=null, pinch=null;
 const ptrs=new Map();
 function chunksFor(n){ return n<=60?12:n<=300?4:2; }
 function draw(){
-  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=P.field; ctx.fillRect(0,0,W,H);
   if(stars){
     const px=((-cam.x*0.06*cam.zoom)%W+W)%W, py=((-cam.y*0.06*cam.zoom)%H+H)%H;
     ctx.drawImage(stars,px,py,W,H); ctx.drawImage(stars,px-W,py,W,H); ctx.drawImage(stars,px,py-H,W,H); ctx.drawImage(stars,px-W,py-H,W,H);
@@ -1138,13 +1250,13 @@ function draw(){
       if(sx<-40||sx>W+40||sy<-40||sy>H+40) continue;
       ctx.fillStyle='rgba(7,18,15,.72)';
       ctx.beginPath(); ctx.arc(sx,sy,9,0,TAU); ctx.fill();
-      ctx.fillStyle='rgba(241,252,247,.92)'; ctx.fillText(b.lab,sx,sy+0.5);
+      ctx.fillStyle=K('.92'); ctx.fillText(b.lab,sx,sy+0.5);
     }
     ctx.textAlign='start'; ctx.textBaseline='alphabetic';
   }
   /* velocity arrows */
   if(showArrows&&n<=400){
-    ctx.strokeStyle='rgba(227,239,233,.7)'; ctx.lineWidth=1.2;
+    ctx.strokeStyle=K('.7'); ctx.lineWidth=1.2;
     for(let i=0;i<n;i++){
       const b=bodies[i]; w2f(b.x,b.y,tmp); const sx=tmp.x*z+ox, sy=tmp.y*z+oy;
       frameVel(b,tmp); const L=Math.hypot(tmp.x,tmp.y); if(L<0.02) continue;
@@ -1159,7 +1271,7 @@ function draw(){
   /* selection ring */
   if(sb){
     w2f(sb.x,sb.y,tmp); const sx=tmp.x*z+ox, sy=tmp.y*z+oy, R=Math.max(1.2,sb.r*z)+6;
-    ctx.strokeStyle='rgba(227,239,233,.85)'; ctx.lineWidth=1.4; ctx.setLineDash([3,4]);
+    ctx.strokeStyle=K('.85'); ctx.lineWidth=1.4; ctx.setLineDash([3,4]);
     ctx.beginPath(); ctx.arc(sx,sy,R,0,TAU); ctx.stroke(); ctx.setLineDash([]);
   }
   /* launch preview */
@@ -1179,13 +1291,13 @@ function draw(){
         ctx.beginPath(); ctx.moveTo(hx-6,hy-6); ctx.lineTo(hx+6,hy+6); ctx.moveTo(hx+6,hy-6); ctx.lineTo(hx-6,hy+6); ctx.stroke();
       }
     }
-    ctx.setLineDash([6,5]); ctx.lineWidth=1.6; ctx.strokeStyle='rgba(86,224,194,.75)';
+    ctx.setLineDash([6,5]); ctx.lineWidth=1.6; ctx.strokeStyle=PACC('.75');
     ctx.beginPath(); ctx.moveTo(drag.x0,drag.y0); ctx.lineTo(drag.x1,drag.y1); ctx.stroke(); ctx.setLineDash([]);
     ctx.strokeStyle='rgba(255,125,92,.9)'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(drag.x0,drag.y0); ctx.lineTo(drag.x0+(drag.x0-drag.x1)*0.05*26,drag.y0+(drag.y0-drag.y1)*0.05*26); ctx.stroke();
     const [r,g,bl]=colourAt(massT(launchM));
     ctx.fillStyle='rgba('+r+','+g+','+bl+',.9)'; ctx.beginPath(); ctx.arc(drag.x0,drag.y0,R,0,TAU); ctx.fill();
-    ctx.font='11px "Space Mono",monospace'; ctx.fillStyle='rgba(227,239,233,.9)';
+    ctx.font='11px "Space Mono",monospace'; ctx.fillStyle=K('.9');
     ctx.fillText('speed '+Math.hypot(vfx,vfy).toFixed(2)+(frame.mode==='rot'?' (rotating frame)':''), drag.x0+R+7, drag.y0-R-4);
   }
 }
@@ -1201,9 +1313,9 @@ function drawLagrange(z,ox,oy){
   const a=P(A.x,A.y), b=P(B.x,B.y);
   /* the planet's orbit, and the two equilateral triangles that fix L4 and L5 */
   ctx.save();
-  ctx.setLineDash([3,5]); ctx.lineWidth=1; ctx.strokeStyle='rgba(227,239,233,.16)';
+  ctx.setLineDash([3,5]); ctx.lineWidth=1; ctx.strokeStyle=K('.16');
   ctx.beginPath(); ctx.arc(a.x,a.y,d*z,0,TAU); ctx.stroke();
-  ctx.setLineDash([2,4]); ctx.strokeStyle='rgba(86,224,194,.22)';
+  ctx.setLineDash([2,4]); ctx.strokeStyle=PACC('.22');
   for(const p of L) if(p.label==='L4'||p.label==='L5'){
     const q=P(p.x,p.y);
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(q.x,q.y); ctx.lineTo(b.x,b.y); ctx.stroke();
@@ -1214,24 +1326,24 @@ function drawLagrange(z,ox,oy){
     const q=P(p.x,p.y); const sx=q.x, sy=q.y;
     if(sx<-40||sx>W+40||sy<-40||sy>H+40) continue;
     const stable=p.label==='L4'||p.label==='L5';
-    ctx.strokeStyle=stable?'rgba(86,224,194,.85)':'rgba(230,195,79,.85)'; ctx.lineWidth=1.2;
+    ctx.strokeStyle=stable?PACC('.85'):'rgba(230,195,79,.85)'; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(sx-6,sy); ctx.lineTo(sx+6,sy); ctx.moveTo(sx,sy-6); ctx.lineTo(sx,sy+6); ctx.stroke();
     ctx.beginPath(); ctx.arc(sx,sy,4,0,TAU); ctx.stroke();
-    ctx.fillStyle=stable?'rgba(86,224,194,.95)':'rgba(230,195,79,.95)';
+    ctx.fillStyle=stable?PACC('.95'):'rgba(230,195,79,.95)';
     ctx.fillText(p.label,sx,sy-10);
     if(d*z>150){
-      ctx.fillStyle='rgba(227,239,233,.55)'; ctx.font='9.5px "Space Mono",monospace';
+      ctx.fillStyle=K('.55'); ctx.font='9.5px "Space Mono",monospace';
       ctx.fillText(NOTE[p.label],sx,sy+19);
       ctx.font='10px "Space Mono",monospace';
     }
   }
   /* name the pair the points belong to */
-  ctx.font='10px "Space Mono",monospace'; ctx.fillStyle='rgba(227,239,233,.5)';
+  ctx.font='10px "Space Mono",monospace'; ctx.fillStyle=K('.5');
   if(A.m>3*B.m){ ctx.fillText('star',a.x,a.y-A.r*z-9); ctx.fillText('planet',b.x,b.y-B.r*z-9); }
   /* key, right-aligned along the bottom edge */
   ctx.textAlign='end'; ctx.font='10.5px "Space Mono",monospace';
-  ctx.fillStyle='rgba(86,224,194,.9)'; ctx.fillText('teal  L4 L5  stable: a body left here stays', W-20, H-56);
-  ctx.fillStyle='rgba(230,195,79,.9)'; ctx.fillText('gold  L1 L2 L3  unstable: it slides away', W-20, H-40);
+  ctx.fillStyle=PACC('.9'); ctx.fillText('L4 L5  stable: a body left here stays', W-20, H-56);
+  ctx.fillStyle='rgba(230,195,79,.9)'; ctx.fillText('L1 L2 L3  unstable: it slides away', W-20, H-40);
   ctx.textAlign='start';
 }
 function drawLagNote(){
@@ -1239,7 +1351,7 @@ function drawLagNote(){
   ctx.save(); ctx.textAlign='end'; ctx.font='11px "Space Mono",monospace';
   ctx.fillStyle='rgba(230,195,79,.92)';
   ctx.fillText('Lagrange points are not defined here', W-20, H-56);
-  ctx.fillStyle='rgba(227,239,233,.6)'; ctx.font='10.5px "Space Mono",monospace';
+  ctx.fillStyle=K('.6'); ctx.font='10.5px "Space Mono",monospace';
   ctx.fillText('they need one dominant pair, and '+k+' bodies here are comparable', W-20, H-40);
   ctx.restore();
 }
@@ -1371,6 +1483,15 @@ dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
 el('p-toggle').addEventListener('click',()=>{ const o=el('panel').classList.toggle('open'); el('p-toggle').setAttribute('aria-expanded',String(o)); });
 
 document.querySelectorAll('#frames button').forEach(b=>b.addEventListener('click',()=>setFrame(b.dataset.f)));
+document.querySelectorAll('#palettes button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#palettes button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  applyLook(b.dataset.p); }));
+(function initLook(){
+  let k='deep'; try{ k=localStorage.getItem('simlearn-gravity-look')||'deep'; }catch(e){}
+  if(!LOOKS[k]) k='deep';
+  document.querySelectorAll('#palettes button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.p===k)));
+  applyLook(k);
+})();
 function setTg(id,on){ el(id).setAttribute('aria-pressed',String(on)); }
 function setMerge(on){ mergeOn=on; setTg('t-merge',on); }
 function setLag(on){ showLag=on; setTg('t-lag',on); }

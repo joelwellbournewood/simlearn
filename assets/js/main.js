@@ -285,6 +285,41 @@ const GLYPH = {
       `.gol-b{animation:golB 2.6s ease-in-out infinite}`);
     return `<g class="soft">${g}</g>${glider(0, 0, 'gol-a')}${glider(1, 1, 'gol-b')}`;
   },
+  statistics() {
+    /* A Galton board doing its job: a triangle of pegs, a bell of bars already grown
+       in the bins, and one ball rattling down a fresh left/right path. The bar heights
+       are the real binomial for 5 rows, and the ball's zigzag is one honest sample. */
+    const bx = 140, top = 18, sx = 17, sy = 15;
+    let pegs = '';
+    for (let r = 0; r < 5; r++) for (let i = 0; i <= r; i++)
+      pegs += dot(bx + (i - r / 2) * sx, top + 14 + r * sy, 1.7, 'soft');
+    /* binomial(5, .5): 1 5 10 10 5 1 over 32 */
+    const pmf = [1, 5, 10, 10, 5, 1], bars = [];
+    for (let k = 0; k < 6; k++) {
+      const h = pmf[k] / 10 * 26, x = bx + (k - 2.5) * sx;
+      bars.push(`<rect class="fillA" x="${(x - 5).toFixed(1)}" y="${(114 - h).toFixed(1)}" width="10" height="${h.toFixed(1)}" rx="1.5" opacity=".8"/>`);
+    }
+    /* the ball: one sampled path, replayed. R L R R L lands in bin 3 */
+    const seq = [1, 0, 1, 1, 0];
+    let c = 0, kf = `0%{transform:translate(0,0);opacity:0}4%{opacity:1}`;
+    const px = [], x0 = bx, y0 = top;
+    let x = 0, y = 0;
+    seq.forEach((d, r) => {
+      x = (c + d - (r + 1) / 2) * sx; c += d; y = 14 + r * sy;
+      kf += `${(10 + r * 13)}%{transform:translate(${x}px,${y}px)}`;
+    });
+    kf += `78%{transform:translate(${((c - 2.5) * sx).toFixed(1)}px,${(114 - top - pmf[3] / 10 * 26 - 3).toFixed(1)}px);opacity:1}`;
+    kf += `86%,100%{transform:translate(${((c - 2.5) * sx).toFixed(1)}px,${(114 - top - pmf[3] / 10 * 26 - 3).toFixed(1)}px);opacity:0}`;
+    addAnim(`@keyframes stBall{${kf}}.st-ball{animation:stBall 3.4s ease-in-out infinite}`);
+    /* funnel + baseline + bell curve over the bars */
+    const bell = sample(t => [bx + (t - 2.5) * sx,
+      114 - 26 * Math.exp(-((t - 2.5) * (t - 2.5)) / 2.9)], -0.4, 5.4, 60);
+    return `<g class="soft"><path d="M${bx - 10} ${top - 10} L${bx - 3} ${top + 2} M${bx + 10} ${top - 10} L${bx + 3} ${top + 2}"/>
+      <path d="M52 114 H228"/></g>
+      ${pegs}${bars.join('')}
+      <path class="accent2" d="${path(bell)}" stroke-dasharray="3 4" opacity=".9"/>
+      <g class="st-ball"><circle class="fill2" cx="${bx}" cy="${top}" r="3.6"/></g>`;
+  },
   pharmacokinetics() {
     const c = sample(t => [t, 104 - 62 * (Math.exp(-(t - 40) / 70) - Math.exp(-(t - 40) / 12))], 40, 250, 90);
     addAnim(`@keyframes pkDraw{0%{stroke-dashoffset:1000}58%,100%{stroke-dashoffset:0}}` +

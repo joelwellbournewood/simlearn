@@ -414,6 +414,18 @@ body.sheet-open .panel{z-index:9}
     <label for="brushSl"><span class="nm">Brush</span><span class="val" id="brushVal">28 px</span></label>
     <input type="range" id="brushSl" min="4" max="120" step="1" value="28">
   </div>
+  <div class="row">
+    <label><span class="nm">Brush pattern
+      <button class="tip" type="button" data-tip="Stipple takes hold in the most regimes. A solid disc can starve in its middle."
+        aria-label="About the brush pattern">?</button></span></label>
+  </div>
+  <div class="seg" id="patSeg" role="group" aria-label="Brush pattern">
+    <button data-pat="0" aria-pressed="true">Stipple</button>
+    <button data-pat="1" aria-pressed="false">Solid</button>
+    <button data-pat="2" aria-pressed="false">Ring</button>
+    <button data-pat="3" aria-pressed="false">Bands</button>
+    <button data-pat="4" aria-pressed="false">Spray</button>
+  </div>
 
   </details>
   <details class="grp">
@@ -429,7 +441,7 @@ body.sheet-open .panel{z-index:9}
   <label class="toggle"><input type="checkbox" id="growOn"><span>Stretch the field lengthwise</span></label>
   <div class="row" id="rowGrowRate">
     <label for="growRate"><span class="nm">Growth speed
-      <span class="tip" tabindex="0" data-tip="Real embryos pattern while growing, so new stripes insert between the old ones instead of the pattern stretching.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
+      <span class="tip" tabindex="0" data-tip="New stripes insert as it grows, as in a real embryo.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
     <input type="range" id="growRate" min="1" max="100" step="1" value="45" disabled>
   </div>
   <div class="row" id="rowGrowMax">
@@ -443,7 +455,7 @@ body.sheet-open .panel{z-index:9}
   <label class="toggle"><input type="checkbox" id="anisOn"><span>Diffuse faster along one axis</span></label>
   <div class="row" id="rowAnisAng">
     <label for="anisAng"><span class="nm">Direction
-      <span class="tip" tabindex="0" data-tip="Tissue is often fibrous, so a chemical spreads faster along one direction and the stripes run across it.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
+      <span class="tip" tabindex="0" data-tip="Fibrous tissue: stripes run across the fast axis.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
     <input type="range" id="anisAng" min="0" max="180" step="1" value="0" disabled>
   </div>
   <div class="row" id="rowAnisAmt">
@@ -489,7 +501,7 @@ body.sheet-open .panel{z-index:9}
 <aside class="mapcard" id="mapcard">
   <div class="mc-head">
     <span class="mc-title">Steer it yourself</span>
-    <span class="tip" tabindex="0" data-tip="Feed rate runs left to right and kill rate runs bottom to top, and clicking anywhere moves the chemistry there.">i</span>
+    <span class="tip" tabindex="0" data-tip="Click the map: feed rate across, kill rate up.">i</span>
   </div>
   <p class="mc-sub">Every preset is a dot on this map. Drag the marker to mix your own, and zoom in where the bands get narrow.</p>
   <canvas id="map" width="320" height="300" tabindex="0" aria-label="Map of feed rate against kill rate. Click or drag to move the chemistry. Scroll or use the zoom buttons to magnify, arrow keys to nudge."></canvas>
@@ -508,18 +520,18 @@ body.sheet-open .panel{z-index:9}
   </ul>
   <div class="row">
     <label for="fSl"><span class="nm">Feed rate <i>F</i>
-      <span class="tip" tabindex="0" data-tip="How fast fresh substrate is topped up, which is the map horizontal axis.">i</span></span><span class="val" id="fOut">0.0300</span></label>
+      <span class="tip" tabindex="0" data-tip="Substrate top-up, the horizontal axis of the map.">i</span></span><span class="val" id="fOut">0.0300</span></label>
     <input type="range" id="fSl" min="0.005" max="0.09" step="0.0002">
   </div>
   <div class="row">
     <label for="kSl"><span class="nm">Kill rate <i>k</i>
-      <span class="tip" tabindex="0" data-tip="How fast the activator is removed, which decides whether a blob holds, splits, or dies.">i</span></span><span class="val" id="kOut">0.0620</span></label>
+      <span class="tip" tabindex="0" data-tip="Activator removal. Decides whether a blob holds, splits, or dies.">i</span></span><span class="val" id="kOut">0.0620</span></label>
     <input type="range" id="kSl" min="0.035" max="0.072" step="0.0002">
   </div>
   <div class="mc-rule"></div>
   <div class="row">
     <label for="ratioSl"><span class="nm">Diffusion ratio
-      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator, the number Turing condition turns on.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
+      <span class="tip" tabindex="0" data-tip="How much faster the substrate spreads than the activator.">i</span></span><span class="val" id="ratioVal">2.00&times;</span></label>
     <input type="range" id="ratioSl" min="1.2" max="4" step="0.02" value="2">
   </div>
   <p class="mc-note" id="mapnote">&nbsp;</p>
@@ -706,7 +718,7 @@ var FS_SPLAT = [
 'precision highp float;',
 'in vec2 vUv; out vec4 outColor;',
 'uniform sampler2D uState;',
-'uniform vec2 uP; uniform vec2 uR; uniform float uMode; uniform float uN;',
+'uniform vec2 uP; uniform vec2 uR; uniform float uMode; uniform float uN; uniform float uPat;',
 'float hs(vec2 p){ p = fract(p*vec2(127.1, 311.7)); p += dot(p, p + 41.7); return fract(p.x*p.y*97.31); }',
 'void main(){',
 '  vec2 st = texture(uState, vUv).rg;',
@@ -722,7 +734,14 @@ var FS_SPLAT = [
    dither: stippling cell by cell still loses Drifting spots and Mitosis, because the
    surviving specks are thinner than a nucleus, so the patches are six cells across.
    Erasing stays solid, because a half-erased hole is not what anyone means by erase. */
-'  if(uMode > 0.0) f *= step(0.5, hs(floor(vUv*uN/6.0) + 0.5));',
+'  if(uMode > 0.0){',
+'    float q = dot(d,d);',
+'    if(uPat < 0.5)      f *= step(0.5, hs(floor(vUv*uN/6.0) + 0.5));',
+'    else if(uPat < 1.5) f  = f;',
+'    else if(uPat < 2.5) f  = smoothstep(0.42, 0.60, q)*smoothstep(1.05, 0.86, q);',
+'    else if(uPat < 3.5) f *= step(0.5, fract(floor(vUv.x*uN)/12.0));',
+'    else                f *= step(0.74, hs(floor(vUv*uN/4.0) + 0.5));',
+'  }',
 '  if(uMode > 0.0){',
 '    st.g = max(st.g, f*0.92);',
 '    st.r = min(st.r, mix(1.0, 0.12, f));',
@@ -793,6 +812,7 @@ var FS_DRAW = [
 'uniform float uLo, uHi, uRelief;',
 'uniform int uPal; uniform float uBilin;',
 'uniform vec3 uC0, uC1, uC2; uniform float uMid;',
+'uniform vec4 uTile;',   // xy scale, zw offset: lets the periodic field tile the whole frame
 'vec3 inferno(float t){',
 '  const vec3 c0 = vec3(0.00021894, 0.00165100, -0.01948090);',
 '  const vec3 c1 = vec3(0.10651342, 0.56395644, 3.93271239);',
@@ -844,11 +864,12 @@ var FS_DRAW = [
 '}',
 'float hgt(vec2 uv){ return smoothstep(uLo, uHi, samp(uv)); }',
 'void main(){',
-'  float h = hgt(vUv);',
+'  vec2 UV = vUv*uTile.xy + uTile.zw;',
+'  float h = hgt(UV);',
 '  vec3 col = pal(h);',
 '  if(uRelief > 0.0){',
-'    float hx = hgt(vUv + vec2(uTexel.x,0.0)) - hgt(vUv - vec2(uTexel.x,0.0));',
-'    float hy = hgt(vUv + vec2(0.0,uTexel.y)) - hgt(vUv - vec2(0.0,uTexel.y));',
+'    float hx = hgt(UV + vec2(uTexel.x,0.0)) - hgt(UV - vec2(uTexel.x,0.0));',
+'    float hy = hgt(UV + vec2(0.0,uTexel.y)) - hgt(UV - vec2(0.0,uTexel.y));',
 '    vec3 n = normalize(vec3(-hx*uRelief, -hy*uRelief, 1.0));',
 '    vec3 L = normalize(vec3(-0.42, 0.55, 0.72));',
 '    float df = clamp(dot(n, L), 0.0, 1.0);',
@@ -886,7 +907,7 @@ var S = {
   growOn: false, gRate: 1.55e-4, gMax: 4, g: 1, dil: 0,
   pal: 5, c0:[0,0,0], c1:[0,0,0], c2:[0,0,0], mid: 0.6,
   relief: true, level: 0.18, contrast: 1.6,
-  brush: 28, tool: 'seed',
+  brush: 28, tool: 'seed', pat: 0,
   seedMode: 2, seedSp: 64, seedR: 14, total: 0, preset: -1
 };
 var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
@@ -1069,7 +1090,7 @@ function runSteps(n){
   }
   S.total += n;
 }
-function splat(u, v, ru, rv, mode){
+function splat(u, v, ru, rv, mode, pat){
   var s = ST.cur, d = 1 - s;
   gl.bindFramebuffer(gl.FRAMEBUFFER, ST.fbo[d]);
   gl.viewport(0,0,S.N,S.N);
@@ -1082,6 +1103,7 @@ function splat(u, v, ru, rv, mode){
   gl.uniform2f(P.splat.u.uR, ru, rv);
   gl.uniform1f(P.splat.u.uMode, mode);
   gl.uniform1f(P.splat.u.uN, S.N);
+  gl.uniform1f(P.splat.u.uPat, mode > 0 ? (pat === undefined ? 0 : pat) : 0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   ST.cur = d;
 }
@@ -1104,6 +1126,21 @@ function scatterDots(n){
     splat(u, v, rr, rr, 1);
   }
 }
+/* How much of the canvas the picture covers. With growth off the answer is ALL of it:
+   the lattice is periodic, so the field is drawn at its natural pixel scale and tiles
+   across the whole frame with no seam, and the panels float on top of it. Growth needs
+   a rectangle that can stretch to gMax without leaving the canvas, so there, and only
+   there, the picture is a measured box with margins. */
+function fillMode(){ return !S.growOn; }
+function fieldPx(){                   /* pixels per unit of the domain */
+  var W = cvs.width, H = cvs.height;
+  return Math.min(W,H)*0.94;
+}
+function tileVec(){                   /* uTile for the draw shader */
+  if(!fillMode()) return [1,1,0,0];
+  var W = cvs.width, H = cvs.height, s = fieldPx();
+  return [W/s, H/s, -(W-s)/(2*s), -(H-s)/(2*s)];
+}
 function domainRect(){
   var W = cvs.width, H = cvs.height;
   if(S.growOn){
@@ -1120,8 +1157,9 @@ function drawField(){
   gl.viewport(0,0,cvs.width,cvs.height);
   gl.clearColor(0.027, 0.063, 0.059, 1);
   gl.clear(gl.COLOR_BUFFER_BIT);
-  var R = domainRect();
-  gl.viewport(Math.round(R.x), Math.round(cvs.height - R.y - R.h), Math.round(R.w), Math.round(R.h));
+  var R = domainRect(), T = tileVec();
+  if(fillMode()) gl.viewport(0, 0, cvs.width, cvs.height);
+  else gl.viewport(Math.round(R.x), Math.round(cvs.height - R.y - R.h), Math.round(R.w), Math.round(R.h));
   gl.useProgram(P.draw.p);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, ST.tex[ST.cur]);
@@ -1137,6 +1175,7 @@ function drawField(){
   gl.uniform3f(P.draw.u.uC2, S.c2[0], S.c2[1], S.c2[2]);
   gl.uniform1f(P.draw.u.uMid, S.mid);
   gl.uniform1f(P.draw.u.uBilin, smoothOK ? 0.0 : 1.0);
+  gl.uniform4f(P.draw.u.uTile, T[0], T[1], T[2], T[3]);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindSampler(0, null);
 }
@@ -1439,8 +1478,10 @@ function drawOverlay(){
   var w = ov.width, h = ov.height;
   ovx.clearRect(0,0,w,h);
   var R = domainRect(), dpr = ov.clientWidth ? w/ov.clientWidth : 1;
-  ovx.strokeStyle = 'rgba(120,170,165,.22)'; ovx.lineWidth = 1;
-  ovx.strokeRect(R.x+0.5, R.y+0.5, R.w-1, R.h-1);
+  if(!fillMode()){
+    ovx.strokeStyle = 'rgba(120,170,165,.22)'; ovx.lineWidth = 1;
+    ovx.strokeRect(R.x+0.5, R.y+0.5, R.w-1, R.h-1);
+  }
 
   if(S.growOn){
     var y = R.y + R.h + 9*dpr;
@@ -1479,8 +1520,16 @@ function paintAt(ev){
   var r = ov.getBoundingClientRect();
   var sx = ov.width/r.width, sy = ov.height/r.height;
   var px = (ev.clientX - r.left)*sx, py = (ev.clientY - r.top)*sy;
-  var R = domainRect();
-  var u = (px - R.x)/R.w, v = 1 - (py - R.y)/R.h;
+  var u, v;
+  if(fillMode()){
+    var fs = fieldPx(), W = ov.width, H = ov.height;
+    u = (px - (W-fs)/2)/fs; v = 1 - (py - (H-fs)/2)/fs;
+    u -= Math.floor(u); v -= Math.floor(v);          /* the lattice wraps, so the brush does */
+  } else {
+    var R = domainRect();
+    u = (px - R.x)/R.w; v = 1 - (py - R.y)/R.h;
+  }
+  var R = fillMode() ? {w:fieldPx(), h:fieldPx()} : domainRect();
   var rad = S.brush*sx*0.5;
   /* The brush has a floor measured in CELLS, not in screen pixels. Below about a dozen
      cells a stroke cannot nucleate in the regimes where no uniform mixture exists, and
@@ -1491,9 +1540,9 @@ function paintAt(ev){
   if(ptr.has){
     var du = u - ptr.lu, dv = v - ptr.lv;
     var n = Math.min(8, Math.ceil(Math.sqrt(du*du + dv*dv)/Math.max(ru,0.002)*2));
-    for(var i=1;i<n;i++) splat(ptr.lu + du*i/n, ptr.lv + dv*i/n, ru, rv, mode);
+    for(var i=1;i<n;i++) splat(ptr.lu + du*i/n, ptr.lv + dv*i/n, ru, rv, mode, S.pat);
   }
-  splat(u, v, ru, rv, mode);
+  splat(u, v, ru, rv, mode, S.pat);
   if(drawHintOn) showDrawHint(false);
   ptr.lu = u; ptr.lv = v; ptr.has = true;
 }
@@ -1781,6 +1830,14 @@ function wire(){
   bindRange('anisAmt','anisAmtVal', function(){ return S.aniso; },
     function(v){ S.aniso = v; freeMode(); }, function(){ return S.aniso.toFixed(2) + '\u00d7'; });
 
+  var pseg = $('patSeg');
+  pseg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    S.pat = +b.dataset.pat;
+    Array.prototype.forEach.call(pseg.children, function(c){
+      c.setAttribute('aria-pressed', c === b ? 'true' : 'false');
+    });
+  });
   var seg = $('toolSeg');
   seg.addEventListener('click', function(e){
     var b = e.target.closest('button'); if(!b) return;
@@ -1849,8 +1906,6 @@ function wire(){
 var last = 0, acc = 0, frames = 0, statTick = 0;
 function hudText(){
   var L = [];
-  if(S.growOn) L.push(chip('length', '\u00d7' + S.g.toFixed(2)));
-  if(S.growOn) L.push(chip('bands across', stats.bands));
   if(S.anisOn) L.push(chip('fast axis', Math.round(S.angle) + '<small>\u00b0</small>'));
   return L.join('');
 }

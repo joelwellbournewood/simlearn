@@ -18,6 +18,7 @@
   --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
   --ink:#e3efe9; --muted:#88a397;
   --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --accent-line:rgba(86,224,194,.34); --accent-dim2:rgba(86,224,194,.2);
   --danger:#ff7d5c; --gold:#e6c34f;
   --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
   --mono:"Space Mono",ui-monospace,Menlo,monospace;
@@ -46,9 +47,9 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
 .p-toggle{display:none}
 .about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
-  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent-line);
   border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
-.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.about-btn:hover{border-color:var(--accent);background:var(--accent-dim2)}
 #row-truck[hidden]{display:none}
 .label{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;text-transform:none;color:var(--ink);margin:13px 0 6px}
 .label:first-of-type{margin-top:0}
@@ -78,6 +79,7 @@ input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba
 input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
 .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg.four{grid-template-columns:repeat(4,1fr)}
 .seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
 .seg button:hover{border-color:var(--line-strong);color:var(--ink)}
 .seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
@@ -164,10 +166,10 @@ details.grp > summary + *{margin-top:0}
 </style><style>
 .tapwrap{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:6;display:flex;flex-direction:column;align-items:center;gap:7px}
 .tap-btn{display:inline-flex;align-items:center;gap:10px;padding:11px 20px;border-radius:999px;
-  border:1px solid rgba(86,224,194,.34);background:var(--accent-dim);backdrop-filter:blur(10px);
+  border:1px solid var(--accent-line);background:var(--accent-dim);backdrop-filter:blur(10px);
   color:var(--accent);font-family:var(--display);font-weight:600;font-size:14px;transition:border-color .18s,background .18s}
-.tap-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
-.tap-btn kbd{font-family:var(--mono);font-size:11px;padding:2px 7px;border:1px solid rgba(86,224,194,.34);border-radius:5px;color:var(--accent);opacity:.85}
+.tap-btn:hover{border-color:var(--accent);background:var(--accent-dim2)}
+.tap-btn kbd{font-family:var(--mono);font-size:11px;padding:2px 7px;border:1px solid var(--accent-line);border-radius:5px;color:var(--accent);opacity:.85}
 .tap-btn.calling{animation:tapPulse 2.4s ease-in-out infinite}
 @keyframes tapPulse{0%,100%{box-shadow:0 0 0 0 rgba(86,224,194,0)}50%{box-shadow:0 0 0 11px rgba(86,224,194,.10)}}
 .tapwrap .say{color:var(--muted);font-size:12px;opacity:0;transition:opacity .3s;text-align:center}
@@ -230,15 +232,15 @@ body.clean .tapwrap{display:none}
   <details class="grp">
     <summary>Change the road</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="How many cars share the one kilometre ring, which is the density and the strongest control on whether a jam forms." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="Density on the ring, and the strongest control on jams." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="10" max="80" step="1" value="38">
   </div>
   <div class="row">
-    <label for="s-T"><span class="nm">Following gap<button class="tip" data-tip="The gap each driver wants, measured in seconds of travel rather than metres." aria-label="What the following gap does">?</button></span><span class="val" id="v-T"></span></label>
+    <label for="s-T"><span class="nm">Following gap<button class="tip" data-tip="The gap drivers want, in seconds rather than metres." aria-label="What the following gap does">?</button></span><span class="val" id="v-T"></span></label>
     <input type="range" id="s-T" min="0.5" max="2.4" step="0.05" value="1.35">
   </div>
   <div class="row">
-    <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="The share of cars run by a controller instead of a person, with no wobble and a strictly held gap." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
+    <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="Share with no wobble and a strictly held gap." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
     <input type="range" id="s-av" min="0" max="100" step="5" value="0">
   </div>
   
@@ -251,8 +253,17 @@ body.clean .tapwrap{display:none}
     <button class="tg" id="t-circle">Back to a circle <kbd>D</kbd></button>
   </div>
   <div class="row" id="row-truck" hidden>
-    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="Cruising speed of the one truck, as a share of what a car holds on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
+    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="Share of a car's speed on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
     <input type="range" id="s-truck" min="20" max="95" step="5" value="55">
+  </div>
+  </details>
+  <details class="grp">
+    <summary>Look</summary>
+  <div class="seg four" id="looks">
+    <button data-v="field" aria-pressed="true">Field</button>
+    <button data-v="dusk" aria-pressed="false">Dusk</button>
+    <button data-v="ember" aria-pressed="false">Ember</button>
+    <button data-v="ice" aria-pressed="false">Ice</button>
   </div>
   </details>
 
@@ -454,7 +465,7 @@ const kmh=x=>x*3.6;
 
 function build(){
   cars=[]; tsim=0; stRow=0; stFill=0;
-  if(stx){ stx.fillStyle='#0b1412'; stx.fillRect(0,0,stc.width,stc.height); }
+  if(stx){ stx.fillStyle=PL.st; stx.fillRect(0,0,stc.width,stc.height); }
   for(let i=0;i<N;i++) cars.push({x:(Math.floor(i/lanes))*L/Math.ceil(N/lanes), v:V0*0.92,
                                   av:false, truck:false, a:0, lane:lanes===2?(i%2):0});
   applyKinds(); tapped=false; callTap();
@@ -581,12 +592,54 @@ function brakeTap(){ if(!cars.length) return;
 window.__traffic={speeds:()=>cars.map(c=>c.v),count:()=>cars.length,preset:()=>activePreset,
   geo:()=>({RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:STY,STH:STH})};
 
-/* ---- colour by speed: red stopped, amber slow, green free ---- */
+/* ---------- looks ----------
+   Colour only: the model, the densities and the speeds are untouched. Every look keeps
+   the same meaning in the speed ramp, hot for stopped and cool for free running, so a
+   jam still reads as a jam whichever one is on. */
+const LOOKS={
+  field:{ bg:'#0a1512', field:'#07120f', panel:'rgba(15,31,26,.84)', panel2:'#13261f',
+    ink:[227,239,233], neu:[163,188,190], acc:[86,224,194], muted:'#88a397',
+    road:'#101b19', st:'#0b1412', av:[120,170,255],
+    ramp:[[214,74,74],[232,176,78],[86,224,194]] },
+  dusk:{ bg:'#120e1c', field:'#0d0a16', panel:'rgba(28,22,44,.84)', panel2:'#241c38',
+    ink:[235,231,246], neu:[176,168,198], acc:[173,142,255], muted:'#a096bb',
+    road:'#171227', st:'#100c1c', av:[96,206,255],
+    ramp:[[224,72,120],[240,168,110],[173,142,255]] },
+  ember:{ bg:'#17100c', field:'#120b08', panel:'rgba(46,28,20,.84)', panel2:'#33211a',
+    ink:[250,236,226], neu:[198,166,146], acc:[255,178,102], muted:'#c0a08c',
+    road:'#1d1310', st:'#150d0a', av:[120,196,255],
+    ramp:[[178,34,44],[240,120,50],[255,214,140]] },
+  ice:{ bg:'#08131e', field:'#061019', panel:'rgba(16,32,50,.84)', panel2:'#14283c',
+    ink:[233,244,255], neu:[150,180,206], acc:[124,212,255], muted:'#93aec4',
+    road:'#0e1b28', st:'#081420', av:[168,255,214],
+    ramp:[[206,64,120],[130,150,205],[150,236,255]] }
+};
+let PL=LOOKS.field;
+const rgbaOf=(c,a)=>'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+a+')';
+const TN=a=>rgbaOf(PL.neu,a);
+const hexOf=c=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join('');
+function applyLook(k){
+  PL=LOOKS[k]||LOOKS.field;
+  const r=document.documentElement.style;
+  r.setProperty('--bg',PL.bg); r.setProperty('--field',PL.field);
+  r.setProperty('--panel',PL.panel); r.setProperty('--panel-2',PL.panel2);
+  r.setProperty('--line',TN('.16')); r.setProperty('--line-strong',TN('.30'));
+  r.setProperty('--ink',hexOf(PL.ink)); r.setProperty('--muted',PL.muted);
+  r.setProperty('--accent',hexOf(PL.acc));
+  r.setProperty('--accent-dim',rgbaOf(PL.acc,'.14'));
+  r.setProperty('--accent-line',rgbaOf(PL.acc,'.34'));
+  r.setProperty('--accent-dim2',rgbaOf(PL.acc,'.2'));
+  document.querySelector('meta[name=theme-color]').setAttribute('content',PL.bg);
+  /* the space-time strip holds painted history, so it starts again in the new colours */
+  if(stx){ stx.fillStyle=PL.st; stx.fillRect(0,0,stc.width,stc.height); stRow=0; stFill=0; }
+  try{ localStorage.setItem('simlearn-traffic-look',k); }catch(e){}
+}
+/* ---- colour by speed: hot stopped, cool free running ---- */
 function speedCol(r,alpha){
-  r=Math.max(0,Math.min(1,r)); let c;
-  if(r<0.5){ const u=r/0.5; c=[214+(232-214)*u, 74+(176-74)*u, 74+(78-74)*u]; }
-  else { const u=(r-0.5)/0.5; c=[232+(86-232)*u, 176+(224-176)*u, 78+(194-78)*u]; }
-  return 'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+(alpha===undefined?1:alpha)+')';
+  r=Math.max(0,Math.min(1,r)); const R=PL.ramp;
+  const i=r<0.5?0:1, u=r<0.5?r/0.5:(r-0.5)/0.5, a=R[i], b=R[i+1];
+  const c=[a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u, a[2]+(b[2]-a[2])*u];
+  return rgbaOf(c,(alpha===undefined?1:alpha));
 }
 /* ---- layout ---- */
 let W=0,H=0,DPR=1,RX=0,RY=0,RR=0,COLX=0,COLW=0,STY=0,STH=0,narrow=false;
@@ -648,7 +701,7 @@ function resize(){
     else { tw.style.left=Math.round(RX)+'px'; tw.style.bottom = narrow ? (70+hudH)+'px' : ''; }
   }
   stc.width=Math.max(60,Math.round(COLW)); stc.height=STH; stRow=0; stFill=0;
-  stx=stc.getContext('2d'); stx.fillStyle='#0b1412'; stx.fillRect(0,0,stc.width,stc.height);
+  stx=stc.getContext('2d'); stx.fillStyle=PL.st; stx.fillRect(0,0,stc.width,stc.height);
 }
 /* layout probe, used by the layout tests */
 window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:STY,STH:STH,narrow:narrow,W:W,H:H,
@@ -664,10 +717,10 @@ window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:ST
   truckv:(cars.find(c=>c.truck)||{}).v, V0:V0, truckSpeed:truckSpeed, AVpct:AVpct};};
 function pushRow(){
   const w=stc.width;
-  stx.fillStyle='#0b1412'; stx.fillRect(0,stRow,w,1);
+  stx.fillStyle=PL.st; stx.fillRect(0,stRow,w,1);
   for(const c of cars){
     const px=(c.x/L)*w, wid=Math.max(1.4,(CARLEN/L)*w*2.2);
-    stx.fillStyle=c.av?'rgba(120,170,255,.95)':speedCol(c.v/V0,0.95);
+    stx.fillStyle=c.av?rgbaOf(PL.av,'.95'):speedCol(c.v/V0,0.95);
     stx.fillRect(px,stRow,wid,1);
     if(px+wid>w) stx.fillRect(px-w,stRow,wid,1);
   }
@@ -687,8 +740,8 @@ function roadRing(){
   const laneW=Math.max(11,Math.min(26,RR*0.13)), road=laneW*lanes;
   ctx.lineJoin='round'; ctx.lineCap='round';
   ctx.strokeStyle='rgba(255,255,255,.055)'; ctx.lineWidth=road+8; tracePath(); ctx.stroke();
-  ctx.strokeStyle='#101b19'; ctx.lineWidth=road; tracePath(); ctx.stroke();
-  ctx.strokeStyle='rgba(163,188,190,'+(lanes===2?'.26':'.16')+')'; ctx.lineWidth=1;
+  ctx.strokeStyle=PL.road; ctx.lineWidth=road; tracePath(); ctx.stroke();
+  ctx.strokeStyle=TN(lanes===2?'.26':'.16'); ctx.lineWidth=1;
   ctx.setLineDash(lanes===2?[10,12]:[6,10]);
   tracePath(); ctx.stroke();
   ctx.setLineDash([]);
@@ -707,7 +760,7 @@ function drawCars(laneW){
     carPos(c,laneW,_pt);
     const x=_pt.x, y=_pt.y, th=Math.atan2(_pt.ty,_pt.tx);
     ctx.save(); ctx.translate(x,y); ctx.rotate(th+Math.PI/2);
-    ctx.fillStyle=(c.av&&!c.truck)?'rgba(120,170,255,.98)':speedCol(c.v/V0);
+    ctx.fillStyle=(c.av&&!c.truck)?rgbaOf(PL.av,'.98'):speedCol(c.v/V0);
     const len=c.truck?cl*1.9:cl;
     ctx.beginPath();
     if(ctx.roundRect) ctx.roundRect(-cw/2,-len/2,cw,len,Math.min(2.4,cw/3));
@@ -724,7 +777,7 @@ function drawCars(laneW){
   }
 }
 function label(t,x,y,col,size,align){
-  ctx.fillStyle=col||'rgba(163,188,190,.62)';
+  ctx.fillStyle=col||TN('.62');
   ctx.font=(size||11)+'px ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic';
   ctx.fillText(t,x,y); ctx.textAlign='left';
@@ -744,7 +797,7 @@ function drawST(){
      the top row where it used to collide with the icon buttons on a phone. */
   ctx.save();
   ctx.translate(COLX-14, STY+2); ctx.rotate(Math.PI/2);
-  label('time \u2192',0,0,'rgba(163,188,190,.45)',11);
+  label('time \u2192',0,0,TN('.45'),11);
   ctx.restore();
 }
 function draw(){
@@ -917,17 +970,17 @@ function drawHandles(laneW){
     const ux=Math.cos(th), uy=Math.sin(th);
     const bx=RX+ux*(r+out), by=RY+uy*(r+out);
     const ex=bx+ux*stem, ey=by+uy*stem;
-    ctx.strokeStyle=live?'rgba(206,230,226,.8)':'rgba(163,188,190,.4)';
+    ctx.strokeStyle=live?rgbaOf(PL.ink,'.8'):TN('.4');
     ctx.lineWidth=narrow?1:1.2;
     ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(ex,ey); ctx.stroke();
     ctx.beginPath(); ctx.arc(ex+ux*rad,ey+uy*rad,rad,0,6.28319);
-    ctx.fillStyle=live?'rgba(214,235,231,.95)':'rgba(163,188,190,.55)'; ctx.fill();
+    ctx.fillStyle=live?rgbaOf(PL.ink,'.95'):TN('.55'); ctx.fill();
   }
   if(TRACK.mode!=='circle'){
-    ctx.setLineDash([3,7]); ctx.strokeStyle='rgba(163,188,190,.20)'; ctx.lineWidth=1;
+    ctx.setLineDash([3,7]); ctx.strokeStyle=TN('.20'); ctx.lineWidth=1;
     ctx.beginPath(); ctx.arc(RX,RY,sc,0,6.28319); ctx.stroke(); ctx.setLineDash([]);
   }
-  if(!pulledOnce) label('drag the road to stretch it',RX,RY,'rgba(163,188,190,.6)',12.5,'center');
+  if(!pulledOnce) label('drag the road to stretch it',RX,RY,TN('.6'),12.5,'center');
 }
 function penPos(e){ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
 el('t-circle').addEventListener('click',()=>{ resetTrack(); pulledOnce=true; });
@@ -971,6 +1024,17 @@ function loop(){
   }
   draw(); hud(); requestAnimationFrame(loop);
 }
+document.querySelectorAll('#looks button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#looks button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  applyLook(b.dataset.v);
+}));
+(function initLook(){
+  let k='field'; try{ k=localStorage.getItem('simlearn-traffic-look')||'field'; }catch(e){}
+  if(!LOOKS[k]) k='field';
+  document.querySelectorAll('#looks button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===k)));
+  applyLook(k);
+})();
+window.__trafficLook=()=>({key:Object.keys(LOOKS).find(k=>LOOKS[k]===PL), bg:PL.bg, ramp:PL.ramp});
 resize(); applyPreset('open');
 if(REDUCED){ for(let i=0;i<300;i++) step(DT); for(let i=0;i<60;i++){ step(DT); pushRow(); } draw(); hud(); }
 else requestAnimationFrame(loop);

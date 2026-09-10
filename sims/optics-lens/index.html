@@ -158,15 +158,15 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">The lens</summary>
   <div class="row">
-    <label><span class="nm">Focal length <button class="tip" data-tip="How strongly the lens bends light, a short focal length forming a small image close behind it." aria-label="What is this?">?</button></span><span class="val" id="v-f">60 mm</span></label>
+    <label><span class="nm">Focal length <button class="tip" data-tip="How strongly the lens bends light." aria-label="What is this?">?</button></span><span class="val" id="v-f">60 mm</span></label>
     <input type="range" id="s-f" min="-200" max="240" step="2" value="60">
   </div>
   <div class="row">
-    <label><span class="nm">Aperture <button class="tip" data-tip="The clear diameter of the lens, which sets how much light gets through and how shallow the depth of field is." aria-label="What is this?">?</button></span><span class="val" id="v-ap">40 mm</span></label>
+    <label><span class="nm">Aperture <button class="tip" data-tip="Clear diameter of the lens." aria-label="What is this?">?</button></span><span class="val" id="v-ap">40 mm</span></label>
     <input type="range" id="s-ap" min="6" max="130" step="1" value="40">
   </div>
   <div class="row">
-    <label><span class="nm">Spherical aberration <button class="tip" data-tip="A real spherical surface bends rays near the rim too strongly, and at zero the lens is ideal." aria-label="What is this?">?</button></span><span class="val" id="v-sph">0.00</span></label>
+    <label><span class="nm">Spherical aberration <button class="tip" data-tip="Rim rays bent too strongly. Zero is an ideal lens." aria-label="What is this?">?</button></span><span class="val" id="v-sph">0.00</span></label>
     <input type="range" id="s-sph" min="0" max="1" step="0.02" value="0">
   </div>
 
@@ -174,15 +174,15 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">The bench</summary>
   <div class="row">
-    <label><span class="nm">Object distance <button class="tip" data-tip="How far the object stands in front of the lens." aria-label="What is this?">?</button></span><span class="val" id="v-u">180 mm</span></label>
+    <label><span class="nm">Object distance </span><span class="val" id="v-u">180 mm</span></label>
     <input type="range" id="s-u" min="20" max="270" step="1" value="180">
   </div>
   <div class="row">
-    <label><span class="nm">Object height <button class="tip" data-tip="How tall the arrow is, the image height being this multiplied by the magnification." aria-label="What is this?">?</button></span><span class="val" id="v-ho">60 mm</span></label>
+    <label><span class="nm">Object height </span><span class="val" id="v-ho">60 mm</span></label>
     <input type="range" id="s-ho" min="8" max="140" step="1" value="60">
   </div>
   <div class="row">
-    <label><span class="nm">Sensor distance <button class="tip" data-tip="Where the screen sits behind the lens, sharp only when it is exactly at the image distance." aria-label="What is this?">?</button></span><span class="val" id="v-sd">90 mm</span></label>
+    <label><span class="nm">Sensor distance <button class="tip" data-tip="Sharp only at the image distance." aria-label="What is this?">?</button></span><span class="val" id="v-sd">90 mm</span></label>
     <input type="range" id="s-sd" min="10" max="400" step="1" value="90">
   </div>
 
@@ -190,12 +190,12 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   <details class="grp">
   <summary class="grp-title">Display</summary>
   <div class="row">
-    <label><span class="nm">Rays drawn <button class="tip" data-tip="How many rays are traced from the tip of the arrow across the aperture." aria-label="What is this?">?</button></span><span class="val" id="v-n">28</span></label>
+    <label><span class="nm">Rays drawn </span><span class="val" id="v-n">28</span></label>
     <input type="range" id="s-n" min="3" max="80" step="1" value="28">
   </div>
-  <div class="row"><label class="chk"><input type="checkbox" id="k-cons" checked><span class="nm">Construction rays <button class="tip" data-tip="Picks out the three textbook rays in teal, any two of which locate the image." aria-label="What is this?">?</button></span></label></div>
-  <div class="row"><label class="chk"><input type="checkbox" id="k-base"><span class="nm">Fan from the arrow base <button class="tip" data-tip="Traces a second, dimmer fan from the foot of the arrow so you can see the whole image being built rather than one point of it." aria-label="What is this?">?</button></span></label></div>
-  <div class="row"><label class="chk"><input type="checkbox" id="k-auto"><span class="nm">Keep the sensor in focus <button class="tip" data-tip="Locks the screen to the image plane, so it tracks whatever the thin lens equation says as you move the object or change the focal length." aria-label="What is this?">?</button></span></label></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="k-cons" checked><span class="nm">Construction rays <button class="tip" data-tip="The three textbook rays. Any two locate the image." aria-label="What is this?">?</button></span></label></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="k-base"><span class="nm">Fan from the arrow base <button class="tip" data-tip="A second fan from the foot of the arrow." aria-label="What is this?">?</button></span></label></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="k-auto"><span class="nm">Keep the sensor in focus </span></label></div>
   </details>
 </div>
 

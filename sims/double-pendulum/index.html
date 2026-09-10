@@ -70,6 +70,15 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer}
 input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--c,var(--accent)),var(--c,var(--accent))) 0/var(--p,0%) 100% no-repeat,rgba(255,255,255,.14);border:0}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
+.segrow{display:flex;gap:5px;margin:9px 0}
+.segrow.wrap{flex-wrap:wrap}
+.segrow.wrap .seg{flex:1 1 30%}
+.segrow .seg{flex:1;padding:5px 4px;border:1px solid var(--line);border-radius:8px;background:transparent;
+  color:var(--muted);font-family:var(--display);font-weight:600;font-size:11.5px;line-height:1.2;transition:border-color .18s,background .18s,color .18s}
+.segrow .seg:hover{border-color:var(--line-strong)}
+.segrow .seg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+.seglabel{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;margin:9px 0 4px;position:relative}
+/* short laptops: compact the six machine cards to a 2-column grid so the panel
 input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
 input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
@@ -156,29 +165,39 @@ details.grp > summary + *{margin-top:0}
   <details class="grp" open>
     <summary>Controls</summary>
   <div class="row">
-    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many pendulums start at once, spread over so small a range of angles that they look like one." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="Near identical pendulums, released together." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="The angle between the first copy and the last, which can be a thousandth of a degree and still tear apart." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="Angle between the first copy and the last." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
     <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
   </div>
   <div class="row">
-    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="How high both arms are lifted before release, with the motion turning chaotic above about 20 degrees." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="Lift before release. Chaotic above about 20 degrees." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
     <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
   </div>
   <div class="row">
-    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Length of the second arm relative to the first, and the longer it is the harder it whips." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
+    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Second arm, relative to the first." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
     <input type="range" id="s-l2" min="0.4" max="1.6" step="0.05" value="1">
   </div>
   <div class="row">
-    <label for="s-trail"><span class="nm">Trail length<button class="tip" data-tip="How much of each tip path stays on screen." aria-label="What trail length does">?</button></span><span class="val" id="v-trail"></span></label>
+    <label for="s-trail"><span class="nm">Trail length</span><span class="val" id="v-trail"></span></label>
     <input type="range" id="s-trail" min="0" max="100" step="1" value="60">
   </div>
   <div class="row">
-    <label for="s-speed"><span class="nm">Time speed<button class="tip" data-tip="Simulated time per frame, with the integration substeps scaled to match." aria-label="What time speed does">?</button></span><span class="val" id="v-speed"></span></label>
+    <label for="s-speed"><span class="nm">Time speed</span><span class="val" id="v-speed"></span></label>
     <input type="range" id="s-speed" min="0.25" max="2.5" step="0.05" value="1">
   </div>
+
+  </details>
+  <details class="grp">
+    <summary>Look</summary>
+    <div class="segrow" id="seg-look">
+      <button class="seg" data-v="field" aria-pressed="true">Field</button>
+      <button class="seg" data-v="dusk" aria-pressed="false">Dusk</button>
+      <button class="seg" data-v="ember" aria-pressed="false">Ember</button>
+      <button class="seg" data-v="ice" aria-pressed="false">Ice</button>
+    </div>
   </details>
 
 </div>
@@ -311,11 +330,46 @@ function energyOf(s){
   const y1=-L1*Math.cos(a1), y2=y1-L2*Math.cos(a2);
   return 0.5*M1*v1s+0.5*M2*v2s+M1*g*y1+M2*g*y2;
 }
+/* ---------- looks ----------
+   A look is a three stop ramp for the copies plus the tokens the chrome is built
+   from. Nothing about the physics or the integrator depends on any of it. */
+const LOOKS={
+  field:{ nm:'Field', by:'The house green',
+    bg:'#102019', field:'#07120f', panel:'rgba(15,31,26,.84)', panel2:'#1b352c',
+    ink:[234,245,239], neu:[130,170,150], acc:[86,224,194], muted:'#9db9ac',
+    bob:[230,195,79], ramp:[[86,224,194],[230,195,79],[255,125,92]] },
+  dusk:{ nm:'Dusk', by:'Violet into hot pink',
+    bg:'#140f22', field:'#0c0817', panel:'rgba(30,22,48,.84)', panel2:'#241b3b',
+    ink:[240,235,252], neu:[150,140,190], acc:[186,148,255], muted:'#a99fc4',
+    bob:[255,206,120], ramp:[[124,108,255],[214,132,255],[255,138,178]] },
+  ember:{ nm:'Ember', by:'Firelight, gold to red',
+    bg:'#1b120e', field:'#140b08', panel:'rgba(46,26,20,.84)', panel2:'#33201a',
+    ink:[252,238,228], neu:[180,145,125], acc:[255,178,102], muted:'#c3a493',
+    bob:[255,232,168], ramp:[[255,226,138],[255,150,60],[214,52,60]] },
+  ice:{ nm:'Ice', by:'Deep water to daylight',
+    bg:'#0b1622', field:'#060e18', panel:'rgba(16,32,50,.84)', panel2:'#152c42',
+    ink:[233,244,255], neu:[130,165,195], acc:[124,212,255], muted:'#9db3c8',
+    bob:[255,214,110], ramp:[[52,96,220],[124,212,255],[236,250,255]] }
+};
+let P=LOOKS.field;
+const rgba=(t,a)=>'rgba('+t[0]+','+t[1]+','+t[2]+','+a+')';
+const PNEU=a=>rgba(P.neu,a), PINK=a=>rgba(P.ink,a), PACC=a=>rgba(P.acc,a);
+const hex=t=>'#'+t.map(v=>v.toString(16).padStart(2,'0')).join('');
 function colourAt(t){
-  let r,gg,b;
-  if(t<0.5){ const u=t/0.5; r=86+(230-86)*u; gg=224+(195-224)*u; b=194+(79-194)*u; }
-  else { const u=(t-0.5)/0.5; r=230+(255-230)*u; gg=195+(125-195)*u; b=79+(92-79)*u; }
-  return [r|0,gg|0,b|0];
+  const R=P.ramp, i=t<0.5?0:1, u=t<0.5?t/0.5:(t-0.5)/0.5;
+  const a=R[i], b=R[i+1];
+  return [(a[0]+(b[0]-a[0])*u)|0,(a[1]+(b[1]-a[1])*u)|0,(a[2]+(b[2]-a[2])*u)|0];
+}
+function applyLook(k){
+  P=LOOKS[k]||LOOKS.field;
+  const r=document.documentElement.style;
+  r.setProperty('--bg',P.bg); r.setProperty('--panel',P.panel); r.setProperty('--panel-2',P.panel2);
+  r.setProperty('--line',PNEU('.14')); r.setProperty('--line-strong',PNEU('.28'));
+  r.setProperty('--ink',hex(P.ink)); r.setProperty('--muted',P.muted);
+  r.setProperty('--accent',hex(P.acc)); r.setProperty('--accent-dim',PACC('.14'));
+  /* recolour the pendulums already on screen, trails and all */
+  for(let i=0;i<arr.length;i++) arr[i].c=colourAt(arr.length===1?0:i/(arr.length-1));
+  try{ localStorage.setItem('simlearn-pendulum-look',k); }catch(e){}
 }
 function geom(){
   /* g is tied to arm length so the swing takes the same wall-clock time whatever
@@ -358,7 +412,7 @@ function trailCap(){
   return Math.max(0,Math.min(Math.round(trailPct/100*600), Math.floor(16000/Math.max(1,copies))));
 }
 function draw(){
-  ctx.fillStyle='#07120f'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=P.field; ctx.fillRect(0,0,W,H);
   /* everything below is drawn about the pivot at world (0,0); the view supplies the
      placement and the scale, and stroke widths are divided by it so lines keep the
      same weight on screen at any zoom. */
@@ -366,7 +420,7 @@ function draw(){
   const ox=0, oy=0;
   ctx.lineCap='round'; ctx.lineJoin='round';
   // reach circle, so you can see the space the tip can explore
-  ctx.strokeStyle='rgba(130,170,150,.10)'; ctx.lineWidth=1/zoom;
+  ctx.strokeStyle=PNEU('.10'); ctx.lineWidth=1/zoom;
   ctx.beginPath(); ctx.arc(ox,oy,L1+L2,0,TAU); ctx.stroke();
   ctx.beginPath(); ctx.arc(ox,oy,Math.abs(L1-L2),0,TAU); ctx.stroke();
   const many=copies>12;
@@ -393,7 +447,7 @@ function draw(){
     }
   }
   // rods, batched by alpha
-  ctx.strokeStyle='rgba(198,214,205,'+(many?0.16:0.62)+')';
+  ctx.strokeStyle=PINK(many?0.16:0.62);
   ctx.lineWidth=(many?1:2.4)/zoom; ctx.beginPath();
   for(const b of arr){
     const a1=b.s[0],a2=b.s[1];
@@ -408,7 +462,7 @@ function draw(){
   for(const b of arr){
     const [r,g2,bl]=b.c;
     if(!many){
-      ctx.fillStyle='rgba(230,195,79,.9)'; ctx.beginPath(); ctx.arc(b.x1,b.y1,R*0.72,0,TAU); ctx.fill();
+      ctx.fillStyle=rgba(P.bob,'.9'); ctx.beginPath(); ctx.arc(b.x1,b.y1,R*0.72,0,TAU); ctx.fill();
       const gr=ctx.createRadialGradient(b.x2,b.y2,R*0.3,b.x2,b.y2,R*3.4);
       gr.addColorStop(0,'rgba('+r+','+g2+','+bl+',.4)');
       gr.addColorStop(1,'rgba('+r+','+g2+','+bl+',0)');
@@ -417,7 +471,7 @@ function draw(){
     ctx.fillStyle='rgb('+r+','+g2+','+bl+')'; ctx.beginPath(); ctx.arc(b.x2,b.y2,R,0,TAU); ctx.fill();
   }
   // pivot
-  ctx.fillStyle='#88a397'; ctx.beginPath(); ctx.arc(ox,oy,4/zoom,0,TAU); ctx.fill();
+  ctx.fillStyle=PNEU('.9'); ctx.beginPath(); ctx.arc(ox,oy,4/zoom,0,TAU); ctx.fill();
   ctx.restore();
 }
 /* ---------- step ---------- */
@@ -538,6 +592,16 @@ window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ res
 function loop(now){ if(!paused) step(); draw(); requestAnimationFrame(loop); }
 /* a read-only hook so the view can be measured from outside in testing */
 window.__dbg=()=>({zoom,panx,pany,n:arr.length,t:tsec});
+(function initLook(){
+  const box=document.getElementById('seg-look');
+  box.addEventListener('click',e=>{ const b=e.target.closest('.seg'); if(!b) return;
+    box.querySelectorAll('.seg').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+    applyLook(b.dataset.v); });
+  let k='field'; try{ k=localStorage.getItem('simlearn-pendulum-look')||'field'; }catch(e){}
+  if(!LOOKS[k]) k='field';
+  box.querySelectorAll('.seg').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===k?'true':'false'));
+  applyLook(k);
+})();
 resize(); applyPreset('twins');
 requestAnimationFrame(loop);
 })();
