@@ -40,7 +40,7 @@
       "dynamical systems"
     ],
     "difficulty": "Intermediate",
-    "description": "Release a hundred pendulums that differ by a tenth of a degree and watch them tear apart. The clearest demonstration that deterministic and predictable are not the same thing.",
+    "description": "Release a hundred pendulums that differ by a tenth of a degree and watch them tear apart. Deterministic and predictable turn out to be two different things.",
     "status": "live",
     "hook": "Deterministic but unpredictable",
     "visible": true
@@ -75,7 +75,7 @@
     "description": "An optical bench with real ray tracing. Move the object, the lens, and the sensor, and watch the image form. Aperture, focus error, blur circles, and spherical aberration, with a live view of what the sensor actually records.",
     "status": "live",
     "hook": "Trace rays, form an image",
-    "visible": false
+    "visible": true
   },
   {
     "id": "epidemic",
@@ -117,10 +117,10 @@
       "dynamical systems"
     ],
     "difficulty": "Intermediate",
-    "description": "Three lines of arithmetic, plotted in three dimensions. Turn the heating up past 24.7 and a system that used to settle down never settles again. Rotate the attractor, and release a swarm of near identical starts to watch them come apart.",
+    "description": "A shallow layer of fluid heated from below, which is a pan before it boils or the inside of a growing cloud, stripped to the three numbers it cannot do without. Turn the heating past 24.7 and a layer that used to settle never settles again. Rotate the attractor, and release a swarm of near identical starts to watch them come apart.",
     "status": "live",
     "hook": "The first picture of chaos",
-    "visible": false
+    "visible": true
   },
   {
     "id": "turing-patterns",
