@@ -597,7 +597,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     <button class="preset" data-p="balance" aria-pressed="true"><b>Balanced cycle</b><small>Textbook out-of-phase oscillation</small></button>
     <button class="preset" data-p="boom" aria-pressed="false"><b>Boom &amp; bust</b><small>Fast breeders overshoot their food</small></button>
     <button class="preset" data-p="enrich" aria-pressed="false"><b>Paradox of enrichment</b><small>More grass, wilder swings</small></button>
-    <button class="preset" data-p="overhunt" aria-pressed="false"><b>Overhunting collapse</b><small>Too many lynx, too good at it</small></button>
+    <button class="preset" data-p="overhunt" aria-pressed="false"><b>Overhunting collapse</b><small>But not every time</small></button>
     <button class="preset" data-p="desert" aria-pressed="false"><b>Sparse habitat</b><small>A low ceiling and fragile numbers</small></button>
   </div>
   </details>
@@ -1367,7 +1367,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     balance:  {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,lynxSpace:3,plant:6,metab:1},
     boom:     {startHare:90, startLynx:14,hareBirth:9,grassEnergy:5,hareVision:3,lynxBirth:3,preyEnergy:18,lynxVision:3,lynxSpace:3,plant:9,metab:1},
     enrich:   {startHare:120,startLynx:14,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,lynxSpace:3,plant:8,metab:1},
-    overhunt: {startHare:110,startLynx:80,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:6,preyEnergy:26,lynxVision:7,lynxSpace:0,plant:6,metab:1},
+    overhunt: {startHare:110,startLynx:80,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:6,preyEnergy:26,lynxVision:7,lynxSpace:3,plant:6,metab:1},
     desert:   {startHare:90, startLynx:18,hareBirth:5,grassEnergy:4,hareVision:4,lynxBirth:4,preyEnergy:22,lynxVision:4,lynxSpace:4,plant:1,metab:1}
   };
   const presetBtns = [...document.querySelectorAll('.preset')];

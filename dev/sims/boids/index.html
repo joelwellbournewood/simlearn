@@ -108,21 +108,18 @@
   .pal .chips{display:inline-flex;gap:2px;flex:none}
   .pal .chips i{width:9px;height:9px;border-radius:2px;display:block}
   .pal .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .swatches{grid-column:1/-1;margin-top:7px}
-  .sw-item{display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:5px 7px 5px 9px;border:1px solid var(--line);border-radius:10px;
-    font-size:12px;color:var(--text);min-width:0}
-  .sw-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ctl .sw-item input[type=color]{-webkit-appearance:none;appearance:none;width:26px;height:22px;
-    padding:0;margin:0;border:1px solid var(--line-strong);border-radius:6px;background:transparent;
+  /* The Solid colour card carries the colour input itself, in place of the three
+     preview chips the palette cards show, so choosing that palette and choosing the
+     colour are the same gesture and there is no second row of swatch buttons. */
+  .ctl .pal input[type=color]{-webkit-appearance:none;appearance:none;width:29px;height:11px;
+    padding:0;margin:0;border:1px solid var(--line-strong);border-radius:3px;background:transparent;
     cursor:pointer;flex:none;grid-column:auto}
-  .sw-item input[type=color]::-webkit-color-swatch-wrapper{padding:0}
-  .sw-item input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
-  .sw-item input[type=color]::-moz-color-swatch{border:0;border-radius:5px}
-  .swrow{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:6px}
-  .sw{height:22px;border-radius:6px;border:1px solid var(--line);padding:0;cursor:pointer;transition:transform .12s,box-shadow .12s}
-  .sw:hover{transform:translateY(-1px)}
-  .sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent);border-color:transparent}
+  .pal input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  .pal input[type=color]::-webkit-color-swatch{border:0;border-radius:2px}
+  .pal input[type=color]::-moz-color-swatch{border:0;border-radius:2px}
+  /* the shared colour menu replaces that input with its own swatch button; keep it the
+     size of the three preview chips the other cards carry */
+  .pal .cp-sw{width:29px;height:12px;border-radius:3px}
   .row2{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
   .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;font-size:13px;font-weight:500;cursor:pointer}
   .toggle input{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:999px;background:rgba(255,255,255,.14);position:relative;margin:0;transition:background .18s;flex:none}
@@ -1355,7 +1352,7 @@ class View2D {
     this.octx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.clear();
   }
-  clear() { this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); this.drew = false; }
+  clear() { this.lastFade = 0; this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); this.drew = false; }
   setTable(table) {
     this.table = table;
     this.css = table.map(c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`);
@@ -1382,8 +1379,19 @@ class View2D {
     // fade or clear (screen space)
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (P.trail > 0) {
-      let a = 1 - Math.pow(P.trail, Math.max(1, steps || 1));
-      if (this.frame % 6 === 0) a = Math.min(1, a * 2);   // sweeps the 8-bit residue that never quite fades
+      /* The trail fades by elapsed time, not by how many simulation steps happened to
+         land inside this frame. Two earlier rules both made the whole picture pulse.
+         Counting steps meant the fade jumped between one step's worth and two steps'
+         worth from frame to frame, measured here at 28 frames in 226 taking the double
+         dose. And doubling the fade every sixth frame, which was meant to sweep the
+         residue 8-bit alpha leaves behind, dimmed everything by up to 14% once every
+         six frames, a 10Hz flicker, while only lowering that residue from 15/255 to
+         8/255. Elapsed time gives a constant fade per frame at any refresh rate and at
+         either simulation rate. */
+      const now = performance.now();
+      const f = clamp((now - (this.lastFade || (now - 16.667))) / 16.667, 0.5, 2.5);
+      this.lastFade = now;
+      const a = 1 - Math.pow(P.trail, f);
       c.globalCompositeOperation = 'destination-out';
       c.fillStyle = `rgba(0,0,0,${a.toFixed(3)})`;
       c.fillRect(0, 0, W, H);
@@ -1895,7 +1903,10 @@ class View3D {
     const size = P.size * 1.15;
     let bi = 0, pi = 0;
     const L = this.trailLen, prevPos = this.prevPos, prevInit = this.prevInit, cap = this.cap;
-    if (L > 1) this.head = (this.head + 1) % L;
+    /* The trail ring only advances when the flock has actually moved. Orbiting the
+       camera on a paused or high-refresh frame used to advance it anyway, writing a
+       zero-length segment into the new slot, so the tail ate itself while you dragged. */
+    if (L > 1 && dt > 0) this.head = (this.head + 1) % L;
     const head = this.head, block = head * cap * 6;
     const tpos = this.trails ? this.trails.geometry.attributes.position.array : null;
     const tcol = this.trails ? this.trails.geometry.attributes.aColor.array : null;
@@ -2040,7 +2051,7 @@ const PRESETS = [
   { key: 'bioluminescence', name: 'Bioluminescence', tag: 'A shoal lights the deep',
     p: { count: 600, maxSpeed: 2.2, agility: 0.05, perception: 70, separation: 24, fov: 240, wSep: 1.4, wAli: 0.9, wCoh: 0.7, flow: 0.3, flowScale: 420, trail: 0.9, size: 2.6, glow: 0.55, colorMode: 'speed', palette: 'abyss', bg: '#040c19' } },
   { key: 'vortex', name: 'Vortex', tag: 'One swirl, a thousand wings',
-    p: { count: 1200, maxSpeed: 3.2, agility: 0.07, perception: 60, separation: 18, wSep: 1.2, wAli: 1.6, wCoh: 0.4, attractor: 0.35, swirl: 0.9, trail: 0.8, size: 2.4, glow: 0.35, colorMode: 'speed', palette: 'ember', bg: '#120908' },
+    p: { count: 1200, maxSpeed: 3.2, agility: 0.07, perception: 60, separation: 40, wSep: 2.1, wAli: 1.6, wCoh: 0.4, attractor: 0.35, swirl: 0.9, trail: 0.8, size: 2.4, glow: 0.35, colorMode: 'speed', palette: 'ember', bg: '#120908' },
     three: { count: 900, attractor: 0.45 } },
   { key: 'hunt', name: 'Hunt', tag: 'Predators split the flock',
     p: { count: 900, predators: 3, maxSpeed: 3.4, predSpeed: 3.9, fleeRadius: 150, perception: 60, separation: 20, wSep: 1.4, wAli: 1.1, wCoh: 1.0, trail: 0.4, size: 3.2, glow: 0.2, colorMode: 'density', palette: 'reef', bg: '#0a1418' } },
@@ -2121,7 +2132,6 @@ const CONTROLS = {
     { key: 'glow', label: 'Glow', min: 0, max: 1, step: 0.05, fmt: v => Math.round(v * 100) + '%' },
     { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning']] },
     { key: 'palette', label: 'Palette', type: 'pals' },
-    { key: 'flockColor', label: 'Flock colour', type: 'swatches' },
     { key: 'bg', label: 'Background', type: 'color' },
     { key: 'quality', label: 'Graphics quality', type: 'select', options: [['3', 'Automatic'], ['2', 'High'], ['1', 'Balanced'], ['0', 'Fast']] },
   ],
@@ -2230,11 +2240,14 @@ function sampleRefresh(t) {
 }
 
 /* ---------------- panel construction ---------------- */
-const SWATCHES = ['#ffffff', '#56e0c2', '#7cd4ff', '#ffd166', '#ff7d5c', '#ff8ad8', '#b48cff', '#1b2330'];
 const chips = {};
 function buildControls() {
   const make = (spec) => {
-    const wrap = document.createElement('label'); wrap.className = 'ctl';
+    /* Every other row is a label, which is what puts the pointer's focus on its one
+       control. The palette row holds several controls, and one of them is a colour
+       input, so a label there would forward a click on any card to that input and open
+       the colour menu from the wrong card. A plain div, styled the same. */
+    const wrap = document.createElement(spec.type === 'pals' ? 'div' : 'label'); wrap.className = 'ctl';
     const name = document.createElement('span'); name.className = 'name'; name.textContent = spec.label; wrap.appendChild(name);
     if (TIPS[spec.key]) {
       // a span, not a button: a button would become the label's activation target and open on any click in the row
@@ -2272,31 +2285,37 @@ function buildControls() {
         return b;
       };
       for (const k of Object.keys(PALETTES)) card(k, PALETTES[k].name, PALETTES[k].colors);
-      solidCard = card('solid', 'Solid colour', [P.flockColor]);
+      /* Solid colour is a card like the rest, except that its preview chip is a live
+         colour input, so clicking it opens the browser's colour menu exactly as the
+         Background row does. A div rather than a button, because a button is not
+         allowed to contain an input. */
+      solidCard = document.createElement('div');
+      solidCard.className = 'pal'; solidCard.dataset.pal = 'solid';
+      solidCard.setAttribute('role', 'button'); solidCard.tabIndex = 0;
+      solidCard.setAttribute('aria-pressed', 'false');
+      solidPick = document.createElement('input'); solidPick.type = 'color'; solidPick.value = P.flockColor;
+      solidPick.setAttribute('aria-label', 'Flock colour');
+      solidPick.addEventListener('input', () => setParam('flockColor', solidPick.value));
+      const spn = document.createElement('span'); spn.className = 'pn'; spn.textContent = 'Solid colour';
+      solidCard.appendChild(solidPick); solidCard.appendChild(spn);
+      /* colorpop.js turns every colour input on the site into a swatch button with the
+         shared glass menu behind it, which is the menu the Background row opens. So the
+         card opens that same menu: if the upgrade has happened, press its button, and
+         if the script ever fails to load, fall back to the browser's own dialog. The
+         swatch button stops its click from bubbling, so the palette is selected from a
+         capture listener, which runs first either way. */
+      const openSolid = () => {
+        const sw = solidPick.nextElementSibling;
+        if (sw && sw.classList.contains('cp-sw')) { sw.click(); return; }
+        try { solidPick.showPicker(); } catch (err) { solidPick.click(); }
+      };
+      solidCard.addEventListener('click', () => { if (P.palette !== 'solid') setParam('palette', 'solid'); }, true);
+      solidCard.addEventListener('click', e => { if (!e.target.closest('.cp-sw')) openSolid(); });
+      solidCard.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (P.palette !== 'solid') setParam('palette', 'solid'); openSolid(); } });
+      grid.appendChild(solidCard);
       wrap.appendChild(grid);
       input = document.createElement('input'); input.type = 'hidden';
       chips[spec.key] = grid;
-    } else if (spec.type === 'swatches') {
-      /* eight colours that read well against both a dark and a light sky, plus the
-         picker for anything else. The chips are the fast path, not the only path. */
-      out.remove();
-      const row = document.createElement('div'); row.className = 'swrow';
-      SWATCHES.forEach(hx => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'sw';
-        b.style.background = hx; b.dataset.hex = hx; b.setAttribute('aria-pressed', 'false');
-        b.setAttribute('aria-label', 'Flock colour ' + hx);
-        b.addEventListener('click', e => { e.preventDefault(); setParam(spec.key, hx); });
-        row.appendChild(b);
-      });
-      wrap.appendChild(row);
-      const box = document.createElement('div'); box.className = 'swatches';
-      const item = document.createElement('label'); item.className = 'sw-item';
-      const cap = document.createElement('span'); cap.textContent = 'Any colour';
-      input = document.createElement('input'); input.type = 'color';
-      input.addEventListener('input', () => setParam(spec.key, input.value));
-      item.appendChild(cap); item.appendChild(input); box.appendChild(item);
-      wrap.appendChild(box);
-      chips[spec.key] = row;
     } else {
       input = document.createElement('input'); input.type = 'range';
       input.min = spec.min; input.max = spec.max; input.step = spec.step;
@@ -2325,16 +2344,10 @@ document.addEventListener('pointerdown', e => { if (!e.target.closest('.tip')) c
 function reflect(key) {
   const c = inputs[key]; if (!c) return;
   const v = P[key];
-  if (c.spec.type === 'swatches') {
-    c.input.value = v;
-    const row = chips[key];
-    if (row) row.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.hex.toLowerCase() === String(v).toLowerCase())));
-    return;
-  }
   if (c.spec.type === 'pals') {
     const grid = chips[key];
     if (grid) grid.querySelectorAll('.pal').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pal === v)));
-    if (solidCard) solidCard.querySelector('i').style.background = P.flockColor;
+    if (solidPick) solidPick.value = P.flockColor;
     return;
   }
   if (c.spec.type === 'select' || c.spec.type === 'color') { c.input.value = v; return; }
@@ -2342,13 +2355,11 @@ function reflect(key) {
   c.out.textContent = c.spec.fmt ? c.spec.fmt(v) : v;
   c.input.style.setProperty('--p', ((v - c.spec.min) / (c.spec.max - c.spec.min) * 100) + '%');
 }
-/* The colour menu exists only while the Solid colour card is the chosen palette, and
-   Colour by has nothing to map onto in that case, so it goes away with it. */
-let solidCard = null;
+/* One colour leaves Colour by with nothing to map onto, so that row goes away while
+   the Solid colour card is the chosen palette. */
+let solidCard = null, solidPick = null;
 function updateLookRows() {
-  const solid = P.palette === 'solid';
-  if (inputs.flockColor) inputs.flockColor.wrap.hidden = !solid;
-  if (inputs.colorMode) inputs.colorMode.wrap.hidden = solid;
+  if (inputs.colorMode) inputs.colorMode.wrap.hidden = P.palette === 'solid';
 }
 function syncUI() {
   for (const k in inputs) reflect(k);
