@@ -187,19 +187,23 @@ details.grp > summary + *{margin-top:0}
   <details class="grp" open>
     <summary>Controls</summary>
   <div class="row">
-    <label for="s-copies"><span class="nm">Copies released<button class="tip" data-tip="How many near identical pendulums are released together." aria-label="What copies released does">?</button></span><span class="val" id="v-copies"></span></label>
+    <label for="s-copies"><span class="nm">Copies released</span><span class="val" id="v-copies"></span></label>
     <input type="range" id="s-copies" min="1" max="220" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-spread"><span class="nm">Starting spread<button class="tip" data-tip="Angle between the first copy and the last." aria-label="What starting spread does">?</button></span><span class="val" id="v-spread"></span></label>
+    <label for="s-spread"><span class="nm">Starting spread</span><span class="val" id="v-spread"></span></label>
     <input type="range" id="s-spread" min="-4" max="0.7" step="0.05" value="-1">
   </div>
   <div class="row">
-    <label for="s-angle"><span class="nm">Release angle<button class="tip" data-tip="Lift before release, which sets the energy." aria-label="What release angle does">?</button></span><span class="val" id="v-angle"></span></label>
+    <label for="s-angle"><span class="nm">Release angle</span><span class="val" id="v-angle"></span></label>
     <input type="range" id="s-angle" min="5" max="180" step="1" value="120">
   </div>
   <div class="row">
-    <label for="s-l2"><span class="nm">Lower arm length<button class="tip" data-tip="Second arm, relative to the first." aria-label="What lower arm length does">?</button></span><span class="val" id="v-l2"></span></label>
+    <label for="s-l1"><span class="nm">Upper arm length</span><span class="val" id="v-l1"></span></label>
+    <input type="range" id="s-l1" min="0.4" max="1.6" step="0.05" value="1">
+  </div>
+  <div class="row">
+    <label for="s-l2"><span class="nm">Lower arm length</span><span class="val" id="v-l2"></span></label>
     <input type="range" id="s-l2" min="0.4" max="1.6" step="0.05" value="1">
   </div>
   <div class="row">
@@ -238,7 +242,7 @@ details.grp > summary + *{margin-top:0}
 </ul>
 <p>This is sensitive dependence on initial conditions, and it is the point of the demonstration. The system is fully deterministic, so the same starting numbers always give the same motion. It is unpredictable in practice all the same, because to predict twice as far ahead you need roughly the square of the precision in your starting measurement, and no measurement is ever exact.</p>
 <p>The same arrangement of two hinged arms turns up in a surprising number of real machines. A crane hook on a slack cable, a wrecking ball, the human leg during a stride, and a golf club through the downswing are all close relatives, which is why crane operators are trained to move the trolley in a particular rhythm and why a bad swing scatters shots so widely. Once two hinged pieces can exchange energy freely, control gets difficult fast.</p>
-<p><b>Release angle</b> is the important slider, because it sets the energy. Start the arms low and the motion stays regular and repetitive, and the copies stay together for a long time. Somewhere above the height at which the lower arm can just swing over the top, the behaviour changes character and the flipping begins. <b>Lower arm length</b> changes the geometry, <b>copies released</b> and <b>trail length</b> change what is drawn, and <b>time speed</b> changes only the playback rate.</p>
+<p><b>Release angle</b> is the important slider, because it sets the energy. Start the arms low and the motion stays regular and repetitive, and the copies stay together for a long time. Somewhere above the height at which the lower arm can just swing over the top, the behaviour changes character and the flipping begins. <b>Upper arm length</b> and <b>lower arm length</b> change the geometry, and a longer upper arm also lengthens the swing, <b>copies released</b> and <b>trail length</b> change what is drawn, and <b>time speed</b> changes only the playback rate.</p>
 <h3>Things to try</h3>
     <ul>
       <li>Set the spread to its smallest value, a ten-thousandth of a degree, and time how long the fan holds together as one line. Then set it a hundred times wider and time it again. It holds for less time, but nowhere near a hundred times less, because a worse starting measurement costs you a fixed amount of warning rather than a proportional one.</li>
@@ -317,7 +321,7 @@ function resize(){
 }
 /* ---------- model ---------- */
 const M1=1, M2=1;
-let g=1.0, L1=140, L2=140, l2r=1, copies=1, spreadDeg=0.1, angleDeg=120,
+let g=1.0, L1=140, L2=140, l1r=1, l2r=1, copies=1, spreadDeg=0.1, angleDeg=120,
     trailPct=60, speed=1, paused=false, arr=[], E0=null, tsec=0, activePreset='twins';
 function deriv(s){
   const a1=s[0],a2=s[1],w1=s[2],w2=s[3], d=a1-a2;
@@ -379,14 +383,16 @@ function applyLook(k){
   r.setProperty('--accent',hex(P.acc)); r.setProperty('--accent-dim',PACC('.14'));
   /* recolour the pendulums already on screen, trails and all */
   for(let i=0;i<arr.length;i++) arr[i].c=colourAt(arr.length===1?0:i/(arr.length-1));
-  try{ localStorage.setItem('simlearn-pendulum-look',k); }catch(e){}
 }
 function geom(){
   /* g is tied to arm length so the swing takes the same wall-clock time whatever
      the canvas size. omega = sqrt(g/L1) is then constant, about 0.47 per time unit,
      which puts a small-amplitude period near two and a half seconds at 60fps. */
   const base=Math.min(W,H)*0.20;
-  L1=base; L2=base*l2r; g=0.22*base;  if(arr&&arr.length&&E0!==null) E0=energyOf(arr[0].s);
+  /* Gravity follows the canvas, not the arms, so lengthening the upper arm lengthens
+     the period exactly as it would on a real rig, while a bigger window leaves the
+     timing alone. */
+  L1=base*l1r; L2=base*l2r; g=0.22*base;  if(arr&&arr.length&&E0!==null) E0=energyOf(arr[0].s);
 }
 function release(a1seed){
   geom();
@@ -402,17 +408,17 @@ function release(a1seed){
 }
 /* ---------- presets ---------- */
 const PRESETS={
-  twins:{name:'The twin test',tag:'Two starts half a degree apart',set:{copies:2,spread:-0.3,angle:120,l2:1,trail:70}},
-  fan:{name:'Fan of a hundred',tag:'A hundred starts inside a tenth of a degree',set:{copies:110,spread:-1,angle:130,l2:1,trail:35}},
-  single:{name:'One pendulum',tag:'Just watch the shape the tip traces',set:{copies:1,spread:-1,angle:120,l2:1,trail:75}},
-  gentle:{name:'Gentle swing',tag:'Small angles stay regular and predictable',set:{copies:60,spread:-1,angle:15,l2:1,trail:80}},
-  whip:{name:'Long whip',tag:'A long lower arm carries most of the energy',set:{copies:40,spread:-1.5,angle:180,l2:1.55,trail:45}}
+  twins:{name:'The twin test',tag:'Two starts half a degree apart',set:{copies:2,spread:-0.3,angle:120,l1:1,l2:1,trail:70}},
+  fan:{name:'Fan of a hundred',tag:'A hundred starts inside a tenth of a degree',set:{copies:110,spread:-1,angle:130,l1:1,l2:1,trail:35}},
+  single:{name:'One pendulum',tag:'Just watch the shape the tip traces',set:{copies:1,spread:-1,angle:120,l1:1,l2:1,trail:75}},
+  gentle:{name:'Gentle swing',tag:'Small angles stay regular and predictable',set:{copies:60,spread:-1,angle:15,l1:1,l2:1,trail:80}},
+  whip:{name:'Long whip',tag:'A long lower arm carries most of the energy',set:{copies:40,spread:-1.5,angle:180,l1:0.8,l2:1.55,trail:45}}
 };
 function applyPreset(k){
   activePreset=k; const p=PRESETS[k].set;
   el('s-copies').value=p.copies; el('s-spread').value=p.spread;
-  el('s-angle').value=p.angle; el('s-l2').value=p.l2; el('s-trail').value=p.trail;
-  ['s-copies','s-spread','s-angle','s-l2','s-trail'].forEach(id=>el(id).dispatchEvent(new Event('input')));
+  el('s-angle').value=p.angle; el('s-l1').value=p.l1; el('s-l2').value=p.l2; el('s-trail').value=p.trail;
+  ['s-copies','s-spread','s-angle','s-l1','s-l2','s-trail'].forEach(id=>el(id).dispatchEvent(new Event('input')));
   release();
   [...document.querySelectorAll('.preset')].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===k)));
 }
@@ -515,10 +521,11 @@ function bind(id,vid,fmt,fn){
 bind('s-copies','v-copies',x=>String(x),x=>{copies=x;});
 bind('s-spread','v-spread',x=>{const d=Math.pow(10,x);return d<0.01?d.toExponential(0)+'\u00b0':d.toFixed(d<1?3:2)+'\u00b0';},x=>{spreadDeg=Math.pow(10,x);});
 bind('s-angle','v-angle',x=>x+'\u00b0',x=>{angleDeg=x;});
+bind('s-l1','v-l1',x=>x.toFixed(2)+'x',x=>{l1r=x; geom();});
 bind('s-l2','v-l2',x=>x.toFixed(2)+'x',x=>{l2r=x; geom();});
 bind('s-trail','v-trail',x=>x===0?'off':x+'%',x=>{trailPct=x;});
 bind('s-speed','v-speed',x=>x.toFixed(2)+'x',x=>{speed=x;});
-['s-copies','s-spread','s-angle','s-l2'].forEach(id=>el(id).addEventListener('change',()=>release()));
+['s-copies','s-spread','s-angle','s-l1','s-l2'].forEach(id=>el(id).addEventListener('change',()=>release()));
 const bp=el('b-pause');
 function setPaused(p){ paused=p; bp.dataset.on=String(p); }
 bp.addEventListener('click',()=>setPaused(!paused));
@@ -607,8 +614,9 @@ window.__dbg=()=>({zoom,panx,pany,n:arr.length,t:tsec});
   box.addEventListener('click',e=>{ const b=e.target.closest('.seg'); if(!b) return;
     box.querySelectorAll('.seg').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
     applyLook(b.dataset.v); });
-  let k='field'; try{ k=localStorage.getItem('simlearn-pendulum-look')||'field'; }catch(e){}
-  if(!LOOKS[k]) k='field';
+  /* Deliberately not remembered between visits: the page opens on the house look every
+     time, and the Look control is right there for anyone who wants another one. */
+  const k='field';
   box.querySelectorAll('.seg').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===k?'true':'false'));
   applyLook(k);
 })();
