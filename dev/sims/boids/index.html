@@ -380,16 +380,16 @@
 <dialog class="about" id="about" aria-labelledby="aboutTitle"><div class="about-inner">
 <button class="icon-btn about-close" id="btnAboutClose" aria-label="Close"><svg class="main" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 <h2 id="aboutTitle">What am I looking at?</h2>
-<p>This is a simulated flock, designed to demonstrate that beautiful and complex patterns can emerge from individuals interacting through a small set of simple rules.</p>
-<p>Each arrow is a boid, short for "bird-oid object", and is a simple agent that perceives only its nearest neighbours, and steers by following three rules.</p>
+<p>A flock of starlings coming in to roost on a winter evening can turn as one body, hold a ragged edge for a moment, and pour into a new shape, and not one bird in it has any idea what the whole thing looks like. A bait ball of sardines does it underwater, and a column of midges does it over a hedge.</p>
+<p>Each arrow here is a boid, short for "bird-oid object". It can see only its nearest neighbours, and it steers by three rules.</p>
 <ul>
   <li><b>Separation:</b> steer away from neighbours that are too close, preventing collisions.</li>
   <li><b>Alignment:</b> steer toward the average heading of nearby boids.</li>
   <li><b>Cohesion:</b> steer toward the average position of nearby boids, keeping the group together.</li>
 </ul>
-<p>Nothing in those rules mentions the flock. No boid can see the whole group, none of them has a plan, and there is no leader. The shape you are watching is simply what a few hundred agents obeying three local rules add up to.</p>
+<p>Not one of those rules mentions the flock. No boid sees the whole group, none has a plan, and there is no leader, which is also the answer to the question people ask about starlings: nothing is being followed.</p>
 <p>Craig Reynolds wrote the rules for animation in 1987, showed them off that year in the animated short <i>Stanley and Stella in: Breaking the Ice</i>, and Tim Burton's <b>Batman Returns</b> (1992) became the first feature film to put them on screen. The swarms of bats, and the army of penguins marching through Gotham, were both run as boids rather than animated by hand. Every animal in those shots was an agent following the same three rules you are watching here, which is why a crowd of a thousand cost about as much work as a crowd of ten. The same trick now fills battlefields in films and games, keeps drone light shows from colliding, and helps architects work out how a crowd will drain out of a stadium.</p>
-<p>Each boid has its own perception radius, field of view, and nearest-neighbour count, determining what it can see. Separation, alignment, and cohesion set how it reacts. Every other slider in the panel is detail layered on top of those core elements. Strong alignment produces long streams, strong cohesion produces dense clusters, and strong separation produces a diffuse cloud.</p>
+<p>How far a bird sees, how wide its view is, and how many neighbours it keeps track of decide what it knows. Separation, alignment, and cohesion decide how it reacts, and the balance between those three is the whole character of a flock: strong alignment gives long streams, strong cohesion gives dense clusters, and strong separation gives a diffuse cloud that never quite commits.</p>
 <h3>Things to try</h3>
     <ul>
       <li>Hold the pointer on the flock with <b>Attract</b>, then switch to <b>Repel</b> and scatter it.</li>
@@ -420,7 +420,7 @@
 <p>The engineering afterlife of boids is larger than the biology. Local steering rules of this form underpin crowd simulation in film and games, where a few behavioural parameters replace an animator per character; they underpin pedestrian and evacuation modelling, where the interest is in how a corridor jams rather than in how it flows; and they underpin distributed control of drone and satellite formations, where each vehicle can only sense its immediate neighbours and no ground station is fast enough to steer the swarm centrally. The property that makes them attractive in all three cases is the same one on display here: behaviour that scales, degrades gracefully when individuals drop out, and needs no agent to know the size or shape of the group it belongs to.</p>
 
 <h3>Limits of the model</h3>
-<p>Boids is a minimal sufficient model rather than a fitted one. It was never derived from flock data, and its parameters have no direct empirical calibration. The topological-neighbour count and the correlation-decay findings described above arrived decades later, from separate empirical work, and they are grafted onto the original rules rather than derived from them. The model reproduces qualitative signatures of flocking, meaning the order-disorder transition, wave-like turn propagation, and splitting and re-forming around obstacles, and it makes no claim about the aerodynamics, sensory biology, or decision-making of any real animal. Treat it as a demonstration that these signatures can emerge from three simple local rules, and not as evidence that real animals use only these three.</p>
+<p>Boids is a minimal sufficient model rather than a fitted one. It was never derived from flock data, and its parameters have no direct empirical calibration. The topological-neighbour count and the correlation-decay findings described above arrived decades later, from separate empirical work, and they are grafted onto the original rules rather than derived from them. The model reproduces qualitative signatures of flocking, meaning the order-disorder transition, wave-like turn propagation, and splitting and re-forming around obstacles, and it makes no claim about the aerodynamics, sensory biology, or decision-making of any real animal. What it shows is that those signatures can come out of three local rules, which is not evidence that a starling uses only three.</p>
 
 <h3>References</h3>
 <ul class="refs">
