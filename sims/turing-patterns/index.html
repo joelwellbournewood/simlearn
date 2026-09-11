@@ -556,6 +556,14 @@ body.sheet-open .panel{z-index:9}
 <p>Once you have seen it, the same logic shows up in odd places. Vegetation in semi-arid country grows in regular stripes and rings, because each plant draws water from the bare ground around it. Ripples in sand, the spacing of hair follicles, the ridges on the roof of your mouth, and the spots on a big cat are all thought to come from something with this shape to it. Alan Turing proposed the idea in 1952, in the last paper he published, and it took forty years and a good deal of argument before biologists were persuaded.</p>
 <p>Only three sliders change the chemistry: <b>feed rate</b>, <b>kill rate</b>, and the <b>diffusion ratio</b> between the two substances. The map beside the field shows where in that space you are, and the regions on it are what the presets pick out. Small moves matter, since the boundary between spots, stripes, and a labyrinth is a few thousandths of a unit wide, which is why nudging one slider can turn a settled pattern into a growing one. Growth and alignment stretch the tissue while the pattern is forming, which is how a real pattern ends up lined up with the animal it sits on.</p>
 
+<h3>Things to try</h3>
+<ul>
+  <li>Load <b>Mitosis</b> and follow one spot. It swells, pinches in the middle, and becomes two, and it has to keep doing that to persist, because at that feed and kill rate there is no settled state for it to relax into.</li>
+  <li>Load <b>Labyrinth</b>, then drag the <b>diffusion ratio</b> down towards 1. Everything dissolves back to an even mixture whatever the feed and kill rates are, because the mechanism needs the suppressing chemical to travel further than the one it suppresses. That single requirement is the whole idea.</li>
+  <li>Load <b>Stripes</b>, then turn off <b>Diffuse faster along one axis</b> under Alignment. Parallel stripes turn into a maze, since with nothing to prefer a direction there is no direction to prefer.</li>
+  <li>Load <b>Stripes</b> again and turn on <b>Stretch the field lengthwise</b> under Growth. The stripes hold their width while the tissue stretches, so new ones have to appear in the gaps, which is what was measured on a growing angelfish.</li>
+  <li>Pick any pattern and nudge the feed rate by a few thousandths. Whole classes of behaviour sit that close together, which is worth remembering the next time a developing embryo is described as robust.</li>
+</ul>
 <h3>Keyboard</h3>
 <p class="keys"><kbd>Space</kbd> pause, <kbd>R</kbd> reseed the field, <kbd>1</kbd>-<kbd>9</kbd> the first nine presets, <kbd>0</kbd> free play, arrow keys nudge the feed and kill rates (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> and <kbd>&minus;</kbd> zoom the map, <kbd>H</kbd> hide the interface, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
 <div class="more-box"><div class="more-body">
