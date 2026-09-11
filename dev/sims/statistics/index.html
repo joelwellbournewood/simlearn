@@ -989,13 +989,15 @@ const PI={
   reset(){ this.N=0; this.inside=0; this.rings=[]; this.px=0; this.py=0; this.sc=1; this.pan=false;
     if(this.dots) this.dctx.clearRect(0,0,this.dots.width,this.dots.height); },
   geom(){ const A=area();
-    const sm=A.w<560;
-    const sy=A.y+(sm?14:22);
-    /* narrow: the board takes the whole width it is given, and the readout below it
-       is stacked rather than laid out on one line, so it needs about 170px of room */
+    const sm=A.w<560;        /* portrait phone: wide enough for nothing, stack the readout */
+    const sh=A.h<340;        /* landscape phone: plenty of width, almost no height */
+    const sy=A.y+((sm||sh)?12:22);
+    /* The board is whatever square fits once the readout below it has been given its
+       room: about 190px stacked, 120px on a short screen, 150px otherwise. */
     const side=sm?Math.max(150,Math.min(A.w,A.h-190))
-                 :Math.max(160,Math.min(A.w-140,A.h-150));
-    return {A,side,sm,sx:A.cx-side/2,sy,rT:sy+side+(sm?30:48)}; },
+             :sh?Math.max(110,Math.min(A.w-140,A.h-120))
+                :Math.max(160,Math.min(A.w-140,A.h-150));
+    return {A,side,sm,sh,sx:A.cx-side/2,sy,rT:sy+side+(sh?20:(sm?30:48))}; },
   ensure(){ if(!this.dots||this.dots.width!==cv.width||this.dots.height!==cv.height){
       this.dots=document.createElement('canvas'); this.dots.width=cv.width; this.dots.height=cv.height;
       this.dctx=this.dots.getContext('2d'); this.dctx.setTransform(DPR,0,0,DPR,0,0); this.reset(); } },
@@ -1041,14 +1043,14 @@ const PI={
     const pctSd=100*sd/Math.PI;
     const dpp=clamp(1-Math.floor(Math.log10(pctSd)),2,7);
     const y=g.rT, PIC=String.fromCharCode(960), maxw=g.A.w;
-    const fsz=g.sm?15:19, esz=g.sm?30:38;
+    const fsz=(g.sm||g.sh)?15:19, esz=g.sm?30:(g.sh?26:38);
     const parts=[['4 \u00d7 ',fsz+'px '+MONO,MUTED],
       [fmtN(this.inside)+' in',fsz+'px '+MONO,ACC],
       [' / ',fsz+'px '+MONO,MUTED],
       [fmtN(this.N)+' thrown',fsz+'px '+MONO,INK]];
     if(!g.sm) parts.push(['  =  ','19px '+MONO,MUTED],[this.N?est.toFixed(dp):'--','38px '+MONO,ACC]);
     let wsum=0; for(const p of parts){ ctx.font=p[1]; wsum+=ctx.measureText(p[0]).width; }
-    let x=g.A.cx-wsum/2, ry=y+(g.sm?18:21);
+    let x=g.A.cx-wsum/2, ry=y+(g.sm?18:(g.sh?16:21));
     for(const p of parts){ ctx.font=p[1]; ctx.fillStyle=p[2]; ctx.textAlign='left';
       ctx.fillText(p[0],x,ry); x+=ctx.measureText(p[0]).width; }
     let below=ry;
@@ -1056,16 +1058,20 @@ const PI={
       txt('=',g.A.cx,ry+24,'center',MUTED,'14px '+MONO);
       txt(this.N?est.toFixed(dp):'--',g.A.cx,ry+esz+22,'center',ACC,esz+'px '+MONO);
       below=ry+esz+22; }
-    const capf=(g.sm?12.5:14.5)+'px '+MONO;
-    const cap=wrapTxt('the fraction of darts inside the circle is the circle\u2019s share of '
-      +'the square, '+PIC+'/4',capf,maxw);
-    txtBlock(cap,g.A.cx,y-24-(cap.length-1)*16,16,MUTED,capf);
-    const notef=(g.sm?12.5:15)+'px '+MONO;
+    /* on a landscape phone there is no room between the board and the readout, and this
+       sentence is in the explainer anyway, so it is the one thing that gets dropped */
+    if(!g.sh){
+      const capf=(g.sm?12.5:14.5)+'px '+MONO;
+      const cap=wrapTxt('the fraction of darts inside the circle is the circle\u2019s share of '
+        +'the square, '+PIC+'/4',capf,maxw);
+      txtBlock(cap,g.A.cx,y-24-(cap.length-1)*16,16,MUTED,capf);
+    }
+    const notef=(g.sm||g.sh?12.5:15)+'px '+MONO;
     const note=this.N?('true '+PIC+' = '+Math.PI.toFixed(dp)+'   off by '
       +(100*Math.abs(est-Math.PI)/Math.PI).toFixed(dpp)+'%   typical error at this many darts \u00b1'
       +pctSd.toFixed(dpp)+'%')
       :((TOUCH?'tap':'click')+' to throw 500 darts');
-    txtBlock(wrapTxt(note,notef,maxw),g.A.cx,below+(g.sm?30:39),16,MUTED,notef);
+    txtBlock(wrapTxt(note,notef,maxw),g.A.cx,below+((g.sm||g.sh)?30:39),16,MUTED,notef);
     ctx.restore();
   },
   /* right-drag slides the whole board, dots, labels and readout together */
