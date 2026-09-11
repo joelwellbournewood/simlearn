@@ -812,7 +812,7 @@ var FS_DRAW = [
 'uniform float uLo, uHi, uRelief;',
 'uniform int uPal; uniform float uBilin;',
 'uniform vec3 uC0, uC1, uC2; uniform float uMid;',
-'uniform vec4 uTile;',   // xy scale, zw offset: lets the periodic field tile the whole frame
+'uniform vec4 uTile;',   // xy scale, zw offset: the window of the field the frame shows
 'vec3 inferno(float t){',
 '  const vec3 c0 = vec3(0.00021894, 0.00165100, -0.01948090);',
 '  const vec3 c1 = vec3(0.10651342, 0.56395644, 3.93271239);',
@@ -1127,14 +1127,16 @@ function scatterDots(n){
   }
 }
 /* How much of the canvas the picture covers. With growth off the answer is ALL of it:
-   the lattice is periodic, so the field is drawn at its natural pixel scale and tiles
-   across the whole frame with no seam, and the panels float on top of it. Growth needs
-   a rectangle that can stretch to gMax without leaving the canvas, so there, and only
-   there, the picture is a measured box with margins. */
+   ONE copy of the lattice is scaled up until it covers the frame, so the longer side of
+   the canvas shows the whole width of the field and the shorter side is cropped. It used
+   to be drawn at its natural pixel scale and left to repeat, which looked seamless but
+   meant a single brush stroke appeared once per visible copy. Growth needs a rectangle
+   that can stretch to gMax without leaving the canvas, so there, and only there, the
+   picture is a measured box with margins. */
 function fillMode(){ return !S.growOn; }
 function fieldPx(){                   /* pixels per unit of the domain */
   var W = cvs.width, H = cvs.height;
-  return Math.min(W,H)*0.94;
+  return Math.max(W,H);               /* cover, never repeat: one copy fills the frame */
 }
 function tileVec(){                   /* uTile for the draw shader */
   if(!fillMode()) return [1,1,0,0];
@@ -1510,11 +1512,21 @@ function drawOverlay(){
     ovx.fillStyle = 'rgba(79,179,161,.9)'; ovx.fill();
   }
   if(ptr.in){
-    var rr = S.brush*dpr*0.5;
+    var B = brushPx();
     ovx.strokeStyle = S.tool === 'seed' ? 'rgba(235,240,236,.75)' : 'rgba(212,112,90,.85)';
     ovx.lineWidth = 1*dpr;
-    ovx.beginPath(); ovx.arc(ptr.x, ptr.y, rr, 0, 6.2832); ovx.stroke();
+    ovx.beginPath(); ovx.ellipse(ptr.x, ptr.y, B.x, B.y, 0, 0, 6.2832); ovx.stroke();
   }
+}
+/* The brush has a floor measured in CELLS, not in screen pixels. Below about a dozen
+   cells a stroke cannot nucleate in the regimes where no uniform mixture exists, which
+   is why drawing into Spots so often did nothing at all. The ring the cursor draws is
+   taken from the same function, so what you see is the size of the mark you will make. */
+function brushPx(){
+  var dpr = ov.clientWidth ? ov.width/ov.clientWidth : 1;
+  var R = fillMode() ? {w:fieldPx(), h:fieldPx()} : domainRect();
+  var rad = S.brush*dpr*0.5, floor = 16/S.N;
+  return {x: Math.max(rad, floor*R.w), y: Math.max(rad, floor*R.h), w:R.w, h:R.h};
 }
 function paintAt(ev){
   var r = ov.getBoundingClientRect();
@@ -1529,13 +1541,8 @@ function paintAt(ev){
     var R = domainRect();
     u = (px - R.x)/R.w; v = 1 - (py - R.y)/R.h;
   }
-  var R = fillMode() ? {w:fieldPx(), h:fieldPx()} : domainRect();
-  var rad = S.brush*sx*0.5;
-  /* The brush has a floor measured in CELLS, not in screen pixels. Below about a dozen
-     cells a stroke cannot nucleate in the regimes where no uniform mixture exists, and
-     the default 28 pixel brush worked out at nine cells on both a phone and a desktop,
-     which is why drawing into Spots so often did nothing at all. */
-  var ru = Math.max(rad/R.w, 16/S.N), rv = Math.max(rad/R.h, 16/S.N);
+  var B = brushPx();
+  var ru = B.x/B.w, rv = B.y/B.h;
   var mode = S.tool === 'seed' ? 1 : -1;
   if(ptr.has){
     var du = u - ptr.lu, dv = v - ptr.lv;

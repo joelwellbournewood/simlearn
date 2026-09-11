@@ -435,12 +435,45 @@ const fmtN=n=>Math.round(n).toLocaleString('en-US');
 /* ---------- layout ---------- */
 function area(){
   const small=W<900;
-  const l=small?14:352, r=small?14:26, t=small?60:76, b=small?16:50;
+  /* On phones the panel is a bottom sheet: its handle covers the last 54px of the
+     screen, so the drawing area has to stop above it or the readouts hide under it. */
+  const sheet=small&&(W<=820||(H<=560&&TOUCH));
+  const l=small?14:352, r=small?14:26, t=small?60:76, b=sheet?64:(small?16:50);
   return {x:l, y:t, w:Math.max(120,W-l-r), h:Math.max(120,H-t-b), cx:l+(W-l-r)/2, bot:H-b};
 }
+const TOUCH=(()=>{ try{ return matchMedia('(pointer:coarse)').matches; }catch(e){ return false; } })();
+/* Break a line on spaces so it fits maxw at the given font. Used where a sentence has
+   to survive a 360px phone as well as a desktop. */
+function wrapTxt(s,font,maxw){
+  ctx.font=font; if(ctx.measureText(s).width<=maxw) return [s];
+  const words=s.split(' '), out=[]; let cur='';
+  for(const w of words){
+    const t=cur?cur+' '+w:w;
+    if(ctx.measureText(t).width<=maxw||!cur) cur=t; else { out.push(cur); cur=w; }
+  }
+  if(cur) out.push(cur); return out;
+}
+function txtBlock(lines,x,y,lh,color,font){
+  lines.forEach((l,i)=>txt(l,x,y+i*lh,'center',color,font));
+  return y+(lines.length-1)*lh;
+}
+/* Draw a string, and on a narrow screen shrink it rather than let it run off the edge.
+   Desktop is untouched: the scale only ever applies when the text does not fit. */
 function txt(s,x,y,align,color,font){
-  ctx.font=font||('11.5px '+MONO); ctx.fillStyle=color||MUTED;
-  ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic'; ctx.fillText(s,x,y);
+  let f=font||('11.5px '+MONO);
+  ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic'; ctx.fillStyle=color||MUTED;
+  if(W<900){
+    const A=area();
+    const avail=(align==='center')?2*Math.max(24,Math.min(x-A.x,A.x+A.w-x))
+      :(align==='right')?Math.max(24,x-A.x):Math.max(24,A.x+A.w-x);
+    ctx.font=f; const w=ctx.measureText(s).width;
+    if(w>avail){
+      const m=/^([\d.]+)px /.exec(f);
+      if(m){ const sz=Math.max(parseFloat(m[1])*0.6,parseFloat(m[1])*avail/w);
+             f=f.replace(/^[\d.]+px /,sz.toFixed(1)+'px '); }
+    }
+  }
+  ctx.font=f; ctx.fillText(s,x,y);
 }
 function dash(on){ ctx.setLineDash(on||[]); }
 function line(x0,y0,x1,y1,st,w){ ctx.strokeStyle=st; ctx.lineWidth=w||1; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); }
@@ -956,9 +989,13 @@ const PI={
   reset(){ this.N=0; this.inside=0; this.rings=[]; this.px=0; this.py=0; this.sc=1; this.pan=false;
     if(this.dots) this.dctx.clearRect(0,0,this.dots.width,this.dots.height); },
   geom(){ const A=area();
-    const sy=A.y+22;
-    const side=Math.max(160,Math.min(A.w-140,A.h-150));
-    return {A,side,sx:A.cx-side/2,sy,rT:sy+side+48}; },
+    const sm=A.w<560;
+    const sy=A.y+(sm?14:22);
+    /* narrow: the board takes the whole width it is given, and the readout below it
+       is stacked rather than laid out on one line, so it needs about 170px of room */
+    const side=sm?Math.max(150,Math.min(A.w,A.h-190))
+                 :Math.max(160,Math.min(A.w-140,A.h-150));
+    return {A,side,sm,sx:A.cx-side/2,sy,rT:sy+side+(sm?30:48)}; },
   ensure(){ if(!this.dots||this.dots.width!==cv.width||this.dots.height!==cv.height){
       this.dots=document.createElement('canvas'); this.dots.width=cv.width; this.dots.height=cv.height;
       this.dctx=this.dots.getContext('2d'); this.dctx.setTransform(DPR,0,0,DPR,0,0); this.reset(); } },
@@ -991,9 +1028,11 @@ const PI={
     dash([3,4]);
     line(cx,cy,cx+R,cy,PNEU('.55'),1); dash();
     disc(cx,cy,2.2,PNEU('.85'));
-    txt('r = 1',cx+R/2,cy-11,'center',PINK('.95'),'15px '+MONO);
-    txt('square area 4',g.sx+12,g.sy+24,'left',PINK('.95'),'16px '+MONO);
-    txt('circle area '+String.fromCharCode(960),g.sx+g.side-12,g.sy+24,'right',ACC,'16px '+MONO);
+    const lf=(g.sm?12.5:16)+'px '+MONO;
+    txt('r = 1',cx+R/2,cy-(g.sm?8:11),'center',PINK('.95'),(g.sm?12.5:15)+'px '+MONO);
+    txt('square area 4',g.sx+(g.sm?7:12),g.sy+(g.sm?18:24),'left',PINK('.95'),lf);
+    if(g.sm) txt('circle area '+String.fromCharCode(960),g.sx+g.side-7,g.sy+g.side-9,'right',ACC,lf);
+    else txt('circle area '+String.fromCharCode(960),g.sx+g.side-12,g.sy+24,'right',ACC,lf);
     /* the estimate, as the ratio it is. The number of decimals follows the noise:
        one digit past the typical error, so the last digit shown is one you can trust. */
     const est=this.N?4*this.inside/this.N:0;
@@ -1001,23 +1040,32 @@ const PI={
     const dp=clamp(1-Math.floor(Math.log10(sd)),4,10);
     const pctSd=100*sd/Math.PI;
     const dpp=clamp(1-Math.floor(Math.log10(pctSd)),2,7);
-    const y=g.rT;
-    const parts=[['4 \u00d7 ','19px '+MONO,MUTED],
-      [fmtN(this.inside)+' in','19px '+MONO,ACC],
-      [' / ','19px '+MONO,MUTED],
-      [fmtN(this.N)+' thrown','19px '+MONO,INK],
-      ['  =  ','19px '+MONO,MUTED],
-      [this.N?est.toFixed(dp):'--','38px '+MONO,ACC]];
+    const y=g.rT, PIC=String.fromCharCode(960), maxw=g.A.w;
+    const fsz=g.sm?15:19, esz=g.sm?30:38;
+    const parts=[['4 \u00d7 ',fsz+'px '+MONO,MUTED],
+      [fmtN(this.inside)+' in',fsz+'px '+MONO,ACC],
+      [' / ',fsz+'px '+MONO,MUTED],
+      [fmtN(this.N)+' thrown',fsz+'px '+MONO,INK]];
+    if(!g.sm) parts.push(['  =  ','19px '+MONO,MUTED],[this.N?est.toFixed(dp):'--','38px '+MONO,ACC]);
     let wsum=0; for(const p of parts){ ctx.font=p[1]; wsum+=ctx.measureText(p[0]).width; }
-    let x=g.A.cx-wsum/2;
+    let x=g.A.cx-wsum/2, ry=y+(g.sm?18:21);
     for(const p of parts){ ctx.font=p[1]; ctx.fillStyle=p[2]; ctx.textAlign='left';
-      ctx.fillText(p[0],x,y+21); x+=ctx.measureText(p[0]).width; }
-    txt('the fraction of darts inside the circle is the circle\u2019s share of the square, '
-      +String.fromCharCode(960)+'/4',g.A.cx,y-24,'center',MUTED,'14.5px '+MONO);
-    txt(this.N?('true '+String.fromCharCode(960)+' = '+Math.PI.toFixed(dp)+'   off by '
+      ctx.fillText(p[0],x,ry); x+=ctx.measureText(p[0]).width; }
+    let below=ry;
+    if(g.sm){ /* the estimate gets its own line, big, under the fraction that made it */
+      txt('=',g.A.cx,ry+24,'center',MUTED,'14px '+MONO);
+      txt(this.N?est.toFixed(dp):'--',g.A.cx,ry+esz+22,'center',ACC,esz+'px '+MONO);
+      below=ry+esz+22; }
+    const capf=(g.sm?12.5:14.5)+'px '+MONO;
+    const cap=wrapTxt('the fraction of darts inside the circle is the circle\u2019s share of '
+      +'the square, '+PIC+'/4',capf,maxw);
+    txtBlock(cap,g.A.cx,y-24-(cap.length-1)*16,16,MUTED,capf);
+    const notef=(g.sm?12.5:15)+'px '+MONO;
+    const note=this.N?('true '+PIC+' = '+Math.PI.toFixed(dp)+'   off by '
       +(100*Math.abs(est-Math.PI)/Math.PI).toFixed(dpp)+'%   typical error at this many darts \u00b1'
       +pctSd.toFixed(dpp)+'%')
-      :'click to throw 500 darts',g.A.cx,y+60,'center',MUTED,'15px '+MONO);
+      :((TOUCH?'tap':'click')+' to throw 500 darts');
+    txtBlock(wrapTxt(note,notef,maxw),g.A.cx,below+(g.sm?30:39),16,MUTED,notef);
     ctx.restore();
   },
   /* right-drag slides the whole board, dots, labels and readout together */
