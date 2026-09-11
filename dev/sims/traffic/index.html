@@ -233,7 +233,7 @@ body.clean .tapwrap{display:none}
   <details class="grp">
     <summary>Change the road</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="Density on the ring, and the strongest control on jams." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="The strongest control on whether a jam forms." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="10" max="80" step="1" value="38">
   </div>
   <div class="row">
@@ -315,7 +315,7 @@ body.clean .tapwrap{display:none}
 <p>Sugiyama et al. (2008) demonstrated this experimentally by asking twenty-two human drivers to circulate on a 230 m single-lane ring at a uniform speed. The uniform state survived for a short time and then collapsed into a backward-propagating stop-and-go wave, with no obstacle present and no instruction to brake. The experiment is the physical version of exactly this simulation.</p>
 
 <h3>The space-time diagram</h3>
-<p>The plot beside the road is the standard representation in traffic science, and the standard way an engineer sees a jam: position around the ring runs left to right, time runs downward, and each streak is one car's path. Free flow draws a family of parallel diagonals. A jam appears as a dark stripe leaning the other way, because the congestion travels backwards through the traffic while every car in it is moving forwards. That slope is the propagation speed of the jam, and that slope is the propagation speed of the jam, which in motorway field data comes out consistently around 15 to 20 km/h upstream and is remarkably insensitive to the details of the traffic. Plotting flow against density instead gives the fundamental diagram, which rises to a maximum at the critical density and then falls, so a road carries the most vehicles per hour just before it becomes unstable. Motorways are at their most fragile when they are working hardest. There is also a measurable capacity drop, in which flow after a jam has formed is lower than the flow just before it, and recovering that lost capacity is the reason variable speed limits and ramp metering exist. When a gantry drops the limit to 50 mph on an empty-looking road, it is holding the density below the threshold you can move past with the cars slider.</p>
+<p>The plot beside the road is the standard representation in traffic science, and the standard way an engineer sees a jam: position around the ring runs left to right, time runs downward, and each streak is one car's path. Free flow draws a family of parallel diagonals. A jam appears as a dark stripe leaning the other way, because the congestion travels backwards through the traffic while every car in it is moving forwards. That slope is the propagation speed of the jam, which in motorway field data comes out consistently around 15 to 20 km/h upstream and is remarkably insensitive to the details of the traffic. Every streak is coloured by that car's speed, whether it is driven or self-driving, so the waves stay readable even when most of the loop is under control. Plotting flow against density instead gives the fundamental diagram, which rises to a maximum at the critical density and then falls, so a road carries the most vehicles per hour just before it becomes unstable. Motorways are at their most fragile when they are working hardest. There is also a measurable capacity drop, in which flow after a jam has formed is lower than the flow just before it, and recovering that lost capacity is the reason variable speed limits and ramp metering exist. When a gantry drops the limit to 50 mph on an empty-looking road, it is holding the density below the threshold you can move past with the cars slider.</p>
 
 <h3>Autonomous vehicles</h3>
 <p>Because the instability belongs to the collective response, a minority of vehicles running a different control law can stabilise the whole platoon. Stern et al. (2018) repeated the ring experiment with twenty-one human drivers and one autonomous vehicle running a controller designed to damp waves, and the stop-and-go oscillations were substantially suppressed, with measured reductions in fuel consumption for every vehicle on the ring. The <b>self-driving cars</b> slider is that result. The mechanism is that a controller which refuses to over-brake, and which holds its own speed steady instead of tracking the car in front exactly, breaks the amplification chain. Real deployments complicate the picture, because many production adaptive cruise control systems are tuned for comfort at short headways and have been measured to be string-unstable themselves, so the cars already on the road are not yet the cars in this slider.</p>
@@ -592,24 +592,32 @@ window.__traffic={speeds:()=>cars.map(c=>c.v),count:()=>cars.length,preset:()=>a
 /* ---------- looks ----------
    Colour only: the model, the densities and the speeds are untouched. Every look keeps
    the same meaning in the speed ramp, hot for stopped and cool for free running, so a
-   jam still reads as a jam whichever one is on. */
+   jam still reads as a jam whichever one is on.
+   Two things have to be true in all four, and they were measured in CIELAB rather than
+   guessed at. The self-driving colour has to stand apart from EVERY point on that
+   look's speed ramp, not just from its ends: Ice failed that badly, with a mint blue
+   that sat 32 units from the ramp's own pale blue, and Dusk was marginal at 50. Both
+   are now above 65, where 2 is about the smallest difference an eye can see side by
+   side. And the ramp itself has to carry the jam, so the two ends are at least 78
+   apart with no step along it under 24. Ember's warm-only ramp was the mushiest of the
+   four, at 18 between neighbouring steps, and its jam end is darker now. */
 const LOOKS={
   field:{ bg:'#0a1512', field:'#07120f', panel:'rgba(15,31,26,.84)', panel2:'#13261f',
     ink:[227,239,233], neu:[163,188,190], acc:[86,224,194], muted:'#88a397',
-    road:'#101b19', st:'#0b1412', av:[120,170,255],
+    road:'#101b19', st:'#0b1412', av:[132,158,255],
     ramp:[[214,74,74],[232,176,78],[86,224,194]] },
   dusk:{ bg:'#120e1c', field:'#0d0a16', panel:'rgba(28,22,44,.84)', panel2:'#241c38',
     ink:[235,231,246], neu:[176,168,198], acc:[173,142,255], muted:'#a096bb',
-    road:'#171227', st:'#100c1c', av:[96,206,255],
-    ramp:[[224,72,120],[240,168,110],[173,142,255]] },
+    road:'#171227', st:'#100c1c', av:[86,240,220],
+    ramp:[[236,54,92],[250,176,96],[196,170,255]] },
   ember:{ bg:'#17100c', field:'#120b08', panel:'rgba(46,28,20,.84)', panel2:'#33211a',
     ink:[250,236,226], neu:[198,166,146], acc:[255,178,102], muted:'#c0a08c',
-    road:'#1d1310', st:'#150d0a', av:[120,196,255],
-    ramp:[[178,34,44],[240,120,50],[255,214,140]] },
+    road:'#1d1310', st:'#150d0a', av:[126,200,255],
+    ramp:[[142,14,26],[252,142,48],[255,238,176]] },
   ice:{ bg:'#08131e', field:'#061019', panel:'rgba(16,32,50,.84)', panel2:'#14283c',
     ink:[233,244,255], neu:[150,180,206], acc:[124,212,255], muted:'#93aec4',
-    road:'#0e1b28', st:'#081420', av:[168,255,214],
-    ramp:[[206,64,120],[130,150,205],[150,236,255]] }
+    road:'#0e1b28', st:'#081420', av:[255,200,86],
+    ramp:[[246,68,80],[124,180,238],[190,242,255]] }
 };
 let PL=LOOKS.field;
 const rgbaOf=(c,a)=>'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+a+')';
@@ -629,7 +637,6 @@ function applyLook(k){
   document.querySelector('meta[name=theme-color]').setAttribute('content',PL.bg);
   /* the space-time strip holds painted history, so it starts again in the new colours */
   if(stx){ stx.fillStyle=PL.st; stx.fillRect(0,0,stc.width,stc.height); stRow=0; stFill=0; }
-  try{ localStorage.setItem('simlearn-traffic-look',k); }catch(e){}
 }
 /* ---- colour by speed: hot stopped, cool free running ---- */
 function speedCol(r,alpha){
@@ -717,7 +724,7 @@ function pushRow(){
   stx.fillStyle=PL.st; stx.fillRect(0,stRow,w,1);
   for(const c of cars){
     const px=(c.x/L)*w, wid=Math.max(1.4,(CARLEN/L)*w*2.2);
-    stx.fillStyle=c.av?rgbaOf(PL.av,'.95'):speedCol(c.v/V0,0.95);
+    stx.fillStyle=speedCol(c.v/V0,0.95);
     stx.fillRect(px,stRow,wid,1);
     if(px+wid>w) stx.fillRect(px-w,stRow,wid,1);
   }
@@ -763,6 +770,7 @@ function drawCars(laneW){
     if(ctx.roundRect) ctx.roundRect(-cw/2,-len/2,cw,len,Math.min(2.4,cw/3));
     else ctx.rect(-cw/2,-len/2,cw,len);
     ctx.fill();
+    if(c.av&&!c.truck){ ctx.strokeStyle='rgba(6,12,10,.55)'; ctx.lineWidth=1; ctx.stroke(); }
     if(c.truck){ ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1; ctx.stroke(); }
     ctx.restore();
   }
@@ -1026,8 +1034,9 @@ document.querySelectorAll('#looks button').forEach(b=>b.addEventListener('click'
   applyLook(b.dataset.v);
 }));
 (function initLook(){
-  let k='field'; try{ k=localStorage.getItem('simlearn-traffic-look')||'field'; }catch(e){}
-  if(!LOOKS[k]) k='field';
+  /* Deliberately not remembered between visits: the sim opens on the house look every
+     time, and the Look control is right there for anyone who wants another one. */
+  const k='field';
   document.querySelectorAll('#looks button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===k)));
   applyLook(k);
 })();

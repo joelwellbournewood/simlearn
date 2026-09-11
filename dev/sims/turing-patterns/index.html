@@ -490,10 +490,11 @@ body.sheet-open .panel{z-index:9}
     <div class="row">
       <label for="gridSel"><span class="nm">Grid</span></label>
       <select id="gridSel">
-        <option value="256">256 &times; 256</option>
         <option value="384">384 &times; 384</option>
-        <option value="512" selected>512 &times; 512</option>
+        <option value="512">512 &times; 512</option>
         <option value="768">768 &times; 768</option>
+        <option value="1024" selected>1024 &times; 1024</option>
+        <option value="1536">1536 &times; 1536</option>
       </select>
     </div>
   </details>
@@ -898,7 +899,7 @@ var FS_RED = [
  * State
  * ------------------------------------------------------------------ */
 var S = {
-  N: 512,
+  N: 1024,
   F: 0.037, k: 0.060,
   DA: 0.30, ratio: 2.0,
   steps: 12,
@@ -912,12 +913,15 @@ var S = {
 };
 var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
 
-/* The grid is drawn into a square as wide as the stage, so a 512 grid on a phone puts
-   the same pattern into half the width and the features come out too small to read. A
-   phone starts on 256, which keeps a wavelength at roughly the desktop's 22 screen
-   pixels. The Grid control still offers the rest. */
+/* One copy of the field is now scaled to cover the LONGER side of the canvas, where it
+   used to be drawn across the shorter side, so every cell is about 1.7 times wider on
+   screen than it was. The ladder of grid sizes moved up to match: 1024 on a desktop
+   puts a wavelength at roughly the 22 screen pixels this sim was tuned for, where 512
+   used to. A phone has a small screen and a slower GPU, so it starts two steps down,
+   which keeps the features the same size in millimetres and the step count affordable.
+   The Grid control still offers the whole ladder. */
 if(matchMedia('(max-width:820px)').matches ||
-   (matchMedia('(pointer:coarse)').matches && Math.min(innerWidth, innerHeight) <= 560)) S.N = 256;
+   (matchMedia('(pointer:coarse)').matches && Math.min(innerWidth, innerHeight) <= 560)) S.N = 512;
 
 var cvs = $('gl'), ov = $('ov'), stage = $('stage'), ovx = ov.getContext('2d');
 var gl = null, P = {}, ST = null, redFbo = null, redTex = null, pix = null, linSamp = null, smoothOK = true;

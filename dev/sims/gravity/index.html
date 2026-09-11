@@ -215,14 +215,14 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     <input type="range" id="s-nl" min="0" max="5" step="1" value="1">
   </div>
   <div class="row">
-    <label for="s-launch"><span class="nm">Launch mass<button class="tip" data-tip="Mass of the body you fling by dragging." aria-label="What launch mass does">?</button></span><span class="val" id="v-launch"></span></label>
+    <label for="s-launch"><span class="nm">Launch mass</span><span class="val" id="v-launch"></span></label>
     <input type="range" id="s-launch" min="0" max="100" step="1" value="42">
   </div>
   </details>
   <details class="grp">
   <summary class="grp-title">Physics</summary>
   <div class="row">
-    <label for="s-g"><span class="nm">Gravity strength<button class="tip" data-tip="Scales the force between every pair." aria-label="What gravity strength does">?</button></span><span class="val" id="v-g"></span></label>
+    <label for="s-g"><span class="nm">Gravity strength</span><span class="val" id="v-g"></span></label>
     <input type="range" id="s-g" min="0.2" max="3" step="0.05" value="1">
   </div>
   <div class="row">
@@ -263,8 +263,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   </div>
   <div class="toggles">
     <button class="tg" id="t-orbit" aria-pressed="true">Orbit of selected</button>
-    <button class="tg" id="t-lag" aria-pressed="false">Lagrange points</button>
-    <button class="tg" id="t-arrows" aria-pressed="false">Velocity arrows</button>
+    <button class="tg" id="t-lag" aria-pressed="false" hidden>Lagrange points</button>
   </div>
   </details>
 </div>
@@ -315,7 +314,7 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
     </ul>
 
     <h3>Keyboard</h3>
-    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>9</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>V</kbd> velocity arrows, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
+    <p><kbd>Space</kbd> pause, <kbd>R</kbd> reset the arrangement, <kbd>1</kbd>-<kbd>9</kbd> arrangements, <kbd>+</kbd> <kbd>-</kbd> zoom, <kbd>0</kbd> fit view, <kbd>C</kbd> cycle reference frame, <kbd>L</kbd> Lagrange points, <kbd>M</kbd> mergers, <kbd>Delete</kbd> remove selected, <kbd>H</kbd> hide panels, <kbd>F</kbd> fullscreen, <kbd>?</kbd> this dialog.</p>
   
 <div class="more-box"><div class="more-body">
 <h3>Kepler's laws come out on their own</h3>
@@ -695,7 +694,7 @@ function govern(dtms){
 /* ---------- state ---------- */
 let bodies=[], merges=0, ejected=0, E0=null, Elast=null, paused=false, G=1, trailPct=55, speed=1, launchM=12, softK=0.7;
 let activePreset='star', nextId=1, accelFresh=false, solverName='direct', lastSub=0, selId=-1;
-let mergeOn=false, showArrows=false, showLag=false, showOrbit=true;
+let mergeOn=false, showLag=false, showOrbit=true;
 const THETA=0.7, DIRECT_MAX=400, ETA=0.07;
 let sK=2.05;
 function radiusOf(m){ return Math.max(1.5,Math.pow(m,0.28)*sK); }
@@ -1245,20 +1244,6 @@ function draw(){
     }
     ctx.textAlign='start'; ctx.textBaseline='alphabetic';
   }
-  /* velocity arrows */
-  if(showArrows&&n<=400){
-    ctx.strokeStyle=K('.7'); ctx.lineWidth=1.2;
-    for(let i=0;i<n;i++){
-      const b=bodies[i]; w2f(b.x,b.y,tmp); const sx=tmp.x*z+ox, sy=tmp.y*z+oy;
-      frameVel(b,tmp); const L=Math.hypot(tmp.x,tmp.y); if(L<0.02) continue;
-      const k=Math.min(90,14*L)*Math.min(1,z*1.5+0.4); const ux=tmp.x/L, uy=tmp.y/L;
-      const ex=sx+ux*k, ey=sy+uy*k;
-      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey);
-      ctx.moveTo(ex,ey); ctx.lineTo(ex-ux*6-uy*3.5,ey-uy*6+ux*3.5);
-      ctx.moveTo(ex,ey); ctx.lineTo(ex-ux*6+uy*3.5,ey-uy*6-ux*3.5);
-      ctx.stroke();
-    }
-  }
   /* selection ring */
   if(sb){
     w2f(sb.x,sb.y,tmp); const sx=tmp.x*z+ox, sy=tmp.y*z+oy, R=Math.max(1.2,sb.r*z)+6;
@@ -1420,7 +1405,7 @@ function restart(key,keep){
   merges=0; ejected=0; PV.pts=[];
   /* keep=true keeps the view and the toggles the way the user has them */
   const keepFrame=keep?frame.mode:(P.frame||'fixed');
-  setMerge(keep?mergeOn:(P.merge===true)); setLag(keep?showLag:!!P.lag);
+  setMerge(keep?mergeOn:(P.merge===true)); setLag(keep?showLag:!!P.lag); syncLagBtn();
   frame.mode='fixed'; setFrame(keepFrame); updateFrame(); clearTrails();
   if(!keep){ cam.x=0; cam.y=0; cam.zoom=1; }
   /* one framing at build time for the arrangements that need it. The view is yours
@@ -1485,10 +1470,18 @@ document.querySelectorAll('#palettes button').forEach(b=>b.addEventListener('cli
 })();
 function setTg(id,on){ el(id).setAttribute('aria-pressed',String(on)); }
 function setMerge(on){ mergeOn=on; setTg('t-merge',on); }
+/* The overlay marks the five points of ONE dominant pair on a circular orbit, which is
+   what the Lagrange arrangement sets up and nothing else here does. Off that
+   arrangement the button offered a drawing that would have been wrong, so it is not
+   shown at all. */
 function setLag(on){ showLag=on; setTg('t-lag',on); }
+function syncLagBtn(){
+  const ok=!!(PRESETS[activePreset]&&PRESETS[activePreset].lag);
+  el('t-lag').hidden=!ok;
+  if(!ok&&showLag) setLag(false);
+}
 el('t-merge').addEventListener('click',()=>setMerge(!mergeOn));
 el('t-lag').addEventListener('click',()=>setLag(!showLag));
-el('t-arrows').addEventListener('click',()=>{ showArrows=!showArrows; setTg('t-arrows',showArrows); });
 el('t-orbit').addEventListener('click',()=>{ showOrbit=!showOrbit; setTg('t-orbit',showOrbit); });
 el('sel-follow').addEventListener('click',()=>setFrame('sel'));
 el('sel-del').addEventListener('click',()=>{ const b=bodyById(selId); if(b) removeBody(b); });
@@ -1564,8 +1557,7 @@ window.addEventListener('keydown',e=>{
   else if(k==='h'||k==='H') bc.click();
   else if(k==='f'||k==='F') el('b-full').click();
   else if(k==='?') dlg.open?dlg.close():dlg.showModal();
-  else if(k==='v'||k==='V') el('t-arrows').click();
-  else if(k==='l'||k==='L') el('t-lag').click();
+  else if(k==='l'||k==='L'){ if(!el('t-lag').hidden) el('t-lag').click(); }
   else if(k==='m'||k==='M') el('t-merge').click();
   else if(k==='0') fitView(true);
   else if(k==='+'||k==='=') zoomAt(W/2,H/2,1.12);

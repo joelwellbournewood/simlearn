@@ -640,6 +640,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       <label for="s_lynxVision"><span class="nm">Hunting range</span><span class="val" id="v_lynxVision"></span></label>
       <input type="range" id="s_lynxVision" min="1" max="8" step="1" value="4">
     </div>
+    <div class="row">
+      <label for="s_lynxSpace"><span class="nm">Territoriality<span class="tip" role="button" tabindex="0" aria-label="What territoriality means" data-tip="How hard a lynx keeps away from another lynx.">?</span></span><span class="val" id="v_lynxSpace"></span></label>
+      <input type="range" id="s_lynxSpace" min="0" max="10" step="1" value="1">
+    </div>
   </details>
 
   <!-- HABITAT -->
@@ -721,7 +725,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 </ul>
 <p>That is enough to produce the cycle. Plenty of grass means fat hares, and fat hares breed, so the hare curve climbs. A field full of hares is easy hunting, so lynx start to eat well and breed too, but they do it later, because they had to wait for the hares to arrive first. Once there are many lynx the hares are eaten faster than they can breed and the hare curve falls, and the lynx, with nothing left to catch, starve after them. Grass regrows on the empty field and it all begins again. The delay between each cause and its effect is what turns a simple negative feedback into an oscillation.</p>
 <p>That lag is worth carrying around, because it explains a great deal outside this field. Fisheries collapse and recover on the same shape of curve, and quotas set from last season's catch arrive a year too late to help. Beef and pork prices have swung on a multi-year cycle since the nineteenth century, for the reason that a farmer's decision to breed pays off long after the price that prompted it. Anything that responds to a signal it can only measure in arrears tends to overshoot in both directions.</p>
-<p>The sliders fall into three groups. <b>Energy from grass</b>, <b>energy from a kill</b>, and <b>plant regrowth</b> decide how much energy enters the system, which sets the ceiling on how many animals it can carry. <b>Metabolic cost</b> and <b>birth rate</b> decide how fast that energy is turned into animals and lost again, which sets how violent the swings are. <b>Eyesight</b> and <b>hunting range</b> decide how easily the two species find each other. Rich grass with sharp-eyed lynx gives tall, spiky booms that often end with one side extinct, and a lean field gives a flatter, duller, and much more durable world.</p>
+<p>The sliders fall into three groups. <b>Energy from grass</b>, <b>energy from a kill</b>, and <b>plant regrowth</b> decide how much energy enters the system, which sets the ceiling on how many animals it can carry. <b>Metabolic cost</b> and <b>birth rate</b> decide how fast that energy is turned into animals and lost again, which sets how violent the swings are. <b>Eyesight</b>, <b>hunting range</b>, and <b>territoriality</b> decide how easily the two species find each other, and how much the lynx get in each other's way. Rich grass with sharp-eyed lynx gives tall, spiky booms that often end with one side extinct, and a lean field gives a flatter, duller, and much more durable world.</p>
 <h3>Things to try</h3>
     <ul>
       <li>Switch the trace to <b>Phase orbit</b> and watch the loop close on itself.</li>
@@ -729,11 +733,15 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       <li>Raise <b>Hunting range</b> in the middle of a run and see how few steps it takes to empty the field.</li>
       <li>Set <b>Plant regrowth</b> to 1 and count how few animals the land can carry.</li>
       <li>Remove the lynx entirely with <b>Starting lynx</b> at 0, then watch the hares stop at the grass ceiling instead of growing without limit.</li>
+      <li>Take <b>Territoriality</b> from 0 to 10. At 0 the lynx pile onto the same hares and travel as a pack. Pushed up, they hold each other at arm's length and cover the field evenly, and above about 4 they usually starve within a minute: keeping your distance costs a predator kills.</li>
     </ul>
   
 <div class="more-box"><div class="more-body">
 <h3>Why the lynx peak arrives late</h3>
     <p>Each population is driven by the size of the other one, and that delay is why the lynx peak always arrives after the hare peak rather than with it, by roughly a quarter of a cycle. Alfred Lotka and Vito Volterra described the same lag with a pair of differential equations in the 1920s. Switch the trace to <b>Phase orbit</b> to watch it directly: the graph drops time and plots hares against lynx, so the state of the whole field becomes one point tracing a loop.</p>
+    <h3>Lynx keep away from other lynx</h3>
+    <p>Canada lynx are solitary. Adults hold home ranges, hunt alone, and tolerate each other mainly at the edges, so a model in which every lynx simply runs at the nearest hare gets one thing badly wrong: the predators collapse into a travelling pack, because they all pick the same target. <b>Territoriality</b> gives each lynx a personal space, measured here from a body length at 1 up to about a fifth of the field at 10. A rival inside it pushes the animal away, hard while it is patrolling and only slightly while it is actually running down a hare, since a hungry cat does not break off a chase because it can see a neighbour.</p>
+    <p>The consequence is worth watching, because it is not the one most people expect. Spacing out covers the ground more evenly, which sounds like better hunting, but each animal also spends part of its budget travelling away from food rather than towards it. Measured here over a minute of simulated time on the default settings, the lynx survive every run with territoriality at 1 and starve in most runs at 4 or above. Ecologists call that interference competition, as distinct from the competition for the prey itself, and it is one of the reasons solitary carnivores end up with ranges far larger than the food in them would require.</p>
     <h3>Energy sets the ceiling</h3>
     <p>Follow the energy and the numbers stop being mysterious. Sunlight is stored in grass, some of that reaches a hare, and a smaller share again reaches a lynx, because every animal burns energy simply staying alive. That loss at each step is why any healthy field holds far more hares than lynx. It is also why food chains are short, why top predators are rare enough to be the first thing a shrinking habitat loses, and why a given area of land feeds many more people growing crops than grazing cattle.</p>
     <p>The <b>Plant regrowth</b> slider is the carrying capacity of the land, the ceiling on how many hares it can feed. Turn it down, as the Sparse habitat preset does, and you get a small population living close to the edge. Turning it up is riskier than it sounds. Rich land lets the hares boom higher, which lets the lynx boom higher, and the swings grow until one of the crashes reaches zero. Michael Rosenzweig named this the paradox of enrichment in 1971, and the preset of that name sets it up for you. The same warning applies to nutrient runoff into a lake, where fertilising the bottom of a food web has repeatedly destabilised everything above it.</p>
@@ -828,7 +836,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   const cfg = {
     startHare:120, startLynx:28,
     hareBirth:4, grassEnergy:4, hareVision:3,
-    lynxBirth:5, preyEnergy:20, lynxVision:4,
+    lynxBirth:5, preyEnergy:20, lynxVision:4, lynxSpace:1,
     plant:6, metab:1, speed:1   // fixed: 60 sim steps/s (was the old 4× preset)
   };
   const regrowthTime = ()=> Math.round(map(cfg.plant,1,10,60,6));
@@ -888,6 +896,25 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     }
     return best;
   }
+  /* nearest member of a bucket grid that is not the animal asking */
+  function nearestOther(a,g,maxD){
+    const r = Math.ceil(maxD/CELL);
+    const cx = clamp((a.x/CELL)|0,0,COLS-1), cy = clamp((a.y/CELL)|0,0,ROWS-1);
+    let best=null, bestD2 = maxD*maxD;
+    for(let gy=cy-r; gy<=cy+r; gy++){
+      if(gy<0||gy>=ROWS) continue;
+      for(let gx=cx-r; gx<=cx+r; gx++){
+        if(gx<0||gx>=COLS) continue;
+        const list = g[gy*COLS+gx]; if(!list) continue;
+        for(let m=0;m<list.length;m++){
+          const it=list[m]; if(it===a||it.dead) continue;
+          const dx=it.x-a.x, dy=it.y-a.y, d2=dx*dx+dy*dy;
+          if(d2<bestD2){bestD2=d2;best=it;}
+        }
+      }
+    }
+    return best;
+  }
   function nearestGrass(px,py,maxD){
     const r = Math.ceil(maxD/CELL);
     const cx = clamp((px/CELL)|0,0,COLS-1), cy = clamp((py/CELL)|0,0,ROWS-1);
@@ -936,13 +963,33 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
       moveAgent(h, HARE_SPD, HARE_R); h.e -= metab;
     }
 
-    // move lynx (chase nearest hare)
+    /* Move lynx. A lynx wants the nearest hare and wants to be away from the nearest
+       other lynx, and it goes along the sum of the two wishes. Real Canada lynx are
+       solitary and hold home ranges they defend against other adults, so an animal that
+       finds a rival inside its space gives up ground rather than hunt shoulder to
+       shoulder. With Territoriality at zero the rival term vanishes and this is the old
+       pure pursuit. The push falls off linearly to nothing at the edge of the personal
+       space, so there is no discontinuity to make the motion twitch. */
     const hareGrid1 = bucket(hares);
+    const spaceR = 14 + cfg.lynxSpace * 7.6;      // px, 14 to 90: a body length up to a fifth of the field
+    const spaceK = cfg.lynxSpace * 0.055;         // how much a rival can bend an actual chase
     for(let i=0;i<lynx.length;i++){
       const l = lynx[i];
       const prey = nearest(l.x,l.y,hareGrid1,visL);
-      if(prey) steer(l, Math.atan2(prey.y-l.y, prey.x-l.x), LYNX_TURN);
-      else     l.dir += (Math.random()-0.5)*0.5;
+      const rival = cfg.lynxSpace > 0 ? nearestOther(l, lynxGrid, spaceR) : null;
+      let wx = 0, wy = 0;
+      if(prey){ const d = Math.hypot(prey.x-l.x, prey.y-l.y) || 1; wx += (prey.x-l.x)/d; wy += (prey.y-l.y)/d; }
+      if(rival){
+        const dx = l.x-rival.x, dy = l.y-rival.y, d = Math.hypot(dx,dy) || 0.001;
+        /* A hunt in progress is barely deflected: a hungry cat does not abandon a hare
+           because it can see a neighbour. Patrolling is where the spacing happens, so
+           with nothing to chase the rival replaces the random wander entirely and the
+           animals push each other apart until they are spread over the field. */
+        const w = (prey ? spaceK : 1) * (1 - d/spaceR);
+        wx += dx/d * w; wy += dy/d * w;
+      }
+      if(wx!==0 || wy!==0) steer(l, Math.atan2(wy, wx), LYNX_TURN);
+      else l.dir += (Math.random()-0.5)*0.5;
       moveAgent(l, LYNX_SPD, LYNX_R); l.e -= metab;
     }
 
@@ -1286,6 +1333,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
     ['s_lynxBirth','v_lynxBirth','lynxBirth', v=>v+'%'],
     ['s_preyEnergy','v_preyEnergy','preyEnergy', v=>'+'+v],
     ['s_lynxVision','v_lynxVision','lynxVision', v=>v+' cells'],
+    ['s_lynxSpace','v_lynxSpace','lynxSpace', v=>v===0?'off':v+' / 10'],
     ['s_plant','v_plant','plant', v=>v+' / 10'],
     ['s_metab','v_metab','metab', v=>Number(v).toFixed(1)]
   ];
@@ -1318,11 +1366,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 
   // ---- experiment presets ----
   const PRESETS = {
-    balance:  {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,plant:6,metab:1},
-    boom:     {startHare:90, startLynx:14,hareBirth:9,grassEnergy:5,hareVision:3,lynxBirth:3,preyEnergy:18,lynxVision:3,plant:9,metab:1},
-    enrich:   {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,plant:10,metab:1},
-    overhunt: {startHare:110,startLynx:80,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:6,preyEnergy:26,lynxVision:7,plant:6,metab:1},
-    desert:   {startHare:90, startLynx:18,hareBirth:5,grassEnergy:4,hareVision:4,lynxBirth:4,preyEnergy:22,lynxVision:4,plant:1,metab:1}
+    balance:  {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,lynxSpace:1,plant:6,metab:1},
+    boom:     {startHare:90, startLynx:14,hareBirth:9,grassEnergy:5,hareVision:3,lynxBirth:3,preyEnergy:18,lynxVision:3,lynxSpace:1,plant:9,metab:1},
+    enrich:   {startHare:120,startLynx:28,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:5,preyEnergy:20,lynxVision:4,lynxSpace:1,plant:10,metab:1},
+    overhunt: {startHare:110,startLynx:80,hareBirth:4,grassEnergy:4,hareVision:3,lynxBirth:6,preyEnergy:26,lynxVision:7,lynxSpace:0,plant:6,metab:1},
+    desert:   {startHare:90, startLynx:18,hareBirth:5,grassEnergy:4,hareVision:4,lynxBirth:4,preyEnergy:22,lynxVision:4,lynxSpace:2,plant:1,metab:1}
   };
   const presetBtns = [...document.querySelectorAll('.preset')];
   function applyPreset(key){
@@ -1356,6 +1404,15 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   el('btnAboutClose').addEventListener('click', ()=> dlg.close());
   dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
 
+  window.__ppFF=function(n){
+    const wasRunning=running; running=false;
+    for(let i=0;i<n;i++) step();
+    running=wasRunning;
+    let sum=0,cnt=0; const g=bucket(lynx);
+    for(let i=0;i<lynx.length;i++){ const o=nearestOther(lynx[i],g,200); if(o){ sum+=Math.hypot(o.x-lynx[i].x,o.y-lynx[i].y); cnt++; } }
+    return {hares:hares.length, lynx:lynx.length, nn: cnt?sum/cnt:null,
+            hist: history.map(r=>[r.h,r.l])};
+  };
   window.__pp=function(){
     const bins=[0,0,0,0,0,0];
     for(let i=0;i<hares.length;i++) bins[ebin(hares[i].e,eTopH)]++;

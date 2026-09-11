@@ -178,7 +178,7 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-rows" min="2" max="20" step="1" value="11">
     </div>
     <div class="row" data-m="galton">
-      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="The chance of bouncing right, which leans the bell when it is off centre." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
+      <label for="s-bias"><span class="nm">Peg bias<button class="tip" data-tip="The chance of bouncing right, which leans the bell." aria-label="What peg bias does">?</button></span><span class="val" id="v-bias"></span></label>
       <input type="range" id="s-bias" min="0.05" max="0.95" step="0.01" value="0.5">
     </div>
     <div class="row" data-m="galton">
@@ -196,7 +196,7 @@ details.grp > summary + *{margin-top:0}
       <button class="seg" data-v="asteroid" aria-pressed="false">Asteroids</button>
     </div>
     <div class="row" data-m="clt">
-      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="How many values are averaged into each ball, and at 1 you see the population itself." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
+      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="At 1 you see the population itself." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
       <input type="range" id="s-cltn" min="1" max="64" step="1" value="1">
     </div>
     <div class="row" data-m="clt">
@@ -209,7 +209,7 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-cin" min="3" max="60" step="1" value="10">
     </div>
     <div class="row" data-m="ci">
-      <label for="s-cisig"><span class="nm">Population spread<button class="tip" data-tip="The true spread of the population, and a wider one gives wider intervals." aria-label="What population spread does">?</button></span><span class="val" id="v-cisig"></span></label>
+      <label for="s-cisig"><span class="nm">Population spread<button class="tip" data-tip="A wider population gives wider intervals." aria-label="What population spread does">?</button></span><span class="val" id="v-cisig"></span></label>
       <input type="range" id="s-cisig" min="0.03" max="0.3" step="0.005" value="0.12">
     </div>
     <div class="row" data-m="ci">
@@ -232,19 +232,19 @@ details.grp > summary + *{margin-top:0}
     </div>
     <div class="row" data-m="test">
       <label for="s-sep"><span class="nm">How good the test is<button class="tip" data-tip="The gap between the healthy and the ill peaks, in standard deviations." aria-label="What test quality does">?</button></span><span class="val" id="v-sep"></span></label>
-      <input type="range" id="s-sep" min="0.5" max="4" step="0.1" value="2.2">
+      <input type="range" id="s-sep" min="0.5" max="8" step="0.1" value="2.2">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sd0"><span class="nm">Biomarker spread, healthy<button class="tip" data-tip="Wider means more overlap with the ill." aria-label="What the healthy spread does">?</button></span><span class="val" id="v-sd0"></span></label>
+      <label for="s-sd0"><span class="nm">Biomarker variance, healthy</span><span class="val" id="v-sd0"></span></label>
       <input type="range" id="s-sd0" min="0.4" max="2.2" step="0.05" value="1">
     </div>
     <div class="row" data-m="test">
-      <label for="s-sd1"><span class="nm">Biomarker spread, ill<button class="tip" data-tip="A wider spread puts more ill people below the cut-off." aria-label="What the ill spread does">?</button></span><span class="val" id="v-sd1"></span></label>
+      <label for="s-sd1"><span class="nm">Biomarker variance, ill</span><span class="val" id="v-sd1"></span></label>
       <input type="range" id="s-sd1" min="0.4" max="2.2" step="0.05" value="1">
     </div>
     <div class="row" data-m="test">
-      <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="The cut-off, which you can also drag on the chart." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
-      <input type="range" id="s-thr" min="-7" max="11" step="0.05" value="1.4">
+      <label for="s-thr"><span class="nm">Positive above<button class="tip" data-tip="You can also drag it on the chart." aria-label="What the threshold does">?</button></span><span class="val" id="v-thr"></span></label>
+      <input type="range" id="s-thr" min="-7" max="15" step="0.05" value="1.4">
     </div>
     <div class="row" data-m="test">
       <label for="s-trate"><span class="nm">People per second</span><span class="val" id="v-trate"></span></label>
@@ -252,7 +252,7 @@ details.grp > summary + *{margin-top:0}
     </div>
 
     <div class="row" data-m="pi">
-      <label for="s-darts"><span class="nm">Darts per second<button class="tip" data-tip="The error falls as one over the square root of the total." aria-label="What darts per second does">?</button></span><span class="val" id="v-darts"></span></label>
+      <label for="s-darts"><span class="nm">Darts per second</span><span class="val" id="v-darts"></span></label>
       <input type="range" id="s-darts" min="0" max="4" step="0.05" value="1.3">
     </div>
 
@@ -837,12 +837,18 @@ const TEST={
     const hi=Math.max(this.mu0+3.6*this.sd0,this.mu1()+3.6*this.sd1);
     return [lo-0.3,hi+0.3]; },
   reset(){ this.TP=this.FP=this.FN=this.TN=0; this.people=[]; this.acc=0; },
+  /* Two layouts. A phone gets the curves across the full width instead of the desktop's
+     70px side margins, a shorter curve box, more room between the axis and the table for
+     the three sentences that have to wrap there, and 118px kept clear at the bottom for
+     the two results, which on a 362px screen are three lines each rather than one. */
   geom(){ const A=area();
-    const axY=A.y+clamp(A.h*0.26,132,220), mT=axY+64;
-    const mB=clamp(A.bot-84,mT+140,mT+330);
-    const x0=A.x+70, x1=A.x+A.w-70;
+    const sm=A.w<560;
+    const axY=A.y+(sm?clamp(A.h*0.21,104,168):clamp(A.h*0.26,132,220));
+    const mT=sm?axY+86:axY+64;
+    const mB=sm?clamp(A.bot-122,mT+118,mT+300):clamp(A.bot-84,mT+140,mT+330);
+    const x0=sm?A.x+6:A.x+70, x1=sm?A.x+A.w-6:A.x+A.w-70;
     const a=this.aMin===null?this.axisT():[this.aMin,this.aMax];
-    return {A,cT:A.y+34,axY,mT,mB,x0,x1,vmin:a[0],vmax:a[1]}; },
+    return {A,sm,cT:A.y+(sm?26:34),axY,mT,mB,x0,x1,vmin:a[0],vmax:a[1]}; },
   xv(g,v){ return g.x0+(v-g.vmin)/(g.vmax-g.vmin)*(g.x1-g.x0); },
   vx(g,x){ return g.vmin+(x-g.x0)/(g.x1-g.x0)*(g.vmax-g.vmin); },
   cellOf(sick,pos){ return sick?(pos?'TP':'FN'):(pos?'FP':'TN'); },
@@ -901,10 +907,12 @@ const TEST={
     curve(sick,ACC,1.4);
     line(g.x0,g.axY,g.x1,g.axY,LINES,1.2);
     const yW=g.axY-H0*sW-8, yS=g.axY-H0*sS-8;
+    const pkf=(g.sm?10:11)+'px '+MONO;
     txt(this.drag==='well'?'healthy   drag':'healthy',this.xv(g,this.mu0),yW,'center',
-        this.drag==='well'?INK:PINK('.9'),'11px '+MONO);
-    txt(this.drag==='sick'?'has the disease   drag':'has the disease',this.xv(g,mu1),yS,'center',
-        this.drag==='sick'?INK:ACC,'11px '+MONO);
+        this.drag==='well'?INK:PINK('.9'),pkf);
+    txt(g.sm?(this.drag==='sick'?'ill   drag':'ill')
+           :(this.drag==='sick'?'has the disease   drag':'has the disease'),
+        this.xv(g,mu1),yS,'center',this.drag==='sick'?INK:ACC,pkf);
     /* a grab tab under each peak, so it is obvious the curves move */
     for(const [mx,my,on] of [[this.mu0,yW,this.drag==='well'],[mu1,yS,this.drag==='sick']]){
       const x=this.xv(g,mx);
@@ -917,9 +925,18 @@ const TEST={
     line(tx,g.cT-16,tx,g.axY+16,dT?ACC:INK,1.6);
     ctx.fillStyle=dT?ACC:INK;
     ctx.beginPath(); ctx.moveTo(tx-6,g.cT-22); ctx.lineTo(tx+6,g.cT-22); ctx.lineTo(tx,g.cT-13); ctx.fill();
-    txt('call it positive above here   drag',tx+10,g.cT-24,'left',dT?ACC:MUTED,'10.5px '+MONO);
-    txt('type I: healthy, told they are ill',this.xv(g,this.thr+0.7*this.sd0),g.axY+16,'left',DGR,'10.5px '+MONO);
-    txt('type II: ill, told they are fine',this.xv(g,this.thr-0.7*this.sd1),g.axY+16,'right',WARN,'10.5px '+MONO);
+    if(g.sm){
+      /* the cut-off label goes wherever there is room, and the two error names sit at
+         the ends of the axis, where they cannot collide however the curves are dragged */
+      const near=tx-g.x0<(g.x1-g.x0)*0.5;
+      txt('positive above here',near?tx+8:tx-8,g.cT-14,near?'left':'right',dT?ACC:MUTED,'10px '+MONO);
+      txt('false alarms',g.x1,g.axY+15,'right',DGR,'9.5px '+MONO);
+      txt('missed cases',g.x0,g.axY+15,'left',WARN,'9.5px '+MONO);
+    } else {
+      txt('call it positive above here   drag',tx+10,g.cT-24,'left',dT?ACC:MUTED,'10.5px '+MONO);
+      txt('type I: healthy, told they are ill',this.xv(g,this.thr+0.7*this.sd0),g.axY+16,'left',DGR,'10.5px '+MONO);
+      txt('type II: ill, told they are fine',this.xv(g,this.thr-0.7*this.sd1),g.axY+16,'right',WARN,'10.5px '+MONO);
+    }
     /* people falling into the table */
     for(const p of this.people){
       const b=this.cellBox(g,p.c), sx=this.xv(g,p.v), sy=g.axY-6;
@@ -928,13 +945,21 @@ const TEST={
     }
     /* the 2x2 table */
     const tot=this.TP+this.FP+this.FN+this.TN;
-    const cells=[['TP','tests positive, has it'],['FP','tests positive, healthy'],
-                 ['FN','tests negative, has it'],['TN','tests negative, healthy']];
+    const cells=g.sm
+      ? [['TP','positive,|has it'],['FP','positive,|healthy'],['FN','negative,|has it'],['TN','negative,|healthy']]
+      : [['TP','tests positive, has it'],['FP','tests positive, healthy'],
+         ['FN','tests negative, has it'],['TN','tests negative, healthy']];
     for(const [c,lab] of cells){
       const b=this.cellBox(g,c);
       ctx.strokeStyle=LINE; ctx.lineWidth=1; ctx.strokeRect(b.x,b.y,b.w,b.h);
-      txt(lab,b.x+10,b.y+16,'left',MUTED,'10.5px '+MONO);
-      txt(fmtN(this[c]),b.x+10,b.y+42,'left',this.colOf(c),'22px '+MONO);
+      if(g.sm){
+        const ls=lab.split('|');
+        ls.forEach((l,i)=>txt(l,b.x+7,b.y+13+i*12,'left',MUTED,'9.5px '+MONO));
+        txt(fmtN(this[c]),b.x+7,b.y+13+ls.length*12+16,'left',this.colOf(c),'18px '+MONO);
+      } else {
+        txt(lab,b.x+10,b.y+16,'left',MUTED,'10.5px '+MONO);
+        txt(fmtN(this[c]),b.x+10,b.y+42,'left',this.colOf(c),'22px '+MONO);
+      }
     }
     /* the numbers that matter, measured and predicted */
     const sens=1-ncdf((this.thr-this.mu1())/this.sd1), spec=ncdf((this.thr-this.mu0)/this.sd0);
@@ -949,10 +974,28 @@ const TEST={
     const mSpec=(this.TN+this.FP)?this.TN/(this.TN+this.FP):0;
     const mPpv=(this.TP+this.FP)?this.TP/(this.TP+this.FP):0;
     const mFal=(this.TN+this.FN)?this.FN/(this.TN+this.FN):0;
+    const cx=(g.x0+g.x1)/2;
+    if(g.sm){
+      /* every sentence is wrapped to the width of the screen rather than shrunk to fit
+         it, and each block is placed from the one above it, so nothing can overlap */
+      const f1='10px '+MONO;
+      const l1=wrapTxt('catches '+pc(sens)+' of the ill, clears '+pc(spec)+' of the healthy, 1 in '
+        +fmtN(Math.round(1/this.prev))+' has it',f1,g.A.w-12);
+      txtBlock(l1,g.A.cx,g.mT-16-(l1.length-1)*13,13,MUTED,f1);
+      const f2='11.5px '+MONO;
+      const l2=wrapTxt('of everyone who tests positive, '+pc(ppv)+' really have it'
+        +(tot>40?'   measured '+pc(mPpv):''),f2,g.A.w-12);
+      let yy=txtBlock(l2,g.A.cx,g.mB+18,14,ppv<0.5?DGR:ACC,f2);
+      const l3=wrapTxt('of everyone who tests negative, '+rare(fal)+' has it anyway, against '
+        +rare(this.prev)+' before the test'+(tot>40?'   measured '+rare(mFal):''),f2,g.A.w-12);
+      yy=txtBlock(l3,g.A.cx,yy+20,14,fal>this.prev/3?WARN:ACC,f2);
+      txt(fmtN(tot)+' screened   sensitivity '+pc(mSens)+'   specificity '+pc(mSpec),
+        g.A.cx,yy+20,'center',MUTED,'10px '+MONO);
+      return;
+    }
     txt('catches '+pc(sens)+' of the ill (sensitivity)   clears '+pc(spec)
       +' of the healthy (specificity)   1 in '+fmtN(Math.round(1/this.prev))+' has it',
       (g.x0+g.x1)/2,g.mT-30,'center',MUTED);
-    const cx=(g.x0+g.x1)/2;
     txt('of everyone who tests positive, '+pc(ppv)+' really have it'
       +(tot>40?'   measured '+pc(mPpv):''),
       cx,g.mB+22,'center',ppv<0.5?DGR:ACC,'13px '+MONO);
@@ -977,8 +1020,8 @@ const TEST={
     if(this.drag==='thr'){ this.thr=clamp(v,g.vmin+0.1,g.vmax-0.1); syncThr(this.thr); return; }
     const w=v+this.gOff;
     if(this.drag==='well'){ const mu1=this.mu1();
-      this.mu0=clamp(w,-3,3); this.sep=clamp(mu1-this.mu0,0.5,4); this.mu0=mu1-this.sep; }
-    else { this.sep=clamp(w-this.mu0,0.5,4); }
+      this.mu0=clamp(w,-3,3); this.sep=clamp(mu1-this.mu0,0.5,8); this.mu0=mu1-this.sep; }
+    else { this.sep=clamp(w-this.mu0,0.5,8); }
     syncSep(this.sep); this.reset(); },
   up(){ this.drag=null; }
 };
@@ -994,10 +1037,17 @@ const PI={
     const sy=A.y+((sm||sh)?12:22);
     /* The board is whatever square fits once the readout below it has been given its
        room: about 190px stacked, 120px on a short screen, 150px otherwise. */
-    const side=sm?Math.max(150,Math.min(A.w,A.h-190))
+    const side=sm?Math.max(150,Math.min(A.w,A.h-215))
              :sh?Math.max(110,Math.min(A.w-140,A.h-120))
                 :Math.max(160,Math.min(A.w-140,A.h-150));
-    return {A,side,sm,sh,sx:A.cx-side/2,sy,rT:sy+side+(sh?20:(sm?30:48))}; },
+    /* On a phone the caption under the board wraps, so the readout starts below however
+       many lines it took: two lines at 360px wide, one at 430px and up. */
+    let capL=1;
+    if(sm){
+      capL=wrapTxt('the fraction of darts inside the circle is the circle\u2019s share of '
+        +'the square, '+String.fromCharCode(960)+'/4','12.5px '+MONO,A.w).length;
+    }
+    return {A,side,sm,sh,capL,sx:A.cx-side/2,sy,rT:sy+side+(sh?20:(sm?(16+capL*14+12):48))}; },
   ensure(){ if(!this.dots||this.dots.width!==cv.width||this.dots.height!==cv.height){
       this.dots=document.createElement('canvas'); this.dots.width=cv.width; this.dots.height=cv.height;
       this.dctx=this.dots.getContext('2d'); this.dctx.setTransform(DPR,0,0,DPR,0,0); this.reset(); } },
@@ -1064,7 +1114,11 @@ const PI={
       const capf=(g.sm?12.5:14.5)+'px '+MONO;
       const cap=wrapTxt('the fraction of darts inside the circle is the circle\u2019s share of '
         +'the square, '+PIC+'/4',capf,maxw);
-      txtBlock(cap,g.A.cx,y-24-(cap.length-1)*16,16,MUTED,capf);
+      /* Desktop puts this one line just above the readout. A phone wraps it to two or
+         three, and hanging those upwards from the readout ran them back over the board,
+         so there it is placed downwards from the bottom edge of the board instead. */
+      if(g.sm) txtBlock(cap,g.A.cx,g.sy+g.side+16,14,MUTED,capf);
+      else txtBlock(cap,g.A.cx,y-24-(cap.length-1)*16,16,MUTED,capf);
     }
     const notef=(g.sm||g.sh?12.5:15)+'px '+MONO;
     const note=this.N?('true '+PIC+' = '+Math.PI.toFixed(dp)+'   off by '
@@ -1132,8 +1186,8 @@ bind('s-cisig','v-cisig',v=>v.toFixed(2),v=>{ CI.sig=v; CI.clear(); });
 bind('s-cirate','v-cirate',v=>Math.pow(10,v).toFixed(1)+' /s',v=>{ CI.rate=Math.pow(10,v); });
 bind('s-prev','v-prev',v=>'1 in '+fmtN(Math.round(Math.pow(10,v))),v=>{ TEST.prev=1/Math.pow(10,v); TEST.reset(); });
 bind('s-sep','v-sep',v=>v.toFixed(1)+' apart',v=>{ TEST.sep=v; TEST.reset(); });
-bind('s-sd0','v-sd0',v=>v.toFixed(2),v=>{ TEST.sd0=v; TEST.reset(); });
-bind('s-sd1','v-sd1',v=>v.toFixed(2),v=>{ TEST.sd1=v; TEST.reset(); });
+bind('s-sd0','v-sd0',v=>(v*v).toFixed(2),v=>{ TEST.sd0=v; TEST.reset(); });
+bind('s-sd1','v-sd1',v=>(v*v).toFixed(2),v=>{ TEST.sd1=v; TEST.reset(); });
 bind('s-thr','v-thr',v=>v.toFixed(2),v=>{ TEST.thr=v; TEST.reset(); });
 bind('s-trate','v-trate',v=>fmtN(pow10(v))+' /s',v=>{ TEST.rate=pow10(v); });
 bind('s-darts','v-darts',v=>fmtN(pow10(v))+' /s',v=>{ PI.rate=pow10(v); });

@@ -96,6 +96,10 @@
   .ctl select{appearance:none;-webkit-appearance:none;width:100%;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%2388a397' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center}
   .ctl select option{background:#13261f;color:var(--text)}
   .ctl input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04)}
+  .swrow{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:6px}
+  .sw{height:22px;border-radius:6px;border:1px solid var(--line);padding:0;cursor:pointer;transition:transform .12s,box-shadow .12s}
+  .sw:hover{transform:translateY(-1px)}
+  .sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent);border-color:transparent}
   .row2{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
   .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;font-size:13px;font-weight:500;cursor:pointer}
   .toggle input{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:999px;background:rgba(255,255,255,.14);position:relative;margin:0;transition:background .18s;flex:none}
@@ -534,12 +538,13 @@ function gradient(stops, t) {
 /* Colour lookup table. Each bucket costs a separate path fill every frame, so keep the
    count modest; 32 steps is indistinguishable from 64 on a gradient. */
 const NBUCKET = 32;
-function buildColorTable(mode, palette) {
+function buildColorTable(mode, palette, solid) {
   const out = [];
   const cyc = palette.concat([palette[0]]);
   for (let i = 0; i < NBUCKET; i++) {
     const u = i / (NBUCKET - 1);
-    if (mode === 'tribe') out.push(hexToRgb(palette[i % palette.length]));
+    if (mode === 'solid') { const c = hexToRgb(solid || '#ffffff'); out.push([c[0], c[1], c[2]]); }
+    else if (mode === 'tribe') out.push(hexToRgb(palette[i % palette.length]));
     else if (mode === 'heading') out.push(gradient(cyc, u));
     else out.push(gradient(palette, u));
   }
@@ -1265,6 +1270,7 @@ function bucketOf(i, P, flock, palLen) {
       const v = Math.sqrt(flock.vx[i] ** 2 + flock.vy[i] ** 2 + flock.vz[i] ** 2) / P.maxSpeed;
       return clamp((v - 0.35) / 0.65, 0, 0.999) * NBUCKET | 0;
     }
+    case 'solid': return 0;
     case 'turning': return flock.bank[i] * (NBUCKET - 0.001) | 0;
     case 'starling': return clamp(0.45 * flock.nb[i] / (2.2 * flock.nbMean + 1) + flock.bank[i], 0, 0.999) * NBUCKET | 0;
     default: return Math.min(0.999, flock.nb[i] / (2.2 * flock.nbMean + 1)) * NBUCKET | 0;
@@ -1609,8 +1615,17 @@ class View3D {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
 
     this.obstacleGroup = new THREE.Group(); this.scene.add(this.obstacleGroup);
-    this.obstacleMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 });
-    this.obstacleWire = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.15 });
+    /* Two overlapping glass shells used to give away that they were two objects: the
+       overlap was tinted twice and the far one's wireframe showed through the near one.
+       Fix is a depth pre-pass. The mask writes depth and no colour, so afterwards the
+       depth buffer holds the nearest obstacle surface at every pixel; the shell and the
+       wireframe then depth-test against it and lose everything that is inside another
+       shape. Each pixel of a union is therefore tinted exactly once, with no internal
+       edges, and the pile reads as one lump. The obstacles are drawn last (renderOrder
+       above the flock) so the mask cannot hide boids behind the glass. */
+    this.obstacleMask = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, transparent: true });
+    this.obstacleMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false });
+    this.obstacleWire = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.15, depthWrite: false });
     this.obsVersion = -1;
 
     // inspect helpers
@@ -1947,9 +1962,11 @@ class View3D {
        wireframe is dropped and the solids get coarser geometry instead. */
     const crowded = flock.obstacles.length > 48;
     const add = (ob, wire) => {
+      const mask = new THREE.Mesh(geoFor(ob, crowded), this.obstacleMask);
+      mask.position.set(ob.x, ob.y, ob.z); mask.renderOrder = 10; g.add(mask);
       const m = new THREE.Mesh(geoFor(ob, crowded && !wire), wire ? this.obstacleWire : this.obstacleMat);
-      m.position.set(ob.x, ob.y, ob.z); g.add(m);
-      if (!wire && !crowded) { const w = new THREE.Mesh(geoFor(ob, true), this.obstacleWire); w.position.copy(m.position); g.add(w); }
+      m.position.set(ob.x, ob.y, ob.z); m.renderOrder = 11; g.add(m);
+      if (!wire && !crowded) { const w = new THREE.Mesh(geoFor(ob, true), this.obstacleWire); w.position.copy(m.position); w.renderOrder = 12; g.add(w); }
     };
     for (const ob of flock.obstacles) add(ob, false);
     if (draft) add(draft, true);
@@ -1981,7 +1998,7 @@ const DEFAULTS = {
   wSep: 1.5, wAli: 1.0, wCoh: 0.9, tribes: 1, tribeMix: 1, bounds: 'soft', flow: 0, flowScale: 320,
   attractor: 0, swirl: 0, mouseRadius: 62, mouseForce: 1.8, predSpeed: 3.4, fleeRadius: 130, pulse: 0,
   topo: 0, cruise: 0, jitter: 0, startle: 0, initiative: 0, roost: 0, level: 0, sky: null, arena: 1, quality: '3',
-  trail: 0.35, size: 4, glow: 0.25, colorMode: 'tribe', palette: 'abyss', bg: '#0a1512',
+  trail: 0.35, size: 4, glow: 0.25, colorMode: 'tribe', palette: 'abyss', bg: '#0a1512', flockColor: '#56e0c2',
 };
 
 const PRESETS = [
@@ -2082,8 +2099,9 @@ const CONTROLS = {
     { key: 'trail', label: 'Trails', min: 0, max: 0.97, step: 0.01, fmt: v => Math.round(v / 0.97 * 100) + '%' },
     { key: 'size', label: 'Size', min: 1, max: 12, step: 0.2, fmt: v => v.toFixed(1) },
     { key: 'glow', label: 'Glow', min: 0, max: 1, step: 0.05, fmt: v => Math.round(v * 100) + '%' },
-    { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning']] },
+    { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning'], ['solid', 'One colour']] },
     { key: 'palette', label: 'Palette', type: 'select', options: Object.keys(PALETTES).map(k => [k, PALETTES[k].name]) },
+    { key: 'flockColor', label: 'Flock colour', type: 'swatches' },
     { key: 'bg', label: 'Background', type: 'color' },
     { key: 'quality', label: 'Graphics quality', type: 'select', options: [['3', 'Automatic'], ['2', 'High'], ['1', 'Balanced'], ['0', 'Fast']] },
   ],
@@ -2192,6 +2210,8 @@ function sampleRefresh(t) {
 }
 
 /* ---------------- panel construction ---------------- */
+const SWATCHES = ['#ffffff', '#56e0c2', '#7cd4ff', '#ffd166', '#ff7d5c', '#ff8ad8', '#b48cff', '#1b2330'];
+const chips = {};
 function buildControls() {
   const make = (spec) => {
     const wrap = document.createElement('label'); wrap.className = 'ctl';
@@ -2215,6 +2235,22 @@ function buildControls() {
       input = document.createElement('input'); input.type = 'color';
       out.remove();
       input.addEventListener('input', () => setParam(spec.key, input.value));
+    } else if (spec.type === 'swatches') {
+      /* eight colours that read well against both a dark and a light sky, plus the
+         picker for anything else. The chips are the fast path, not the only path. */
+      out.remove();
+      const row = document.createElement('div'); row.className = 'swrow';
+      SWATCHES.forEach(hx => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'sw';
+        b.style.background = hx; b.dataset.hex = hx; b.setAttribute('aria-pressed', 'false');
+        b.setAttribute('aria-label', 'Flock colour ' + hx);
+        b.addEventListener('click', e => { e.preventDefault(); setParam(spec.key, hx); });
+        row.appendChild(b);
+      });
+      wrap.appendChild(row);
+      input = document.createElement('input'); input.type = 'color';
+      input.addEventListener('input', () => setParam(spec.key, input.value));
+      chips[spec.key] = row;
     } else {
       input = document.createElement('input'); input.type = 'range';
       input.min = spec.min; input.max = spec.max; input.step = spec.step;
@@ -2222,7 +2258,7 @@ function buildControls() {
     }
     input.setAttribute('aria-label', spec.label);
     wrap.appendChild(input);
-    inputs[spec.key] = { input, out, spec };
+    inputs[spec.key] = { input, out, spec, wrap };
     return wrap;
   };
   for (const [sec, specs] of Object.entries(CONTROLS)) {
@@ -2243,13 +2279,26 @@ document.addEventListener('pointerdown', e => { if (!e.target.closest('.tip')) c
 function reflect(key) {
   const c = inputs[key]; if (!c) return;
   const v = P[key];
+  if (c.spec.type === 'swatches') {
+    c.input.value = v;
+    const row = chips[key];
+    if (row) row.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.hex.toLowerCase() === String(v).toLowerCase())));
+    return;
+  }
   if (c.spec.type === 'select' || c.spec.type === 'color') { c.input.value = v; return; }
   c.input.value = v;
   c.out.textContent = c.spec.fmt ? c.spec.fmt(v) : v;
   c.input.style.setProperty('--p', ((v - c.spec.min) / (c.spec.max - c.spec.min) * 100) + '%');
 }
+/* Palette and one fixed colour are alternatives, so only the one in use is shown. */
+function updateLookRows() {
+  const solid = P.colorMode === 'solid';
+  if (inputs.palette) inputs.palette.wrap.hidden = solid;
+  if (inputs.flockColor) inputs.flockColor.wrap.hidden = !solid;
+}
 function syncUI() {
   for (const k in inputs) reflect(k);
+  updateLookRows();
   document.querySelectorAll('.preset').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === activePreset)));
   applyLook();
 }
@@ -2263,7 +2312,8 @@ function setParam(key, value) {
   switch (key) {
     case 'count': case 'predators': flock.setCounts(P.count, P.predators, P.tribes); break;
     case 'tribes': flock.assignTribes(P.tribes); break;
-    case 'colorMode': case 'palette': case 'bg': applyLook(); break;
+    case 'colorMode': updateLookRows(); applyLook(); break;
+    case 'palette': case 'bg': case 'flockColor': applyLook(); break;
     case 'quality': setQuality(parseInt(value, 10)); break;
     case 'arena': updateArena(); break;
     case 'trail': if (P.trail === 0) view2d.clear(); break;
@@ -2275,7 +2325,7 @@ function applyLook() {
   ctx.palette = PALETTES[P.palette].colors;
   ctx.dark = luminance(P.bg) < 0.5;
   ctx.inspectRGB = inspectColor(P.bg);
-  const table = buildColorTable(P.colorMode, ctx.palette);
+  const table = buildColorTable(P.colorMode, ctx.palette, P.flockColor);
   view2d.setTable(table);
   if (view3d) { view3d.setTable(table); view3d.setBackground(P.bg, ctx.dark); }
   stage.style.background = P.sky ? tintedSky(P.sky, P.bg, skyBaseBg) : P.bg;
@@ -2397,6 +2447,19 @@ const TOOL_WORD = {orbit:'Orbit', attract:'Attract', repel:'Repel', obstacle:'Ob
    are solids with the same avoidance rule applied to their own surface; Freehand lays a
    line of small round obstacles along the pointer and is 2D only. ---- */
 let obShape = 'sphere', obDepth = 44;
+/* The placement plane means two different things depending on its axis. On X and Z it
+   is a slice, and the natural reading is that the object is centred on it. On Y it is a
+   floor, and the natural reading is that the object stands on it, so the centre is
+   lifted by the object's own half height. The anchor point the drag started from is
+   kept on the object so a resize keeps measuring from the plane rather than from the
+   centre it has just been lifted to. */
+function seatOnPlane(o) {
+  if (mode !== '3d' || planeAxis !== 1) return o;
+  const half = o.kind === 'sphere' ? o.r : o.hy;
+  o.y += half;
+  return o;
+}
+function anchored(o, a) { o.anchor = { x: a.x, y: a.y, z: a.z }; return seatOnPlane(o); }
 function makeObstacle(x, y, z, r, kind) {
   r = Math.max(12, r);
   if (kind === 'box') { const h = r * 0.85; return { kind: 'box', x, y, z, hx: h, hy: h, hz: h, r: h * 1.7321 }; }
@@ -2406,21 +2469,22 @@ function makeObstacle(x, y, z, r, kind) {
 /* a drag sets the two sides you can see; the third one gets the depth slider, so a box
    or a column can be any shape on any axis without a second gesture */
 function shapeDraft(d, p) {
-  const dd = [Math.abs(p.x - d.x), Math.abs(p.y - d.y), Math.abs(p.z - d.z)];
+  const a = d.anchor || d;
+  const dd = [Math.abs(p.x - a.x), Math.abs(p.y - a.y), Math.abs(p.z - a.z)];
   if (d.kind === 'box') {
     let h;
     if (mode === '3d' && view3d) {
       const [u, v] = view3d.planeAxes(), n = 3 - u - v;
       h = [0, 0, 0]; h[u] = Math.max(10, dd[u]); h[v] = Math.max(10, dd[v]); h[n] = obDepth;
     } else { h = [Math.max(10, dd[0]), Math.max(10, dd[1]), Math.max(10, Math.max(dd[0], dd[1]))]; }
-    return { kind: 'box', x: d.x, y: d.y, z: d.z, hx: h[0], hy: h[1], hz: h[2], r: Math.hypot(h[0], h[1], h[2]) };
+    return anchored({ kind: 'box', x: a.x, y: a.y, z: a.z, hx: h[0], hy: h[1], hz: h[2], r: Math.hypot(h[0], h[1], h[2]) }, a);
   }
   if (d.kind === 'cyl') {
-    const rad = Math.max(10, Math.hypot(p.x - d.x, p.z - d.z));
+    const rad = Math.max(10, Math.hypot(p.x - a.x, p.z - a.z));
     const hh = dd[1] > 14 ? dd[1] : obDepth;
-    return { kind: 'cyl', x: d.x, y: d.y, z: d.z, hx: rad, hy: hh, r: Math.hypot(rad, hh) };
+    return anchored({ kind: 'cyl', x: a.x, y: a.y, z: a.z, hx: rad, hy: hh, r: Math.hypot(rad, hh) }, a);
   }
-  return makeObstacle(d.x, d.y, d.z, Math.hypot(p.x - d.x, p.y - d.y, p.z - d.z), d.kind);
+  return anchored(makeObstacle(a.x, a.y, a.z, Math.hypot(p.x - a.x, p.y - a.y, p.z - a.z), d.kind), a);
 }
 function depthBarUpdate() {
   const w = $('obDepthWrap'); if (!w) return;
@@ -2528,7 +2592,7 @@ stage.addEventListener('pointerdown', e => {
     case 'attract': case 'repel': m.active = true; break;
     case 'obstacle':
       if (obShape === 'free' && mode === '2d') { lassoStart(p); }
-      else ctx.draft = makeObstacle(p.x, p.y, p.z, 12, obShape);
+      else ctx.draft = anchored(makeObstacle(p.x, p.y, p.z, 12, obShape), p);
       break;
     case 'predator': if (flock.countSpecies(1) < 40) { flock.addPredator(p.x, p.y, p.z); P.predators = flock.countSpecies(1); reflect('predators'); } break;
     case 'erase': erase(p, e); break;
@@ -2571,7 +2635,7 @@ function endPointer(e) {
   if (pointers.size === 0) {
     orbiting = false; panning = false; scenePanning = false; ctx.mouse.active = false;
     if (lasso) lassoEnd();
-    else if (ctx.draft) { const d = ctx.draft; ctx.draft = null; flock.obstacles.push(d); flock.obstaclesVersion++; }
+    else if (ctx.draft) { const d = ctx.draft; ctx.draft = null; delete d.anchor; flock.obstacles.push(d); flock.obstaclesVersion++; }
   }
 }
 stage.addEventListener('pointerup', endPointer);
