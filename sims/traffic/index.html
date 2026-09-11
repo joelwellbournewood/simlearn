@@ -709,7 +709,7 @@ function resize(){
   stx=stc.getContext('2d'); stx.fillStyle=PL.st; stx.fillRect(0,0,stc.width,stc.height);
 }
 /* layout probe, used by the layout tests */
-window.__traffic=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:STY,STH:STH,narrow:narrow,W:W,H:H,
+window.__trafficLayout=function(){return {RX:RX,RY:RY,RR:RR,COLX:COLX,COLW:COLW,STY:STY,STH:STH,narrow:narrow,W:W,H:H,
   L:L,lanes:lanes,mode:TRACK.mode,n:cars.length,lane1:cars.filter(c=>c.lane===1).length,
   fit:TRACK.fit,perim:TRACK.perim,rmin:shapeR?Math.min.apply(null,Array.from(shapeR)):1,
   rmax:shapeR?Math.max.apply(null,Array.from(shapeR)):1,nmax:document.getElementById('s-n').max,
