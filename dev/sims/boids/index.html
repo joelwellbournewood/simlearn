@@ -2074,9 +2074,9 @@ const PRESETS = [
 
 const TIPS = {
   perception: 'Only neighbours inside this distance count.',
-  separation: 'Closer neighbours than this get pushed away.',
+  separation: 'A distance: how near a neighbour has to come to count as crowding. Never wider than Perception.',
   topo: 'Attend to the few closest boids only, as starlings do.',
-  wSep: 'How hard they avoid crowding.',
+  wSep: 'A strength: how much of the turning goes into clearing that space, against Alignment and Cohesion.',
   wAli: 'How hard they match the direction of their neighbours.',
   wCoh: 'How hard they drift toward their neighbours.',
   cruise: 'A pull back toward a comfortable speed.',
@@ -2716,6 +2716,36 @@ stage.addEventListener('wheel', e => {
   if (mode === '3d') { if (view3d) view3d.cam.rTarget *= Math.exp(d * 0.0007); }
   else view2d.zoomAt(e.clientX, e.clientY, Math.exp(-d * 0.0015));
 }, { passive: false });
+/* The panel is a long list of sliders, and one notch of a mouse wheel is 100px in
+   Chrome, which skips past whole controls. Scroll it at a fraction of that and ease
+   into the new position so the list moves without jumping. */
+(() => {
+  const p = document.getElementById('panel');
+  if (!p) return;
+  const FACTOR = 0.5;
+  let target = null, raf = 0;
+  const limit = () => Math.max(0, p.scrollHeight - p.clientHeight);
+  function step() {
+    const max = limit();
+    target = Math.min(max, Math.max(0, target));
+    const d = target - p.scrollTop;
+    if (Math.abs(d) < 0.6) { p.scrollTop = target; target = null; raf = 0; return; }
+    p.scrollTop += d * 0.3;
+    raf = requestAnimationFrame(step);
+  }
+  p.addEventListener('wheel', e => {
+    if (e.ctrlKey || e.deltaY === 0) return;
+    if (e.target.closest && e.target.closest('.cp-pop')) return;
+    const max = limit();
+    if (max <= 0) return;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? p.clientHeight : 1;
+    const base = target === null ? p.scrollTop : target;
+    if ((e.deltaY < 0 && base <= 0) || (e.deltaY > 0 && base >= max)) return;
+    e.preventDefault();
+    target = Math.min(max, Math.max(0, base + e.deltaY * unit * FACTOR));
+    if (!raf) raf = requestAnimationFrame(step);
+  }, { passive: false });
+})();
 stage.addEventListener('dblclick', e => {
   if (e.target.closest('.tip')) return;
   if (mode === '2d') view2d.resetView(); else if (view3d) view3d.resetCamera();

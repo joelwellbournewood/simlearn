@@ -250,7 +250,7 @@ body.in-frame .mapcard{top:66px;max-height:calc(100% - 86px)}
 .toggle input:checked::after{transform:translateX(15px);background:var(--accent)}
 select{width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
   border-radius:9px;padding:7px 9px;font-family:var(--body);font-size:12.5px}
-.row.off{opacity:.4}
+.row.off{display:none}
 details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
 details.more>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--muted);padding:3px 0}
 details.more>summary::-webkit-details-marker{display:none}
@@ -440,12 +440,12 @@ body.sheet-open .panel{z-index:9}
   <details class="grp">
   <summary class="grp-title">Growth</summary>
   <label class="toggle"><input type="checkbox" id="growOn"><span>Stretch the field lengthwise</span></label>
-  <div class="row" id="rowGrowRate">
+  <div class="row off" id="rowGrowRate">
     <label for="growRate"><span class="nm">Growth speed
       <span class="tip" tabindex="0" data-tip="New stripes insert as it grows, as in a real embryo.">i</span></span><span class="val" id="growRateVal">&asymp; 40 s</span></label>
     <input type="range" id="growRate" min="1" max="100" step="1" value="45" disabled>
   </div>
-  <div class="row" id="rowGrowMax">
+  <div class="row off" id="rowGrowMax">
     <label for="growMax"><span class="nm">Final length</span><span class="val" id="growMaxVal">4.0&times;</span></label>
     <input type="range" id="growMax" min="2" max="6" step="0.5" value="4" disabled>
   </div>
@@ -454,12 +454,12 @@ body.sheet-open .panel{z-index:9}
   <details class="grp">
   <summary class="grp-title">Alignment</summary>
   <label class="toggle"><input type="checkbox" id="anisOn"><span>Diffuse faster along one axis</span></label>
-  <div class="row" id="rowAnisAng">
+  <div class="row off" id="rowAnisAng">
     <label for="anisAng"><span class="nm">Direction
       <span class="tip" tabindex="0" data-tip="Fibrous tissue: stripes run across the fast axis.">i</span></span><span class="val" id="anisAngVal">0&deg;</span></label>
     <input type="range" id="anisAng" min="0" max="180" step="1" value="0" disabled>
   </div>
-  <div class="row" id="rowAnisAmt">
+  <div class="row off" id="rowAnisAmt">
     <label for="anisAmt"><span class="nm">Strength</span><span class="val" id="anisAmtVal">2.00&times;</span></label>
     <input type="range" id="anisAmt" min="1" max="3" step="0.05" value="2" disabled>
   </div>

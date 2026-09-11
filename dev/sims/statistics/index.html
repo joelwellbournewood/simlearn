@@ -186,7 +186,7 @@ details.grp > summary + *{margin-top:0}
       <input type="range" id="s-rate" min="0" max="2.7" step="0.05" value="1.1">
     </div>
 
-    <div class="seglabel" data-m="clt"><span class="nm">Population<button class="tip" data-tip="The shape stops mattering once you average." aria-label="What population does">?</button></span></div>
+    <div class="seglabel" data-m="clt"><span class="nm">Population</span></div>
     <div class="segrow wrap" data-m="clt" id="seg-pop">
       <button class="seg" data-v="height" aria-pressed="false">Height</button>
       <button class="seg" data-v="wealth" aria-pressed="false">Wealth</button>
@@ -196,7 +196,7 @@ details.grp > summary + *{margin-top:0}
       <button class="seg" data-v="asteroid" aria-pressed="false">Asteroids</button>
     </div>
     <div class="row" data-m="clt">
-      <label for="s-cltn"><span class="nm">Draws per sample<button class="tip" data-tip="At 1 you see the population itself." aria-label="What draws per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
+      <label for="s-cltn"><span class="nm">Replicates per sample<button class="tip" data-tip="At 1 you see the population itself." aria-label="What replicates per sample does">?</button></span><span class="val" id="v-cltn"></span></label>
       <input type="range" id="s-cltn" min="1" max="64" step="1" value="1">
     </div>
     <div class="row" data-m="clt">
@@ -277,7 +277,7 @@ details.grp > summary + *{margin-top:0}
 <p>Pick a machine on the left. In every one, the red dashed line is a prediction made from the settings alone, before any data lands, and the coloured shapes are what the machine actually did. Watching the two meet is the whole exercise.</p>
 <ul>
   <li><b>Galton board.</b> Balls fall through rows of pegs, going left or right at each one with no memory of the last. Drag the funnel sideways to move where the bell forms, or downwards to take rows away, and the prediction re-forms at the new starting point while the bins beneath stay where they are.</li>
-  <li><b>Population sampling.</b> Draw one value at a time from height, wealth, finch beaks, asteroid diameters, lottery balls, or a coin, average each handful, and drop the average into a histogram. At one draw per sample you are looking at the population itself. Raise the sample size and every one of those populations, however lopsided or spiky, produces the same bell.</li>
+  <li><b>Population sampling.</b> Draw one value at a time from height, wealth, finch beaks, asteroid diameters, lottery balls, or a coin, average each handful, and drop the average into a histogram. At one replicate per sample you are looking at the population itself. Raise the sample size and every one of those populations, however lopsided or spiky, produces the same bell.</li>
   <li><b>Confidence intervals.</b> One fixed truth, measured over and over by small samples, each measurement wrapped in an interval. Green intervals caught the truth, red ones missed, and the tally at the bottom is the only thing entitled to the words <i>95 percent</i>.</li>
   <li><b>Screening test.</b> A blood marker overlaps between the healthy and the ill. You choose where to call a result positive, and the two ways of being wrong, a false alarm and a missed case, trade against each other with every step of the threshold. The table fills with real people as they are screened.</li>
   <li><b>Monte Carlo darts.</b> Darts thrown blindly at a square of side 2, with a circle of radius 1 inside it, measure the area of that circle. Count the fraction that land in the circle, multiply by four, and you have &pi; out of pure noise.</li>
@@ -286,8 +286,8 @@ details.grp > summary + *{margin-top:0}
 <ul>
   <li>On the Galton board, drag the funnel to the far edge. Balls that fall off the board are counted separately and the bell you can see is a truncated one, which is what happens whenever a measuring instrument runs out of range.</li>
   <li>Still on the board, drag the funnel to the floor. Two rows of pegs give three bins and no bell at all, and the bell grows back one row at a time as you lift it.</li>
-  <li>In population sampling, choose Wealth and leave draws per sample at 1, then raise it slowly. The lopsidedness survives to about eight draws, and is gone by thirty. Now try Asteroids, whose tail is much heavier, and notice that thirty draws are no longer enough.</li>
-  <li>In population sampling, choose Coin with 2 draws per sample. Three outcomes, in a 1:2:1 ratio, and the red prediction has three steps because the exact answer has three steps.</li>
+  <li>In population sampling, choose Wealth and leave replicates per sample at 1, then raise it slowly. The lopsidedness survives to about eight draws, and is gone by thirty. Now try Asteroids, whose tail is much heavier, and notice that thirty draws are no longer enough.</li>
+  <li>In population sampling, choose Coin with 2 replicates per sample. Three outcomes, in a 1:2:1 ratio, and the red prediction has three steps because the exact answer has three steps.</li>
   <li>In confidence intervals, drop the sample size to 3 and switch between the two critical values. Both hold near 95 percent when they are used honestly, and the z intervals all have the same length while the t intervals vary wildly, because each one is guessing the spread from three numbers.</li>
   <li>In the screening test, set the disease to 1 in 1000 and the test to 3 sd apart, which is a good test. Most people who test positive still do not have the disease. Then find the threshold that makes the false alarms and the missed cases roughly equal, and see what it costs.</li>
 </ul>
@@ -1142,7 +1142,7 @@ const MODES={
   galton:{o:GB, b:'Galton board', tag:'Bounces stack into a bell curve',
     hint:'Click to pour a burst of balls. Drag the funnel sideways, or down to take rows away.'},
   clt:{o:CLT, b:'Population sampling', tag:'Averages turn normal',
-    hint:'Click to draw extra samples. Raise draws per sample and watch the red prediction narrow.'},
+    hint:'Click to draw extra samples. Raise replicates per sample and watch the red prediction narrow.'},
   ci:{o:CI, b:'Confidence intervals', tag:'What 95% confident actually means',
     hint:'Green intervals caught the true mean, red ones missed. R starts a new truth.'},
   test:{o:TEST, b:'Screening test', tag:'False alarms and missed cases in a diagnosis',
