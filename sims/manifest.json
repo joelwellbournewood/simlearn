@@ -75,7 +75,7 @@
     "description": "An optical bench with real ray tracing. Move the object, the lens, and the sensor, and watch the image form. Aperture, focus error, blur circles, and spherical aberration, with a live view of what the sensor actually records.",
     "status": "live",
     "hook": "Trace rays, form an image",
-    "visible": true
+    "visible": false
   },
   {
     "id": "epidemic",
@@ -120,7 +120,7 @@
     "description": "A shallow layer of fluid heated from below, which is a pan before it boils or the inside of a growing cloud, stripped to the three numbers it cannot do without. Turn the heating past 24.7 and a layer that used to settle never settles again. Rotate the attractor, and release a swarm of near identical starts to watch them come apart.",
     "status": "live",
     "hook": "The first picture of chaos",
-    "visible": true
+    "visible": false
   },
   {
     "id": "turing-patterns",
