@@ -96,6 +96,29 @@
   .ctl select{appearance:none;-webkit-appearance:none;width:100%;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%2388a397' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center}
   .ctl select option{background:#13261f;color:var(--text)}
   .ctl input[type=color]{width:100%;height:30px;padding:2px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04)}
+  /* Palette cards and the colour row copy the predator-prey Look section, so the two
+     sims offer the same thing in the same shape. */
+  .pals{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px}
+  .pal{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);
+    border-radius:10px;background:transparent;color:var(--text);font-family:var(--ui);
+    font-size:12px;text-align:left;cursor:pointer;min-width:0;
+    transition:border-color .18s, background .18s}
+  .pal:hover{border-color:var(--line-strong)}
+  .pal[aria-pressed="true"]{border-color:var(--accent);background:rgba(86,224,194,.1)}
+  .pal .chips{display:inline-flex;gap:2px;flex:none}
+  .pal .chips i{width:9px;height:9px;border-radius:2px;display:block}
+  .pal .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .swatches{grid-column:1/-1;margin-top:7px}
+  .sw-item{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:5px 7px 5px 9px;border:1px solid var(--line);border-radius:10px;
+    font-size:12px;color:var(--text);min-width:0}
+  .sw-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctl .sw-item input[type=color]{-webkit-appearance:none;appearance:none;width:26px;height:22px;
+    padding:0;margin:0;border:1px solid var(--line-strong);border-radius:6px;background:transparent;
+    cursor:pointer;flex:none;grid-column:auto}
+  .sw-item input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  .sw-item input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
+  .sw-item input[type=color]::-moz-color-swatch{border:0;border-radius:5px}
   .swrow{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:6px}
   .sw{height:22px;border-radius:6px;border:1px solid var(--line);padding:0;cursor:pointer;transition:transform .12s,box-shadow .12s}
   .sw:hover{transform:translateY(-1px)}
@@ -155,6 +178,11 @@
   .placebar .pb-at{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:112px;text-align:center}
   .placebar .pb-tg{padding:4px 11px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:11.5px}
   .placebar .pb-tg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  /* Shape buttons and the depth slider share one row, so switching to Box or Column
+     slots the new slider in beside them instead of inserting a row and shoving the
+     older controls upward. The row sits lowest, directly over the tool buttons. */
+  .shaperow{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+  .shaperow[hidden]{display:none}
   .depth-pill{gap:9px;align-items:center;padding:4px 13px;font-size:11.5px;color:var(--muted)}
   .depth-pill input[type=range]{width:104px}
   .depth-pill output{font-family:var(--mono);font-size:11.5px;color:var(--text);min-width:26px;text-align:right}
@@ -411,12 +439,6 @@
 
 
 <div class="tools">
-  <div class="seg" role="group" aria-label="Obstacle shape" id="shapes" hidden>
-    <button data-shape="sphere" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Round</button>
-    <button data-shape="box"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>Box</button>
-    <button data-shape="cyl"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="6" ry="2.6"/><path d="M6 6.5v11c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-11"/></svg>Column</button>
-    <button data-shape="free"><svg viewBox="0 0 24 24"><path d="M4 17c3-8 6 4 9-3s4 2 7-2"/></svg>Freehand</button>
-  </div>
   <div class="placebar" id="placebar" hidden>
     <span>Place on</span>
     <div class="seg" role="group" aria-label="Placement plane" id="planeAxes">
@@ -427,8 +449,16 @@
     <output class="pb-at" id="planeAt"></output>
     <button class="pb-tg" id="planeSnap" aria-pressed="true" title="Snap the point to the grid on the plane">Snap</button>
   </div>
-  <div class="seg depth-pill" id="obDepthWrap" hidden>
+  <div class="shaperow" id="shaperow" hidden>
+    <div class="seg" role="group" aria-label="Obstacle shape" id="shapes" hidden>
+    <button data-shape="sphere" aria-pressed="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>Round</button>
+    <button data-shape="box"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>Box</button>
+    <button data-shape="cyl"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="6" ry="2.6"/><path d="M6 6.5v11c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-11"/></svg>Column</button>
+    <button data-shape="free"><svg viewBox="0 0 24 24"><path d="M4 17c3-8 6 4 9-3s4 2 7-2"/></svg>Freehand</button>
+  </div>
+    <div class="seg depth-pill" id="obDepthWrap" hidden>
     <label for="obDepth">Depth</label><input type="range" id="obDepth" min="12" max="220" step="4" value="44" aria-label="Depth of the next box or column"><output id="obDepthRead">44</output>
+  </div>
   </div>
   <div class="tool-name" id="toolName" aria-hidden="true">Attract</div>
   <button class="erase-all" id="eraseAll" hidden>Erase all</button>
@@ -2032,12 +2062,8 @@ const PRESETS = [
 ];
 
 const TIPS = {
-  predators: 'Chase the nearest boid and scatter the flock.',
-  maxSpeed: 'Never drops below about a third of this.',
-  agility: 'How sharply a boid can turn each frame.',
   perception: 'Only neighbours inside this distance count.',
-  separation: 'The personal bubble. Closer neighbours get pushed away.',
-  fov: '360° sees all round. Less ignores what is behind.',
+  separation: 'Closer neighbours than this get pushed away.',
   topo: 'Attend to the few closest boids only, as starlings do.',
   wSep: 'How hard they avoid crowding.',
   wAli: 'How hard they match the direction of their neighbours.',
@@ -2047,20 +2073,14 @@ const TIPS = {
   startle: 'Copying a sharp turn is how an escape wave spreads.',
   initiative: 'How often a bird on the edge turns of its own accord.',
   roost: 'A free zone in the middle. Outside it the flock is pulled back.',
-  tribes: 'Coloured groups within the flock.',
   tribeMix: 'Zero keeps the tribes apart.',
   bounds: 'Turn back at the edge, or reappear on the far side.',
   flow: 'A hidden, slowly shifting current.',
   flowScale: 'Larger eddies give broad, slow bends.',
-  attractor: 'A gentle pull toward the centre.',
   swirl: 'A sideways push that spins the flock into a vortex.',
   pulse: 'Boids flash and fall into sync, like fireflies.',
   fleeRadius: 'How close a predator gets before prey flee.',
-  predSpeed: 'Faster than the prey means more catches.',
   mouseRadius: 'Reach of the Attract and Repel tools.',
-  glow: 'A soft halo. Best on dark backgrounds.',
-  colorMode: 'What the colour of a boid encodes.',
-  quality: 'Automatic drops the costliest effects. The flock is unchanged.',
 };
 
 const CONTROLS = {
@@ -2099,8 +2119,8 @@ const CONTROLS = {
     { key: 'trail', label: 'Trails', min: 0, max: 0.97, step: 0.01, fmt: v => Math.round(v / 0.97 * 100) + '%' },
     { key: 'size', label: 'Size', min: 1, max: 12, step: 0.2, fmt: v => v.toFixed(1) },
     { key: 'glow', label: 'Glow', min: 0, max: 1, step: 0.05, fmt: v => Math.round(v * 100) + '%' },
-    { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning'], ['solid', 'One colour']] },
-    { key: 'palette', label: 'Palette', type: 'select', options: Object.keys(PALETTES).map(k => [k, PALETTES[k].name]) },
+    { key: 'colorMode', label: 'Colour by', type: 'select', options: [['tribe', 'Tribe'], ['heading', 'Heading'], ['speed', 'Speed'], ['density', 'Crowding'], ['turning', 'Turning'], ['starling', 'Crowding and turning']] },
+    { key: 'palette', label: 'Palette', type: 'pals' },
     { key: 'flockColor', label: 'Flock colour', type: 'swatches' },
     { key: 'bg', label: 'Background', type: 'color' },
     { key: 'quality', label: 'Graphics quality', type: 'select', options: [['3', 'Automatic'], ['2', 'High'], ['1', 'Balanced'], ['0', 'Fast']] },
@@ -2235,6 +2255,27 @@ function buildControls() {
       input = document.createElement('input'); input.type = 'color';
       out.remove();
       input.addEventListener('input', () => setParam(spec.key, input.value));
+    } else if (spec.type === 'pals') {
+      /* A card per palette, with its own colours shown on it, plus one card for a single
+         colour. Picking that one is what opens the colour menu below. */
+      out.remove();
+      const grid = document.createElement('div'); grid.className = 'pals';
+      const card = (key, name, cols) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'pal';
+        b.dataset.pal = key; b.setAttribute('aria-pressed', 'false');
+        const sw = document.createElement('span'); sw.className = 'chips';
+        cols.slice(0, 3).forEach(hx => { const i = document.createElement('i'); i.style.background = hx; sw.appendChild(i); });
+        const pn = document.createElement('span'); pn.className = 'pn'; pn.textContent = name;
+        b.appendChild(sw); b.appendChild(pn);
+        b.addEventListener('click', e => { e.preventDefault(); setParam(spec.key, key); });
+        grid.appendChild(b);
+        return b;
+      };
+      for (const k of Object.keys(PALETTES)) card(k, PALETTES[k].name, PALETTES[k].colors);
+      solidCard = card('solid', 'Solid colour', [P.flockColor]);
+      wrap.appendChild(grid);
+      input = document.createElement('input'); input.type = 'hidden';
+      chips[spec.key] = grid;
     } else if (spec.type === 'swatches') {
       /* eight colours that read well against both a dark and a light sky, plus the
          picker for anything else. The chips are the fast path, not the only path. */
@@ -2248,8 +2289,13 @@ function buildControls() {
         row.appendChild(b);
       });
       wrap.appendChild(row);
+      const box = document.createElement('div'); box.className = 'swatches';
+      const item = document.createElement('label'); item.className = 'sw-item';
+      const cap = document.createElement('span'); cap.textContent = 'Any colour';
       input = document.createElement('input'); input.type = 'color';
       input.addEventListener('input', () => setParam(spec.key, input.value));
+      item.appendChild(cap); item.appendChild(input); box.appendChild(item);
+      wrap.appendChild(box);
       chips[spec.key] = row;
     } else {
       input = document.createElement('input'); input.type = 'range';
@@ -2285,16 +2331,24 @@ function reflect(key) {
     if (row) row.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.hex.toLowerCase() === String(v).toLowerCase())));
     return;
   }
+  if (c.spec.type === 'pals') {
+    const grid = chips[key];
+    if (grid) grid.querySelectorAll('.pal').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pal === v)));
+    if (solidCard) solidCard.querySelector('i').style.background = P.flockColor;
+    return;
+  }
   if (c.spec.type === 'select' || c.spec.type === 'color') { c.input.value = v; return; }
   c.input.value = v;
   c.out.textContent = c.spec.fmt ? c.spec.fmt(v) : v;
   c.input.style.setProperty('--p', ((v - c.spec.min) / (c.spec.max - c.spec.min) * 100) + '%');
 }
-/* Palette and one fixed colour are alternatives, so only the one in use is shown. */
+/* The colour menu exists only while the Solid colour card is the chosen palette, and
+   Colour by has nothing to map onto in that case, so it goes away with it. */
+let solidCard = null;
 function updateLookRows() {
-  const solid = P.colorMode === 'solid';
-  if (inputs.palette) inputs.palette.wrap.hidden = solid;
+  const solid = P.palette === 'solid';
   if (inputs.flockColor) inputs.flockColor.wrap.hidden = !solid;
+  if (inputs.colorMode) inputs.colorMode.wrap.hidden = solid;
 }
 function syncUI() {
   for (const k in inputs) reflect(k);
@@ -2313,7 +2367,9 @@ function setParam(key, value) {
     case 'count': case 'predators': flock.setCounts(P.count, P.predators, P.tribes); break;
     case 'tribes': flock.assignTribes(P.tribes); break;
     case 'colorMode': updateLookRows(); applyLook(); break;
-    case 'palette': case 'bg': case 'flockColor': applyLook(); break;
+    case 'palette': updateLookRows(); applyLook(); break;
+    case 'flockColor': reflect('palette'); applyLook(); break;
+    case 'bg': applyLook(); break;
     case 'quality': setQuality(parseInt(value, 10)); break;
     case 'arena': updateArena(); break;
     case 'trail': if (P.trail === 0) view2d.clear(); break;
@@ -2322,10 +2378,11 @@ function setParam(key, value) {
 function requestDraw() { needsDraw = true; }
 let skyBaseBg = null;
 function applyLook() {
-  ctx.palette = PALETTES[P.palette].colors;
+  const solid = P.palette === 'solid';
+  ctx.palette = (PALETTES[P.palette] || PALETTES.mono).colors;
   ctx.dark = luminance(P.bg) < 0.5;
   ctx.inspectRGB = inspectColor(P.bg);
-  const table = buildColorTable(P.colorMode, ctx.palette, P.flockColor);
+  const table = buildColorTable(solid ? 'solid' : P.colorMode, ctx.palette, P.flockColor);
   view2d.setTable(table);
   if (view3d) { view3d.setTable(table); view3d.setBackground(P.bg, ctx.dark); }
   stage.style.background = P.sky ? tintedSky(P.sky, P.bg, skyBaseBg) : P.bg;
@@ -2494,6 +2551,7 @@ function depthBarUpdate() {
 function shapesForMode() {
   const box = $('shapes'); if (!box) return;
   box.hidden = ctx.tool !== 'obstacle';
+  const row = $('shaperow'); if (row) row.hidden = box.hidden;
   depthBarUpdate();
   box.querySelector('[data-shape="cyl"]').hidden = mode === '2d';
   box.querySelector('[data-shape="free"]').hidden = mode === '3d';

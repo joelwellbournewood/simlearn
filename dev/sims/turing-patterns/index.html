@@ -724,7 +724,9 @@ var FS_SPLAT = [
 'void main(){',
 '  vec2 st = texture(uState, vUv).rg;',
 '  vec2 d = vUv - uP;',
-'  d = fract(d + 0.5) - 0.5;',
+/* No minimum-image wrap here. The lattice itself is periodic, but a brush that wrapped
+   painted its far side onto the opposite edge of the field, so running the cursor off
+   one side of the screen left a copy of the stroke coming back in on the other. */
 '  d /= uR;',
 '  float f = smoothstep(0.0, 0.55, 1.0 - dot(d,d));',
 /* Seeding stipples: about half the cells under the brush get activator, the rest are
@@ -1540,11 +1542,13 @@ function paintAt(ev){
   if(fillMode()){
     var fs = fieldPx(), W = ov.width, H = ov.height;
     u = (px - (W-fs)/2)/fs; v = 1 - (py - (H-fs)/2)/fs;
-    u -= Math.floor(u); v -= Math.floor(v);          /* the lattice wraps, so the brush does */
   } else {
     var R = domainRect();
     u = (px - R.x)/R.w; v = 1 - (py - R.y)/R.h;
   }
+  /* Outside the field there is nothing to paint, and the stroke is broken rather than
+     carried across, so dragging off one edge and back does not join up. */
+  if(u < 0 || u > 1 || v < 0 || v > 1){ ptr.has = false; return; }
   var B = brushPx();
   var ru = B.x/B.w, rv = B.y/B.h;
   var mode = S.tool === 'seed' ? 1 : -1;

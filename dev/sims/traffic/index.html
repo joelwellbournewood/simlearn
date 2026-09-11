@@ -226,14 +226,14 @@ body.clean .tapwrap{display:none}
 <div class="panel">
   <button class="about-btn" id="b-about">What am I looking at?</button>
     <details class="grp" open>
-    <summary>Try this</summary>
+    <summary>Presets</summary>
   <div class="presets" id="presets"></div>
   
   </details>
   <details class="grp">
-    <summary>Change the road</summary>
+    <summary>The cars</summary>
   <div class="row">
-    <label for="s-n"><span class="nm">Cars<button class="tip" data-tip="The strongest control on whether a jam forms." aria-label="What the car count does">?</button></span><span class="val" id="v-n"></span></label>
+    <label for="s-n"><span class="nm">Cars</span><span class="val" id="v-n"></span></label>
     <input type="range" id="s-n" min="10" max="80" step="1" value="38">
   </div>
   <div class="row">
@@ -244,18 +244,19 @@ body.clean .tapwrap{display:none}
     <label for="s-av"><span class="nm">Self-driving cars<button class="tip" data-tip="The share of cars that hold a steady gap without ever over-braking." aria-label="What the self-driving share does">?</button></span><span class="val" id="v-av"></span></label>
     <input type="range" id="s-av" min="0" max="100" step="5" value="0">
   </div>
-  
+  <div class="toggles">
+    <button class="tg" id="t-truck" aria-pressed="false">One slow truck</button>
+  </div>
+  <div class="row" id="row-truck" hidden>
+    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="The truck's top speed, as a share of what a car holds on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
+    <input type="range" id="s-truck" min="20" max="95" step="5" value="55">
+  </div>
   </details>
   <details class="grp">
     <summary>The road</summary>
   <div class="toggles">
     <button class="tg" id="t-lanes" aria-pressed="false">Two lanes <kbd>L</kbd></button>
-    <button class="tg" id="t-truck" aria-pressed="false">One slow truck</button>
     <button class="tg" id="t-circle">Back to a circle <kbd>D</kbd></button>
-  </div>
-  <div class="row" id="row-truck" hidden>
-    <label for="s-truck"><span class="nm">Truck speed<button class="tip" data-tip="The truck's top speed, as a share of what a car holds on an empty road." aria-label="What the truck speed does">?</button></span><span class="val" id="v-truck"></span></label>
-    <input type="range" id="s-truck" min="20" max="95" step="5" value="55">
   </div>
   </details>
   <details class="grp">

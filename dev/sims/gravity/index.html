@@ -768,11 +768,12 @@ function applyLook(k){
   try{ localStorage.setItem('simlearn-gravity-look',k); }catch(e){}
 }
 function bucketOf(m){ return Math.min(NB-1,Math.floor(massT(m)*NB)); }
-const glowSprites=[], coreSprites=[], bucketRGB=[];
+const glowSprites=[], coreSprites=[], bucketRGB=[], bucketRGBA=[];
 function buildSprites(){
-  glowSprites.length=0; coreSprites.length=0; bucketRGB.length=0;
+  glowSprites.length=0; coreSprites.length=0; bucketRGB.length=0; bucketRGBA.length=0;
   for(let k=0;k<NB;k++){
     const [r,g,b]=colourAt((k+0.5)/NB); bucketRGB.push('rgb('+r+','+g+','+b+')');
+    bucketRGBA.push(a=>'rgba('+r+','+g+','+b+','+a+')');
     const gs=document.createElement('canvas'); gs.width=gs.height=96;
     const gc=gs.getContext('2d'), grd=gc.createRadialGradient(48,48,4,48,48,48);
     grd.addColorStop(0,'rgba('+r+','+g+','+b+',.46)'); grd.addColorStop(.35,'rgba('+r+','+g+','+b+',.13)'); grd.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
@@ -1215,19 +1216,43 @@ function draw(){
   const sb=bodyById(selId);
   if(sb&&showOrbit) drawOrbit(sb,z,ox,oy);
   /* glow (additive) then cores */
+  /* Bodies are pre-rendered sprites, which is what makes a thousand of them cheap, but a
+     sprite has a fixed resolution: the core is a 22 pixel disc, so a sun blown up past
+     that by the zoom was being stretched and came out soft and stepped at the rim. Above
+     the size the sprite can honestly fill, the body is drawn as a path instead, which has
+     no resolution at all. The geometry and the colours are the sprite's, so nothing
+     changes in appearance except the sharpness, and only the few bodies that are big on
+     screen pay for it. */
+  const sharpAt = 18 / Math.max(1, DPR);     // CSS px of radius the sprite can still fill
   ctx.globalCompositeOperation='lighter';
   for(let i=0;i<n;i++){
     const b=bodies[i]; w2f(b.x,b.y,tmp);
     const sx=tmp.x*z+ox, sy=tmp.y*z+oy, R=Math.max(1.2,b.r*z), GR=R*3.2;
     if(sx<-GR||sx>W+GR||sy<-GR||sy>H+GR) continue;
-    ctx.drawImage(glowSprites[bucketOf(b.m)],sx-GR,sy-GR,GR*2,GR*2);
+    if(R>sharpAt){
+      const c=bucketRGBA[bucketOf(b.m)];
+      const grd=ctx.createRadialGradient(sx,sy,GR*4/48,sx,sy,GR);
+      grd.addColorStop(0,c('.46')); grd.addColorStop(.35,c('.13')); grd.addColorStop(1,c('0'));
+      ctx.fillStyle=grd;
+      ctx.beginPath(); ctx.arc(sx,sy,GR,0,TAU); ctx.fill();
+    } else {
+      ctx.drawImage(glowSprites[bucketOf(b.m)],sx-GR,sy-GR,GR*2,GR*2);
+    }
   }
   ctx.globalCompositeOperation='source-over';
   for(let i=0;i<n;i++){
     const b=bodies[i]; w2f(b.x,b.y,tmp);
     const sx=tmp.x*z+ox, sy=tmp.y*z+oy, R=Math.max(1.2,b.r*z), D=R*48/22;
     if(sx<-R||sx>W+R||sy<-R||sy>H+R) continue;
-    ctx.drawImage(coreSprites[bucketOf(b.m)],sx-D/2,sy-D/2,D,D);
+    if(R>sharpAt){
+      const rr=D/2*22/24;                    // the sprite's disc is 22 of its 24 half-pixels
+      ctx.fillStyle=bucketRGB[bucketOf(b.m)];
+      ctx.beginPath(); ctx.arc(sx,sy,rr,0,TAU); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.55)';
+      ctx.beginPath(); ctx.arc(sx-rr*0.28,sy-rr*0.3,rr*0.3,0,TAU); ctx.fill();
+    } else {
+      ctx.drawImage(coreSprites[bucketOf(b.m)],sx-D/2,sy-D/2,D,D);
+    }
   }
   /* mass labels, used by arrangements where the ratio of the masses is the point */
   if(n<=12){
