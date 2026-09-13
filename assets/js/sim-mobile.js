@@ -10,8 +10,29 @@
 
   function isOpen() { return !!(panel && panel.classList.contains('open')); }
 
+  /* The open sheet's real height, published as --sheet-h, so a sim whose picture is a
+     laid-out box rather than a full-bleed canvas can shrink the box instead of letting
+     the sheet sit on top of it. Zero when the sheet is shut. */
+  function measure() {
+    var h = 0;
+    if (panel && isOpen()) {
+      var r = panel.getBoundingClientRect();
+      h = Math.max(0, Math.round(Math.min(r.height, window.innerHeight - r.top)));
+    }
+    document.documentElement.style.setProperty('--sheet-h', h + 'px');
+    var w = 0;
+    if (panel && isOpen()) {
+      var q = panel.getBoundingClientRect();
+      w = Math.max(0, Math.round(Math.min(q.width, window.innerWidth - q.left)));
+    }
+    document.documentElement.style.setProperty('--sheet-w', w + 'px');
+  }
+
   function setBody() {
     document.body.classList.toggle('sheet-open', isOpen());
+    measure();
+    requestAnimationFrame(measure);
+    setTimeout(measure, 320);
   }
 
   /* Prefer the sim's own toggle so its bookkeeping (labels, aria) still runs. */
@@ -48,6 +69,8 @@
 
     /* whoever flips .open, the body class follows */
     new MutationObserver(setBody).observe(panel, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', function () { setTimeout(measure, 250); });
     setBody();
 
     /* ---- swipe ---- */
