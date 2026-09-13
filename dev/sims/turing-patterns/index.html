@@ -124,6 +124,9 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
 .sel .acts button:hover{border-color:var(--line-strong)}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel,body.clean .mapcard{display:none}
+body.clean .actions .icon-btn:not(#btnClean){display:none}
+body.clean .actions{opacity:.3;transition:opacity .3s}
+body.clean .actions:hover,body.clean .actions:focus-within{opacity:1}
 .about-inner p.keys{color:var(--muted);font-size:12.5px}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -250,6 +253,33 @@ body.in-frame .mapcard{top:66px;max-height:calc(100% - 86px)}
 .toggle input:checked::after{transform:translateX(15px);background:var(--accent)}
 select{width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
   border-radius:9px;padding:7px 9px;font-family:var(--body);font-size:12.5px}
+/* ---- palette: cards with a real gradient chip, then three pickers ---- */
+.sub{font-family:var(--body);font-size:10.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);margin:15px 0 7px}
+.pals{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pal{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);
+  border-radius:10px;background:transparent;color:var(--ink);font-family:var(--body);
+  font-size:12px;text-align:left;min-width:0;transition:border-color .18s,background .18s}
+.pal:hover{border-color:var(--line-strong)}
+.pal[aria-pressed="true"]{border-color:rgba(86,224,194,.55);background:var(--accent-dim)}
+.pal .ramp{width:26px;height:15px;border-radius:4px;flex:none;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.pal .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pals .wide{grid-column:1 / -1}
+.swatches{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px}
+.sw-item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 4px;
+  border:1px solid var(--line);border-radius:10px;font-family:var(--body);font-size:11px;
+  color:var(--muted);min-width:0;cursor:pointer;transition:border-color .18s}
+.sw-item:hover{border-color:var(--line-strong)}
+.sw-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.sw-item input[type=color]{-webkit-appearance:none;appearance:none;width:100%;height:20px;
+  padding:0;border:1px solid var(--line-strong);border-radius:6px;background:transparent;cursor:pointer}
+.sw-item input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.sw-item input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
+.sw-item input[type=color]::-moz-color-swatch{border:0;border-radius:5px}
+.pal-note{display:none;margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+body.fixed-pal .swatches,body.fixed-pal #rowMid{display:none}
+body.fixed-pal .pal-note{display:block}
 .row.off{display:none}
 details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
 details.more>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--muted);padding:3px 0}
@@ -329,8 +359,8 @@ body.clean.map-docked #stage{inset:0}
 /* portrait: pattern on top, plot underneath, clear of the controls handle */
 @media (orientation:portrait){
   body.map-docked{--mapH:min(38vh,330px)}
-  body.map-docked #stage{bottom:calc(var(--mapH) + 56px)}
-  body.map-docked .mapcard.docked{left:8px;right:8px;bottom:50px;top:auto;width:auto;height:var(--mapH)}
+  body.map-docked #stage{bottom:calc(var(--mapH) + 64px)}
+  body.map-docked .mapcard.docked{left:8px;right:8px;bottom:58px;top:auto;width:auto;height:var(--mapH)}
 }
 /* landscape: pattern on the left, plot on the right under the icon buttons */
 @media (orientation:landscape){
@@ -338,16 +368,21 @@ body.clean.map-docked #stage{inset:0}
      plot's own 1:0.9 shape pushes it past the bottom of the screen, and never larger
      than it needs to be */
   body.map-docked{--mapW:min(46vw,380px,calc((100vh - 76px)/0.9))}
-  body.map-docked #stage{right:calc(var(--mapW) + 12px);bottom:0}
+  body.map-docked #stage{right:calc(var(--mapW) + 58px);bottom:0}
   /* the card hugs the plot's own shape, so there is no dead glass under it and the
      plot is as wide as the strip allows */
-  body.map-docked .mapcard.docked{right:8px;left:auto;top:52px;bottom:auto;width:var(--mapW);
+  body.map-docked .mapcard.docked{right:56px;left:auto;top:52px;bottom:auto;width:var(--mapW);
     height:calc((var(--mapW) - 10px)*0.9 + 10px);max-height:calc(100% - 64px)}
   body.map-docked .mapcard.docked #map{width:100%;height:auto}
   body.map-docked .hud{left:14px;right:auto;top:auto;bottom:54px;flex-direction:row;align-items:flex-start;gap:12px}
 }
 /* the sheet is a cover over the pattern, not a shelf under the plot */
 body.sheet-open .panel{z-index:9}
+/* the drawer down the right lands on top of the docked plot, so the plot stands aside
+   while it is open, the way the readouts and the tool row already do */
+@media (max-height:560px) and (pointer:coarse){
+  body.sheet-open .mapcard.docked{display:none}
+}
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
 <link rel="stylesheet" href="../../assets/css/sim-mobile.css">
@@ -430,14 +465,6 @@ body.sheet-open .panel{z-index:9}
 
   </details>
   <details class="grp">
-  <summary class="grp-title">Run</summary>
-  <div class="row">
-    <label for="stepsSl"><span class="nm">Speed</span><span class="val" id="stepsVal">12</span></label>
-    <input type="range" id="stepsSl" min="1" max="40" step="1" value="12">
-  </div>
-
-  </details>
-  <details class="grp">
   <summary class="grp-title">Growth</summary>
   <label class="toggle"><input type="checkbox" id="growOn"><span>Stretch the field lengthwise</span></label>
   <div class="row off" id="rowGrowRate">
@@ -468,16 +495,26 @@ body.sheet-open .panel{z-index:9}
   <details class="grp">
   <summary class="grp-title">Look</summary>
     <div class="row">
-      <label for="palSel"><span class="nm">Palette</span></label>
-      <select id="palSel">
-        <option value="5" selected>The preset&#39;s own</option>
-        <option value="1">Coral</option>
-        <option value="0">Ink on paper</option>
-        <option value="2">Thermal</option>
-        <option value="3">Culture</option>
-        <option value="4">Grey</option>
-      </select>
+      <label for="stepsSl"><span class="nm">Sim speed
+        <span class="tip" tabindex="0" data-tip="Chemistry steps per frame. The same pattern, reached sooner.">i</span></span><span class="val" id="stepsVal">12</span></label>
+      <input type="range" id="stepsSl" min="1" max="40" step="1" value="12">
     </div>
+
+    <div class="sub">Palette</div>
+    <div class="pals" id="pals"></div>
+    <div class="swatches" id="swatches">
+      <label class="sw-item"><span>Ground</span><input type="color" id="swC0" aria-label="Ground colour"></label>
+      <label class="sw-item"><span>Midtone</span><input type="color" id="swC1" aria-label="Midtone colour"></label>
+      <label class="sw-item"><span>Mark</span><input type="color" id="swC2" aria-label="Mark colour"></label>
+    </div>
+    <div class="row" id="rowMid">
+      <label for="midSl"><span class="nm">Blend point
+        <span class="tip" tabindex="0" data-tip="Where the midtone sits between ground and mark.">i</span></span><span class="val" id="midVal">0.60</span></label>
+      <input type="range" id="midSl" min="0.2" max="0.9" step="0.01" value="0.60">
+    </div>
+    <p class="pal-note" id="palNote">Thermal and Culture are fixed ramps.</p>
+
+    <div class="sub">Shading</div>
     <label class="toggle"><input type="checkbox" id="reliefOn" checked><span>Relief shading</span></label>
     <div class="row">
       <label for="levelSl"><span class="nm">Threshold</span><span class="val" id="levelVal">0.18</span></label>
@@ -492,8 +529,8 @@ body.sheet-open .panel{z-index:9}
       <select id="gridSel">
         <option value="384">384 &times; 384</option>
         <option value="512">512 &times; 512</option>
-        <option value="768">768 &times; 768</option>
-        <option value="1024" selected>1024 &times; 1024</option>
+        <option value="768" selected>768 &times; 768</option>
+        <option value="1024">1024 &times; 1024</option>
         <option value="1536">1536 &times; 1536</option>
       </select>
     </div>
@@ -659,6 +696,26 @@ var PRESETS = [
    back to the default below, the diffusion ratio included: leaving a modified ratio in
    place was why Stripes could be selected and still not make stripes. */
 var PAL_DEFAULT = ['#fdf4e0','#f29a3b','#66120f',0.60];
+/* Every palette here is the same three-stop ramp the shader's uPal 5 branch draws:
+   ground, midtone, mark, and where the midtone sits between them. Thermal and Culture
+   are the exceptions, polynomial ramps built into the shader, so their colours cannot
+   be edited and the pickers step aside while one of them is chosen. */
+var PALETTES = [
+  {k:'preset',  n:"The preset's own", wide:1},
+  {k:'coral',   n:'Coral',        c:['#fdf4e0','#f29a3b','#66120f',0.60]},
+  {k:'ink',     n:'Ink on paper', c:['#f5f3ed','#79839a','#0e1328',0.62]},
+  {k:'leopard', n:'Leopard',      c:['#f2d9a0','#b8823c','#241408',0.55]},
+  {k:'zebra',   n:'Zebra',        c:['#f4f2ec','#5b6472','#101319',0.58]},
+  {k:'reef',    n:'Reef',         c:['#eafaff','#2f9fc4','#08243a',0.56]},
+  {k:'ember',   n:'Ember',        c:['#ffe9b8','#e0521f','#1a0606',0.58]},
+  {k:'lichen',  n:'Lichen',       c:['#f1f0dd','#8fae6a','#1b3320',0.60]},
+  {k:'orchid',  n:'Orchid',       c:['#fdf0ff','#9a63c8','#1d0f2e',0.60]},
+  {k:'copper',  n:'Copper',       c:['#f6e2c8','#b06a2a','#123a34',0.58]},
+  {k:'grey',    n:'Grey',         c:['#121212','#7f7f7f','#ececec',0.50]},
+  {k:'thermal', n:'Thermal', pal:2, css:['#000004','#7d1e6d','#ed6925','#fcffa4']},
+  {k:'culture', n:'Culture', pal:3, css:['#440154','#21918c','#fde725']}
+];
+var palKey = 'preset';
 var RATIO_DEFAULT = 2.0, LEVEL_DEFAULT = 0.18, CONTRAST_DEFAULT = 1.6;
 function hx(c){
   return [parseInt(c.substr(1,2),16)/255, parseInt(c.substr(3,2),16)/255, parseInt(c.substr(5,2),16)/255];
@@ -895,7 +952,7 @@ var FS_RED = [
  * State
  * ------------------------------------------------------------------ */
 var S = {
-  N: 1024,
+  N: 768,
   F: 0.037, k: 0.060,
   DA: 0.30, ratio: 2.0,
   steps: 12,
@@ -909,15 +966,11 @@ var S = {
 };
 var stats = { fps: 0, meanV: 0, cov: 0, bands: 0 };
 
-/* One copy of the field is now scaled to cover the LONGER side of the canvas, where it
-   used to be drawn across the shorter side, so every cell is about 1.7 times wider on
-   screen than it was. The ladder of grid sizes moved up to match: 1024 on a desktop
-   puts a wavelength at roughly the 22 screen pixels this sim was tuned for, where 512
-   used to. A phone has a small screen and a slower GPU, so it starts two steps down,
-   which keeps the features the same size in millimetres and the step count affordable.
-   The Grid control still offers the whole ladder. */
-if(matchMedia('(max-width:820px)').matches ||
-   (matchMedia('(pointer:coarse)').matches && Math.min(innerWidth, innerHeight) <= 560)) S.N = 512;
+/* One copy of the field is scaled to cover the LONGER side of the canvas, so a
+   wavelength of about sixteen cells lands at a comfortable size on screen. 768 is the
+   default on every device, phone and desktop alike, so the pattern a reader sees on one
+   is the pattern they see on the other. The Grid control still offers the whole ladder
+   from 384 to 1536. */
 
 var cvs = $('gl'), ov = $('ov'), stage = $('stage'), ovx = ov.getContext('2d');
 var gl = null, P = {}, ST = null, redFbo = null, redTex = null, pix = null, linSamp = null, smoothOK = true;
@@ -1630,7 +1683,7 @@ function applyPreset(i){
   S.level = p.level || LEVEL_DEFAULT;
   S.contrast = p.contrast || CONTRAST_DEFAULT;
   S.relief = true;
-  setPalette(p.c || PAL_DEFAULT);
+  if(palKey === 'preset') setPalette(p.c || PAL_DEFAULT);
   S.growOn = false; S.g = 1; S.dil = 0;
   seedField(p.seed === undefined ? 2 : p.seed);
   if(p.dots) scatterDots(p.dots);
@@ -1661,6 +1714,21 @@ function setPalette(c){
   S.pal = 5;
   S.c0 = hx(c[0]); S.c1 = hx(c[1]); S.c2 = hx(c[2]); S.mid = c[3];
 }
+function presetColours(){
+  return (S.preset >= 0 && PRESETS[S.preset] && PRESETS[S.preset].c) || PAL_DEFAULT;
+}
+/* A chosen palette outlives a change of scene: only a reader who has left the cards on
+   "The preset's own" gets the new preset's colours. */
+function applyPalKey(k){
+  var e = null, i;
+  for(i = 0; i < PALETTES.length; i++) if(PALETTES[i].k === k) e = PALETTES[i];
+  if(!e) return;
+  palKey = k;
+  if(e.k === 'preset') setPalette(presetColours());
+  else if(e.pal !== undefined) S.pal = e.pal;
+  else setPalette(e.c);
+  syncPalUI();
+}
 setPalette(PAL_DEFAULT);
 /* the panel has to agree with what the preset just did */
 function syncPanel(){
@@ -1668,7 +1736,7 @@ function syncPanel(){
   ['growRate','growMax'].forEach(function(id){ $(id).disabled = !S.growOn; });
   ['rowGrowRate','rowGrowMax'].forEach(function(id){ $(id).classList.toggle('off', !S.growOn); });
   $('ratioSl').value = S.ratio; $('ratioVal').textContent = S.ratio.toFixed(2) + '\u00d7';
-  $('palSel').value = String(S.pal);
+  syncPalUI();
   $('levelSl').value = S.level; $('levelVal').textContent = S.level.toFixed(3);
   $('contrastSl').value = S.contrast; $('contrastVal').textContent = S.contrast.toFixed(2);
   $('reliefOn').checked = S.relief;
@@ -1688,6 +1756,62 @@ function showDrawHint(on){
   var h = $('drawhint'); if(!h) return;
   drawHintOn = on;
   h.classList.toggle('on', on);
+}
+/* ---- palette cards ---- */
+function hex3(v){
+  var t = '#', i, q;
+  for(i = 0; i < 3; i++){
+    q = Math.round(Math.max(0, Math.min(1, v[i]))*255).toString(16);
+    t += q.length < 2 ? '0' + q : q;
+  }
+  return t;
+}
+function ramp3(c0, c1, c2, mid){
+  return 'linear-gradient(90deg,' + c0 + ' 0%,' + c1 + ' ' + Math.round(mid*100) + '%,' + c2 + ' 100%)';
+}
+function rampOf(e){
+  if(e.css) return 'linear-gradient(90deg,' + e.css.join(',') + ')';
+  var c = e.c;
+  return ramp3(c[0], c[1], c[2], c[3]);
+}
+function buildPals(){
+  var wrap = $('pals');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  PALETTES.forEach(function(e){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pal' + (e.wide ? ' wide' : '');
+    b.dataset.pal = e.k;
+    b.innerHTML = '<span class="ramp"></span><span class="pn"></span>';
+    b.querySelector('.pn').textContent = e.n;
+    if(e.k !== 'preset') b.querySelector('.ramp').style.background = rampOf(e);
+    b.addEventListener('click', function(){ applyPalKey(e.k); });
+    wrap.appendChild(b);
+  });
+  syncPalUI();
+}
+/* editing a colour by hand is its own state: no card is in force any more */
+function goCustom(){
+  S.pal = 5;
+  palKey = '';
+  syncPalUI();
+}
+function syncPalUI(){
+  var wrap = $('pals'), i, p;
+  if(!wrap || !wrap.children.length) return;
+  p = presetColours();
+  wrap.children[0].querySelector('.ramp').style.background = ramp3(p[0], p[1], p[2], p[3]);
+  for(i = 0; i < wrap.children.length; i++)
+    wrap.children[i].setAttribute('aria-pressed', String(wrap.children[i].dataset.pal === palKey));
+  document.body.classList.toggle('fixed-pal', S.pal !== 5);
+  if(S.pal === 5){
+    $('swC0').value = hex3(S.c0);
+    $('swC1').value = hex3(S.c1);
+    $('swC2').value = hex3(S.c2);
+    $('midSl').value = S.mid;
+    $('midVal').textContent = S.mid.toFixed(2);
+  }
 }
 function bindRange(id, valId, get, set, render){
   var el = $(id);
@@ -1874,9 +1998,11 @@ function wire(){
     try{ allocGrid(parseInt(this.value,10)); seedField(S.seedMode); }
     catch(e){ fail(e.message); }
   });
-  $('palSel').addEventListener('change', function(){
-    S.pal = parseInt(this.value,10);
-    if(S.pal === 5) setPalette(S.preset >= 0 ? (PRESETS[S.preset].c || PAL_DEFAULT) : PAL_DEFAULT);
+  buildPals();
+  bindRange('midSl','midVal', function(){ return S.mid; },
+    function(v){ S.mid = v; goCustom(); }, function(){ return S.mid.toFixed(2); });
+  ['swC0','swC1','swC2'].forEach(function(id, n){
+    $(id).addEventListener('input', function(){ S['c' + n] = hx(this.value); goCustom(); });
   });
   $('reliefOn').addEventListener('change', function(){ S.relief = this.checked; });
 

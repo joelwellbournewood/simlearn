@@ -110,6 +110,9 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
 .sel .acts button:hover{border-color:var(--line-strong)}
 body.clean .brand,body.clean .panel,body.clean .hud,body.clean .hint,body.clean .sel{display:none}
+body.clean .actions .icon-btn:not(#b-clean){display:none}
+body.clean .actions{opacity:.3;transition:opacity .3s}
+body.clean .actions:hover,body.clean .actions:focus-within{opacity:1}
 .about-inner p.keys{color:var(--muted);font-size:12.5px}
 dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
   width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}

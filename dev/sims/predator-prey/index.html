@@ -349,6 +349,8 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   }
   @media (max-width:1060px){
     body{max-width:720px}
+    /* the corner bar is fixed at the top right: the heading stops short of it */
+    header{padding-right:196px}
     /* single column: the simulation itself goes first, controls underneath */
     .layout{display:flex;flex-direction:column}
     .col-c{order:-1;margin-bottom:14px;position:sticky;top:0;z-index:6;
@@ -377,6 +379,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
      the two control columns sit beside it, each scrolling on its own. */
   @media (max-width:1060px) and (orientation:landscape) and (max-height:620px){
     html{height:100%}
+    /* no heading here, and the right column runs to the top, so the bar moves to the
+       bottom left where it floats over the field instead of over the controls */
+    body .actions{top:auto;right:auto;left:calc(10px + env(safe-area-inset-left,0px));
+             bottom:calc(8px + env(safe-area-inset-bottom))}
     body{max-width:none;height:100%;overflow:hidden;display:flex;flex-direction:column;
          padding:8px calc(10px + env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom))
                  calc(10px + env(safe-area-inset-left,0px))}
@@ -509,6 +515,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
   body.bare:not(.is-full) footer,
   body.bare:not(.is-full) .side,
   body.bare:not(.is-full) .field-tag{display:none}
+  /* chrome off means the whole corner bar goes too, bar the eye that brings it back */
+  body.bare .actions .icon-btn:not(#fsMenus){display:none}
+  body.bare .actions:not(.idle){opacity:.3;transition:opacity .3s}
+  body.bare .actions:hover,body.bare .actions:focus-within{opacity:1}
   @media (min-width:1061px){
     body.bare:not(.is-full) .layout{grid-template-columns:minmax(0,1fr)}
     body.bare:not(.is-full) .field-wrap{width:100%;height:100%}
