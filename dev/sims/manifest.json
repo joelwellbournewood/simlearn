@@ -136,7 +136,7 @@
       "Monte Carlo"
     ],
     "difficulty": "Beginner",
-    "description": "Five machines built from raw randomness: a Galton board you can drag apart, sampling from height, wealth and asteroid sizes, confidence intervals you can audit, a screening test where the two ways of being wrong trade against each other, and darts that measure pi.",
+    "description": "Four machines built from raw randomness: a Galton board you can drag apart, sampling from height, wealth and asteroid sizes, a screening test where the two ways of being wrong trade against each other, and an algorithm that computes pi to as many decimal places as you ask for, one dart at a time.",
     "status": "live",
     "hook": "Order rises out of randomness",
     "visible": true
