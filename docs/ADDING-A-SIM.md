@@ -69,9 +69,8 @@ Requires: 0 JS errors, no inner scrollbars, non-trivial canvas ink coverage.
 
 ## The shared shell (added 2026-09-05)
 
-`sims/gravity/index.html`, `sims/double-pendulum/index.html` and
-`sims/lorenz/index.html` share a byte-identical `<head>` CSS block apart from the
-title and meta description. Copy that block when writing a new sim rather than
+`sims/gravity/index.html` and `sims/double-pendulum/index.html` share a
+byte-identical `<head>` CSS block apart from the title and meta description. Copy that block when writing a new sim rather than
 starting from the old two-column layout, which is deprecated. It gives you, for
 free: the tokens, the full-bleed stage with vignette, the floating glass panel, the
 `.about-btn` and `dialog.about`, `.preset` cards, the `.tip` bubble, restyled

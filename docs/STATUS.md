@@ -1,6 +1,8 @@
 # Status
 
-Last updated 2026-09-05.
+Last updated 2026-09-14. Note: the Lorenz attractor and the optical bench
+(`optics-lens`) were removed from the site on 2026-09-14 at the human's request,
+so the notes below that mention them are history, not the current menu.
 
 Live at https://simlearn.ai. Eleven sims, all loading with zero JS errors and no
 page scroll at 1600x900. Verified with `tools/qa.py 1600 900`.
@@ -17,7 +19,6 @@ one-line tag, and a "?" tooltip on every control.
 | Hare & Lynx (predator-prey) | yes | Reworked run 20. Modal explainer, 5 preset cards, 10 tooltips, minimalist lynx dart glyph. Left column overflows by 67px at 1366x768 and 35px at 1280x800 and scrolls internally there; zero overflow at 1600x900 and above. |
 | N-Body Gravity | yes | Rewritten run 22. Velocity Verlet with softening and substeps, energy drift readout, 5 presets, mass-coloured bodies with glow, tapered trails, starfield. |
 | Double Pendulum | yes | Rewritten run 22. RK4, energy drift under 0.1% over a minute, up to 220 copies released across a stated angular spread, live divergence readout. |
-| Lorenz Attractor | yes | Rewritten run 22. RK4, real yaw and pitch rotation with perspective, drag to turn, fixed points marked, presets walking the bifurcation from settling at rho 14 to the periodic window at 100.5. |
 | Epidemic (SIR) | partial | v3 content pass done in an earlier run. Has not been through the three-rule standard. |
 | Segregation (Schelling) | no | Original build. Works, renders densely, but legacy chrome and no modal or presets. |
 | Traffic | no | Original build. Same. |

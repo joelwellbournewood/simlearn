@@ -112,17 +112,6 @@ const GLYPH = {
         <g class="dp-a2"><path d="M196 58 L158 110"/><circle class="fill2" cx="158" cy="110" r="5.4"/></g>
       </g>${dot(140, 14, 3.4)}`;
   },
-  'optics-lens'() {
-    const rays = [-26, 0, 26].map(dy =>
-      `<path class="${dy ? 'soft' : ''}" d="M62 ${64 + dy * .55} L140 ${64 + dy} L216 64"/>`).join('');
-    addAnim(`@keyframes opRay{0%{transform:translateX(0);opacity:0}10%{opacity:1}` +
-      `88%{opacity:1}100%{transform:translateX(154px);opacity:0}}` +
-      `.op-ray{animation:opRay 2.8s linear infinite}`);
-    return `<path class="soft" d="M40 64 H244" stroke-dasharray="2 5"/>
-      <path d="M140 26 C160 44 160 84 140 102 C120 84 120 44 140 26z" opacity=".9"/>
-      ${rays}<path class="accent2" d="M62 64 V36 M56 43 l6-7 6 7"/>${dot(216, 64, 3.4, 'fill2')}
-      <circle class="fillA op-ray" cx="62" cy="64" r="3.2"/>`;
-  },
   epidemic() {
     const N = [[70, 40], [110, 78], [150, 34], [190, 72], [228, 42], [96, 24], [172, 100], [58, 92], [212, 100]];
     const E = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 2], [1, 7], [3, 6], [6, 8], [4, 8]];
@@ -190,19 +179,6 @@ const GLYPH = {
       <circle class="fillA gv-in" cx="0" cy="0" r="2.6" style="transform:translate(${b[0].toFixed(2)}px,${b[1].toFixed(2)}px)"/>
       <circle class="fill2" cx="${CX}" cy="${CY}" r="7"/>
       <circle class="soft accent2" cx="${CX}" cy="${CY}" r="13"/>`;
-  },
-  lorenz() {
-    let x = 1, y = 1, z = 20; const pts = [], dt = 0.006;
-    for (let i = 0; i < 4200; i++) {
-      const dx = 10 * (y - x), dy = x * (28 - z) - y, dz = x * y - (8 / 3) * z;
-      x += dx * dt; y += dy * dt; z += dz * dt;
-      if (i > 400) pts.push([x * 1.75, -z]);
-    }
-    const d = path(fit(pts, 34, 246, 12, 116));
-    addAnim(`@keyframes lzBead{from{stroke-dashoffset:0}to{stroke-dashoffset:-1040}}` +
-      `.lz-bead{animation:lzBead 8s linear infinite}`);
-    return `<path d="${d}" stroke-width="0.85" opacity=".55"/>
-      <path class="accent2 lz-bead" d="${d}" pathLength="1000" stroke-dasharray="34 1000" stroke-width="1.7"/>`;
   },
   'turing-patterns'() {
     /* Activator pulses run along the walls of the maze the model actually made. Red is
