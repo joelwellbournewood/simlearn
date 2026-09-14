@@ -72,3 +72,25 @@ and speed are the entire tactical vocabulary. Crowding, blocking, ambush, and sc
 fall out of contact, occupancy, and the scent field rather than being implemented. **Reversed
 by** nothing short of the ecology failing to produce visible conflict, which the first run
 already contradicts.
+
+## ADR-011. Plants grow from plants
+2026-09-14. Plant growth is logistic on the standing crop of the cell with a small seed rain
+on bare ground, and dispersal is the diffusion step that was already there. Constant seeding
+gave a uniform lawn that the herd stripped flat every day, with no refuge, no front, and no
+reason to walk anywhere. **Reversed if** a biome needs ground that regrows from nothing, in
+which case seed rain becomes a per biome number rather than a global one.
+
+## ADR-012. Hunters are kept rare by the price of a cub
+2026-09-14. A hunter needs `hunterBirth` times the birth energy of a plant eater, currently
+three. Every alternative brake tried first (lower energy yield per bite, higher hunter
+metabolism, prey flight) shifted the equilibrium without stopping the boom, because a hunter
+in a full herd can pay any running cost. Making the offspring expensive caps the numerical
+response directly, which is also what large predators do. **Reversed if** a scavenger or an
+omnivore diet class needs its own price, which would make this a per diet number.
+
+## ADR-013. Distance thins the detail and never the census
+2026-09-14. A body is drawn at no less than two pixels across whatever the zoom, and spines
+and other fine parts fade in above four pixels. Letting bodies fall under a pixel makes a
+crowd disappear at exactly the zoom where its shape is the interesting thing. **Reversed by**
+the crowd and field views from `docs/12-VISUAL-LANGUAGE.md`, which replace many small sprites
+with one texture and will take over below that size.

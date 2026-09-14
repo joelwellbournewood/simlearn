@@ -5,7 +5,7 @@ import { World } from '../src/core/world.js';
 let world = null, running = true, acc = 0, last = 0;
 let speed = 1;
 let inst = null;
-const FLOATS = 8;
+const FLOATS = 11;
 
 function build(seed, n, dayLength, worldEdge) {
   world = new World(seed, {
@@ -19,19 +19,26 @@ function build(seed, n, dayLength, worldEdge) {
   acc = 0; last = performance.now();
 }
 
+let nCarn = 0;
 function pack() {
   const w = world, n = w.count, x = w.x, y = w.y, vx = w.vx, vy = w.vy;
   const en = w.energy, rd = w.radius, dt = w.diet, ar = w.armour, ag = w.age;
+  const hu = w.hue, am = w.arm, lb = w.limbs, full = 1 / w.opt.satiety;
+  nCarn = 0;
   for (let i = 0, o = 0; i < n; i++, o += FLOATS) {
+    if (dt[i] > 0.5) nCarn++;
     inst[o] = x[i]; inst[o + 1] = y[i];
     inst[o + 2] = rd[i];
-    // hue: band by diet, drift inside the band by body size, which stands in for lineage
-    // until genomes carry a hue gene of their own.
-    inst[o + 3] = dt[i] > 0.5 ? (0.95 + rd[i] * 0.012) : (0.25 + rd[i] * 0.010);
-    inst[o + 4] = en[i] < 0 ? 0 : (en[i] > 14 ? 1 : en[i] / 14);   // saturation, energy
+    inst[o + 3] = hu[i];                                            // lineage colour, a gene
+    const e = en[i] * full;
+    inst[o + 4] = e < 0 ? 0 : (e > 1 ? 1 : e);                      // saturation, energy
     inst[o + 5] = Math.atan2(vy[i], vx[i]);
     inst[o + 6] = ar[i];
     inst[o + 7] = (ag[i] % 1024) / 1024;                            // beat phase
+    inst[o + 8] = am[i];                                            // armament, spines
+    inst[o + 9] = lb[i];                                            // limb power, lobes
+    const a = ag[i] / 9000;
+    inst[o + 10] = a > 1 ? 1 : a;                                   // age, brightness
   }
   return n;
 }
@@ -57,7 +64,7 @@ self.onmessage = (e) => {
     const view = inst.subarray(0, n * FLOATS);
     const copy = new Float32Array(view);
     self.postMessage({
-      type: 'frame', n, tick: world.tick, light: world.stats.light,
+      type: 'frame', n, nCarn, tick: world.tick, light: world.stats.light,
       births: world.stats.births, deaths: world.stats.deaths, bites: world.stats.bites,
       simMs, edge: world.opt.worldW, field: sampleField(), buf: copy.buffer
     }, [copy.buffer]);

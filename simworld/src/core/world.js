@@ -22,17 +22,38 @@ export const DEFAULTS = {
   senseRadius: 24,        // also the spatial hash cell size
   dayLengthTicks: 1800,   // 60 s of real time at 30 Hz
   diffuse: 0.12, decay: 0.9985,
-  growthPerLight: 0.020,  // nutrient added per lit cell per tick
+  growthPerLight: 0.140,  // logistic growth rate of plant matter per lit cell per tick
+  seedSpread: 0.030,      // how far living plant matter creeps into bare ground each tick
+  seedRain: 0.15,         // and a little arrives on bare earth from nowhere, as it does
   drag: 0.86,
   push: 45,               // contact repulsion stiffness
   maxSpeed: 7,            // hard cap, keeps the contact solver from exploding
   thrust: 26,             // steering force towards a gradient
-  metabolism: 0.012,      // energy per tick at rest
+  metabolism: 0.008,      // energy per tick at rest
   moveCost: 0.00025,      // energy per unit of speed squared
   eatRate: 0.35,          // fraction of the cell's nutrient taken per tick
+  intakeMax: 0.06,        // and a mouth is only so wide: hard cap on energy eaten per tick
+  plantCap: 8,            // a cell of soil holds only so much living plant matter
+  satiety: 30,            // a full gut and a full fat store; eating slows towards this
+  hungerFloor: 0.12,      // a fed animal still drifts a little
   birthEnergy: 14, birthCost: 9, startEnergy: 6,
-  biteDamage: 0.9         // energy taken per unit of closing speed on contact
+  hunterBirth: 3.0,       // a cub costs more than a calf, and that is what keeps hunters rare
+  metabolismHunter: 1.0,  // teeth and muscle cost something to carry around
+  biteDamage: 0.9,        // energy taken per unit of closing speed on contact
+  biteYield: 0.35,        // of the energy taken, how much ends up inside the biter
+  nightVision: 0.35,      // how well a hunter tracks prey with the sun down
+  upkeepArm: 0.0020,      // energy per tick per unit of armament carried
+  upkeepArmour: 0.0030,   // energy per tick per unit of armour carried
+  upkeepLimb: 0.0015,     // energy per tick per unit of limb
+  hueDrift: 0.010,        // how far a child's colour may fall from its parent's
+  flee: 1.2               // how hard a plant eater runs from a hunter it can see
 };
+
+// Hue is not decoration and it is not free either: it is the only record of descent the
+// world keeps. A child's colour sits within hueDrift of its parent's, inside the band its
+// diet owns, so a clade becomes a colour family and a split becomes two clumps.
+export const HUE_BAND = { herb: [0.20, 0.44], carn: [0.90, 1.06] };
+export function bandFor(diet) { return diet > 0.5 ? HUE_BAND.carn : HUE_BAND.herb; }
 
 export class World {
   constructor(seed, opts = {}) {
@@ -47,6 +68,9 @@ export class World {
     this.radius = new Float32Array(cap);
     this.diet = new Float32Array(cap);   // 0 plant eater, 1 meat eater
     this.armour = new Float32Array(cap);
+    this.arm = new Float32Array(cap);    // armament: spine length, and the whole of bite
+    this.limbs = new Float32Array(cap);  // limb power: thrust, and what thrust costs
+    this.hue = new Float32Array(cap);    // lineage colour, drifting inside the diet band
     this.age = new Uint32Array(cap);
     this.count = 0;
     this.grid = new Grid(o.worldW, o.worldH, o.senseRadius, cap);
@@ -66,6 +90,10 @@ export class World {
       this.radius[i] = r.range(2.2, 4.5);
       this.diet[i] = r.f32() < 0.12 ? 1 : 0;
       this.armour[i] = r.range(0, 0.6);
+      this.arm[i] = r.range(0.6, 1.4);
+      this.limbs[i] = r.range(0.6, 1.4);
+      const b = bandFor(this.diet[i]);
+      this.hue[i] = r.range(b[0], b[1]);
       this.age[i] = 0;
     }
     for (let i = 0; i < this.food.a.length; i++) this.food.a[i] = r.f32() * 2;
@@ -82,20 +110,34 @@ export class World {
     const o = this.opt, n = this.count;
     const x = this.x, y = this.y, vx = this.vx, vy = this.vy;
     const en = this.energy, rad = this.radius, diet = this.diet, armour = this.armour;
+    const arm = this.arm, limbs = this.limbs;
     const W = o.worldW, H = o.worldH;
 
     // 1, 2: light drives growth, then the fields relax.
     const light = this.lightAt(this.tick);
     this.stats.light = light;
     const grow = o.growthPerLight * light;
-    if (grow > 0) { const fa = this.food.a; for (let i = 0; i < fa.length; i++) fa[i] += grow; }
-    this.food.diffuseDecay(o.diffuse * 0.25, 0.99995);
+    // Plants grow from plants. Ground grazed to bare earth stays bare until something
+    // seeds it from a neighbouring cell, which is what makes a grazing front a front and
+    // not a tide, and what makes a refuge worth standing in.
+    if (grow > 0) {
+      const fa = this.food.a, invCap = 1 / o.plantCap;
+      for (let i = 0; i < fa.length; i++) {
+        const f = fa[i];
+        if (f < o.plantCap) fa[i] = f + grow * (f + o.seedRain) * (1 - f * invCap);
+      }
+    }
+    this.food.diffuseDecay(o.seedSpread, 0.99995);
     this.scent.diffuseDecay(o.diffuse, o.decay);
 
     // 3
     this.grid.build(x, y, n);
     const g = this.grid, cols = g.cols, rows = g.rows, start = g.start, order = g.order;
     const R = o.senseRadius, R2 = R * R;
+    // A hunter runs on sight, and sight runs on the sun. With it down, prey two body
+    // lengths away is a smell and a guess, which is the whole reason night is survivable.
+    const hunt = o.nightVision + (1 - o.nightVision) * light;
+    const yield_ = o.biteYield, sat = 1 / o.satiety, hf = o.hungerFloor;
     let bites = 0;
 
     // 4, 5: one neighbour pass does sensing, contact push and damage. Newton's third law
@@ -134,16 +176,28 @@ export class World {
                   // mouth meets how little armour. Nothing here is an "attack" verb.
                   const closing = (vx[i] - vx[j]) * ux + (vy[i] - vy[j]) * uy;
                   if (closing > 0) {
-                    const bi = diet[i] * closing * o.biteDamage * (1 - armour[j] * 0.8);
-                    const bj = diet[j] * closing * o.biteDamage * (1 - armour[i] * 0.8);
-                    if (bi > 0) { const t = bi < en[j] ? bi : en[j]; en[j] -= t; en[i] += t * 0.7; bites++; }
-                    if (bj > 0) { const t = bj < en[i] ? bj : en[i]; en[i] -= t; en[j] += t * 0.7; bites++; }
+                    const api = clamp(1 - en[i] * sat, hf, 1), apj = clamp(1 - en[j] * sat, hf, 1);
+                    const bi = diet[i] * arm[i] * api * closing * o.biteDamage * (1 - armour[j] * 0.8);
+                    const bj = diet[j] * arm[j] * apj * closing * o.biteDamage * (1 - armour[i] * 0.8);
+                    if (bi > 0 && en[j] > 0) { const t = bi < en[j] ? bi : en[j]; en[j] -= t; en[i] += t * yield_; bites++; }
+                    if (bj > 0 && en[i] > 0) { const t = bj < en[i] ? bj : en[i]; en[i] -= t; en[j] += t * yield_; bites++; }
                   }
                 } else {
                   // Sensing at a distance: prey leaks scent, meat eaters climb the gradient.
                   const w = (1 - d / R);
-                  if (diet[i] > 0.5 && diet[j] < 0.5) { vx[i] += ux * o.thrust * w * DT; vy[i] += uy * o.thrust * w * DT; }
-                  if (diet[j] > 0.5 && diet[i] < 0.5) { vx[j] -= ux * o.thrust * w * DT; vy[j] -= uy * o.thrust * w * DT; }
+                  if (diet[i] > 0.5 && diet[j] < 0.5) {
+                    const t = o.thrust * hunt * limbs[i] * clamp(1 - en[i] * sat, hf, 1) * w * DT;
+                    vx[i] += ux * t; vy[i] += uy * t;
+                    // and the one being looked at runs, on the same eyes and the same sun.
+                    const f = o.thrust * o.flee * hunt * limbs[j] * w * DT;
+                    vx[j] += ux * f; vy[j] += uy * f;
+                  }
+                  if (diet[j] > 0.5 && diet[i] < 0.5) {
+                    const t = o.thrust * hunt * limbs[j] * clamp(1 - en[j] * sat, hf, 1) * w * DT;
+                    vx[j] -= ux * t; vy[j] -= uy * t;
+                    const f = o.thrust * o.flee * hunt * limbs[i] * w * DT;
+                    vx[i] -= ux * f; vy[i] -= uy * f;
+                  }
                 }
               }
             }
@@ -159,10 +213,13 @@ export class World {
     const foodF = this.food, scentF = this.scent;
     for (let i = 0; i < n; i++) {
       const u = x[i] * invW, v = y[i] * invH;
+      // Hunger is the only thing that makes an animal work. A full one coasts, which is
+      // why the herd goes quiet at night and why the pasture is still there at dawn.
+      const hunger = clamp(1 - en[i] / o.satiety, o.hungerFloor, 1);
       if (diet[i] < 0.5) {
         const gx = foodF.gradX(u, v), gy = foodF.gradY(u, v);
         const m = Math.sqrt(gx * gx + gy * gy);
-        if (m > 1e-6) { const s = o.thrust * DT / m; vx[i] += gx * s; vy[i] += gy * s; }
+        if (m > 1e-6) { const s = o.thrust * hunger * limbs[i] * DT / m; vx[i] += gx * s; vy[i] += gy * s; }
       }
       vx[i] *= o.drag; vy[i] *= o.drag;
       const s2 = vx[i] * vx[i] + vy[i] * vy[i];
@@ -173,11 +230,13 @@ export class World {
       x[i] = nxp; y[i] = nyp;
       const uu = nxp * invW, vv = nyp * invH;
       if (diet[i] < 0.5) {
-        en[i] += foodF.take(uu, vv, o.eatRate);
+        en[i] += foodF.takeUpTo(uu, vv, o.eatRate * hunger, o.intakeMax * hunger);
         scentF.deposit(uu, vv, 0.05);
       }
       const sp = vx[i] * vx[i] + vy[i] * vy[i];
-      en[i] -= o.metabolism + o.moveCost * sp * rad[i];
+      en[i] -= o.metabolism * (diet[i] > 0.5 ? o.metabolismHunter : 1)
+             + o.upkeepArm * arm[i] + o.upkeepArmour * armour[i] + o.upkeepLimb * limbs[i]
+             + o.moveCost * sp * rad[i] * limbs[i];
       this.age[i]++;
       if (en[i] <= 0) this._dead[ndead++] = i;
     }
@@ -190,17 +249,24 @@ export class World {
     const r = this.rng;
     const m = this.count;
     for (let i = 0; i < m; i++) {
-      if (en[i] >= o.birthEnergy && this.count < o.capacity) {
-        en[i] -= o.birthCost;
+      const hb = diet[i] > 0.5 ? o.hunterBirth : 1;
+      if (en[i] >= o.birthEnergy * hb && this.count < o.capacity) {
+        en[i] -= o.birthCost * hb;
         const j = this.count++;
         x[j] = x[i] + r.range(-2, 2); y[j] = y[i] + r.range(-2, 2);
         if (x[j] < 0) x[j] += W; else if (x[j] >= W) x[j] -= W;
         if (y[j] < 0) y[j] += H; else if (y[j] >= H) y[j] -= H;
         vx[j] = vx[i]; vy[j] = vy[i];
-        en[j] = o.birthCost - 2;
+        en[j] = o.birthCost * hb - 2;
         rad[j] = clamp(rad[i] + r.range(-0.25, 0.25), 1.6, 9);
         armour[j] = clamp(armour[i] + r.range(-0.05, 0.05), 0, 0.95);
+        this.arm[j] = clamp(this.arm[i] + r.range(-0.06, 0.06), 0.05, 3);
+        this.limbs[j] = clamp(this.limbs[i] + r.range(-0.06, 0.06), 0.15, 2.5);
         diet[j] = r.f32() < 0.002 ? 1 - diet[i] : diet[i];
+        const b = bandFor(diet[j]);
+        const h = diet[j] === diet[i] ? this.hue[i] + r.range(-o.hueDrift, o.hueDrift)
+                                      : r.range(b[0], b[1]);
+        this.hue[j] = clamp(h, b[0], b[1]);
         this.age[j] = 0;
         this.stats.births++;
       }
@@ -215,6 +281,7 @@ export class World {
       this.vx[i] = this.vx[last]; this.vy[i] = this.vy[last];
       this.energy[i] = this.energy[last]; this.radius[i] = this.radius[last];
       this.diet[i] = this.diet[last]; this.armour[i] = this.armour[last];
+      this.arm[i] = this.arm[last]; this.limbs[i] = this.limbs[last]; this.hue[i] = this.hue[last];
       this.age[i] = this.age[last];
     }
   }
@@ -229,6 +296,7 @@ export class World {
     const n = this.count;
     mix(this.x, n); mix(this.y, n); mix(this.vx, n); mix(this.vy, n);
     mix(this.energy, n); mix(this.radius, n); mix(this.diet, n); mix(this.armour, n);
+    mix(this.arm, n); mix(this.limbs, n); mix(this.hue, n);
     mix(this.food.a, this.food.a.length); mix(this.scent.a, this.scent.a.length);
     mix(this.rng.s, 4);
     h ^= n; h = Math.imul(h, 0x01000193) >>> 0;

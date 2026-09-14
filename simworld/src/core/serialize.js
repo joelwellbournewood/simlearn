@@ -3,8 +3,8 @@
 // as flat typed arrays, which is the whole reason for structure of arrays.
 import { World } from './world.js';
 const MAGIC = 0x53574c44; // "SWLD"
-const VERSION = 1;
-const AGENT_ARRAYS = ['x', 'y', 'vx', 'vy', 'energy', 'radius', 'diet', 'armour'];
+const VERSION = 2;   // v2 added the armament, limb and lineage colour genes
+const AGENT_ARRAYS = ['x', 'y', 'vx', 'vy', 'energy', 'radius', 'diet', 'armour', 'arm', 'limbs', 'hue'];
 
 export function saveWorld(w) {
   const n = w.count;

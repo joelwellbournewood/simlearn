@@ -105,3 +105,14 @@ above is carried by the creature's own appearance, and the panel is for the thin
 cannot show, which is history: population over time, lineage, energy in the whole system.
 The one exception is inspection, where clicking a creature opens a readout of its genome,
 because that is the player asking a direct question.
+
+
+## Bound in the renderer as of 2026-09-14
+
+Hue is now a real gene carried per animal (`world.hue`), drifting by up to `hueDrift` at each
+birth inside the band its diet owns, saved in the file, and read straight into the instance
+buffer. Saturation is energy over satiety, brightness falls by a third across a life, the
+limb gene sets how many lobes a body has and how far they swing, the armament gene sets how
+many spines it carries and how far they stand out, and outline weight is armour. Eleven
+floats per animal go to the GPU each frame. The rest of the table in this document is still
+waiting on the morphotype atlas.

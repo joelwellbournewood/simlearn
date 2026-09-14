@@ -39,6 +39,15 @@ export class Field {
     this.a[i] -= got;
     return got;
   }
+  // A mouth is only so wide: take a fraction of what is in the cell, but never more than
+  // cap in one tick, so a cell cannot be stripped bare by the first animal to reach it.
+  takeUpTo(u, v, frac, cap) {
+    const x = (u * this.w) | 0, y = (v * this.h) | 0, i = y * this.w + x;
+    let got = this.a[i] * frac;
+    if (got > cap) got = cap;
+    this.a[i] -= got;
+    return got;
+  }
   // Gradient by central difference on the torus, in field cells.
   gradX(u, v) {
     const x = (u * this.w) | 0, y = (v * this.h) | 0, r = y * this.w;

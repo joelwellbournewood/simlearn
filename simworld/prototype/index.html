@@ -34,9 +34,9 @@
 <div id="stage"><canvas id="c"></canvas></div>
 <div class="panel">
   <h1>SimWorld M0</h1>
-  <p class="sub">Deterministic core, one worker, instanced WebGL2. Nothing here is decoration.</p>
-  <label>Starting population <b id="nv">20000</b></label>
-  <input id="n" type="range" min="2000" max="80000" step="2000" value="20000">
+  <p class="sub">Grass grows where grass is. Herds graze it down and run from hunters. Hunters run on daylight. Nothing here is decoration.</p>
+  <label>Starting population <b id="nv">12,000</b></label>
+  <input id="n" type="range" min="2000" max="60000" step="2000" value="12000">
   <label>Day length, seconds <b id="dv">60</b></label>
   <input id="d" type="range" min="10" max="180" step="5" value="60">
   <div class="btns">
@@ -45,12 +45,17 @@
   </div>
   <div style="margin-top:12px">
     <div class="row"><span>population</span><span id="s-pop">0</span></div>
+    <div class="row"><span>hunters</span><span id="s-carn">0</span></div>
     <div class="row"><span>ms per tick</span><span id="s-ms">0</span></div>
     <div class="row"><span>frames per second</span><span id="s-fps">0</span></div>
     <div class="row"><span>light</span><span id="s-light">0</span></div>
     <div class="row"><span>births / deaths</span><span id="s-bd">0</span></div>
     <div class="row"><span>contacts this tick</span><span id="s-bite">0</span></div>
     <div class="row"><span>day</span><span id="s-day">1</span></div>
+    <div class="row"><span>zoom</span><span id="s-zoom">1.0x</span></div>
+  </div>
+  <div style="margin-top:10px">
+    <p class="sub" style="margin:0">Drag to walk the ground, wheel to close in, R to pull back out, space to hold time still.</p>
   </div>
 </div>
 <div id="err"></div>
@@ -70,22 +75,32 @@ layout(location=4) in float aSat;
 layout(location=5) in float aHead;
 layout(location=6) in float aArmour;
 layout(location=7) in float aPhase;
+layout(location=8) in float aArm;
+layout(location=9) in float aLimbs;
+layout(location=10) in float aAge;
 uniform vec2 uView;      // world units visible
 uniform vec2 uOrigin;
-out vec2 vLocal; out float vHue; out float vSat; out float vArmour; out float vPhase; out float vSize;
+uniform float uPxPerUnit;
+out vec2 vLocal; out float vHue; out float vSat; out float vArmour; out float vPhase;
+out float vSize; out float vArm; out float vLimbs; out float vAge; out float vPx;
 void main(){
   float pad = 3.0;
-  vec2 world = aPos + aCorner * aSize * pad;
+  // Far out, a body would fall under one pixel and the crowd would stop existing. Hold it
+  // at two pixels instead, so distance thins the detail and never the census.
+  float size = max(aSize, 2.0 / max(uPxPerUnit, 0.0001));
+  vec2 world = aPos + aCorner * size * pad;
   vec2 ndc = (world - uOrigin) / uView * 2.0 - 1.0;
   gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
   float c = cos(aHead), s = sin(aHead);
   vLocal = mat2(c, -s, s, c) * aCorner * pad;
   vHue = aHue; vSat = aSat; vArmour = aArmour; vPhase = aPhase; vSize = aSize;
+  vArm = aArm; vLimbs = aLimbs; vAge = aAge; vPx = size * uPxPerUnit;
 }`;
 
 const FS = `#version 300 es
 precision highp float;
-in vec2 vLocal; in float vHue; in float vSat; in float vArmour; in float vPhase; in float vSize;
+in vec2 vLocal; in float vHue; in float vSat; in float vArmour; in float vPhase;
+in float vSize; in float vArm; in float vLimbs; in float vAge; in float vPx;
 uniform float uLight; uniform float uTime; uniform float uPx;
 out vec4 frag;
 vec3 hsv(float h, float s, float v){
@@ -98,14 +113,23 @@ void main(){
   // core pulse: slower in the dark, because metabolism falls with the temperature
   float beat = sin((uTime * (0.6 + 1.8 * uLight) + vPhase * 6.2831) * 3.0);
   float body = 1.0 + 0.05 * beat;
-  // limbs: lobes around the rim, beating
-  float lobes = 1.0 + 0.16 * sin(ang * 5.0 + beat * 1.2);
+  // Limbs are the limb gene: how many, how far they swing, and therefore how fast the
+  // animal can run and how much of its food goes on running.
+  float nLobe = floor(3.0 + vLimbs * 3.0);
+  float lobes = 1.0 + (0.08 + 0.14 * vLimbs) * sin(ang * nLobe + beat * 1.2);
   float edge = body * lobes;
+  // Armament is spines. A thing with long spines is a thing that has been paying for them.
+  float detail = smoothstep(4.0, 9.0, vPx);
+  float nSpine = floor(5.0 + min(vArm, 2.5) * 4.0);
+  float spine = pow(max(0.0, cos(ang * nSpine)), 10.0);
+  edge += spine * min(vArm, 2.0) * 0.34 * detail;
   float aa = max(fwidth(r), 0.001);
   float inside = 1.0 - smoothstep(edge - aa * 2.0, edge + aa, r);
   if (inside <= 0.001) discard;
   float rim = smoothstep(edge - 0.30 - vArmour * 0.55, edge, r);
-  vec3 col = hsv(vHue, 0.35 + 0.55 * vSat, 0.30 + 0.55 * vSat);
+  // Age is the light going out of it: an old animal is a duller animal.
+  float wear = 1.0 - 0.34 * vAge;
+  vec3 col = hsv(vHue, 0.35 + 0.55 * vSat, (0.30 + 0.55 * vSat) * wear);
   // night: colour cools and dims, and low energy bodies glow faintly with their own light
   vec3 lit = col * (0.34 + 0.66 * uLight) + vec3(0.02, 0.07, 0.09) * (1.0 - uLight);
   vec3 rimCol = mix(lit * 1.7, vec3(0.92, 0.96, 0.94), vArmour * 0.7);
@@ -117,7 +141,8 @@ const GVS = `#version 300 es
 precision highp float;
 layout(location=0) in vec2 aCorner;
 out vec2 vUv;
-void main(){ vUv = aCorner * 0.5 + 0.5; gl_Position = vec4(aCorner.x, -aCorner.y, 0.0, 1.0); }`;
+uniform vec4 uCam;   // origin xy, span xy, all in world fractions
+void main(){ vUv = uCam.xy + (aCorner * 0.5 + 0.5) * uCam.zw; gl_Position = vec4(aCorner.x, -aCorner.y, 0.0, 1.0); }`;
 
 const GFS = `#version 300 es
 precision highp float;
@@ -147,11 +172,11 @@ function program(vs, fs) {
 }
 
 let prog, gprog, vao, gvao, instBuf, fieldTex, U = {}, GU = {};
-const FLOATS = 8;
+const FLOATS = 11;
 function initGL() {
   prog = program(VS, FS); gprog = program(GVS, GFS);
-  for (const k of ['uView', 'uOrigin', 'uLight', 'uTime', 'uPx']) U[k] = gl.getUniformLocation(prog, k);
-  for (const k of ['uField', 'uLight']) GU[k] = gl.getUniformLocation(gprog, k);
+  for (const k of ['uView', 'uOrigin', 'uLight', 'uTime', 'uPx', 'uPxPerUnit']) U[k] = gl.getUniformLocation(prog, k);
+  for (const k of ['uField', 'uLight', 'uCam']) GU[k] = gl.getUniformLocation(gprog, k);
   const quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
   const qb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qb); gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
   vao = gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -159,12 +184,14 @@ function initGL() {
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   instBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
   const stride = FLOATS * 4;
-  const layout = [[1, 2, 0], [2, 1, 8], [3, 1, 12], [4, 1, 16], [5, 1, 20], [6, 1, 24], [7, 1, 28]];
+  const layout = [[1, 2, 0], [2, 1, 8], [3, 1, 12], [4, 1, 16], [5, 1, 20], [6, 1, 24], [7, 1, 28],
+                  [8, 1, 32], [9, 1, 36], [10, 1, 40]];
   for (const [loc, size, off] of layout) {
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, off);
     gl.vertexAttribDivisor(loc, 1);
   }
+  GU.uCam = gl.getUniformLocation(gprog, 'uCam');
   gvao = gl.createVertexArray(); gl.bindVertexArray(gvao);
   gl.bindBuffer(gl.ARRAY_BUFFER, qb);
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -187,14 +214,59 @@ function resize() {
   if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; gl.viewport(0, 0, w, h); }
 }
 
+// The camera. Zoom is how much of the world edge fits across the canvas: 1 is all of it.
+const cam = { x: 0, y: 0, z: 1 };
+function viewSpan() { return edge / cam.z; }
+function clampCam() {
+  const v = viewSpan();
+  const lim = Math.max(0, edge - v);
+  cam.x = Math.min(lim, Math.max(0, cam.x));
+  cam.y = Math.min(lim, Math.max(0, cam.y));
+  if (v >= edge) { cam.x = (edge - v) / 2; cam.y = (edge - v) / 2; }
+}
+function zoomAt(px, py, factor) {
+  const rect = cv.getBoundingClientRect();
+  const v = viewSpan();
+  const wx = cam.x + ((px - rect.left) / rect.width) * v;
+  const wy = cam.y + ((py - rect.top) / rect.height) * v;
+  cam.z = Math.min(64, Math.max(1, cam.z * factor));
+  const nv = viewSpan();
+  cam.x = wx - ((px - rect.left) / rect.width) * nv;
+  cam.y = wy - ((py - rect.top) / rect.height) * nv;
+  clampCam();
+}
+cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
+let drag = null;
+cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const rect = cv.getBoundingClientRect(), v = viewSpan();
+  cam.x -= (e.clientX - drag.x) / rect.width * v;
+  cam.y -= (e.clientY - drag.y) / rect.height * v;
+  drag = { x: e.clientX, y: e.clientY };
+  clampCam();
+});
+cv.addEventListener('pointerup', () => { drag = null; });
+cv.addEventListener('pointercancel', () => { drag = null; });
+window.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') { cam.z = 1; clampCam(); }
+  else if (e.key === '+' || e.key === '=') zoomAt(innerWidth / 2, innerHeight / 2, 1.3);
+  else if (e.key === '-' || e.key === '_') zoomAt(innerWidth / 2, innerHeight / 2, 1 / 1.3);
+  else if (e.key === ' ') { e.preventDefault(); el('pause').click(); }
+});
+
 const worker = new Worker('worker.js', { type: 'module' });
 let latest = null, waiting = false, fps = 0, lastFrame = performance.now();
 let edge = 2048, dayTicks = 1800;
 
 function boot(seed) {
   const n = +document.getElementById('n').value;
-  edge = Math.round(2048 * Math.sqrt(n / 20000));
+  // Size the ground to the herd it can actually keep. Measured equilibrium is about 17
+  // animals per thousand square units, so spawning at that density starts the world near
+  // its own carrying capacity instead of blooming into it.
+  edge = Math.round(Math.sqrt(n / 0.017));
   dayTicks = Math.round(+document.getElementById('d').value * 30);
+  cam.z = 1; cam.x = 0; cam.y = 0;
   worker.postMessage({ cmd: 'init', seed, n, dayLength: dayTicks, edge });
 }
 
@@ -221,6 +293,7 @@ function draw(tms) {
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fieldTex);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 64, 64, gl.RED, gl.UNSIGNED_BYTE, m.field);
   gl.uniform1i(GU.uField, 0); gl.uniform1f(GU.uLight, m.light);
+  gl.uniform4f(GU.uCam, cam.x / edge, cam.y / edge, viewSpan() / edge, viewSpan() / edge);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
   const data = new Float32Array(m.buf);
@@ -228,15 +301,20 @@ function draw(tms) {
   gl.bindVertexArray(vao);
   gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-  gl.uniform2f(U.uView, m.edge, m.edge);
-  gl.uniform2f(U.uOrigin, 0, 0);
+  const span = viewSpan();
+  gl.uniform2f(U.uView, span, span);
+  gl.uniform2f(U.uOrigin, cam.x, cam.y);
   gl.uniform1f(U.uLight, m.light);
   gl.uniform1f(U.uTime, tms / 1000);
-  gl.uniform1f(U.uPx, cv.width / m.edge);
+  gl.uniform1f(U.uPx, cv.width / span);
+  gl.uniform1f(U.uPxPerUnit, cv.width / span);
   gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, m.n);
   gl.bindVertexArray(null);
 
   el('s-pop').textContent = m.n.toLocaleString('en-US');
+  el('s-carn').textContent = (m.nCarn || 0).toLocaleString('en-US') +
+    '  ' + (m.n ? (100 * m.nCarn / m.n).toFixed(1) : '0.0') + '%';
+  el('s-zoom').textContent = cam.z.toFixed(1) + 'x';
   el('s-ms').textContent = m.simMs.toFixed(2);
   el('s-fps').textContent = fps.toFixed(0);
   el('s-light').textContent = m.light.toFixed(2);

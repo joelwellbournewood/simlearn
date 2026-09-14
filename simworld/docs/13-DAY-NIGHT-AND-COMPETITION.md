@@ -78,3 +78,38 @@ Planned, all as contact or occupancy rather than as rules:
 The rule that keeps this honest: **no interaction may exist that a player cannot see the
 cause of.** If two creatures touch and one loses energy, the closing speed, the spines, and
 the outline weight were all on screen a moment before it happened.
+
+
+## What the night does now, measured
+
+The first build killed 95 per cent of the population every night. Trough over peak inside
+one day was 0.06, which is a bloom and a crash rather than a world. It is now **0.46**,
+measured on two seeds over eight simulated days, with plant eaters and hunters both still
+present at the end of every day (`/root/px/r99/m.mjs`, 1024 square world, 3000 spawned).
+
+Six changes did it, and every one of them is a thing an animal or a plant does.
+
+1. **Plants grow from plants.** Growth is logistic on the standing crop of a cell,
+   `g * (crop + seedRain) * (1 - crop / cap)`, so ground grazed to bare earth stays bare
+   until something seeds it from next door. This is what makes a grazing front a front,
+   and what makes an ungrazed patch worth walking to.
+2. **A mouth is only so wide.** Intake is capped at `intakeMax` energy per tick, so the
+   first animal to reach a patch cannot swallow it whole. Standing crop survives contact
+   with the herd: the pasture now cycles between 0.17 and 1.0 of its daily peak instead of
+   being stripped to nothing.
+3. **A fed animal coasts.** Eating, chasing, and biting are all scaled by hunger, which
+   falls towards a floor as energy approaches satiety. A full herd goes quiet, which is
+   why the pasture is still there at dawn.
+4. **A hunter runs on sight, and sight runs on the sun.** Chase strength scales with
+   `nightVision + (1 - nightVision) * light`, so the dark is a refuge and not an ambush.
+5. **Prey run.** A plant eater inside sense range of a hunter is pushed directly away
+   from it, on the same eyes and the same sun, scaled by its own limb gene. The chase is
+   now an arms race between two genes rather than a capture rate.
+6. **A cub costs three times a calf.** Hunters need `hunterBirth` times the birth energy
+   and pay `hunterBirth` times the birth cost. Without that one number the hunters boom
+   through the herd in a single night and then starve, which is what days 3 and 4 of the
+   first long run did.
+
+Left honest: over eight days the population still drifts down from about 15,000 to about
+9,000 while cycling, so the equilibrium is not proven flat. A fourteen day run on three
+seeds is the next reading.

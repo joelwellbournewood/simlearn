@@ -168,3 +168,20 @@ not later.**
   produced.
 - Targets, written down so a regression is visible: **50,000 organisms at 30 Hz on a
   desktop, 12,000 on a mid range phone, 3,000 sprites on screen at once.**
+
+
+## Re-measured 2026-09-14, after the ecology was balanced
+
+Two things moved. Prey flight and the gene reads added about 30 per cent to the pair loop,
+so a tick now costs 350 to 415 ns per organism at the old test density of 2.8 per hash cell,
+against 270 ns before. The larger effect is that **a balanced world is a denser world**: the
+equilibrium the ecology settles at is about 17 organisms per thousand square units, which is
+9.8 per hash cell, roughly three and a half times the density these numbers were first taken
+at. Cost is driven by density, so the practical desktop ceiling at equilibrium is about
+25,000 organisms in a 33 ms budget on one core, not 50,000.
+
+Three ways out, in the order they will be tried: shrink the sense radius, which is the hash
+cell size and therefore the neighbour count, and pay for it with a longer scent memory;
+spatial striping across workers, which the determinism plan already allows; and raising the
+per capita cost of living so the same ground supports fewer, larger animals. The prototype
+now opens at 12,000, which measures about 12 ms a tick on this machine.

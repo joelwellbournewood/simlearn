@@ -10,9 +10,14 @@ const TICKS = Number(process.argv[2] || 10000);
 const SEED = 0xC0FFEE;
 const CHECKS = [1, 100, 1000, 5000, TICKS];
 
+// A small dense world with a short day: births, deaths, contacts and several dawns inside
+// ten thousand ticks, and the whole gate still runs in about a minute.
+const CFG = { capacity: 60000, worldW: 512, worldH: 512, fieldW: 64, fieldH: 64, dayLengthTicks: 600 };
+const SPAWN = 1200;
+
 function run(seed, ticks, marks) {
-  const w = new World(seed, { capacity: 120000 });
-  w.spawn(8000);
+  const w = new World(seed, CFG);
+  w.spawn(SPAWN);
   const out = new Map();
   for (let t = 1; t <= ticks; t++) { w.step(); if (marks.includes(t)) out.set(t, w.hash()); }
   return { w, out };
@@ -30,11 +35,11 @@ for (const t of CHECKS) {
 
 // Save and load round trip: split the same run in half through a save file.
 const half = Math.floor(TICKS / 2);
-const c = new World(SEED, { capacity: 120000 });
-c.spawn(8000);
+const c = new World(SEED, CFG);
+c.spawn(SPAWN);
 for (let t = 0; t < half; t++) c.step();
 const blob = saveWorld(c);
-const d = loadWorld(blob, { capacity: 120000 });
+const d = loadWorld(blob, CFG);
 for (let t = half; t < TICKS; t++) d.step();
 const viaSave = d.hash();
 const straight = a.out.get(TICKS);
