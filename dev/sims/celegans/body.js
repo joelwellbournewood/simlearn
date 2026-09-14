@@ -7,9 +7,10 @@
 // Sanity: ~0.5 Hz, wavelength ~0.65 L, ratio 12 -> ~0.1-0.3 lengths/s; ratio 1 -> none.
 export const BTUNE = {
   NP: 49,          // body points (48 segments), worm length 1.0
-  kmax: 9.4,       // rad/length at full one-sided contraction (~1.5 turns whole body)
-  tauK: 0.09,      // s, muscle-to-shape lag (tissue viscoelasticity)
-  dragRatio: 12,   // normal/tangential drag (agar-like)
+  kmax: 15,        // rad/length at full tetanic contraction; the crawl wave runs at about a third of it, omega turns use the rest
+  tauK: 0.6,       // s, muscle-to-bend lag under agar load; this delay is what sets the crawl wavelength (Boyle 2012)
+  kBend: 5.0,      // 1/s, bending elasticity: cuticle stiffness smooths curvature along the body
+  dragRatio: 80,   // normal/tangential drag; on agar the worm cuts a groove and Cn/Ct is large (Berri 2009), which is why the tail follows the head's path
   sub: 4,          // substeps per frame
   curvSmooth: 0.05,// s, smoothing of curvature output (stretch receptors read it)
   margin: 0.06,    // dish boundary soft margin
@@ -57,6 +58,16 @@ export class WormBody {
         const r=(j+0.5)/(NP-2)*24, k0=Math.min(23,Math.floor(r)), k1=Math.min(23,k0+1), f=r-k0;
         const act=(dorsal[k0]-ventral[k0])*(1-f)+(dorsal[k1]-ventral[k1])*f;
         this.theta[j]+=(T.kmax*act*l0-this.theta[j])*g;
+      }
+      // cuticle bending elasticity: neighbouring segments share curvature,
+      // which strips the blocky row-quantized edges off the wave
+      const kb=Math.min(0.45,T.kBend*h);
+      const t0=this.theta[0];
+      let prev=t0;
+      for (let j=1;j<NP-3;j++){
+        const cur=this.theta[j];
+        this.theta[j]+=kb*(prev+this.theta[j+1]-2*cur);
+        prev=cur;
       }
       // 2) new shape at old base/heading; shape-change velocity
       this._build(this.sx,this.sy);

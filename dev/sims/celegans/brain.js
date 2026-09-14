@@ -4,23 +4,28 @@
 // ohmic gap junctions. Everything beyond the wiring data is tagged MODEL ASSUMPTION.
 export const TUNE = {
   tau: 0.12,        // membrane time constant, s
+  cmdTau: 0.45,     // command interneurons integrate slowly and hold plateau-like activity (sustained AVA during escape, Kawano 2011)
   gChem: 2.4,       // global chemical gain (weights normalized per neuron)
   gGap: 0.55,       // global gap junction gain
   theta: 0.3,       // sigmoid threshold
   slope: 5.0,       // sigmoid slope
-  gProp: 1.4,       // proprioceptive current gain into B/A motor classes
-  propWin: 9,       // curvature sample offset (interior points) ahead/behind
+  gProp: 2.6,       // proprioceptive current gain into B/A motor classes
+  motorChem: 0.15,   // chem input scale into B/A classes: their bending is proprioceptively dominated (Wen 2012; Boyle 2012)
+  propOn: 0.24,     // hysteresis threshold: motor classes are bistable switches (Boyle, Berri, Cohen 2012); a switch flips once per wave, so it cannot double the head's frequency
+  propOff: 3,       // sensing region ends this many points anterior of the neuron
+  propWa: 1.15,     // weight of anterior bend vs own bend; own-bend NEGATIVE feedback is what makes a latched coil flip itself loose
+  propWin: 12,       // curvature sample offset (interior points) ahead/behind
   oscTau: 0.14,     // head oscillator relaxation, s (MODEL ASSUMPTION)
   oscAdapt: 0.7,
   oscAdaptGain: 2.0, // adaptation overshoot destabilizes the fixed point so it oscillates   // head oscillator adaptation, s -> ~0.5 Hz cycle
   oscInh: 1.9,      // mutual inhibition between dorsal/ventral head groups
   oscDrive: 1.0,    // tonic arousal driving the oscillator
   oscToNeuron: 0.9, // oscillator current into SMB/SMD/RMD head neurons
-  oscSeed: 0.55,    // direct seed of first 3 muscle rows (MODEL ASSUMPTION)
+  oscSeed: 0.85,    // direct seed of first 3 muscle rows (MODEL ASSUMPTION)
   tonicF: 0.30,     // tonic drive to AVB/PVC: forward is the default state
   xInh: 1.5,        // AVA<->AVB soft flip-flop cross-inhibition (MODEL ASSUMPTION)
   revDecay: 0.5,    // touch-evoked reversal drive decay, s
-  omegaThresh: 1.1, // reversals longer than this end in an omega turn, s
+  omegaThresh: 0.7, // reversals longer than this end in an omega turn, s
   omegaDur: 0.9,    // omega ventral head bend duration, s
   omegaGain: 1.6,   // RIV/SMDV drive during omega
   senseAdapt: 2.8,  // chemosensory adaptation time constant, s
@@ -28,11 +33,16 @@ export const TUNE = {
   revOnOff: 0.9,    // OFF signal -> AVA drive (pirouette: Pierce-Shimomura 1999)
   klino: 0.5,       // ON suppresses turning amplitude (klinokinesis shortcut)
   gNMJ: 3.2,        // neuromuscular gain
+  mSlope: 5.0,      // muscle transfer slope: graded, not clipping (crawl wave is near-sinusoidal, Fang-Yen 2010)
+  seedRows: 6,      // oscillator seed tapers over this many anterior rows
   mRise: 0.14,      // muscle activation rise, s (calcium-like)
   mFall: 0.26,      // muscle activation decay, s
+  gapRect: 0.08,    // backward conductance of the rectifying command-motor gap junctions
+  iGain: 5.0,       // gain on persistent drives (they no longer accumulate frame by frame, which tied behaviour to the frame rate)
+  vCap: 2.5,        // graded membrane potentials saturate; unbounded V let saturated motor cells drag the command cells through gap junctions
   inputTau: 0.12,
   gAdapt: 2.1,      // spike-frequency adaptation strength: stops network-wide saturation
-  adaptTau: 1.4,    // adaptation time constant, s   // decay of setInput/touch injected currents, s
+  adaptTau: 2.6,    // adaptation time constant, s   // decay of setInput/touch injected currents, s
 };
 function sig(v){ return 1/(1+Math.exp(-TUNE.slope*(v-TUNE.theta))); }
 export class WormBrain {
@@ -105,6 +115,11 @@ export class WormBrain {
     for (let i=0;i<this.N;i++){ const n=this.names[i];
       isB.push(/^(DB|VB)\d/.test(n)); isA.push(/^(DA|VA)\d/.test(n)); isDorsal.push(/^D/.test(n)); }
     this.isB=isB; this.isA=isA; this.isDorsal=isDorsal;
+    // command interneurons hold state for the length of a run (Pierce-Shimomura
+    // 1999 runs last tens of seconds), so they do not adapt either
+    this.noAdapt=new Uint8Array(this.N);
+    for (const i of this.gAVB) this.noAdapt[i]=1;
+    for (const i of this.gAVA) this.noAdapt[i]=1;
   }
   reset(){
     const N=this.N;
@@ -115,6 +130,8 @@ export class WormBrain {
     this.command=1; this.revTime=0; this.omegaT=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
     this.A=new Float32Array(N); // adaptation state
+    this.propS=new Float32Array(N); // bistable proprioceptive switch state, -1/0/+1
+    this.Iper=new Float32Array(N); // persistent drives, rebuilt every step (frame-rate independent)
     for (let i=0;i<N;i++) this.act[i]=sig(0);
   }
   setInput(name,v){ const i=this.idx[name]; if (i!==undefined) this.Iext[i]+=v; }
@@ -137,16 +154,17 @@ export class WormBrain {
   _mean(g){ let s=0; for (const i of g) s+=this.act[i]; return g.length?s/g.length:0; }
   step(dt,curvature){
     const N=this.N, V=this.V, act=this.act, I=this.Iext, T=TUNE;
+    const P=this.Iper; P.fill(0); // persistent currents live one step, never accumulate
     this._t+=dt;
     const F=this._mean(this.gAVB), B=this._mean(this.gAVA);
     this.command=(F-B)/(F+B+1e-6);
     // command flip-flop: tonic forward + cross-inhibition (MODEL ASSUMPTION)
-    for (const i of this.gAVB) I[i]+=T.tonicF - T.xInh*B*0.9;
-    for (const i of this.gAVA) I[i]+=T.revOnOff*this.off - T.xInh*F*0.6;
+    for (const i of this.gAVB) P[i]+=T.tonicF - T.xInh*B*0.9;
+    for (const i of this.gAVA) P[i]+=T.revOnOff*this.off - T.xInh*F*0.6;
     // reversal bookkeeping and omega turn on resumption
     if (this.command<-0.08) this.revTime+=dt;
     else { if (this.revTime>T.omegaThresh) this.omegaT=T.omegaDur; this.revTime=0; }
-    if (this.omegaT>0){ this.omegaT-=dt; for (const i of this.gOmega) I[i]+=T.omegaGain; }
+    if (this.omegaT>0){ this.omegaT-=dt; for (const i of this.gOmega) P[i]+=T.omegaGain; }
     // head oscillator: mutual inhibition + adaptation (MODEL ASSUMPTION, Boyle-Cohen style CPG stand-in)
     const turn = Math.max(0.25, 1 - T.klino*this.on + 0.5*this.off); // climbers run straight, descenders cast
     const drv = T.oscDrive*Math.max(F,B*0.9);
@@ -156,8 +174,8 @@ export class WormBrain {
     this.adD+=(T.oscAdaptGain*this.oscD*turn-this.adD)*dt/T.oscAdapt;
     this.adV+=(T.oscAdaptGain*this.oscV*turn-this.adV)*dt/T.oscAdapt;
     const oD=Math.min(1,this.oscD), oV=Math.min(1,this.oscV+(this.omegaT>0?1.2:0));
-    for (const i of this.gHeadD) I[i]+=T.oscToNeuron*oD;
-    for (const i of this.gHeadV) I[i]+=T.oscToNeuron*oV;
+    for (const i of this.gHeadD) P[i]+=T.oscToNeuron*oD;
+    for (const i of this.gHeadV) P[i]+=T.oscToNeuron*oV;
     // proprioception: B cells feel bend anterior to themselves, A cells posterior
     // (Boyle, Berri, Cohen 2012; Wen 2012). Gated by the command groups.
     const NC=curvature.length, gF=Math.max(0,this.command), gB=Math.max(0,-this.command);
@@ -170,25 +188,52 @@ export class WormBrain {
       // yields zero drive, so a bend cannot hold itself; only a phase-offset
       // (traveling) pattern produces current, and it pulls the wave rearward.
       const own=Math.max(0,Math.min(NC-1,Math.round(this.bodyPos[i]*NC)));
+      // stretch receptors integrate over an anterior REGION (~0.2 L, Wen 2012),
+      // and the motor classes respond as bistable switches with hysteresis
+      // (Boyle, Berri, Cohen 2012): the anterior wave flips them, nothing else
+      // Each motor switch is a LOCAL relaxation element: bending its own side
+      // past threshold flips it off, and the bend just anterior biases when it
+      // flips back on. Negative own-feedback means no coil can hold itself,
+      // hysteresis means one flip per wave, the anterior term sets the phase.
       if (this.isB[i]&&gF>0.02){
-        const j=Math.max(0,own-T.propWin);
-        const k=Math.max(-1,Math.min(1,curvature[j]-curvature[own]));
-        c=T.gProp*gF*(this.isDorsal[i]?k:-k);
+        if (own<=T.propWin){ c=T.gProp*gF*(this.isDorsal[i]?oD-oV:oV-oD); } // head B-class rides the head oscillator (they receive the head motor circuit), giving the chain a clean source
+        else {
+        let s=0,m=0;
+        for(let j=own-T.propWin;j<own-T.propOff;j++){s+=curvature[j];m++;}
+        const sg=(T.propWa*(m?s/m:0)-curvature[own])*(this.isDorsal[i]?1:-1);
+        if (sg>T.propOn) this.propS[i]=1; else if (sg<-T.propOn) this.propS[i]=-1;
+        c=T.gProp*gF*this.propS[i];
+        }
       } else if (this.isA[i]&&gB>0.02){
-        const j=Math.min(NC-1,own+T.propWin);
-        const k=Math.max(-1,Math.min(1,curvature[j]-curvature[own]));
-        c=T.gProp*gB*(this.isDorsal[i]?k:-k);
+        if (own>=NC-1-T.propWin){ c=T.gProp*gB*(this.isDorsal[i]?oD-oV:oV-oD); } // reversal wave seeds at the tail and runs forward
+        else {
+        let s=0,m=0;
+        for(let j=own+T.propOff+1;j<=own+T.propWin;j++){s+=curvature[j];m++;}
+        const sg=(T.propWa*(m?s/m:0)-curvature[own])*(this.isDorsal[i]?1:-1);
+        if (sg>T.propOn) this.propS[i]=1; else if (sg<-T.propOn) this.propS[i]=-1;
+        c=T.gProp*gB*this.propS[i];
+        }
       }
-      I[i]+=c;
+      P[i]+=c;
     }
     // membrane update
     for (let i=0;i<N;i++){
       let s=0;
       for (let p=this.cPtr[i];p<this.cPtr[i+1];p++) s+=this.cW[p]*act[this.cSrc[p]];
+      if (this.isB[i]||this.isA[i]||this.noAdapt[i]) s*=T.motorChem; // proprioception and tonic state, not normalized chatter, drive the motor and command classes
       let g=0;
-      for (let p=this.gPtr[i];p<this.gPtr[i+1];p++) g+=this.gW[p]*(V[this.gSrc[p]]-V[i]);
-      const inp=T.gChem*this.cNorm[i]*s + T.gGap*this.gNorm[i]*g + I[i] - T.gAdapt*this.A[i];
-      V[i]+=(-V[i]+inp)*dt/T.tau;
+      for (let p=this.gPtr[i];p<this.gPtr[i+1];p++){
+        const src=this.gSrc[p]; let w=this.gW[p];
+        // the AVB-B and AVA-A gap junctions are rectifying (UNC-7/UNC-9 innexins,
+        // Kawano 2011): drive flows from the command hub into the motor chain,
+        // and the swinging motor cells cannot drag the command state around
+        if (this.noAdapt[i]&&(this.isB[src]||this.isA[src])) w*=T.gapRect;
+        g+=w*(V[src]-V[i]);
+      }
+      const ga=(this.isB[i]||this.isA[i]||this.noAdapt[i])?0:T.gAdapt; // motor switches and command cells do not adapt (Boyle 2012; Pierce-Shimomura 1999), adaptation made them self-oscillate
+      const inp=T.gChem*this.cNorm[i]*s + T.gGap*this.gNorm[i]*g + T.iGain*P[i] + I[i] - ga*this.A[i];
+      V[i]+=(-V[i]+inp)*dt/(this.noAdapt[i]?T.cmdTau:T.tau);
+      if (V[i]>T.vCap) V[i]=T.vCap; else if (V[i]<-T.vCap) V[i]=-T.vCap; // graded potentials saturate: bounded V keeps gap-junction currents physiological
     }
     const dec=Math.exp(-dt/T.inputTau);
     for (let i=0;i<N;i++){ act[i]=sig(V[i]); this.activity[i]=act[i]; I[i]*=dec; this.A[i]+=(act[i]-this.A[i])*dt/T.adaptTau; }
@@ -201,8 +246,11 @@ export class WormBrain {
       // dorsoventral differential drive: the two sides of one row share tone,
       // which cancels the structural dorsal excess (AS class has no ventral twin)
       const diff=T.gNMJ*(md[k]*this.dNorm[k]-mv[k]*this.vNorm[k]);
-      let d=sig(diff), v=sig(-diff);
-      if (k<3){ d=Math.min(1,d+T.oscSeed*oD); v=Math.min(1,v+T.oscSeed*oV); } // seed the wave (MODEL ASSUMPTION)
+      // graded transfer: real body-wall muscle tone is smooth, and the crawl
+      // wave is near-sinusoidal (Fang-Yen 2010), so the map must not clip
+      let d=1/(1+Math.exp(-T.mSlope*diff)), v=1/(1+Math.exp(T.mSlope*diff));
+      if (k<T.seedRows){ const w=0.5*(1+Math.cos(Math.PI*k/T.seedRows)); // smooth taper, no kink at the seam
+        d=Math.min(1,d+T.oscSeed*w*oD); v=Math.min(1,v+T.oscSeed*w*oV); } // seed the wave (MODEL ASSUMPTION)
       const rd=d>this.muscleDorsal[k]?T.mRise:T.mFall, rv=v>this.muscleVentral[k]?T.mRise:T.mFall;
       this.muscleDorsal[k]+=(d-this.muscleDorsal[k])*dt/rd;
       this.muscleVentral[k]+=(v-this.muscleVentral[k])*dt/rv;
