@@ -4,9 +4,18 @@ A gamified, persistent, evolving ecosystem. It is a branch of SimLearn in ambiti
 than in kind: the site's simulations are three minute demonstrations, and this one is meant
 to be left running, returned to, and argued with.
 
-**Status: planning. No engine code yet.** Everything here is written before the fact on
-purpose, because the expensive mistakes in a project like this are architectural and they
-are all made in week one.
+**Status: M0 done, 2026-09-14.** The deterministic core runs, replays, and saves, and
+`prototype/index.html` draws it. The planning documents were written before the code on
+purpose, because the expensive mistakes in a project like this are architectural and they are
+all made in week one. `docs/11-PERFORMANCE.md` is the one to read first: it is the measured
+answer to whether a CPU can carry this.
+
+Run the gates:
+
+```
+node simworld/tools/replay-check.mjs 10000   # determinism and save/load
+node simworld/tools/bench.mjs                # cost of a tick, all stages
+```
 
 ## Where things are
 
@@ -21,7 +30,8 @@ simworld/
     fonts/           only if a font is not already on the site
     data/            tuning tables in JSON or CSV, edited by hand
     ref/             reference images and notes, never shipped
-  src/               engine and game code (empty until milestone M0)
+  src/core/          engine: prng, dmath, grid, field, world, serialize
+  prototype/         the M0 demo: module worker plus instanced WebGL2
   tools/             offline scripts: asset packing, balance sweeps, replay checking
 ```
 
@@ -40,6 +50,9 @@ simworld/
 | `docs/08-GAMEPLAY.md` | The layer that makes it a game rather than a screensaver |
 | `docs/09-ROADMAP.md` | Milestones, acceptance tests, and the decision gates |
 | `docs/10-DECISIONS.md` | The decision log. Add to it, never rewrite it |
+| `docs/11-PERFORMANCE.md` | Measured cost of a tick, and the CPU against GPU decision |
+| `docs/12-VISUAL-LANGUAGE.md` | The channel table, where colour variety comes from, modular bodies |
+| `docs/13-DAY-NIGHT-AND-COMPETITION.md` | The day cycle as the energy supply, and contact as the only conflict |
 | `PROGRESS.md` | Running log of what was actually built, newest first |
 
 ## Ground rules

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>SimWorld M0 prototype</title>
+<style>
+  :root { --bg:#050c0a; --panel:rgba(10,20,17,.72); --line:rgba(255,255,255,.10);
+          --text:#e8f2ee; --muted:#8ea89f; --accent:#7ee0a8; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text);
+       font-family:"Space Grotesk",system-ui,sans-serif; overflow:hidden; }
+  #stage { position:fixed; inset:0; }
+  canvas { display:block; width:100%; height:100%; }
+  .panel { position:fixed; top:18px; left:18px; width:300px; padding:16px 16px 14px;
+       background:var(--panel); border:1px solid var(--line); border-radius:16px;
+       backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+  h1 { font-size:16px; font-weight:600; margin:0 0 2px; letter-spacing:.2px; }
+  .sub { font-size:11.5px; color:var(--muted); margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:10px 0 2px; }
+  input[type=range] { width:100%; height:18px; }
+  .row { display:flex; justify-content:space-between; font-family:"Space Mono",ui-monospace,monospace;
+       font-size:11.5px; color:var(--text); padding:2px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+  .row span:last-child { color:var(--accent); }
+  .btns { display:flex; gap:8px; margin-top:12px; }
+  button { flex:1; padding:7px 0; font:inherit; font-size:12px; color:var(--text);
+       background:rgba(255,255,255,.06); border:1px solid var(--line); border-radius:9px; cursor:pointer; }
+  button:hover { background:rgba(255,255,255,.12); }
+  #err { position:fixed; inset:auto 18px 18px 18px; font-family:monospace; font-size:12px; color:#ff9b9b; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+<div class="panel">
+  <h1>SimWorld M0</h1>
+  <p class="sub">Deterministic core, one worker, instanced WebGL2. Nothing here is decoration.</p>
+  <label>Starting population <b id="nv">20000</b></label>
+  <input id="n" type="range" min="2000" max="80000" step="2000" value="20000">
+  <label>Day length, seconds <b id="dv">60</b></label>
+  <input id="d" type="range" min="10" max="180" step="5" value="60">
+  <div class="btns">
+    <button id="pause">Pause</button>
+    <button id="reseed">New world</button>
+  </div>
+  <div style="margin-top:12px">
+    <div class="row"><span>population</span><span id="s-pop">0</span></div>
+    <div class="row"><span>ms per tick</span><span id="s-ms">0</span></div>
+    <div class="row"><span>frames per second</span><span id="s-fps">0</span></div>
+    <div class="row"><span>light</span><span id="s-light">0</span></div>
+    <div class="row"><span>births / deaths</span><span id="s-bd">0</span></div>
+    <div class="row"><span>contacts this tick</span><span id="s-bite">0</span></div>
+    <div class="row"><span>day</span><span id="s-day">1</span></div>
+  </div>
+</div>
+<div id="err"></div>
+<script type="module">
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl2', { antialias: true, alpha: false });
+const err = document.getElementById('err');
+if (!gl) { err.textContent = 'WebGL2 is not available in this browser, so the prototype cannot draw.'; }
+
+const VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 aCorner;
+layout(location=1) in vec2 aPos;
+layout(location=2) in float aSize;
+layout(location=3) in float aHue;
+layout(location=4) in float aSat;
+layout(location=5) in float aHead;
+layout(location=6) in float aArmour;
+layout(location=7) in float aPhase;
+uniform vec2 uView;      // world units visible
+uniform vec2 uOrigin;
+out vec2 vLocal; out float vHue; out float vSat; out float vArmour; out float vPhase; out float vSize;
+void main(){
+  float pad = 3.0;
+  vec2 world = aPos + aCorner * aSize * pad;
+  vec2 ndc = (world - uOrigin) / uView * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+  float c = cos(aHead), s = sin(aHead);
+  vLocal = mat2(c, -s, s, c) * aCorner * pad;
+  vHue = aHue; vSat = aSat; vArmour = aArmour; vPhase = aPhase; vSize = aSize;
+}`;
+
+const FS = `#version 300 es
+precision highp float;
+in vec2 vLocal; in float vHue; in float vSat; in float vArmour; in float vPhase; in float vSize;
+uniform float uLight; uniform float uTime; uniform float uPx;
+out vec4 frag;
+vec3 hsv(float h, float s, float v){
+  vec3 k = abs(mod(h*6.0 + vec3(0.0,4.0,2.0), 6.0) - 3.0) - 1.0;
+  return v * mix(vec3(1.0), clamp(k, 0.0, 1.0), s);
+}
+void main(){
+  float r = length(vLocal);
+  float ang = atan(vLocal.y, vLocal.x);
+  // core pulse: slower in the dark, because metabolism falls with the temperature
+  float beat = sin((uTime * (0.6 + 1.8 * uLight) + vPhase * 6.2831) * 3.0);
+  float body = 1.0 + 0.05 * beat;
+  // limbs: lobes around the rim, beating
+  float lobes = 1.0 + 0.16 * sin(ang * 5.0 + beat * 1.2);
+  float edge = body * lobes;
+  float aa = max(fwidth(r), 0.001);
+  float inside = 1.0 - smoothstep(edge - aa * 2.0, edge + aa, r);
+  if (inside <= 0.001) discard;
+  float rim = smoothstep(edge - 0.30 - vArmour * 0.55, edge, r);
+  vec3 col = hsv(vHue, 0.35 + 0.55 * vSat, 0.30 + 0.55 * vSat);
+  // night: colour cools and dims, and low energy bodies glow faintly with their own light
+  vec3 lit = col * (0.34 + 0.66 * uLight) + vec3(0.02, 0.07, 0.09) * (1.0 - uLight);
+  vec3 rimCol = mix(lit * 1.7, vec3(0.92, 0.96, 0.94), vArmour * 0.7);
+  vec3 outc = mix(lit, rimCol, rim * (0.35 + vArmour));
+  frag = vec4(outc, inside);
+}`;
+
+const GVS = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 aCorner;
+out vec2 vUv;
+void main(){ vUv = aCorner * 0.5 + 0.5; gl_Position = vec4(aCorner.x, -aCorner.y, 0.0, 1.0); }`;
+
+const GFS = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 frag;
+uniform sampler2D uField; uniform float uLight;
+void main(){
+  float v = texture(uField, vUv).r;
+  vec3 bare = vec3(0.035, 0.055, 0.050);
+  vec3 rich = vec3(0.10, 0.32, 0.20);
+  vec3 c = mix(bare, rich, clamp(v * 1.5, 0.0, 1.0));
+  vec3 night = vec3(0.012, 0.030, 0.042);
+  frag = vec4(mix(night, c, 0.25 + 0.75 * uLight), 1.0);
+}`;
+
+function compile(src, type) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(vs, gl.VERTEX_SHADER));
+  gl.attachShader(p, compile(fs, gl.FRAGMENT_SHADER));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+let prog, gprog, vao, gvao, instBuf, fieldTex, U = {}, GU = {};
+const FLOATS = 8;
+function initGL() {
+  prog = program(VS, FS); gprog = program(GVS, GFS);
+  for (const k of ['uView', 'uOrigin', 'uLight', 'uTime', 'uPx']) U[k] = gl.getUniformLocation(prog, k);
+  for (const k of ['uField', 'uLight']) GU[k] = gl.getUniformLocation(gprog, k);
+  const quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+  const qb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qb); gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+  vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, qb);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  instBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+  const stride = FLOATS * 4;
+  const layout = [[1, 2, 0], [2, 1, 8], [3, 1, 12], [4, 1, 16], [5, 1, 20], [6, 1, 24], [7, 1, 28]];
+  for (const [loc, size, off] of layout) {
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, off);
+    gl.vertexAttribDivisor(loc, 1);
+  }
+  gvao = gl.createVertexArray(); gl.bindVertexArray(gvao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, qb);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  fieldTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, fieldTex);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 64, 64, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(64 * 64));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+}
+
+let dpr = 1;
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; gl.viewport(0, 0, w, h); }
+}
+
+const worker = new Worker('worker.js', { type: 'module' });
+let latest = null, waiting = false, fps = 0, lastFrame = performance.now();
+let edge = 2048, dayTicks = 1800;
+
+function boot(seed) {
+  const n = +document.getElementById('n').value;
+  edge = Math.round(2048 * Math.sqrt(n / 20000));
+  dayTicks = Math.round(+document.getElementById('d').value * 30);
+  worker.postMessage({ cmd: 'init', seed, n, dayLength: dayTicks, edge });
+}
+
+worker.onmessage = (e) => {
+  const m = e.data;
+  if (m.type !== 'frame') return;
+  latest = m; waiting = false;
+  const now = performance.now();
+  fps = fps * 0.9 + (1000 / Math.max(1, now - lastFrame)) * 0.1;
+  lastFrame = now;
+};
+
+const el = id => document.getElementById(id);
+function draw(tms) {
+  requestAnimationFrame(draw);
+  if (!gl) return;
+  if (!waiting) { waiting = true; worker.postMessage({ cmd: 'frame' }); }
+  if (!latest) return;
+  resize();
+  const m = latest;
+  gl.clearColor(0.02, 0.05, 0.04, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(gprog);
+  gl.bindVertexArray(gvao);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fieldTex);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 64, 64, gl.RED, gl.UNSIGNED_BYTE, m.field);
+  gl.uniform1i(GU.uField, 0); gl.uniform1f(GU.uLight, m.light);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  const data = new Float32Array(m.buf);
+  gl.useProgram(prog);
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  gl.uniform2f(U.uView, m.edge, m.edge);
+  gl.uniform2f(U.uOrigin, 0, 0);
+  gl.uniform1f(U.uLight, m.light);
+  gl.uniform1f(U.uTime, tms / 1000);
+  gl.uniform1f(U.uPx, cv.width / m.edge);
+  gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, m.n);
+  gl.bindVertexArray(null);
+
+  el('s-pop').textContent = m.n.toLocaleString('en-US');
+  el('s-ms').textContent = m.simMs.toFixed(2);
+  el('s-fps').textContent = fps.toFixed(0);
+  el('s-light').textContent = m.light.toFixed(2);
+  el('s-bd').textContent = m.births.toLocaleString('en-US') + ' / ' + m.deaths.toLocaleString('en-US');
+  el('s-bite').textContent = m.bites;
+  el('s-day').textContent = (Math.floor(m.tick / dayTicks) + 1);
+}
+
+let paused = false;
+el('pause').onclick = () => { paused = !paused; worker.postMessage({ cmd: 'pause', value: !paused }); el('pause').textContent = paused ? 'Run' : 'Pause'; };
+el('reseed').onclick = () => boot((Math.random() * 4294967295) >>> 0);
+el('n').oninput = e => { el('nv').textContent = (+e.target.value).toLocaleString('en-US'); };
+el('n').onchange = () => boot(12345);
+el('d').oninput = e => { el('dv').textContent = e.target.value; };
+el('d').onchange = () => boot(12345);
+window.addEventListener('error', ev => { err.textContent = 'error: ' + ev.message; });
+
+if (gl) { try { initGL(); boot(12345); requestAnimationFrame(draw); } catch (e) { err.textContent = 'shader: ' + e.message; } }
+</script>
+</body>
+</html>
