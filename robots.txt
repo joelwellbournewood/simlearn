@@ -6,6 +6,7 @@
 User-agent: *
 Allow: /
 Disallow: /dev/
+Disallow: /simworld/
 
 # No licence for machine learning training or dataset collection.
 User-agent: GPTBot

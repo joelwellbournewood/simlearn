@@ -1,0 +1,27 @@
+{
+  "_note": "Every tuning number in SimWorld lives here. Nothing in the engine hard codes a constant that a player or a designer might reasonably want to change. Values below are first guesses written during planning on 2026-09-14 and have never been run.",
+  "version": 0,
+  "tick": { "seconds_per_tick": 0.0333, "ticks_per_day": 900, "days_per_season": 30 },
+  "world": { "size": 2048, "field_scale": 4, "hard_population_cap": 30000 },
+  "energy": {
+    "sun_per_cell_per_day": 1.0,
+    "basal_coefficient": 0.02,
+    "basal_mass_exponent": 0.75,
+    "movement_cost_coefficient": 0.6,
+    "sense_cost_coefficient": 0.05,
+    "defence_upkeep_coefficient": 0.08,
+    "growth_surcharge": 0.25,
+    "egg_investment_min": 2.0,
+    "fat_capacity_per_mass": 6.0
+  },
+  "plants": {
+    "growth_rate": 0.08,
+    "carrying_capacity_per_nutrient": 1.0,
+    "shade_penalty": 0.3,
+    "water_requirement": 0.2,
+    "energy_per_unit": 1.0
+  },
+  "decay": { "corpse_ticks": 900, "nutrient_diffusion": 0.08, "scent_diffusion": 0.22, "scent_decay": 0.05, "heat_diffusion": 0.12 },
+  "mutation": { "per_gene_chance": 0.04, "gaussian_sigma": 0.06, "jump_chance": 0.002, "jump_sigma": 0.5 },
+  "physics": { "drag_air": 0.02, "drag_water": 0.35, "drag_mud": 0.6, "collision_stiffness": 0.5, "constraint_iterations": 2 }
+}
