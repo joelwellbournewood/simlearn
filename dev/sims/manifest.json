@@ -125,6 +125,22 @@
     "visible": true
   },
   {
+    "id": "celegans",
+    "title": "C. elegans",
+    "category": "Neuroscience",
+    "tags": [
+      "connectome",
+      "neurons",
+      "biology",
+      "OpenWorm"
+    ],
+    "difficulty": "Intermediate",
+    "description": "The only animal whose entire nervous system has been mapped, cell by cell. All 300 wired neurons of the published connectome drive a soft crawling body in real time. Drop food, build walls, poke it, and watch the neurons fire as it decides.",
+    "status": "live",
+    "hook": "A real animal's whole brain, running",
+    "visible": true
+  },
+  {
     "id": "statistics",
     "title": "The Shape of Chance",
     "category": "Probability",

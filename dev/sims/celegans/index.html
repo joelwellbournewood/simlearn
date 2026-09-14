@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050c0a">
+<meta name="color-scheme" content="only dark">
+<meta name="darkreader-lock">
+<title>C. elegans: a worm driven by its real connectome | SimLearn</title>
+<meta name="description" content="A living nematode on a dish: all 300 neurons of the published C. elegans wiring diagram drive a soft body in real time. Drop food, build walls, poke it, and watch the neurons fire.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1512; --field:#07120f;
+  --panel:rgba(15,31,26,.84); --panel-2:#13261f;
+  --line:rgba(130,170,150,.14); --line-strong:rgba(130,170,150,.28);
+  --ink:#e3efe9; --muted:#88a397;
+  --accent:#56e0c2; --accent-dim:rgba(86,224,194,.14);
+  --danger:#ff7d5c; --gold:#e6c34f;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.35;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;background:var(--field)}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
+#stage canvas.panning{cursor:grabbing}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
+.brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
+.actions{position:absolute;right:20px;top:16px;display:flex;gap:8px;z-index:7}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);display:grid;place-items:center;color:var(--ink);transition:border-color .18s}
+.icon-btn:hover{border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn .alt{display:none}
+.icon-btn[data-on="true"] .main{display:none} .icon-btn[data-on="true"] .alt{display:block}
+.panel{position:absolute;left:20px;top:106px;width:300px;max-height:calc(100% - 126px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:16px;padding:14px 17px}
+.panel::-webkit-scrollbar{width:8px} .panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.p-toggle{display:none}
+.about-btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;font-family:var(--display);
+  font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(86,224,194,.34);
+  border-radius:12px;padding:10px 14px;margin-bottom:11px;transition:background .18s,border-color .18s}
+.about-btn:hover{border-color:var(--accent);background:rgba(86,224,194,.2)}
+.grp{border-top:1px solid var(--line);margin:0}
+.grp:first-of-type{border-top:0}
+.grp-title{
+  display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;user-select:none;
+  font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-.01em;font-variation-settings:'opsz' 24;
+  color:var(--ink);padding:10px 0;margin:0
+}
+.grp-title::-webkit-details-marker{display:none}
+.grp-title .tag{font-family:var(--body);font-size:10.5px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+.grp-title::after{content:'';width:8px;height:8px;margin-left:auto;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;opacity:.75;transform:rotate(-45deg);transition:transform .2s}
+.grp[open] > .grp-title::after{transform:rotate(45deg)}
+.grp[open] > .grp-title{padding-bottom:11px}
+.grp > :last-child{margin-bottom:12px}
+.label{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:14px 0 6px}
+.label:first-of-type{margin-top:0}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  background:transparent;text-align:left;color:var(--ink);font-family:var(--body);transition:border-color .18s,background .18s}
+.preset b{font-family:var(--display);font-weight:600;font-size:13px;line-height:1.2}
+.preset small{color:var(--muted);font-size:11.5px;line-height:1.3}
+.preset:hover{border-color:var(--line-strong)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.row{position:relative;margin:10px 0}
+.row label{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:2px}
+.row .nm{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.row .val{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tip{width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--muted);
+  font-family:var(--body);font-size:10px;font-weight:600;line-height:1;display:inline-grid;place-items:center;padding:0;cursor:help;flex:none}
+.tip:hover,.tip.show,.tip:focus-visible{color:var(--ink);border-color:var(--ink)}
+.tip::after{content:attr(data-tip);position:absolute;left:0;right:0;bottom:calc(100% - 2px);padding:8px 10px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink);font-size:12px;line-height:1.45;font-weight:400;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:30;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  font-family:var(--body);letter-spacing:normal;text-transform:none}
+.tip:hover::after,.tip.show::after,.tip:focus-visible::after{opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(var(--c,var(--accent)),var(--c,var(--accent))) 0/var(--p,0%) 100% no-repeat,rgba(255,255,255,.14);border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25);margin-top:-5.5px}
+input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,.14);border:0}
+input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--c,var(--accent))}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #0f1f1a;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg.four{grid-template-columns:repeat(4,1fr)}
+.seg + .sublab{margin-top:10px}
+.sublab{font-size:13px;font-weight:500;margin:2px 0 5px;display:flex;align-items:center;gap:6px;position:relative}
+.seg button{padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11.5px;line-height:1.15;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.seg button:hover{border-color:var(--line-strong);color:var(--ink)}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.seg button:disabled{opacity:.35;cursor:default}
+.toggles{display:flex;flex-wrap:wrap;gap:5px}
+.tg{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-family:var(--body);transition:border-color .18s,background .18s,color .18s}
+.tg:hover{border-color:var(--line-strong);color:var(--ink)}
+.tg[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.tg:disabled{opacity:.35;cursor:default}
+.stat{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:7px 12px;min-width:78px}
+.stat .k{font-family:var(--body);font-size:11px;letter-spacing:.01em;text-transform:none;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .v small{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.06em}
+/* Centred on the window with the same 52px rightward bias the pendulum uses, so the
+   300px panel on the left does not make the line look pushed to one side. The max-width
+   is set so that in the clipping regime the left edge lands at a constant 337px, which is
+   17px clear of the panel at every window width. */
+.hint{position:absolute;left:50%;right:auto;transform:translateX(calc(-50% + 52px));bottom:18px;text-align:center;z-index:5;color:var(--muted);font-size:11.5px;pointer-events:none;font-family:var(--mono);letter-spacing:.03em;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 570px)}
+/* the inspect card shares the bottom-left corner and is opaque, so stand the line down */
+body:has(.sel.on) .hint{opacity:0}
+.sel{position:absolute;left:340px;bottom:18px;z-index:6;width:250px;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:none}
+.sel.on{display:block}
+.sel h4{margin:0 0 6px;font-family:var(--display);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sel h4 i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.sel table{border-collapse:collapse;width:100%;font-size:12.5px}
+.sel td{padding:2px 0;vertical-align:baseline}
+.sel td:first-child{color:var(--muted);padding-right:10px}
+.sel td:last-child{text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.sel .kind{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
+.sel .kind.unb{color:var(--gold)}
+.sel .acts{display:flex;gap:6px;margin-top:8px}
+.sel .acts button{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font-size:12px}
+.sel .acts button:hover{border-color:var(--line-strong)}
+body.clean .brand,body.clean .panel,body.clean .hint,body.clean .sel{display:none}
+body.clean .actions .icon-btn:not(#b-clean){display:none}
+body.clean .actions{opacity:.3;transition:opacity .3s}
+body.clean .actions:hover,body.clean .actions:focus-within{opacity:1}
+dialog.about{border:1px solid var(--line-strong);border-radius:18px;background:#0f1f1a;color:var(--ink);padding:0;
+  width:min(780px,calc(100vw - 28px));max-height:min(92vh,940px);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
+.about-inner{padding:26px 28px 28px;overflow-y:auto;max-height:min(92vh,940px);position:relative}
+.about-inner h2{font-family:var(--display);font-size:25px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px}
+.about-inner h3{font-family:var(--display);font-size:16px;font-weight:600;margin:19px 0 6px}
+.about-inner p,.about-inner li{color:#b9d0c6;font-size:15.5px;line-height:1.62}
+.about-inner p{margin:0 0 10px;max-width:70ch}
+.about-inner ul{margin:0 0 10px;padding-left:18px} .about-inner li{margin:0 0 5px}
+.about-inner b{color:var(--ink);font-weight:600}
+.about-inner .hl{color:var(--accent)} .about-inner .hr{color:var(--danger)}
+.about-inner kbd{font-family:var(--mono);font-size:11.5px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:5px;background:var(--panel-2);color:var(--ink)}
+.about-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:16px;line-height:1;display:grid;place-items:center}
+.about-close:hover{color:var(--ink);border-color:var(--line-strong)}
+body.in-frame .brand{display:none}
+body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
+@media (max-width:820px), (max-height:560px) and (pointer:coarse){
+  .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
+  .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
+  .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
+    transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
+  .panel.open{transform:none;overflow-y:auto}
+  .p-toggle{display:flex;position:sticky;top:0;width:100%;height:46px;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;
+    color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
+  .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
+  .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
+  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
+  .hint{display:none}
+  .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
+  .sel table{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){ .panel{transition:none} }
+</style>
+<link rel="stylesheet" href="../../assets/css/sim-touch.css">
+<link rel="stylesheet" href="../../assets/css/sim-mobile.css">
+<script src="../../assets/js/sim-mobile.js" defer></script>
+<link rel="stylesheet" href="../../assets/css/theme-lock.css?v=20260908f">
+</head>
+<style>
+/* page-specific */
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.tool{padding:7px 4px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);
+  font-family:var(--display);font-weight:600;font-size:12.5px;cursor:pointer;transition:border-color .18s}
+.tool:hover{border-color:var(--line-strong)}
+.tool[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.hud{position:fixed;left:18px;bottom:14px;display:flex;gap:8px;z-index:5;flex-wrap:wrap}
+.chip{padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);backdrop-filter:blur(10px);
+  font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.chip b{color:var(--ink);font-weight:400}
+body.clean .hud,body.clean .brand{display:none}
+#nerves{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--field);image-rendering:pixelated;cursor:crosshair}
+#ncap{font-family:var(--mono);font-size:11px;color:var(--muted);min-height:15px;margin:4px 0 0}
+</style>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="brand">
+  <p class="kicker">The complete connectome</p>
+  <h1>C. elegans</h1>
+  <p>All 300 wired neurons of a real animal, driving a real gait.</p>
+</div>
+
+<div class="actions">
+  <button class="icon-btn" id="b-pause" title="Play / pause (space)" aria-label="Play or pause">
+    <svg class="main" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>
+  </button>
+  <button class="icon-btn" id="b-reset" title="New worm, same dish (R)" aria-label="Reset the worm">
+    <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+  </button>
+  <button class="icon-btn" id="b-clean" title="Hide the panels (H)" aria-label="Hide the panels">
+    <svg class="main" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    <svg class="alt" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.9 5.7A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.3 4.1M6.4 7.6A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.3 0 2.4-.2 3.5-.6"/></svg>
+  </button>
+  <button class="icon-btn" id="b-full" title="Fullscreen (F)" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="panel" id="panel">
+  <button class="p-toggle" id="p-toggle" aria-expanded="false">Controls</button>
+  <button class="about-btn" id="b-about">What am I looking at?</button>
+
+  <details class="grp" open>
+  <summary class="grp-title">Dishes</summary>
+  <div class="presets" id="presets"></div>
+  </details>
+
+  <details class="grp" open>
+  <summary class="grp-title">Your hand</summary>
+  <div class="tools" id="tools">
+    <button class="tool" data-tool="food" aria-pressed="true">Food</button>
+    <button class="tool" data-tool="wall" aria-pressed="false">Wall</button>
+    <button class="tool" data-tool="post" aria-pressed="false">Post</button>
+    <button class="tool" data-tool="poke" aria-pressed="false">Poke</button>
+    <button class="tool" data-tool="erase" aria-pressed="false">Erase</button>
+  </div>
+  </details>
+
+  <details class="grp">
+  <summary class="grp-title">Conditions</summary>
+  <div class="row">
+    <label for="s-speed"><span class="nm">Time<button class="tip" data-tip="How fast the dish runs. The worm itself does not change; your patience does." aria-label="What time does">?</button></span><span class="val" id="v-speed"></span></label>
+    <input type="range" id="s-speed" min="0.5" max="4" step="0.25" value="1">
+  </div>
+  <div class="row">
+    <label for="s-smell"><span class="nm">Scent carry<button class="tip" data-tip="How far the smell of food spreads through the agar. Weak scent forces the worm to nearly stumble into dinner." aria-label="What scent carry does">?</button></span><span class="val" id="v-smell"></span></label>
+    <input type="range" id="s-smell" min="0.2" max="3" step="0.1" value="1">
+  </div>
+  </details>
+
+  <details class="grp" open>
+  <summary class="grp-title">Nervous system, live</summary>
+  <canvas id="nerves" width="200" height="150"></canvas>
+  <p id="ncap">hover a cell to name it</p>
+  </details>
+
+  <p class="keys">1-4 dishes &middot; Space pause &middot; R new worm &middot; H hide &middot; F fullscreen</p>
+</div>
+
+<div class="hud">
+  <span class="chip">state <b id="h-state">forward</b></span>
+  <span class="chip">speed <b id="h-speed">0.00</b> lengths/s</span>
+  <span class="chip">eaten <b id="h-eaten">0</b></span>
+  <span class="chip">neurons up <b id="h-active">0</b></span>
+</div>
+
+<dialog class="about" id="about"><div class="about-inner">
+<button class="about-close" id="b-close" aria-label="Close">&times;</button>
+<h2>What am I looking at?</h2>
+<p>A nematode a millimetre long, magnified a few hundred times, on a dish of agar. Caenorhabditis elegans is the only animal whose entire nervous system has been mapped cell by cell: 302 neurons, and every synapse between them, published by White, Southgate, Thomson, and Brenner in 1986 after fifteen years of electron microscopy. That map, the connectome, is what runs this worm. Each of the 300 wired neurons here is a little voltage that leaks, sums what its neighbours send it through more than 2,000 chemical synapses and 500 electrical junctions, and passes the result on. Ninety five muscle cells along the body listen to the motor neurons and bend what they reach.</p>
+<p>Nothing about the gait is drawn or scripted. The wave that carries the worm forward starts as a small alternation in the head, and each segment behind copies the bend it feels in front of itself, a trick the real animal plays with stretch receptors on its motor neurons. Slide a finger of food scent past the nose and the salt-sensing cells ASEL and ASER fire on rising and falling scent; their signal descends through the real wiring to the head muscles, and the worm steers up the gradient the way the animal does in the laboratory, by running straight when dinner is getting closer and casting about when it is not.</p>
+<p>Touch it near the head and the touch cells ALM and AVM wake the command neurons AVA, AVD, and AVE, the same cells that flip the living worm into reverse. A long enough retreat ends in a deep ventral coil, the omega turn, and the worm sets off somewhere new. Every one of those decisions is visible as it happens in the grid of cells on the right: sensory neurons, interneurons, and motor neurons lighting up in the order the wiring dictates.</p>
+<h3>Things to try</h3>
+<ul>
+<li>Drop one meal of food far from the worm, turn the scent down low, and watch how long the search takes. Then turn the scent up and watch the path straighten.</li>
+<li>Build a corridor of walls with food at the end. The worm cannot see; it feels its way, and corners genuinely cost it time.</li>
+<li>Poke the head, then the tail. The head poke reverses it; the tail poke urges it forward. Two different touch circuits, and you can watch them fire.</li>
+<li>Ring the worm with posts and see it thread between them. Nothing tells it where the gaps are except its own body bending.</li>
+</ul>
+<h3>Limits of the model</h3>
+<p>The wiring is the animal's own, but the physiology on top of it is simplified. Real C. elegans neurons carry graded potentials with rich channel dynamics; here each is a single leaky voltage with one gain, and synapse strength is the anatomical synapse count, signed by transmitter. The head's rhythm generator is not fully understood in the living animal and is stood in for by a small oscillator between the real head motor neurons. Muscle chemistry, egg laying, feeding, and the pharynx are absent, and the dish is two dimensional. The worm on your screen is a hypothesis about how this nervous system produces behaviour, not a copy of the animal; where it behaves like the real one, that is the wiring doing the work.</p>
+<h3>References</h3>
+<ul class="refs">
+<li>White, Southgate, Thomson, and Brenner (1986), The structure of the nervous system of the nematode Caenorhabditis elegans. Phil. Trans. R. Soc. B 314.</li>
+<li>Varshney, Chen, Paniagua, Hall, and Chklovskii (2011), Structural properties of the C. elegans neuronal network. PLoS Comput. Biol. 7.</li>
+<li>Boyle, Berri, and Cohen (2012), Gait modulation in C. elegans: an integrated neuromechanical model. Front. Comput. Neurosci. 6.</li>
+<li>The OpenWorm project, openworm.org, whose curated neuron and muscle tables this worm runs on.</li>
+</ul>
+</div></dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
