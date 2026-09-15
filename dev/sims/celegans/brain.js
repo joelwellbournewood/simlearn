@@ -42,6 +42,22 @@ export const TUNE = {
   upsilonDur: 0.6,  // upsilon turn duration, s: shorter than omega's 1.5s (MODEL ASSUMPTION)
   upsilonGain: 0.65, // partial RIV/SMDV drive: about 40% of the omega gain, so the
                     // ventral bend is real but does not drive the head to the tail
+  // --- post-reversal forward inertia (off by default = 0; see run 111) ---
+  // Sordillo & Bargmann 2021 (eLife 10:e67723) show RIM's gap junctions
+  // actively stabilize the FORWARD state while RIM is hyperpolarized, i.e.
+  // runs carry behavioural inertia and reversals are discrete events rather
+  // than a chatter; Zhao et al. 2003 (J Neurosci 23:5319) measured the
+  // resulting inter-reversal intervals as a smooth lognormal, not a burst
+  // train. These three knobs implement that; at 0/0/0 the model is exactly
+  // the run-110 model.
+  refractTau: 6.0,   // s, decay of the post-reversal state
+  refractGain: 0.0,  // how much the refractory state suppresses SPONTANEOUS
+                     // (dC/dt and dwell-mode) reversal drive - touch/escape
+                     // drive deliberately bypasses it (Kaplan & Horvitz 1993)
+  inertiaGain: 0.0,  // extra tonic drive to AVB just after a reversal
+  offTau: 0.0,       // s, low-pass on the OFF (dC/dt) drive into AVA: a real
+                     // pirouette integrates a falling concentration over
+                     // seconds; 0 = instantaneous, the run-110 behaviour
   senseAdapt: 2.8,  // chemosensory adaptation time constant, s
   senseGain: 6.0,   // dC/dt scaling into ON/OFF cells
   revOnOff: 0.9,    // OFF signal -> AVA drive (pirouette: Pierce-Shimomura 1999)
@@ -249,7 +265,7 @@ export class WormBrain {
     this.activity=new Float32Array(N);
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
-    this.command=1; this.revTime=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
+    this.command=1; this.revTime=0; this.revRefract=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
@@ -443,8 +459,13 @@ export class WormBrain {
     const F=this._mean(this.gAVB), B=this._mean(this.gAVA);
     this.command=(F-B)/(F+B+1e-6);
     // command flip-flop: tonic forward + cross-inhibition (MODEL ASSUMPTION)
-    for (const i of this.gAVB) P[i]+=T.tonicF*this.locoTonicMul - T.xInh*B*0.9;
-    for (const i of this.gAVA) P[i]+=T.revOnOff*this.off - T.xInh*F*0.6 + this.locoRevDrive;
+    // behavioural inertia: a run that has just started resists being broken
+    // again (RIM gap junctions stabilizing forward, Sordillo & Bargmann 2021)
+    this.revRefract*=Math.exp(-dt/T.refractTau);
+    this.offS += T.offTau>0 ? (this.off-this.offS)*Math.min(1,dt/T.offTau) : (this.off-this.offS);
+    const spont=Math.max(0,1-T.refractGain*this.revRefract);
+    for (const i of this.gAVB) P[i]+=(T.tonicF+T.inertiaGain*this.revRefract)*this.locoTonicMul - T.xInh*B*0.9;
+    for (const i of this.gAVA) P[i]+=(T.revOnOff*this.offS + this.locoRevDrive)*spont - T.xInh*F*0.6;
     // reversal bookkeeping and omega turn on resumption
     this.noseTouchRecent*=Math.exp(-dt/1.5);
     if (this.command<-0.08) this.revTime+=dt;
@@ -466,6 +487,7 @@ export class WormBrain {
         if (this.noseTouchRecent>0.15) this.omegaT=T.omegaDur;
         else this.upsilonT=T.upsilonDur;
       } else if (this.revTime>T.upsilonThresh) this.upsilonT=T.upsilonDur;
+      if (this.revTime>0.05) this.revRefract=1;
       this.revTime=0;
     }
     if (this.omegaT>0){ this.omegaT-=dt; for (const i of this.gOmega) P[i]+=T.omegaGain; }
