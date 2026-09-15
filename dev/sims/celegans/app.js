@@ -19,7 +19,33 @@ function resize(){
   scale=Math.min(w/W,h/H)*0.965;
   ox=(w-W*scale)/2; oy=(h-H*scale)/2;
 }
-window.addEventListener('resize',resize); resize();
+// ---- pixel-art dish: naturalistic agar micro-environment, generated once
+const PIX=4; let bgCv=null;
+function makeBg(){
+  const bw=Math.ceil(W*scale/PIX), bh=Math.ceil(H*scale/PIX);
+  bgCv=document.createElement('canvas'); bgCv.width=bw; bgCv.height=bh;
+  const c=bgCv.getContext('2d');
+  let seed=90210; const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const GX=26,GY=17,g=[]; for(let i=0;i<GX*GY;i++) g.push(rnd());
+  const val=(x,y)=>{ // bilinear value noise
+    const fx=x*(GX-1),fy=y*(GY-1),x0=Math.min(GX-2,Math.floor(fx)),y0=Math.min(GY-2,Math.floor(fy));
+    const tx=fx-x0,ty=fy-y0;
+    return g[y0*GX+x0]*(1-tx)*(1-ty)+g[y0*GX+x0+1]*tx*(1-ty)+g[(y0+1)*GX+x0]*(1-tx)*ty+g[(y0+1)*GX+x0+1]*tx*ty;
+  };
+  for(let j=0;j<bh;j++) for(let i=0;i<bw;i++){
+    const u=i/bw,v=j/bh;
+    const n=0.62*val(u,v)+0.38*val(u*3.7%1,v*3.7%1);
+    const light=1-0.55*Math.hypot(u-0.5,(v-0.5)*0.9); // scope illumination
+    let r=22+26*n*light, gg=24+30*n*light, b=14+16*n*light; // humus olive-browns
+    const q=rnd();
+    if(q>0.982){ r+=30;gg+=28;b+=12; }        // pale grain of detritus
+    else if(q<0.012){ r*=0.55;gg*=0.6;b*=0.55; } // dark pore
+    else if(q>0.965){ r+=8;gg+=20;b+=4; }     // moss fleck
+    c.fillStyle='rgb('+(r|0)+','+(gg|0)+','+(b|0)+')';
+    c.fillRect(i,j,1,1);
+  }
+}
+window.addEventListener('resize',()=>{resize();makeBg();}); resize(); makeBg();
 const w2x=x=>ox+x*scale, w2y=y=>oy+y*scale;
 const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 
@@ -93,14 +119,25 @@ bind('s-speed','v-speed',v=>v.toFixed(2)+'x',v=>simSpeed=v);
 bind('s-smell','v-smell',v=>v.toFixed(1),v=>TUNE.senseGain=6*v);
 bind('s-medium','v-medium',v=>v<0.25?'water':v<0.75?'thick gel':'agar surface',v=>{ BTUNE.load=v; TUNE.load=v; });
 
-// ---- neural grid: sensory, inter, motor blocks ----
+// ---- right-hand visualization: four windows into the machine ----
 const order=[...Array(brain.N).keys()].sort((a,b)=>{
   const r={'S':0,'I':1,'M':2};
   return (r[brain.cat[a]]-r[brain.cat[b]])||(brain.names[a]<brain.names[b]?-1:1);
 });
-const nv=el('nerves'), nctx=nv.getContext('2d'), NC=20, NR=15;
+const nv=el('nerves'), nctx=nv.getContext('2d'), NC=20, NR=15, CS=11; // 220x165
 const catColor={S:[230,195,79],I:[86,224,194],M:[255,125,92]};
+let viz='neurons';
+const CAP={neurons:'hover a cell to name it',
+  muscles:'muscle drive per row, head at top: dorsal | ventral',
+  wave:'bend along the body (rows) through time (columns)',
+  scent:'the scent field the nose actually smells; dot = nose'};
+document.querySelectorAll('.vtab').forEach(b=>b.addEventListener('click',()=>{
+  viz=b.dataset.viz;
+  document.querySelectorAll('.vtab').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  el('ncap').textContent=CAP[viz];
+}));
 nv.addEventListener('mousemove',e=>{
+  if(viz!=='neurons') return;
   const r=nv.getBoundingClientRect();
   const cx=Math.floor((e.clientX-r.left)/r.width*NC), cy=Math.floor((e.clientY-r.top)/r.height*NR);
   const k=cy*NC+cx;
@@ -109,31 +146,92 @@ nv.addEventListener('mousemove',e=>{
     el('ncap').textContent=brain.names[i]+' ('+cat+') '+(brain.activity[i]*100).toFixed(0)+'%';
   } else el('ncap').textContent='';
 });
-nv.addEventListener('mouseleave',()=>{el('ncap').textContent='hover a cell to name it';});
-function drawNerves(){
-  nctx.fillStyle='#07120f'; nctx.fillRect(0,0,200,150);
+nv.addEventListener('mouseleave',()=>{if(viz==='neurons')el('ncap').textContent=CAP.neurons;});
+function drawNeurons(){
+  nctx.fillStyle='#07120f'; nctx.fillRect(0,0,220,165);
   for (let k=0;k<brain.N;k++){
     const i=order[k], a=brain.activity[i], c=catColor[brain.cat[i]];
-    const x=(k%NC)*10, y=Math.floor(k/NC)*10;
     nctx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+(0.06+0.94*a*a)+')';
-    nctx.fillRect(x+1,y+1,8,8);
+    nctx.fillRect((k%NC)*CS+1,Math.floor(k/NC)*CS+1,CS-2,CS-2);
   }
+}
+function drawMuscles(){
+  nctx.fillStyle='#07120f'; nctx.fillRect(0,0,220,165);
+  const rh=165/24;
+  for (let k=0;k<24;k++){
+    const d=brain.muscleDorsal[k], v=brain.muscleVentral[k], y=k*rh;
+    nctx.fillStyle='rgba(255,125,92,'+(0.15+0.85*d)+')';
+    nctx.fillRect(108-d*104,y+1,d*104,rh-2);
+    nctx.fillStyle='rgba(86,224,194,'+(0.15+0.85*v)+')';
+    nctx.fillRect(112,y+1,v*104,rh-2);
+  }
+  nctx.fillStyle='rgba(160,190,175,.35)'; nctx.fillRect(109,0,2,165);
+}
+const kymo=document.createElement('canvas'); kymo.width=220; kymo.height=165;
+const kctx=kymo.getContext('2d'); kctx.fillStyle='#07120f'; kctx.fillRect(0,0,220,165);
+let kf=0;
+function pushKymo(){
+  kctx.drawImage(kymo,-1,0);
+  const NCU=body.curvature.length, rh=165/NCU;
+  for (let j=0;j<NCU;j++){
+    const c=Math.max(-1,Math.min(1,body.curvature[j]*2.4));
+    kctx.fillStyle=c>0?'rgba(255,125,92,'+(0.12+0.88*c)+')':'rgba(86,224,194,'+(0.12-0.88*c)+')';
+    kctx.fillRect(219,j*rh,1,rh+1);
+  }
+}
+const SGX=44,SGY=28,sf=new Float32Array(SGX*SGY); let sframe=0;
+function drawScent(){
+  if (sframe++%8===0){
+    for (let j=0;j<SGY;j++) for (let i=0;i<SGX;i++)
+      sf[j*SGX+i]=env.concentrationAt((i+0.5)/SGX*W,(j+0.5)/SGY*H);
+  }
+  nctx.fillStyle='#07120f'; nctx.fillRect(0,0,220,165);
+  for (let j=0;j<SGY;j++) for (let i=0;i<SGX;i++){
+    const a=Math.min(1,Math.pow(sf[j*SGX+i],0.45)*1.15);
+    if(a<0.03) continue;
+    nctx.fillStyle='rgba(222,196,110,'+(a*0.9).toFixed(3)+')';
+    nctx.fillRect(i*5,12+j*5,5,5);
+  }
+  nctx.fillStyle='#e2eee5';
+  nctx.fillRect(body.noseX/W*220-2,12+body.noseY/H*140-2,4,4);
+}
+function drawViz(){
+  if (viz==='neurons') drawNeurons();
+  else if (viz==='muscles') drawMuscles();
+  else if (viz==='wave'){ nctx.drawImage(kymo,0,0); }
+  else drawScent();
 }
 // ---- rendering the dish ----
 function draw(){
   const w=cv.clientWidth,h=cv.clientHeight;
   ctx.fillStyle='#050c0a'; ctx.fillRect(0,0,w,h);
-  // dish
-  ctx.fillStyle='#0a1512';
-  ctx.beginPath(); ctx.roundRect(w2x(0),w2y(0),W*scale,H*scale,14); ctx.fill();
+  // dish: pixel-art agar
+  ctx.save();
+  ctx.beginPath(); ctx.roundRect(w2x(0),w2y(0),W*scale,H*scale,14); ctx.clip();
+  ctx.imageSmoothingEnabled=false;
+  if(bgCv) ctx.drawImage(bgCv,w2x(0),w2y(0),W*scale,H*scale);
+  ctx.restore();
+  ctx.beginPath(); ctx.roundRect(w2x(0),w2y(0),W*scale,H*scale,14);
   ctx.strokeStyle='rgba(130,170,150,.22)'; ctx.lineWidth=1.5; ctx.stroke();
-  // food
+  // food: a lawn of pixel particles, dense centre thinning outward, plus a
+  // dithered scent halo whose pixel density falls off like the gradient does
+  const snap=q=>Math.floor(q/PIX)*PIX;
   for (const f of env.foods){
-    const g=ctx.createRadialGradient(w2x(f.x),w2y(f.y),0,w2x(f.x),w2y(f.y),f.radius*1.6*scale);
-    const a=0.34*Math.min(1,f.amount/f.amount0+0.25);
-    g.addColorStop(0,'rgba(214,196,110,'+a+')'); g.addColorStop(0.6,'rgba(150,160,80,'+(a*0.4)+')');
-    g.addColorStop(1,'rgba(150,160,80,0)');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(w2x(f.x),w2y(f.y),f.radius*1.6*scale,0,7); ctx.fill();
+    const rel=Math.min(1,f.amount/f.amount0+0.1);
+    for (const hp of f.halo){
+      const a=0.16*rel*Math.exp(-hp.d/1.0);
+      if(a<0.015) continue;
+      ctx.fillStyle='rgba(196,180,110,'+a.toFixed(3)+')';
+      ctx.fillRect(snap(w2x(hp.x)),snap(w2y(hp.y)),PIX,PIX);
+    }
+    for (const p of f.parts){
+      if(p.a<=0) continue;
+      const fr=p.a/p.a0, sz=PIX*(p.sz>2?2:1);
+      ctx.fillStyle=p.sz>2?'rgba(233,219,160,'+(0.45+0.5*fr).toFixed(2)+')'
+                   :p.sz>1?'rgba(214,198,130,'+(0.4+0.5*fr).toFixed(2)+')'
+                          :'rgba(186,172,112,'+(0.35+0.5*fr).toFixed(2)+')';
+      ctx.fillRect(snap(w2x(p.x)),snap(w2y(p.y)),sz,sz);
+    }
   }
   // trail
   if (trail.length>2){ ctx.beginPath(); ctx.moveTo(w2x(trail[0][0]),w2y(trail[0][1]));
@@ -191,14 +289,16 @@ function stepOnce(){
   brain.mech(noseOn,noseSide,bodyA,bodyP,dt,body.speed);
   const conc=env.concentrationAt(body.noseX,body.noseY);
   brain.chemosense(conc);
-  // basal slowing response: dopaminergic cells feel food under the body
+  // basal slowing: the dopamine cells feel bacteria mechanically under the
+  // body, so they are gated by particle-local density, never by smell alone
   const midi=Math.floor(body.px.length*0.55);
-  const concP=env.concentrationAt(body.px[midi],body.py[midi]);
-  brain.food(conc>0.05?1:0, concP>0.05?1:0, conc>0.05?1:0, dt);
+  const lf=env.localFoodAt(body.noseX,body.noseY);
+  const lfP=env.localFoodAt(body.px[midi],body.py[midi]);
+  brain.food(lf>0.5?1:0, lfP>0.5?1:0, lf>0.5?1:0, dt);
   if (pokePulse){ brain.touch(pokePulse.region,1.3); pokePulse.t-=dt; if(pokePulse.t<=0) pokePulse=null; }
   brain.step(dt,body.curvature);
   body.step(dt,brain.muscleDorsal,brain.muscleVentral,env);
-  if (conc>0.05) eaten+=env.consume(body.noseX,body.noseY,dt,0.06);
+  if (lf>0.5) eaten+=env.consume(body.noseX,body.noseY,dt,0.06);
   for (const r of ripples){ r.r+=dt*1.6; r.a-=dt*1.8; }
   for (let i=ripples.length-1;i>=0;i--) if (ripples[i].a<=0) ripples.splice(i,1);
 }
@@ -209,12 +309,13 @@ function loop(){
     acc+=simSpeed;
     while (acc>=1){ stepOnce(); acc-=1; }
     frame++;
+    if (frame%2===0) pushKymo();
     if (frame%4===0){
       trail.push([body.noseX,body.noseY]);
       if (trail.length>900) trail.shift();
     }
   }
-  draw(); drawNerves();
+  draw(); drawViz();
   // HUD
   const st=brain.omegaT>0?'omega turn':brain.command<-0.08?'reversal':'forward';
   el('h-state').textContent=st;
@@ -241,6 +342,8 @@ window.addEventListener('keydown',e=>{
   else if (k==='r'||k==='R') el('b-reset').click();
   else if (k==='h'||k==='H') el('b-clean').click();
   else if (k==='f'||k==='F') el('b-full').click();
+  else if (k==='v'||k==='V'){ const t=[...document.querySelectorAll('.vtab')];
+    const c=t.findIndex(b=>b.dataset.viz===viz); t[(c+1)%t.length].click(); }
   else if (k>='1'&&k<='5'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
 });
 if (window.self!==window.top) document.body.classList.add('in-frame');

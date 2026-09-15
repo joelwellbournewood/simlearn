@@ -256,9 +256,13 @@ export class WormBrain {
     if (bodyP>0.02) for (const i of this.gTouchP) this.Iext[i]+=T.wallGain*Math.min(1,bodyP)*dt*60*0.1;
   }
   chemosense(conc){
-    // ON/OFF adaptation: cells respond to change, not level (MODEL ASSUMPTION values)
+    // ON/OFF adaptation: cells respond to change, not level (MODEL ASSUMPTION values).
+    // The comparison is FRACTIONAL (Weber law): ASE responds to relative change
+    // over decades of concentration (Larsch 2015), which is what lets the worm
+    // steer up the faint outer tail of a plume as well as the steep rim of the
+    // patch itself. An absolute-difference sensor is blind far from food.
     this.cSlow += (conc-this.cSlow)*(1/60)/TUNE.senseAdapt;
-    const d=(conc-this.cSlow)*TUNE.senseGain;
+    const d=(conc-this.cSlow)/(0.02+conc+this.cSlow)*TUNE.senseGain*2.5;
     this.on = Math.max(0,Math.min(1,d)); this.off = Math.max(0,Math.min(1,-d));
     for (const i of this.gOn) this.Iext[i]+=this.on*0.8;
     for (const i of this.gOff) this.Iext[i]+=this.off*0.8;

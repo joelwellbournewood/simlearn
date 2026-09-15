@@ -147,12 +147,38 @@ export class WormBody {
   }
 }
 export class Environment {
-  constructor(w,h){ this.w=w;this.h=h;this.foods=[];this.walls=[];this.obstacles=[]; }
-  addFood(x,y,amount,radius){ this.foods.push({x,y,amount,amount0:amount,radius}); }
-  clearFood(){ this.foods.length=0; }
+  // Food is a lawn of individual particles, like a real bacterial patch:
+  // dense at the centre, thinning outward. Every particle is a hidden
+  // chemotactic source; the worm eats them one by one, and where it grazes,
+  // both the food and its scent disappear. On top of the particle scent sits
+  // a long shallow plume (the diffusion tail a patch grows on real agar),
+  // which is what lets the worm smell dinner from across the dish.
+  constructor(w,h){ this.w=w;this.h=h;this.foods=[];this.walls=[];this.obstacles=[];this.stamp=0; }
+  addFood(x,y,amount,radius){
+    let seed=((this.foods.length+1)*2654435761 ^ Math.floor(x*997)*40503 ^ Math.floor(y*991))>>>0;
+    const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    const M=Math.max(20,Math.round(56*amount));
+    const parts=[];
+    for(let k=0;k<M;k++){
+      const u=Math.max(1e-6,rnd()), v=rnd();
+      const rr=Math.abs(Math.sqrt(-2*Math.log(u))*Math.cos(6.28318*v))*radius*0.5;
+      const th=rnd()*6.28318;
+      parts.push({x:x+Math.cos(th)*rr, y:y+Math.sin(th)*rr, a:amount/M, a0:amount/M, sz:1+Math.floor(rnd()*3)});
+    }
+    // halo: precomputed dither points that draw the scent plume, density
+    // falling with distance exactly as the concentration does
+    const halo=[];
+    for(let k=0;k<70;k++){
+      const rr=radius*0.6-Math.log(Math.max(1e-6,rnd()))*0.34, th=rnd()*6.28318;
+      halo.push({x:x+Math.cos(th)*rr, y:y+Math.sin(th)*rr, d:rr});
+    }
+    this.foods.push({x,y,radius,amount,amount0:amount,parts,halo});
+    this.stamp++;
+  }
+  clearFood(){ this.foods.length=0; this.stamp++; }
   addWall(x1,y1,x2,y2){ this.walls.push({x1,y1,x2,y2}); }
   addObstacle(x,y,r){ this.obstacles.push({x,y,r}); }
-  clear(){ this.foods.length=0;this.walls.length=0;this.obstacles.length=0; }
+  clear(){ this.foods.length=0;this.walls.length=0;this.obstacles.length=0; this.stamp++; }
   removeAt(x,y){
     let best=null,bd=0.35;
     for (const f of this.foods){const d=Math.hypot(f.x-x,f.y-y);if(d<bd+f.radius*0.5){bd=d;best=['f',f];}}
@@ -160,7 +186,7 @@ export class Environment {
     for (const w of this.walls){const d=this._segDist(x,y,w);if(d<bd){bd=d;best=['w',w];}}
     if(!best)return false;
     const [t,o]=best;
-    if(t==='f')this.foods.splice(this.foods.indexOf(o),1);
+    if(t==='f'){this.foods.splice(this.foods.indexOf(o),1);this.stamp++;}
     if(t==='o')this.obstacles.splice(this.obstacles.indexOf(o),1);
     if(t==='w')this.walls.splice(this.walls.indexOf(o),1);
     return true;
@@ -172,22 +198,45 @@ export class Environment {
   }
   concentrationAt(x,y){
     let c=0;
+    const s2=2*0.09*0.09, K=0.09;
     for (const f of this.foods){
-      const d2=(f.x-x)*(f.x-x)+(f.y-y)*(f.y-y), s2=2*f.radius*f.radius;
-      c+=f.amount*Math.exp(-d2/s2);
+      const d=Math.hypot(f.x-x,f.y-y);
+      c+=f.amount*0.30*Math.exp(-d/1.25);          // long diffusion plume
+      if (d<f.radius*2.2+0.35){                    // particle-scale structure
+        for (const p of f.parts){ if(p.a<=0) continue;
+          const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);
+          if (dd<0.3) c+=p.a*K*Math.exp(-dd/s2)*56;
+        }
+      }
+    }
+    return c;
+  }
+  // particle-local density only: gates eating and the dopamine cells, which
+  // in the animal feel bacteria mechanically under the body, not their smell
+  localFoodAt(x,y){
+    let c=0;
+    for (const f of this.foods){
+      if (Math.hypot(f.x-x,f.y-y)>f.radius*2.2+0.2) continue;
+      for (const p of f.parts){ if(p.a<=0) continue;
+        const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);
+        if (dd<0.018) c+=p.a*56;
+      }
     }
     return c;
   }
   consume(x,y,dt,rate){
     let eaten=0;
     for (const f of this.foods){
-      const d=Math.hypot(f.x-x,f.y-y);
-      if (d<f.radius){
-        const e=Math.min(f.amount,rate*dt*(1-d/f.radius));
-        f.amount-=e; eaten+=e;
+      if (Math.hypot(f.x-x,f.y-y)>f.radius*2.2+0.2) continue;
+      for (const p of f.parts){ if(p.a<=0) continue;
+        const d=Math.hypot(p.x-x,p.y-y);
+        if (d<0.08){ const e=Math.min(p.a,rate*dt); p.a-=e; eaten+=e; }
       }
+      let s=0; for (const p of f.parts) s+=p.a; 
+      if (Math.abs(s-f.amount)>1e-9){ f.amount=s; this.stamp++; }
     }
-    for (let i=this.foods.length-1;i>=0;i--) if (this.foods[i].amount<0.05*this.foods[i].amount0) this.foods.splice(i,1);
+    for (let i=this.foods.length-1;i>=0;i--)
+      if (this.foods[i].amount<0.03*this.foods[i].amount0){ this.foods.splice(i,1); this.stamp++; }
     return eaten;
   }
   collide(body,h){
