@@ -26,7 +26,7 @@ export const TUNE = {
   xInh: 1.5,        // AVA<->AVB soft flip-flop cross-inhibition (MODEL ASSUMPTION)
   revDecay: 0.5,    // touch-evoked reversal drive decay, s
   omegaThresh: 0.7, // reversals longer than this end in an omega turn, s
-  omegaDur: 0.9,    // omega ventral head bend duration, s
+  omegaDur: 1.5,    // omega ventral head bend duration, s
   omegaGain: 1.6,   // RIV/SMDV drive during omega
   senseAdapt: 2.8,  // chemosensory adaptation time constant, s
   senseGain: 6.0,   // dC/dt scaling into ON/OFF cells
@@ -43,8 +43,29 @@ export const TUNE = {
   inputTau: 0.12,
   gAdapt: 2.1,      // spike-frequency adaptation strength: stops network-wide saturation
   adaptTau: 2.6,    // adaptation time constant, s   // decay of setInput/touch injected currents, s
+  // --- mechanotransduction from the environment (run 102) ---
+  noseGain: 2.0,    // head-on collision drive into ASH/FLP/OLQ (Kaplan and Horvitz 1993)
+  habTau: 14.0,      // nose touch habituation recovery, s (response fades under a held stimulus)
+  habRate: 1.35,     // how fast a sustained bump wears the response down
+  wdGain: 2.2,      // side-of-nose contact: OLQ/IL1 head withdrawal (Hart 1995)
+  wdTau: 0.3,       // withdrawal bias decay, s
+  wallGain: 0.35,   // sustained body contact into ALM/AVM, below reversal threshold:
+                    // entrainment along obstacles runs through body touch cells, not the nose
+  // --- RIM, the tyramine cell (Alkema 2005; Pirri 2009; LGC-55) ---
+  rimDrive: 0.9,    // AVA drives RIM (gap junctions in the wiring; this term keeps it reliable)
+  rimOsc: 0.9,      // fraction of head-oscillator output the tyramine shuts off during backing
+  tyrGain: 1.8,     // RIM inhibits AVB, which is what stretches escape reversals out
+  // --- foraging nose casts (Hart 1995: OLQ/IL1 -> RMD rhythm) ---
+  forageAmp: 0.4,   // small fast dorsoventral flicks of the nose during forward runs
+  klGain: 0.9,      // klinotaxis: if scent rises while the head is bent one way,
+                    // keep bending that way (Iino and Yoshida 2009, ASE -> RIA)
+  forageHz: 1.5,    // MODEL ASSUMPTION: the animal's flicks are irregular, a few Hz
+  load: 1.0,        // medium, 0 water .. 1 agar; the head oscillator slows under load
+                    // (Fang-Yen 2010; in the animal this emerges from mechanics, and the
+                    // stand-in oscillator has to be told - MODEL ASSUMPTION)
 };
 function sig(v){ return 1/(1+Math.exp(-TUNE.slope*(v-TUNE.theta))); }
+function gFcast(b){ return Math.max(0,b.command); }
 export class WormBrain {
   constructor(data){
     const N = this.N = data.neurons.length;
@@ -108,6 +129,11 @@ export class WormBrain {
     this.gTouchA=this._grp(['ALML','ALMR','AVM']);
     this.gTouchP=this._grp(['PLML','PLMR']);
     this.gNose=this._grp(['ASHL','ASHR','FLPL','FLPR']);
+    this.gOLQ=this._grp(['OLQDL','OLQDR','OLQVL','OLQVR']);
+    this.gWdD=this._grp(['OLQDL','OLQDR','IL1DL','IL1DR']);
+    this.gWdV=this._grp(['OLQVL','OLQVR','IL1VL','IL1VR']);
+    this.gBodyA=this._grp(['ALML','ALMR','AVM']);
+    this.gRIM=this._grp(['RIML','RIMR']);
     this.gOn=this._grp(['ASEL','AWCL','AWCR']);   // ASEL is the ON cell
     this.gOff=this._grp(['ASER']);                // ASER is the OFF cell
     // classify locomotor classes by name
@@ -129,6 +155,7 @@ export class WormBrain {
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
     this.command=1; this.revTime=0; this.omegaT=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
+    this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.A=new Float32Array(N); // adaptation state
     this.propS=new Float32Array(N); // bistable proprioceptive switch state, -1/0/+1
     this.Iper=new Float32Array(N); // persistent drives, rebuilt every step (frame-rate independent)
@@ -142,6 +169,54 @@ export class WormBrain {
     // so part of the touch drive goes to the command group directly
     if (region==='posterior'){ for (const i of this.gAVB) this.Iext[i]+=0.5*s; }
     else { for (const i of this.gAVA) this.Iext[i]+=0.6*s; for (const i of this.gAVB) this.Iext[i]-=0.4*s; }
+  }
+  // mechanotransduction from body-environment contact, called once per frame.
+  // noseOn: head-driving-into-wall strength 0..1. noseSide: signed lateral nose
+  // contact. bodyA/bodyP: sustained anterior/posterior body contact.
+  mech(noseOn,noseSide,bodyA,bodyP,dt,speed){
+    const T=TUNE;
+    // Wedged: the command says forward, the body touches something ahead, and
+    // the worm is not actually advancing. That is sustained pressure on the
+    // anterior receptive fields (FLP endings tile the head, Li 2011), and it
+    // is what a worm stuck in a corner feels even when its nose tip slides.
+    if (speed!==undefined && this.command>0.5 && (noseOn>0||bodyA>0.05)){
+      const wedge=Math.max(0,Math.min(1,(0.13-speed)/0.10))*Math.min(1,noseOn*2+bodyA*1.5);
+      noseOn=Math.max(noseOn,0.9*wedge);
+    }
+    // Nose touch: ASH, FLP, OLQ fire and the worm backs away (Kaplan and
+    // Horvitz 1993). The response habituates under a held stimulus, so a worm
+    // pinned nose-first against a wall backs off hard the first time and less
+    // the third time, like the animal in the Not assay.
+    // sensory persistence: ASH calcium holds through a sustained press, so
+    // intermittent tip contact (the wave slaps the nose on and off the wall)
+    // integrates into a firm signal instead of a train of ignorable blips
+    this.noseP+=(noseOn-this.noseP)*Math.min(1,dt/0.18);
+    if (noseOn>this.noseP) this.noseP=Math.min(1,this.noseP+noseOn*dt*6);
+    // gated by forward drive: the response halts forward motion and backs;
+    // a nose dragged along a wall during a reversal does not re-trigger it
+    const eff=this.noseP*this.hab*Math.max(0,this.command);
+    if (eff>0.03){
+      const s=T.noseGain*eff*dt*60*0.6;
+      for (const i of this.gNose) this.Iext[i]+=s;
+      for (const i of this.gOLQ)  this.Iext[i]+=0.6*s;
+      // ASH/FLP synapse directly onto AVA/AVD (White 1986); same normalization
+      // caveat as touch(), part of the drive goes to the command group
+      for (const i of this.gAVA) this.Iext[i]+=0.5*s;
+      for (const i of this.gAVB) this.Iext[i]-=0.33*s;
+      this.hab=Math.max(0.05,this.hab-T.habRate*eff*dt);
+    }
+    this.hab+=(1-this.hab)*dt/T.habTau;
+    // Head withdrawal: side-of-nose contact, OLQ/IL1 -> bend away (Hart 1995)
+    if (noseSide!==0){
+      const g=noseSide>0?this.gWdD:this.gWdV, a=Math.min(1,Math.abs(noseSide));
+      for (const i of g) this.Iext[i]+=T.wdGain*a*dt*60*0.2;
+      this.wdBias+=T.wdGain*a*(noseSide>0?1:-1)*dt*3;
+      this.wdBias=Math.max(-1.4,Math.min(1.4,this.wdBias));
+    }
+    // Entrainment along obstacles is carried by the body touch cells ALM/AVM,
+    // not the nose: light sustained drive, well below the reversal threshold
+    if (bodyA>0.02) for (const i of this.gBodyA) this.Iext[i]+=T.wallGain*Math.min(1,bodyA)*dt*60*0.15;
+    if (bodyP>0.02) for (const i of this.gTouchP) this.Iext[i]+=T.wallGain*Math.min(1,bodyP)*dt*60*0.1;
   }
   chemosense(conc){
     // ON/OFF adaptation: cells respond to change, not level (MODEL ASSUMPTION values)
@@ -165,20 +240,70 @@ export class WormBrain {
     if (this.command<-0.08) this.revTime+=dt;
     else { if (this.revTime>T.omegaThresh) this.omegaT=T.omegaDur; this.revTime=0; }
     if (this.omegaT>0){ this.omegaT-=dt; for (const i of this.gOmega) P[i]+=T.omegaGain; }
+    // RIM: AVA drives it (they share gap junctions in the wiring), and its
+    // tyramine does two things through the LGC-55 chloride channel (Pirri
+    // 2009): it relaxes the neck so head casts stop during backing, and it
+    // inhibits AVB so the escape reversal runs long (Alkema 2005)
+    for (const i of this.gRIM) P[i]+=T.rimDrive*B;
+    // thresholded: RIM rests near 0.2 like every sigmoid cell, and resting
+    // tyramine must not leak; only clear activation releases it
+    // tyramine is slow (released over seconds) and matters during commanded
+    // backing; a low-pass plus the command gate keeps within-cycle chatter of
+    // the RIM membrane from bleeding into the forward gait
+    const rimInst=Math.min(1,Math.max(0,(this._mean(this.gRIM)-0.4)/0.3))*Math.max(0,-this.command);
+    this.rimAct+=(rimInst-this.rimAct)*Math.min(1,dt/0.25);
+    for (const i of this.gAVB) P[i]-=T.tyrGain*this.rimAct;
     // head oscillator: mutual inhibition + adaptation (MODEL ASSUMPTION, Boyle-Cohen style CPG stand-in)
     const turn = Math.max(0.25, 1 - T.klino*this.on + 0.5*this.off); // climbers run straight, descenders cast
     const drv = T.oscDrive*Math.max(F,B*0.9);
-    const dD = (-this.oscD + Math.max(0, drv - T.oscInh*this.oscV - this.adD + 0.02))/T.oscTau;
-    const dV = (-this.oscV + Math.max(0, drv - T.oscInh*this.oscD - this.adV))/T.oscTau;
+    // under lighter load the whole rhythm runs faster (0.5 Hz on agar, near
+    // 1.7 Hz in water, Fang-Yen 2010): scale the oscillator clock with load
+    const clk = Math.pow(0.23,1-T.load); // 0.48 Hz on agar up to ~2 Hz in water (Fang-Yen 2010)
+    const oTau=T.oscTau*clk, oAd=T.oscAdapt*clk;
+    const dD = (-this.oscD + Math.max(0, drv - T.oscInh*this.oscV - this.adD + 0.02))/oTau;
+    const dV = (-this.oscV + Math.max(0, drv - T.oscInh*this.oscD - this.adV))/oTau;
     this.oscD+=dD*dt; this.oscV+=dV*dt;
-    this.adD+=(T.oscAdaptGain*this.oscD*turn-this.adD)*dt/T.oscAdapt;
-    this.adV+=(T.oscAdaptGain*this.oscV*turn-this.adV)*dt/T.oscAdapt;
-    const oD=Math.min(1,this.oscD), oV=Math.min(1,this.oscV+(this.omegaT>0?1.2:0));
+    this.adD+=(T.oscAdaptGain*this.oscD*turn-this.adD)*dt/oAd;
+    this.adV+=(T.oscAdaptGain*this.oscV*turn-this.adV)*dt/oAd;
+    // foraging casts: quick shallow nose flicks while running forward (Hart
+    // 1995: OLQ/IL1 and their RMD targets), shut off by RIM tyramine during
+    // backing, and damped while climbing a scent (the run straightens)
+    this.foragePhase+=2*Math.PI*T.forageHz*dt/Math.max(0.35,clk);
+    const rimS=this.rimAct;
+    // casts are NOSE-LOCAL: they ride a separate channel into the first
+    // muscle rows only, so a flick does not propagate down the body wave
+    const cast=T.forageAmp*Math.sin(this.foragePhase)*gFcast(this)*(1-rimS)*(1-0.7*this.on);
+    this.castD=Math.max(0,cast); this.castV=Math.max(0,-cast);
+    // head withdrawal joins the same nose-local channel: the neural route
+    // through the head motor cells is kept for the display, and the bend away
+    // is guaranteed by symmetric muscle drive (the real OLQ/IL1->RMD loop is
+    // dorsoventrally symmetric; our NMJ table is not quite, so trust physics)
+    this.castD+=Math.max(0,this.wdBias)*0.9; this.castV+=Math.max(0,-this.wdBias)*0.9;
+    // klinotaxis: correlate scent change with current head bend direction,
+    // and lean the wave toward the side that smells better (weathervaning)
+    const hb=curvature.length>3?curvature[3]:0;
+    const corr=(this.off-this.on)*(hb>0?1:hb<0?-1:0); // sign matched to the body frame empirically: +on-with-bend steered away
+    this.klBias+=(T.klGain*corr-this.klBias)*Math.min(1,dt/1.2);
+    // head withdrawal bias decays fast; positive bends dorsal
+    this.wdBias*=Math.exp(-dt/T.wdTau);
+    const headSupp=1-T.rimOsc*rimS;
+    // the omega is a tonic deep ventral curl, not a wave: while it lasts the
+    // dorsal side is silenced and the ventral side held, which is what makes
+    // the turn reorient reliably instead of depending on wave phase
+    const om=this.omegaT>0?Math.min(1,this.omegaT/0.3):0;
+    const steer=this.wdBias+this.klBias*gFcast(this);
+    const oD=Math.min(1,Math.max(0,(this.oscD+Math.max(0,steer))*headSupp))*(1-om);
+    const oV=Math.min(1,Math.max(0,(this.oscV+Math.max(0,-steer))*headSupp))*(1-om)+om*1.25;
     for (const i of this.gHeadD) P[i]+=T.oscToNeuron*oD;
     for (const i of this.gHeadV) P[i]+=T.oscToNeuron*oV;
     // proprioception: B cells feel bend anterior to themselves, A cells posterior
     // (Boyle, Berri, Cohen 2012; Wen 2012). Gated by the command groups.
+    // Under light load bends are shallower and develop faster, so the switch
+    // threshold drops and the sensed region stretches; this is the stand-in
+    // for the load dependence that gives the animal its long swim wavelength
     const NC=curvature.length, gF=Math.max(0,this.command), gB=Math.max(0,-this.command);
+    const pOn=T.propOn*(0.45+0.55*T.load);
+    const pWin=Math.min(NC-2,Math.round(T.propWin*(2-T.load)));
     for (let i=0;i<N;i++){
       if (this.bodyPos[i]<0) continue;
       let c=0;
@@ -196,21 +321,24 @@ export class WormBrain {
       // flips back on. Negative own-feedback means no coil can hold itself,
       // hysteresis means one flip per wave, the anterior term sets the phase.
       if (this.isB[i]&&gF>0.02){
-        if (own<=T.propWin){ c=T.gProp*gF*(this.isDorsal[i]?oD-oV:oV-oD); } // head B-class rides the head oscillator (they receive the head motor circuit), giving the chain a clean source
+        if (own<=pWin){ c=T.gProp*gF*(this.isDorsal[i]?oD-oV:oV-oD); } // head B-class rides the head oscillator (they receive the head motor circuit), giving the chain a clean source
         else {
         let s=0,m=0;
-        for(let j=own-T.propWin;j<own-T.propOff;j++){s+=curvature[j];m++;}
+        for(let j=own-pWin;j<own-T.propOff;j++){s+=curvature[j];m++;}
         const sg=(T.propWa*(m?s/m:0)-curvature[own])*(this.isDorsal[i]?1:-1);
-        if (sg>T.propOn) this.propS[i]=1; else if (sg<-T.propOn) this.propS[i]=-1;
+        if (sg>pOn) this.propS[i]=1; else if (sg<-pOn) this.propS[i]=-1;
         c=T.gProp*gF*this.propS[i];
         }
       } else if (this.isA[i]&&gB>0.02){
-        if (own>=NC-1-T.propWin){ c=T.gProp*gB*(this.isDorsal[i]?oD-oV:oV-oD); } // reversal wave seeds at the tail and runs forward
+        // the tail seed rides the RAW oscillator: tyramine silences the neck,
+        // not the source of the retrograde wave, and gating it here is what
+        // made escapes randomly fail to back up
+        if (own>=NC-1-pWin){ c=T.gProp*gB*(this.isDorsal[i]?this.oscD-this.oscV:this.oscV-this.oscD); } // reversal wave seeds at the tail and runs forward
         else {
         let s=0,m=0;
-        for(let j=own+T.propOff+1;j<=own+T.propWin;j++){s+=curvature[j];m++;}
+        for(let j=own+T.propOff+1;j<=own+pWin;j++){s+=curvature[j];m++;}
         const sg=(T.propWa*(m?s/m:0)-curvature[own])*(this.isDorsal[i]?1:-1);
-        if (sg>T.propOn) this.propS[i]=1; else if (sg<-T.propOn) this.propS[i]=-1;
+        if (sg>pOn) this.propS[i]=1; else if (sg<-pOn) this.propS[i]=-1;
         c=T.gProp*gB*this.propS[i];
         }
       }
@@ -251,7 +379,15 @@ export class WormBrain {
       let d=1/(1+Math.exp(-T.mSlope*diff)), v=1/(1+Math.exp(T.mSlope*diff));
       if (k<T.seedRows){ const w=0.5*(1+Math.cos(Math.PI*k/T.seedRows)); // smooth taper, no kink at the seam
         d=Math.min(1,d+T.oscSeed*w*oD); v=Math.min(1,v+T.oscSeed*w*oV); } // seed the wave (MODEL ASSUMPTION)
-      const rd=d>this.muscleDorsal[k]?T.mRise:T.mFall, rv=v>this.muscleVentral[k]?T.mRise:T.mFall;
+      if (k<3){ const wn=1-k/3; // foraging flicks live in the nose tip only
+        d=Math.min(1,d+this.castD*wn); v=Math.min(1,v+this.castV*wn); }
+      if (k<4&&this.rimAct>0.02){ // LGC-55 chloride on neck muscle: tyramine
+        const relax=this.rimAct*0.75*(1-k/4), m=0.5*(d+v); // relaxes the neck toward slack during backing (Pirri 2009)
+        d+=(m-d)*relax; v+=(m-v)*relax; }
+      // muscle rates follow the rhythm into thin fluid, or the 2 Hz swim
+      // would be filtered flat by crawl-tuned activation kinetics
+      const mScl=0.42+0.58*Math.pow(0.23,1-TUNE.load);
+      const rd=(d>this.muscleDorsal[k]?T.mRise:T.mFall)*mScl, rv=(v>this.muscleVentral[k]?T.mRise:T.mFall)*mScl;
       this.muscleDorsal[k]+=(d-this.muscleDorsal[k])*dt/rd;
       this.muscleVentral[k]+=(v-this.muscleVentral[k])*dt/rv;
     }

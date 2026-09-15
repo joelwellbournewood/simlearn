@@ -5,17 +5,26 @@
 // torque are zero (3x3 linear solve). Only the drag RATIO matters for motion;
 // normal drag >> tangential (agar) is what turns wiggle into thrust.
 // Sanity: ~0.5 Hz, wavelength ~0.65 L, ratio 12 -> ~0.1-0.3 lengths/s; ratio 1 -> none.
+// Body half-width profile (spindle), fraction of body length. Rendering and
+// collision share it: the body occupies area, points are not dimensionless.
+export function widthAt(s){ return 0.042*Math.pow(Math.sin(Math.PI*Math.min(1,0.12+0.88*s)),0.6)*(1-0.55*s*s*s); }
 export const BTUNE = {
   NP: 49,          // body points (48 segments), worm length 1.0
-  kmax: 15,        // rad/length at full tetanic contraction; the crawl wave runs at about a third of it, omega turns use the rest
+  kmax: 17,        // rad/length at full tetanic contraction; the crawl wave runs at about a third of it, omega turns use the rest
   tauK: 0.6,       // s, muscle-to-bend lag under agar load; this delay is what sets the crawl wavelength (Boyle 2012)
   kBend: 5.0,      // 1/s, bending elasticity: cuticle stiffness smooths curvature along the body
   dragRatio: 80,   // normal/tangential drag; on agar the worm cuts a groove and Cn/Ct is large (Berri 2009), which is why the tail follows the head's path
   sub: 4,          // substeps per frame
   curvSmooth: 0.05,// s, smoothing of curvature output (stretch receptors read it)
   margin: 0.06,    // dish boundary soft margin
-  wallTh: 0.035    // wall half thickness for collision
+  wallTh: 0.035,   // wall half thickness for collision
+  load: 1.0        // medium, 0 water .. 1 agar surface. Drag ratio and the
+                   // muscle-to-bend lag both follow it (Berri 2009; Fang-Yen
+                   // 2010: as load rises, frequency and wavelength fall)
 };
+// medium mapping: log-interpolate between water and agar values
+export function mediumDrag(load){ return Math.exp(Math.log(2.0)+(Math.log(80)-Math.log(2.0))*load); }
+export function mediumTauK(load){ return Math.exp(Math.log(0.055)+(Math.log(0.6)-Math.log(0.055))*load); }
 export class WormBody {
   constructor(x,y,angle){
     const NP=BTUNE.NP;
@@ -24,6 +33,9 @@ export class WormBody {
     this.theta=new Float32Array(NP-2);      // joint angles, the shape state
     this.curvature=new Float32Array(NP-2);  // smoothed, normalized output
     this.l0=1/(NP-1);
+    this.rad=new Float32Array(NP);
+    for (let i=0;i<NP;i++) this.rad[i]=widthAt(i/(NP-1));
+    this.contacts=[];
     this.reset(x,y,angle);
   }
   reset(x,y,angle){
@@ -50,14 +62,19 @@ export class WormBody {
     this.noseDirX=dx/L; this.noseDirY=dy/L;
   }
   step(dt,dorsal,ventral,env){
-    const T=BTUNE, NP=T.NP, l0=this.l0, h=dt/T.sub, ct=1, cn=T.dragRatio;
+    const T=BTUNE, NP=T.NP, l0=this.l0, h=dt/T.sub, ct=1;
+    const cn=mediumDrag(T.load), tauK=mediumTauK(T.load);
+    this.contacts.length=0;
     for (let s=0;s<T.sub;s++){
       // 1) muscles pull joint angles toward preferred curvature (first-order lag)
-      const g=Math.min(1,h/T.tauK);
+      const g=Math.min(1,h/tauK);
+      // stroke depth follows load: the animal crawls deep and swims shallow
+      // (curvature amplitude roughly 9/L on agar, 4/L in water, Fang-Yen 2010)
+      const kEff=T.kmax*(0.55+0.45*T.load);
       for (let j=0;j<NP-2;j++){
         const r=(j+0.5)/(NP-2)*24, k0=Math.min(23,Math.floor(r)), k1=Math.min(23,k0+1), f=r-k0;
         const act=(dorsal[k0]-ventral[k0])*(1-f)+(dorsal[k1]-ventral[k1])*f;
-        this.theta[j]+=(T.kmax*act*l0-this.theta[j])*g;
+        this.theta[j]+=(kEff*act*l0-this.theta[j])*g;
       }
       // cuticle bending elasticity: neighbouring segments share curvature,
       // which strips the blocky row-quantized edges off the wave
@@ -174,20 +191,38 @@ export class Environment {
     return eaten;
   }
   collide(body,h){
-    const T=BTUNE, NP=T.NP, px=body.px, py=body.py, mg=T.margin, th=0.035;
+    const T=BTUNE, NP=T.NP, px=body.px, py=body.py, mg=T.margin;
     for (let i=0;i<NP;i++){
-      if (px[i]<mg)px[i]=mg; if (px[i]>this.w-mg)px[i]=this.w-mg;
-      if (py[i]<mg)py[i]=mg; if (py[i]>this.h-mg)py[i]=this.h-mg;
+      const r=body.rad[i], me=mg+r*0.5;
+      // body tangent, for the contact's side (which flank touched the wall)
+      const im=Math.max(0,i-1), ip=Math.min(NP-1,i+1);
+      let tx=px[ip]-px[im], ty=py[ip]-py[im];
+      const tl=Math.hypot(tx,ty)||1e-9; tx/=tl; ty/=tl;
+      const rec=(nx,ny,depth)=>{
+        // side: +1 wall touches the flank the muscles call ventral here,
+        // -1 the dorsal flank (sign convention matches theta>0 bends).
+        // push: normal approach SPEED (the projection resolves depth each
+        // substep, so depth alone is meaningless); 0.5 L/s pins it at 1
+        const side=(nx*-ty+ny*tx)>0?1:-1;
+        body.contacts.push({i,nx,ny,push:Math.min(1,depth/h/0.5),side});
+      };
+      if (px[i]<me){ rec(1,0,me-px[i]); px[i]=me; }
+      if (px[i]>this.w-me){ rec(-1,0,px[i]-(this.w-me)); px[i]=this.w-me; }
+      if (py[i]<me){ rec(0,1,me-py[i]); py[i]=me; }
+      if (py[i]>this.h-me){ rec(0,-1,py[i]-(this.h-me)); py[i]=this.h-me; }
       for (const o of this.obstacles){
-        const dx=px[i]-o.x,dy=py[i]-o.y,d=Math.hypot(dx,dy);
-        if (d<o.r){ px[i]=o.x+dx/d*o.r; py[i]=o.y+dy/d*o.r; }
+        const dx=px[i]-o.x,dy=py[i]-o.y,d=Math.hypot(dx,dy),rr=o.r+r;
+        if (d<rr){ const nx=dx/(d||1e-9),ny=dy/(d||1e-9); rec(nx,ny,rr-d);
+          px[i]=o.x+nx*rr; py[i]=o.y+ny*rr; }
       }
       for (const w of this.walls){
+        const th=T.wallTh+r;
         const dx=w.x2-w.x1,dy=w.y2-w.y1,L2=dx*dx+dy*dy||1e-9;
         let t=((px[i]-w.x1)*dx+(py[i]-w.y1)*dy)/L2; t=Math.max(0,Math.min(1,t));
         const cx=w.x1+t*dx,cy=w.y1+t*dy;
         let nx=px[i]-cx,ny=py[i]-cy; const d=Math.hypot(nx,ny);
         if (d<th){ if(d<1e-9){nx=-dy;ny=dx;const L=Math.hypot(nx,ny);nx/=L;ny/=L;}else{nx/=d;ny/=d;}
+          rec(nx,ny,th-d);
           px[i]=cx+nx*th; py[i]=cy+ny*th; }
       }
     }

@@ -239,6 +239,8 @@ body.clean .hud,body.clean .brand{display:none}
   <div class="row">
     <label for="s-smell"><span class="nm">Scent carry<button class="tip" data-tip="How far the smell of food spreads through the agar. Weak scent forces the worm to nearly stumble into dinner." aria-label="What scent carry does">?</button></span><span class="val" id="v-smell"></span></label>
     <input type="range" id="s-smell" min="0.2" max="3" step="0.1" value="1">
+    <label for="s-medium"><span class="nm">Medium<button class="tip" data-tip="Water to agar. The same nervous system swims fast and long-waved in water and crawls slow and tight on agar; only the drag changes it." aria-label="What medium does">?</button></span><span class="val" id="v-medium"></span></label>
+    <input type="range" id="s-medium" min="0.2" max="1" step="0.05" value="1">
   </div>
   </details>
 
@@ -248,7 +250,7 @@ body.clean .hud,body.clean .brand{display:none}
   <p id="ncap">hover a cell to name it</p>
   </details>
 
-  <p class="keys">1-4 dishes &middot; Space pause &middot; R new worm &middot; H hide &middot; F fullscreen</p>
+  <p class="keys">1-5 dishes &middot; Space pause &middot; R new worm &middot; H hide &middot; F fullscreen</p>
 </div>
 
 <div class="hud">
@@ -262,17 +264,20 @@ body.clean .hud,body.clean .brand{display:none}
 <button class="about-close" id="b-close" aria-label="Close">&times;</button>
 <h2>What am I looking at?</h2>
 <p>A nematode a millimetre long, magnified a few hundred times, on a dish of agar. Caenorhabditis elegans is the only animal whose entire nervous system has been mapped cell by cell: 302 neurons, and every synapse between them, published by White, Southgate, Thomson, and Brenner in 1986 after fifteen years of electron microscopy. That map, the connectome, is what runs this worm. Each of the 300 wired neurons here is a little voltage that leaks, sums what its neighbours send it through more than 2,000 chemical synapses and 500 electrical junctions, and passes the result on. Ninety five muscle cells along the body listen to the motor neurons and bend what they reach.</p>
-<p>Nothing about the gait is drawn or scripted. The wave that carries the worm forward starts as a small alternation in the head, and each segment behind copies the bend it feels in front of itself, a trick the real animal plays with stretch receptors on its motor neurons. Slide a finger of food scent past the nose and the salt-sensing cells ASEL and ASER fire on rising and falling scent; their signal descends through the real wiring to the head muscles, and the worm steers up the gradient the way the animal does in the laboratory, by running straight when dinner is getting closer and casting about when it is not.</p>
-<p>Touch it near the head and the touch cells ALM and AVM wake the command neurons AVA, AVD, and AVE, the same cells that flip the living worm into reverse. A long enough retreat ends in a deep ventral coil, the omega turn, and the worm sets off somewhere new. Every one of those decisions is visible as it happens in the grid of cells on the right: sensory neurons, interneurons, and motor neurons lighting up in the order the wiring dictates.</p>
+<p>Nothing about the gait is drawn or scripted. The wave that carries the worm forward starts as a small alternation in the head, and each segment behind copies the bend it feels in front of itself, a trick the real animal plays with stretch receptors on its motor neurons. Slide a finger of food scent past the nose and the salt-sensing cells ASEL and ASER fire on rising and falling scent; their signal descends through the real wiring to the head muscles, and the worm steers up the gradient the way the animal does in the laboratory: it runs straight when dinner is getting closer, casts about when it is not, and leans each swing of its head toward the side that smells better.</p>
+<p>Touch it near the head and the touch cells ALM and AVM wake the command neurons AVA, AVD, and AVE, the same cells that flip the living worm into reverse. The worm also feels the world without your help: drive it nose first into a wall and the nose cells ASH, FLP, and OLQ fire and throw it into reverse, the response Kaplan and Horvitz mapped in 1993, and it fades if the stimulus goes on and on, the way the animal habituates. A brush on the side of the nose makes the head pull away instead, through the labial cells OLQ and IL1. And while it backs up, the tyramine cell RIM quiets the head the way the real escape response does, so the retreat is a clean slide rather than a wobble, and the reversal runs long enough to matter. A long enough retreat ends in a deep ventral coil, the omega turn, and the worm sets off somewhere new. Every one of those decisions is visible as it happens in the grid of cells on the right: sensory neurons, interneurons, and motor neurons lighting up in the order the wiring dictates.</p>
+<p>The dish itself is a physics experiment. On agar the worm cuts a groove and crawls slow and tight; slide the medium toward water and the very same circuit swims, faster and longer waved, with nothing changed but the drag on its body. That continuous gait change is exactly what Berri (2009) and Fang-Yen (2010) measured by thickening the fluid around real worms.</p>
 <h3>Things to try</h3>
 <ul>
 <li>Drop one meal of food far from the worm, turn the scent down low, and watch how long the search takes. Then turn the scent up and watch the path straighten.</li>
 <li>Build a corridor of walls with food at the end. The worm cannot see; it feels its way, and corners genuinely cost it time.</li>
 <li>Poke the head, then the tail. The head poke reverses it; the tail poke urges it forward. Two different touch circuits, and you can watch them fire.</li>
 <li>Ring the worm with posts and see it thread between them. Nothing tells it where the gaps are except its own body bending.</li>
+<li>Build a dead end corner and let it drive in. Watch ASH and FLP light up at the moment of the bump, the reversal, the deep turn, and the exit. Then trap it again and again and see the response wear down.</li>
+<li>Slide the medium from agar to water and watch the stroke lengthen and quicken without a single neuron changing.</li>
 </ul>
 <h3>Limits of the model</h3>
-<p>The wiring is the animal's own, but the physiology on top of it is simplified. Real C. elegans neurons carry graded potentials with rich channel dynamics; here each is a single leaky voltage with one gain, and synapse strength is the anatomical synapse count, signed by transmitter. The head's rhythm generator is not fully understood in the living animal and is stood in for by a small oscillator between the real head motor neurons. The stretch response of the motor neurons is modelled as an on-off switch with memory, following Boyle, Berri, and Cohen (2012), and the wavelength of the crawl is not written anywhere: it comes out of how slowly a bend develops against the agar. Muscle chemistry, egg laying, feeding, and the pharynx are absent, and the dish is two dimensional. The worm on your screen is a hypothesis about how this nervous system produces behaviour, not a copy of the animal; where it behaves like the real one, that is the wiring doing the work.</p>
+<p>The wiring is the animal's own, but the physiology on top of it is simplified. Real C. elegans neurons carry graded potentials with rich channel dynamics; here each is a single leaky voltage with one gain, and synapse strength is the anatomical synapse count, signed by transmitter. The head's rhythm generator is not fully understood in the living animal and is stood in for by a small oscillator between the real head motor neurons. The stretch response of the motor neurons is modelled as an on-off switch with memory, following Boyle, Berri, and Cohen (2012), and the wavelength of the crawl is not written anywhere: it comes out of how slowly a bend develops against the agar. The quick foraging flicks of the nose tip and the pace of the swim rhythm in thin fluid are set by hand to match the measured behaviour rather than emerging from the wiring, and both are tagged as assumptions in the code. Muscle chemistry, egg laying, feeding, and the pharynx are absent, and the dish is two dimensional. The worm on your screen is a hypothesis about how this nervous system produces behaviour, not a copy of the animal; where it behaves like the real one, that is the wiring doing the work.</p>
 <h3>References</h3>
 <ul class="refs">
 <li>White, Southgate, Thomson, and Brenner (1986), The structure of the nervous system of the nematode Caenorhabditis elegans. Phil. Trans. R. Soc. B 314.</li>
@@ -281,6 +286,11 @@ body.clean .hud,body.clean .brand{display:none}
 <li>Fang-Yen, Wyart, Xie, Kawai, Kodger, Chen, Wen, and Samuel (2010), Biomechanical analysis of gait adaptation in the nematode C. elegans. PNAS 107.</li>
 <li>Wen, Po, Hulme, Chen, Liu, Kwok, Gershow, Leifer, Butler, Fang-Yen, Kawano, Schafer, Whitesides, Wyart, Chklovskii, Zhen, and Samuel (2012), Proprioceptive coupling within motor neurons drives C. elegans forward locomotion. Neuron 76.</li>
 <li>Kawano, Po, Gao, Leung, Ryu, and Zhen (2011), An imbalancing act: gap junctions reduce the backward motor circuit activity to bias C. elegans for forward locomotion. Neuron 72.</li>
+<li>Kaplan and Horvitz (1993), A dual mechanosensory and chemosensory neuron in Caenorhabditis elegans. PNAS 90.</li>
+<li>Hart, Sims, and Kaplan (1995), Synaptic code for sensory modalities revealed by C. elegans GLR-1 glutamate receptor. Nature 378.</li>
+<li>Alkema, Hunter-Ensor, Ringstad, and Horvitz (2005), Tyramine functions independently of octopamine in the Caenorhabditis elegans nervous system. Neuron 46.</li>
+<li>Pirri, McPherson, Donnelly, Francis, and Alkema (2009), A tyramine-gated chloride channel coordinates distinct motor programs of a C. elegans escape response. Neuron 62.</li>
+<li>Berri, Boyle, Tassieri, Hope, and Cohen (2009), Forward locomotion of the nematode C. elegans is achieved through modulation of a single gait. HFSP Journal 3.</li>
 <li>The OpenWorm project, openworm.org, whose curated neuron and muscle tables this worm runs on.</li>
 </ul>
 </div></dialog>

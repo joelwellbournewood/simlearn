@@ -1,5 +1,5 @@
 import { WormBrain, TUNE } from './brain.js';
-import { WormBody, Environment, BTUNE } from './body.js';
+import { WormBody, Environment, BTUNE, widthAt } from './body.js';
 
 const W=8, H=5, el=id=>document.getElementById(id);
 const data=await fetch('./celegans-connectome.json').then(r=>r.json());
@@ -36,6 +36,9 @@ const PRESETS={
   'Post forest':{tag:'Thread the pillars to reach the lawn', make(){
     for (let i=0;i<4;i++) for (let j=0;j<3;j++) env.addObstacle(2.6+i*1.0,1.4+j*1.1,0.22);
     env.addFood(7.0,2.5,1.2,0.6); }},
+  'The corner':{tag:'A dead end; watch the nose neurons argue it out', make(){
+    env.addWall(6.6,2.5,4.4,1.1); env.addWall(6.6,2.5,4.4,3.9);
+    env.addFood(7.3,4.2,0.9,0.5); }},
 };
 function loadPreset(name,btn){
   env=new Environment(W,H); PRESETS[name].make();
@@ -88,6 +91,7 @@ function bind(id,vid,fmt,set){ const s=el(id),v=el(vid);
 let simSpeed=1;
 bind('s-speed','v-speed',v=>v.toFixed(2)+'x',v=>simSpeed=v);
 bind('s-smell','v-smell',v=>v.toFixed(1),v=>TUNE.senseGain=6*v);
+bind('s-medium','v-medium',v=>v<0.25?'water':v<0.75?'thick gel':'agar surface',v=>{ BTUNE.load=v; TUNE.load=v; });
 
 // ---- neural grid: sensory, inter, motor blocks ----
 const order=[...Array(brain.N).keys()].sort((a,b)=>{
@@ -116,7 +120,6 @@ function drawNerves(){
   }
 }
 // ---- rendering the dish ----
-function widthAt(s){ return 0.042*Math.pow(Math.sin(Math.PI*Math.min(1,0.12+0.88*s)),0.6)*(1-0.55*s*s*s); }
 function draw(){
   const w=cv.clientWidth,h=cv.clientHeight;
   ctx.fillStyle='#050c0a'; ctx.fillRect(0,0,w,h);
@@ -175,6 +178,17 @@ function draw(){
 // ---- loop ----
 const dt=1/60;
 function stepOnce(){
+  // mechanotransduction: last frame's body-wall contacts reach the neurons.
+  // Nose tip pressed forward = ASH/FLP/OLQ nose touch; side of the nose =
+  // OLQ/IL1 head withdrawal; body flank = ALM/AVM (entrainment along walls)
+  let noseOn=0,noseSide=0,bodyA=0,bodyP=0;
+  for (const c of body.contacts){
+    if (c.i<=4){ const dot=-(c.nx*body.noseDirX+c.ny*body.noseDirY);
+      noseOn=Math.max(noseOn,Math.max(0,dot)); noseSide+=c.side*Math.min(0.4,c.push);
+    } else if (c.i<24) bodyA=Math.max(bodyA,c.push);
+    else bodyP=Math.max(bodyP,c.push);
+  }
+  brain.mech(noseOn,noseSide,bodyA,bodyP,dt,body.speed);
   const conc=env.concentrationAt(body.noseX,body.noseY);
   brain.chemosense(conc);
   if (pokePulse){ brain.touch(pokePulse.region,1.3); pokePulse.t-=dt; if(pokePulse.t<=0) pokePulse=null; }
@@ -223,7 +237,7 @@ window.addEventListener('keydown',e=>{
   else if (k==='r'||k==='R') el('b-reset').click();
   else if (k==='h'||k==='H') el('b-clean').click();
   else if (k==='f'||k==='F') el('b-full').click();
-  else if (k>='1'&&k<='4'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
+  else if (k>='1'&&k<='5'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
 });
 if (window.self!==window.top) document.body.classList.add('in-frame');
 // test hook: lets automated checks find the worm
