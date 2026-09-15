@@ -19,7 +19,12 @@ function safeRect(w,h){
     if(pe&&getComputedStyle(pe).display!=='none'){const r=pe.getBoundingClientRect(); if(r.width>0) L=Math.max(L,r.right+14);}
     if(ve&&getComputedStyle(ve).display!=='none'){const r=ve.getBoundingClientRect(); if(r.width>0) R=Math.min(R,r.left-14);}
   }
-  if(R-L<180){L=14;R=w-14;}
+  // never fully hand the dish rect back to full-bleed here: that would put
+  // the dish UNDER the panels, which is the one thing this function exists
+  // to prevent. If the squeeze is severe, shrink the dish instead of
+  // deleting the margins (an unusably narrow dish beats an overlapping one).
+  const minDish=120;
+  if(R-L<minDish){ R=Math.min(w-14,L+minDish); if(R-L<minDish) L=Math.max(14,R-minDish); }
   if(B-T<140){T=14;B=h-14;}
   return {L,R,T,B};
 }
@@ -143,8 +148,12 @@ const VC={}; for (const v of VIEWS) VC[v]=el({nerves:'nerves',geo:'geo',muscles:
 const VG={}; for (const v of VIEWS) VG[v]=VC[v].getContext('2d');
 let nervesGrid={NC:20,CS:11,rows:15};
 function sizeViz(){
-  el('vizpanel').classList.toggle('wide',vizWide);
-  el('v-wide').setAttribute('aria-pressed',String(vizWide));
+  // don't let the expanded panel crowd the dish into the left panel on
+  // narrower desktop windows: only honour the "wide" preference once there
+  // is comfortably room for both panels plus a usable dish between them
+  const wideOK=vizWide && window.innerWidth>=1180;
+  el('vizpanel').classList.toggle('wide',wideOK);
+  el('v-wide').setAttribute('aria-pressed',String(wideOK));
   for (const v of VIEWS){
     const on=vizOn.has(v);
     el('sec-'+v).classList.toggle('on',on);
@@ -511,14 +520,14 @@ const SIGS=[
 const SN=300, sbuf=SIGS.map(()=>new Float32Array(SN)), stbuf=new Uint8Array(SN); let shead=0;
 function pushSignals(){
   for (let i=0;i<SIGS.length;i++) sbuf[i][shead]=SIGS[i].f();
-  stbuf[shead]=brain.omegaT>0?2:brain.command<-0.08?1:0;
+  stbuf[shead]=brain.omegaT>0?3:brain.upsilonT>0?2:brain.command<-0.08?1:0;
   shead=(shead+1)%SN;
 }
 function drawSignals(){
   const g=VG.signals, c=VC.signals;
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
   const stripH=7*vdpr;
-  const stc=['rgba(86,224,194,.25)','rgba(255,125,92,.55)','rgba(230,195,79,.7)'];
+  const stc=['rgba(86,224,194,.25)','rgba(255,125,92,.55)','rgba(255,180,84,.7)','rgba(230,195,79,.85)'];
   const dx=c.width/SN;
   for (let s=0;s<SN;s++){ const v=stbuf[(shead+s)%SN];
     if (v){ g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); } }
@@ -664,13 +673,6 @@ function loop(){
     }
   }
   draw(); drawViz(frame);
-  // HUD
-  const st=brain.omegaT>0?'omega turn':brain.command<-0.08?'reversal':'forward';
-  el('h-state').textContent=st;
-  el('h-speed').textContent=body.speed.toFixed(2);
-  el('h-eaten').textContent=eaten.toFixed(2);
-  let up=0; for (let i=0;i<brain.N;i++) if (brain.activity[i]>0.5) up++;
-  el('h-active').textContent=up;
 }
 loop();
 

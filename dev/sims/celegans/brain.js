@@ -33,6 +33,15 @@ export const TUNE = {
   omegaThresh: 0.7, // reversals longer than this end in an omega turn, s
   omegaDur: 1.5,    // omega ventral head bend duration, s
   omegaGain: 1.6,   // RIV/SMDV drive during omega
+  upsilonThresh: 0.32, // reversals shorter than omegaThresh but longer than this
+                    // end in a partial (upsilon) turn instead of a plain resume
+                    // (Croll 1975 names omega and upsilon as the two classic C.
+                    // elegans reorientation shapes; the depth-graded reorientation
+                    // continuum below full coiling is also documented directly by
+                    // curvature magnitude in Broekmans et al. 2016, eLife 5:e17227)
+  upsilonDur: 0.6,  // upsilon turn duration, s: shorter than omega's 1.5s (MODEL ASSUMPTION)
+  upsilonGain: 0.65, // partial RIV/SMDV drive: about 40% of the omega gain, so the
+                    // ventral bend is real but does not drive the head to the tail
   senseAdapt: 2.8,  // chemosensory adaptation time constant, s
   senseGain: 6.0,   // dC/dt scaling into ON/OFF cells
   revOnOff: 0.9,    // OFF signal -> AVA drive (pirouette: Pierce-Shimomura 1999)
@@ -240,7 +249,7 @@ export class WormBrain {
     this.activity=new Float32Array(N);
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
-    this.command=1; this.revTime=0; this.omegaT=0;
+    this.command=1; this.revTime=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
@@ -273,6 +282,7 @@ export class WormBrain {
   touch(region,s){
     const g = region==='nose'?this.gNose : region==='posterior'?this.gTouchP : this.gTouchA;
     for (const i of g) this.Iext[i]+=s;
+    if (region==='nose') this.noseTouchRecent=Math.min(1,this.noseTouchRecent+Math.abs(s));
     // MODEL ASSUMPTION: normalization underweights the strong touch->command routes,
     // so part of the touch drive goes to the command group directly
     if (region==='posterior'){ for (const i of this.gAVB) this.Iext[i]+=0.5*s; }
@@ -309,6 +319,7 @@ export class WormBrain {
     const eff=this.noseP*this.hab*Math.max(0,this.command);
     if (eff>0.03){
       const s=T.noseGain*eff*dt*60*0.6;
+      this.noseTouchRecent=Math.max(this.noseTouchRecent,Math.min(1,eff*3));
       for (const i of this.gNose) this.Iext[i]+=s;
       for (const i of this.gOLQ)  this.Iext[i]+=0.6*s;
       // ASH/FLP synapse directly onto AVA/AVD (White 1986); same normalization
@@ -435,9 +446,30 @@ export class WormBrain {
     for (const i of this.gAVB) P[i]+=T.tonicF*this.locoTonicMul - T.xInh*B*0.9;
     for (const i of this.gAVA) P[i]+=T.revOnOff*this.off - T.xInh*F*0.6 + this.locoRevDrive;
     // reversal bookkeeping and omega turn on resumption
+    this.noseTouchRecent*=Math.exp(-dt/1.5);
     if (this.command<-0.08) this.revTime+=dt;
-    else { if (this.revTime>T.omegaThresh) this.omegaT=T.omegaDur; this.revTime=0; }
+    else {
+      // Turn depth is decided by WHAT caused the reversal, not only its
+      // length: nose touch/collision reliably drives a full omega turn in
+      // real animals (Kaplan and Horvitz 1993; Alkema 2005's tyramine/RIM
+      // circuit specifically sustains long backing after an aversive
+      // stimulus). Reversals with no recent nose contact are the pirouette/
+      // spontaneous kind (Pierce-Shimomura 1999); those still reliably clear
+      // the duration floor in this model (the AVA/AVB flip-flop is
+      // hysteretic by design, run 108) but in the living animal are more
+      // often the shallower upsilon-class reorientation, so that is what an
+      // untouched reversal becomes here once it clears the floor. MODEL
+      // ASSUMPTION: the escape/spontaneous split is a simplification of a
+      // continuum the field still argues over (Broekmans et al. 2016 found
+      // deep spontaneous coils happen too, just not on every reversal).
+      if (this.revTime>T.omegaThresh){
+        if (this.noseTouchRecent>0.15) this.omegaT=T.omegaDur;
+        else this.upsilonT=T.upsilonDur;
+      } else if (this.revTime>T.upsilonThresh) this.upsilonT=T.upsilonDur;
+      this.revTime=0;
+    }
     if (this.omegaT>0){ this.omegaT-=dt; for (const i of this.gOmega) P[i]+=T.omegaGain; }
+    else if (this.upsilonT>0){ this.upsilonT-=dt; for (const i of this.gOmega) P[i]+=T.upsilonGain; }
     // RIM: AVA drives it (they share gap junctions in the wiring), and its
     // tyramine does two things through the LGC-55 chloride channel (Pirri
     // 2009): it relaxes the neck so head casts stop during backing, and it
@@ -489,11 +521,17 @@ export class WormBrain {
     const headSupp=1-T.rimOsc*rimS;
     // the omega is a tonic deep ventral curl, not a wave: while it lasts the
     // dorsal side is silenced and the ventral side held, which is what makes
-    // the turn reorient reliably instead of depending on wave phase
+    // the turn reorient reliably instead of depending on wave phase. Upsilon
+    // is the same mechanism at half depth: the dorsal wave is only partly
+    // damped (the body keeps some S-bend, so the head never reaches the
+    // tail) and the ventral hold is weaker, which is what keeps the
+    // resulting reorientation to roughly a right angle instead of ~180 deg.
     const om=this.omegaT>0?Math.min(1,this.omegaT/0.3):0;
+    const up=this.upsilonT>0?Math.min(1,this.upsilonT/0.25):0;
     const steer=this.wdBias+this.klBias*gFcast(this);
-    const oD=Math.min(1,Math.max(0,(this.oscD+Math.max(0,steer))*headSupp))*(1-om);
-    const oV=Math.min(1,Math.max(0,(this.oscV+Math.max(0,-steer))*headSupp))*(1-om)+om*1.25;
+    const dorsalSupp=Math.max(0,1-om-0.55*up);
+    const oD=Math.min(1,Math.max(0,(this.oscD+Math.max(0,steer))*headSupp))*dorsalSupp;
+    const oV=Math.min(1,Math.max(0,(this.oscV+Math.max(0,-steer))*headSupp))*dorsalSupp+om*1.25+up*0.7;
     for (const i of this.gHeadD) P[i]+=T.oscToNeuron*oD;
     for (const i of this.gHeadV) P[i]+=T.oscToNeuron*oV;
     // proprioception: B cells feel bend anterior to themselves, A cells posterior
