@@ -230,6 +230,26 @@ export class WormBrain {
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0;
+    // --- spontaneous roaming/dwelling behavioral state (Cermak, Yu, Clark,
+    // Huang, Baskoylu, Flavell 2020, eLife 9:e57093): posture-HMM on 30
+    // well-fed animals over 180 h found ONE roaming state (high forward
+    // velocity, low angular speed, lasting tens of seconds to many minutes)
+    // and EIGHT dwelling sub-modes averaging ~10 s each, non-randomly
+    // sequenced: five sub-modes were almost completely paused movement,
+    // one was steady slow forward crawling, one showed a high incidence of
+    // active reversing, and one showed a wide range of head/neck movement.
+    // Exact speed multipliers and epoch-length bounds are not given in the
+    // paper's text (only in figures we cannot read) -- MODEL ASSUMPTION for
+    // the numeric bounds, but the qualitative structure (one fast-straight
+    // state; dwelling built from ~10 s sub-bouts, most of them paused) is
+    // taken directly from the paper. locoFree=false reproduces the pre-run
+    // 108 always-roaming behavior for benchmark comparability.
+    if (this.locoFree===undefined) this.locoFree=true;
+    if (this._rngS===undefined) this._rngS=(Date.now()^0x9e3779b9)>>>0;
+    this.locoMode='roam'; this.locoT=this._rnd()*110+30; // 30-140 s
+    this.subMode=null; this.subT=0;
+    this.locoTonicMul=1; this.locoTurnMul=1; this.locoRevDrive=0;
+    this._revNext=0; this._revPulseT=0;
     this.A=new Float32Array(N); // adaptation state
     this.propS=new Float32Array(N); // bistable proprioceptive switch state, -1/0/+1
     this.Iper=new Float32Array(N); // persistent drives, rebuilt every step (frame-rate independent)
@@ -319,15 +339,50 @@ export class WormBrain {
     this.ser+=(Math.min(1,eating)-this.ser)*Math.min(1,dt/0.8);
   }
   _mean(g){ let s=0; for (const i of g) s+=this.act[i]; return g.length?s/g.length:0; }
+  // deterministic PRNG (mulberry32) so behavior is reproducible when a seed
+  // is set explicitly (benchmark rigs); live pages seed from Date.now().
+  _rnd(){ let t=this._rngS+=0x6D2B79F5; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }
+  _locoStep(dt){
+    if (!this.locoFree){ this.locoTonicMul=1; this.locoTurnMul=1; this.locoRevDrive=0; return; }
+    this.locoT-=dt;
+    if (this.locoMode==='roam'){
+      if (this.locoT<=0){ this.locoMode='dwell'; this.locoT=this._rnd()*70+30; this.subT=0; } // dwell epoch 30-100 s
+    } else {
+      this.subT-=dt;
+      if (this.subT<=0){
+        const r=this._rnd();
+        // categorical draw matching the paper's 8 sub-modes: 5/8 paused
+        // (Dwell2,3,4,5,8), 1/8 steady slow crawl (Dwell1), 1/8 high
+        // reversal incidence (Dwell7), 1/8 wide head/neck sweeps (Dwell6)
+        this.subMode = r<0.625?'pause' : r<0.75?'slowcrawl' : r<0.875?'reversal' : 'sweep';
+        this.subT=10*(0.5+this._rnd()); // ~10 s average (paper), 5-15 s spread
+      }
+      if (this.locoT<=0){ this.locoMode='roam'; this.locoT=this._rnd()*110+30; this.subMode=null; } // roam bout 30-140 s
+    }
+    if (this.locoMode==='roam'){ this.locoTonicMul=1.0; this.locoTurnMul=1.0; this._revNext=0; this._revPulseT=0; this.locoRevDrive=0; return; } // exactly the validated legacy crawl (both a >1 tonic boost and a <1 turn suppression here measurably hurt sine purity); 'low angular speed' in roam falls out naturally because wide sweeps/reversals are confined to dwelling
+    switch (this.subMode){
+      case 'pause':      this.locoTonicMul=0.10; this.locoTurnMul=0.7; break;
+      case 'slowcrawl':  this.locoTonicMul=0.50; this.locoTurnMul=0.8; break;
+      case 'sweep':      this.locoTonicMul=0.60; this.locoTurnMul=2.4; break;
+      case 'reversal':   this.locoTonicMul=0.55; this.locoTurnMul=0.9; break;
+      default:           this.locoTonicMul=1.0;  this.locoTurnMul=1.0;
+    }
+    if (this.subMode==='reversal'){
+      this._revNext-=dt;
+      if (this._revNext<=0){ this._revPulseT=0.9; this._revNext=1.8+this._rnd()*2.4; }
+    } else { this._revNext=0; }
+    if (this._revPulseT>0){ this._revPulseT-=dt; this.locoRevDrive=1.1; } else this.locoRevDrive=0;
+  }
   step(dt,curvature){
     const N=this.N, V=this.V, act=this.act, I=this.Iext, T=TUNE;
     const P=this.Iper; P.fill(0); // persistent currents live one step, never accumulate
     this._t+=dt;
+    this._locoStep(dt);
     const F=this._mean(this.gAVB), B=this._mean(this.gAVA);
     this.command=(F-B)/(F+B+1e-6);
     // command flip-flop: tonic forward + cross-inhibition (MODEL ASSUMPTION)
-    for (const i of this.gAVB) P[i]+=T.tonicF - T.xInh*B*0.9;
-    for (const i of this.gAVA) P[i]+=T.revOnOff*this.off - T.xInh*F*0.6;
+    for (const i of this.gAVB) P[i]+=T.tonicF*this.locoTonicMul - T.xInh*B*0.9;
+    for (const i of this.gAVA) P[i]+=T.revOnOff*this.off - T.xInh*F*0.6 + this.locoRevDrive;
     // reversal bookkeeping and omega turn on resumption
     if (this.command<-0.08) this.revTime+=dt;
     else { if (this.revTime>T.omegaThresh) this.omegaT=T.omegaDur; this.revTime=0; }
@@ -347,7 +402,7 @@ export class WormBrain {
     for (const i of this.gAVB) P[i]-=T.tyrGain*this.rimAct;
     // head oscillator: mutual inhibition + adaptation (MODEL ASSUMPTION, Boyle-Cohen style CPG stand-in)
     const turn = Math.max(0.25, 1 - T.klino*this.on + 0.5*this.off); // climbers run straight, descenders cast
-    const drv = T.oscDrive*Math.max(F,B*0.9);
+    const drv = T.oscDrive*Math.max(F,B*0.9)*this.locoTonicMul; // roam/dwell arousal gates CPG drive directly (normalized command cannot: it saturates near +-1 regardless of magnitude)
     // under lighter load the whole rhythm runs faster (0.5 Hz on agar, near
     // 1.7 Hz in water, Fang-Yen 2010): scale the oscillator clock with load
     const clk = Math.pow(0.23,1-T.load); // 0.48 Hz on agar up to ~2 Hz in water (Fang-Yen 2010)
@@ -366,7 +421,7 @@ export class WormBrain {
     const rimS=this.rimAct;
     // casts are NOSE-LOCAL: they ride a separate channel into the first
     // muscle rows only, so a flick does not propagate down the body wave
-    const cast=T.forageAmp*Math.sin(this.foragePhase)*gFcast(this)*(1-rimS)*(1-0.7*this.on);
+    const cast=T.forageAmp*this.locoTurnMul*Math.sin(this.foragePhase)*gFcast(this)*(1-rimS)*(1-0.7*this.on);
     this.castD=Math.max(0,cast); this.castV=Math.max(0,-cast);
     // head withdrawal joins the same nose-local channel: the neural route
     // through the head motor cells is kept for the display, and the bend away
@@ -500,6 +555,12 @@ export class WormBrain {
       // graded transfer: real body-wall muscle tone is smooth, and the crawl
       // wave is near-sinusoidal (Fang-Yen 2010), so the map must not clip
       let d=1/(1+Math.exp(-T.mSlope*diff)), v=1/(1+Math.exp(T.mSlope*diff));
+      // roam/dwell arousal directly gates neuromuscular drive toward resting
+      // tone (0.5): the sigmoid above saturates even on a much-weakened neural
+      // signal, so attenuating upstream current alone barely dims the crawl
+      // (measured: no visible change). This compresses the SWING around rest,
+      // which is what lets 'pause' sub-bouts genuinely go still (MODEL ASSUMPTION).
+      d=Math.max(0,Math.min(1,0.5+(d-0.5)*this.locoTonicMul)); v=Math.max(0,Math.min(1,0.5+(v-0.5)*this.locoTonicMul));
       if (k<T.seedRows){ const w=0.5*(1+Math.cos(Math.PI*k/T.seedRows)); // smooth taper, no kink at the seam
         d=Math.min(1,d+T.oscSeed*w*oD); v=Math.min(1,v+T.oscSeed*w*oV); } // seed the wave (MODEL ASSUMPTION)
       if (k<3){ const wn=1-k/3; // foraging flicks live in the nose tip only
