@@ -68,8 +68,22 @@ export const TUNE = {
   dopaSlow: 0.38,   // basal slowing response: dopaminergic CEP/ADE/PDE feel the
                     // texture of bacteria and slow the crawl on food (Sawin 2000);
                     // routed extrasynaptically (Bentley 2016 amine connectome)
-  dopaTau: 1.6,     // dopamine builds and washes out over seconds
+  dopaTau: 1.6,     // dopamine builds and washes out over seconds (fast, mechanosensory:
+                    // CEP/ADE/PDE report bacterial texture contact within ~1-2s, Sawin 2000)
   serSlow: 0.18,    // serotonergic NSM fires while feeding and deepens the slowdown
+  serToneTau: 90,   // MODEL ASSUMPTION (exact constant not published): a second, much
+                    // slower serotonin integral standing in for the extrasynaptic/
+                    // hormonal buildup that outlasts single feeding bouts by minutes
+                    // (Flavell et al. 2013, Cell 154:1023-1035 -- serotonergic neuron
+                    // activity and MOD-1 signaling track dwelling on a minutes
+                    // timescale, not the ~1s scale of a single pump). This is the
+                    // variable that biases roam/dwell bout length below, so it reads
+                    // as "satiety" rather than "is the nose on food right now".
+  touchSuppressTau: 3, // MODEL ASSUMPTION for the recovery time constant; the effect
+                    // itself is measured: tail tap/touch inhibits pharyngeal pumping
+                    // in adults via a glutamatergic pathway (Keane and Avery 2003,
+                    // Genetics 164:153-162), so mechanical disturbance should visibly
+                    // suppress the serotonin/feeding signal, not leave it untouched
   gMGJ: 0.08,       // electrical coupling between neighbouring muscle cells (Cook 2019):
                     // smooths the activation wave; without it the whole-animal NMJ table
                     // leaves the crawl waveform ragged (measured: purity 0.65 -> 0.91)
@@ -229,7 +243,7 @@ export class WormBrain {
     this.command=1; this.revTime=0; this.omegaT=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
-    this.dopa=0; this.ser=0;
+    this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
     // --- spontaneous roaming/dwelling behavioral state (Cermak, Yu, Clark,
     // Huang, Baskoylu, Flavell 2020, eLife 9:e57093): posture-HMM on 30
     // well-fed animals over 180 h found ONE roaming state (high forward
@@ -263,6 +277,10 @@ export class WormBrain {
     // so part of the touch drive goes to the command group directly
     if (region==='posterior'){ for (const i of this.gAVB) this.Iext[i]+=0.5*s; }
     else { for (const i of this.gAVA) this.Iext[i]+=0.6*s; for (const i of this.gAVB) this.Iext[i]-=0.4*s; }
+    // mechanical stimulation measurably inhibits pharyngeal pumping in adults
+    // (Keane and Avery 2003): any touch anywhere on the body dips the feeding/
+    // serotonin signal for a few seconds rather than leaving it untouched
+    this.touchSuppress=Math.min(1,this.touchSuppress+Math.abs(s)*0.7);
   }
   // mechanotransduction from body-environment contact, called once per frame.
   // noseOn: head-driving-into-wall strength 0..1. noseSide: signed lateral nose
@@ -298,6 +316,9 @@ export class WormBrain {
       for (const i of this.gAVA) this.Iext[i]+=0.5*s;
       for (const i of this.gAVB) this.Iext[i]-=0.33*s;
       this.hab=Math.max(0.05,this.hab-T.habRate*eff*dt);
+      // same mechanical-stimulation -> pumping-suppression effect as touch()
+      // (Keane and Avery 2003), scaled to the nose-touch intensity
+      this.touchSuppress=Math.min(1,this.touchSuppress+eff*0.6);
     }
     this.hab+=(1-this.hab)*dt/T.habTau;
     // Head withdrawal: side-of-nose contact, OLQ/IL1 -> bend away (Hart 1995)
@@ -331,12 +352,21 @@ export class WormBrain {
   // pharynx while actually feeding and its serotonin deepens the slowdown.
   food(onA,onP,eating,dt){
     const T=TUNE;
+    // touch/tail-tap transiently gates pumping down (Keane and Avery 2003):
+    // the gate gently recovers over touchSuppressTau once contact stops
+    const gate=Math.max(0,1-this.touchSuppress);
+    this.touchSuppress=Math.max(0,this.touchSuppress-dt/T.touchSuppressTau);
     if (onA>0.02) for (const i of this.gDopaA) this.Iext[i]+=onA*dt*60*0.35;
     if (onP>0.02) for (const i of this.gDopaP) this.Iext[i]+=onP*dt*60*0.35;
-    if (eating>0.02) for (const i of this.gNSM) this.Iext[i]+=eating*dt*60*0.4;
+    const effEating=Math.min(1,eating)*gate;
+    if (effEating>0.02) for (const i of this.gNSM) this.Iext[i]+=effEating*dt*60*0.4;
     const target=Math.min(1,onA+0.6*onP);
     this.dopa+=(target-this.dopa)*Math.min(1,dt/T.dopaTau);
-    this.ser+=(Math.min(1,eating)-this.ser)*Math.min(1,dt/0.8);
+    this.ser+=(effEating-this.ser)*Math.min(1,dt/0.8);
+    // slow satiety-like tone (Flavell 2013): builds and washes out over
+    // T.serToneTau (minutes), so it survives brief gaps off food and short
+    // touch-evoked dips above, unlike the fast NSM pumping signal
+    this.serTone+=(effEating-this.serTone)*Math.min(1,dt/T.serToneTau);
   }
   _mean(g){ let s=0; for (const i of g) s+=this.act[i]; return g.length?s/g.length:0; }
   // deterministic PRNG (mulberry32) so behavior is reproducible when a seed
@@ -346,7 +376,18 @@ export class WormBrain {
     if (!this.locoFree){ this.locoTonicMul=1; this.locoTurnMul=1; this.locoRevDrive=0; return; }
     this.locoT-=dt;
     if (this.locoMode==='roam'){
-      if (this.locoT<=0){ this.locoMode='dwell'; this.locoT=this._rnd()*70+30; this.subT=0; } // dwell epoch 30-100 s
+      if (this.locoT<=0){
+        this.locoMode='dwell'; this.subT=0;
+        // serotonin promotes dwelling (Flavell et al. 2013: MOD-1-dependent;
+        // tph-1 serotonin-deficient animals dwell less, Cermak et al. 2020).
+        // Bout length itself is not given a number in either paper -- MODEL
+        // ASSUMPTION is the 0.6x-1.7x multiplier range, the direction (more
+        // serotonin tone -> longer dwelling) is what is taken from the data.
+        const dwellMul=1+1.2*(this.serTone-0.5);
+        this.locoT=(this._rnd()*70+30)*dwellMul;
+      } // dwell epoch 30-100 s x serotonin-tone multiplier (=1 at the neutral
+        // reset tone of 0.5, so a worm that has not yet met food or hunger
+        // behaves exactly like the pre-coupling timer)
     } else {
       this.subT-=dt;
       if (this.subT<=0){
@@ -357,7 +398,17 @@ export class WormBrain {
         this.subMode = r<0.625?'pause' : r<0.75?'slowcrawl' : r<0.875?'reversal' : 'sweep';
         this.subT=10*(0.5+this._rnd()); // ~10 s average (paper), 5-15 s spread
       }
-      if (this.locoT<=0){ this.locoMode='roam'; this.locoT=this._rnd()*110+30; this.subMode=null; } // roam bout 30-140 s
+      if (this.locoT<=0){
+        this.locoMode='roam'; this.subMode=null;
+        // low serotonin tone (food-deprived) extends roaming (Ben Arous et
+        // al. 2009, cited in Flavell et al. 2013: "the proportion of time
+        // spent roaming increases when food is limited or low in quality").
+        // Same MODEL ASSUMPTION caveat on the numeric multiplier as above.
+        const roamMul=1-1.2*(this.serTone-0.5);
+        this.locoT=(this._rnd()*110+30)*roamMul;
+      } // roam bout 30-140 s x (1/serotonin-tone) multiplier, symmetric with
+        // the dwell one above so serTone=0.5 (neutral) reproduces the old
+        // pure-timer bounds exactly
     }
     if (this.locoMode==='roam'){ this.locoTonicMul=1.0; this.locoTurnMul=1.0; this._revNext=0; this._revPulseT=0; this.locoRevDrive=0; return; } // exactly the validated legacy crawl (both a >1 tonic boost and a <1 turn suppression here measurably hurt sine purity); 'low angular speed' in roam falls out naturally because wide sweeps/reversals are confined to dwelling
     switch (this.subMode){

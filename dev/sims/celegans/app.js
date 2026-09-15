@@ -156,10 +156,17 @@ function sizeViz(){
     let ch;
     if (v==='nerves'){ const NC=cw>=380?30:20, rows=Math.ceil(brain.N/NC), CS=Math.floor(cw*vdpr/NC);
       nervesGrid={NC,CS,rows}; c.width=NC*CS; c.height=rows*CS; c.style.height=(rows*CS/vdpr)+'px'; continue; }
-    if (v==='geo') ch=Math.round(cw*0.56);
-    else if (v==='muscles') ch=Math.round(cw*0.46);
+    if (v==='geo'){
+      const gh=document.getElementById('geohead');
+      const ch1=Math.round(cw*0.34), ch2=Math.round(cw*0.95);
+      c.width=Math.round(cw*vdpr); c.height=Math.round(ch1*vdpr); c.style.height=ch1+'px';
+      const ghw=gh.clientWidth||cw;
+      gh.width=Math.round(ghw*vdpr); gh.height=Math.round(ch2*vdpr); gh.style.height=ch2+'px';
+      continue;
+    }
+    if (v==='muscles') ch=Math.round(cw*0.46);
     else if (v==='scent') ch=Math.round(cw*0.625);
-    else ch=118;
+    else ch=230;
     c.width=Math.round(cw*vdpr); c.height=Math.round(ch*vdpr); c.style.height=ch+'px';
   }
 }
@@ -208,6 +215,115 @@ const order=[...Array(brain.N).keys()].sort((a,b)=>{
   return (r[brain.cat[a]]-r[brain.cat[b]])||(brain.names[a]<brain.names[b]?-1:1);
 });
 const catColor={S:[230,195,79],I:[86,224,194],M:[255,125,92]};
+const orderPos=new Int16Array(brain.N); order.forEach((gi,k)=>orderPos[gi]=k);
+let selectedNeuron=-1; // persists across frames; set by clicking the grid or either body view
+function pinNeuron(i){ selectedNeuron=i; nameCell(i,'ncap'); nameCell(i,'gcap'); }
+
+// ---- static anatomical layout for "where, not how it's moving" panels ----
+// (muscles + firing map): the live crawl is already visible on the main
+// canvas, so these use a fixed straight reference frame; only the coloring
+// (activity / muscle drive) is live. Head at left, tail at right, always.
+let maxBodyW=0; for (let k=0;k<200;k++) maxBodyW=Math.max(maxBodyW,widthAt(k/199));
+function bodyPointStatic(u,off){ return [u-0.5, off]; }
+function poseMapStatic(c,wScale){
+  const cw=c.width, ch=c.height, pad=14*vdpr;
+  let S=(cw-2*pad)/1.06;
+  const bh=Math.max(2*maxBodyW*(wScale||1)+0.12,0.24);
+  if (bh*S>ch-2*pad) S=(ch-2*pad)/bh;
+  return {S, cx:cw/2, cy:ch/2};
+}
+function ribbonStatic(g,M,alphaFill,alphaLine,wS){ const WS=wS||1, steps=120;
+  g.beginPath();
+  for (let i=0;i<=steps;i++){ const u=i/steps, w=widthAt(u)*WS, pt=bodyPointStatic(u,w);
+    const x=M.cx+pt[0]*M.S, y=M.cy+pt[1]*M.S; i?g.lineTo(x,y):g.moveTo(x,y); }
+  for (let i=steps;i>=0;i--){ const u=i/steps, w=widthAt(u)*WS, pt=bodyPointStatic(u,-w);
+    const x=M.cx+pt[0]*M.S, y=M.cy+pt[1]*M.S; g.lineTo(x,y); }
+  g.closePath();
+  g.fillStyle='rgba(226,238,229,'+alphaFill+')'; g.fill();
+  g.strokeStyle='rgba(160,190,175,'+alphaLine+')'; g.lineWidth=vdpr; g.stroke();
+}
+
+// ---- head-ganglia inset ----
+// The nerve ring + head ganglia (189 of 300 cells, anatomical x<0.15) is the
+// densest, least legible cluster in the full-body map. A copy of their real
+// relative positions is relaxed apart (repulsion + weak spring home) just
+// enough to read individually, once at load; their actual wired synapses
+// (Cook et al. 2019 chemical connectome + gap junctions, same data used to
+// drive the model) are drawn as a live-lighting graph, not schematic lines.
+const NPOS=data.pos;
+const HEAD_THRESH=0.15;
+const headIdx=[]; for (let i=0;i<data.pos.length;i++) if (data.pos[i][0]<HEAD_THRESH) headIdx.push(i);
+const headPos={}; headIdx.forEach((gi,li)=>headPos[gi]=li);
+const HN=headIdx.length;
+const headAdj=Array.from({length:HN},()=>[]);
+(function buildHeadAdj(){
+  const hset=new Set(headIdx);
+  const add=(a,b)=>{ if(hset.has(a)&&hset.has(b)) headAdj[headPos[a]].push(headPos[b]); };
+  for (const e of data.chem) add(e[0],e[1]);
+  for (const e of data.gap){ add(e[0],e[1]); add(e[1],e[0]); }
+})();
+const hlx=new Float32Array(HN), hly=new Float32Array(HN);
+(function relaxHeadLayout(){
+  for (let k=0;k<HN;k++){ const p=NPOS[headIdx[k]]; hlx[k]=(p[0]/HEAD_THRESH)*2-1; hly[k]=p[1]*2.4; }
+  const hx0=hlx.slice(), hy0=hly.slice();
+  const minD=0.15, fx=new Float32Array(HN), fy=new Float32Array(HN);
+  for (let iter=0;iter<220;iter++){
+    fx.fill(0); fy.fill(0);
+    for (let a=0;a<HN;a++) for (let b=a+1;b<HN;b++){
+      const dx=hlx[a]-hlx[b], dy=hly[a]-hly[b], d2=dx*dx+dy*dy;
+      if (d2<minD*minD && d2>1e-9){ const d=Math.sqrt(d2), push=(minD-d)/d*0.5;
+        fx[a]+=dx*push; fy[a]+=dy*push; fx[b]-=dx*push; fy[b]-=dy*push; }
+    }
+    for (let a=0;a<HN;a++){
+      fx[a]+=(hx0[a]-hlx[a])*0.03; fy[a]+=(hy0[a]-hly[a])*0.03;
+      hlx[a]+=fx[a]*0.6; hly[a]+=fy[a]*0.6;
+    }
+  }
+  let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+  for (let k=0;k<HN;k++){ mnx=Math.min(mnx,hlx[k]); mxx=Math.max(mxx,hlx[k]); mny=Math.min(mny,hly[k]); mxy=Math.max(mxy,hly[k]); }
+  const sx=1.7/Math.max(1e-6,mxx-mnx), sy=1.7/Math.max(1e-6,mxy-mny), ccx=(mnx+mxx)/2, ccy=(mny+mxy)/2;
+  for (let k=0;k<HN;k++){ hlx[k]=(hlx[k]-ccx)*sx; hly[k]=(hly[k]-ccy)*sy; }
+})();
+let geoHeadHover=-1;
+function headMapXY(c,k){
+  const pad=16*vdpr, S=(Math.min(c.width,c.height)-2*pad)/2, cx=c.width/2, cy=c.height/2;
+  return [cx+hlx[k]*S, cy+hly[k]*S, S, cx, cy];
+}
+function drawHeadInset(){
+  const c=document.getElementById('geohead'); if (!c || !c.width) return;
+  const g=c.getContext('2d');
+  g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
+  const hx=k=>headMapXY(c,k)[0], hy=k=>headMapXY(c,k)[1];
+  const tiers=[{lo:0.55,cc:'rgba(226,238,229,0.6)'},{lo:0.3,cc:'rgba(226,238,229,0.3)'},{lo:0.12,cc:'rgba(226,238,229,0.13)'}];
+  for (const t of tiers){ g.beginPath(); let any=false;
+    for (let a=0;a<HN;a++){ const ai=headIdx[a]; if (brain.activity[ai]<t.lo) continue;
+      for (const b of headAdj[a]){ if (brain.activity[headIdx[b]]<0.08) continue;
+        any=true; g.moveTo(hx(a),hy(a)); g.lineTo(hx(b),hy(b)); } }
+    if (any){ g.strokeStyle=t.cc; g.lineWidth=vdpr; g.stroke(); }
+  }
+  g.save(); g.globalCompositeOperation='lighter';
+  for (let k=0;k<HN;k++){
+    const gi=headIdx[k], a=brain.activity[gi], cc=catColor[brain.cat[gi]];
+    const r=(2.8+7*a*a)*vdpr, x=hx(k), y=hy(k);
+    g.globalAlpha=0.18+0.82*Math.pow(a,1.5);
+    g.drawImage(sprites[brain.cat[gi]],x-r,y-r,2*r,2*r);
+  }
+  g.restore(); g.globalAlpha=1;
+  const pin = selectedNeuron>=0 && headPos[selectedNeuron]!==undefined ? headPos[selectedNeuron] : (geoHeadHover>=0?geoHeadHover:-1);
+  if (pin>=0){ g.beginPath(); g.arc(hx(pin),hy(pin),6*vdpr,0,7); g.strokeStyle='#e3efe9'; g.lineWidth=1.4*vdpr; g.stroke(); }
+  g.fillStyle='rgba(136,163,151,.75)'; g.font=(9*vdpr)+'px "Space Mono",monospace';
+  g.fillText(HN+' head-ganglion cells \u00b7 lines are real wired synapses, lit while both ends fire',8*vdpr,c.height-8*vdpr);
+}
+document.getElementById('geohead').addEventListener('mousemove',e=>{
+  const c=e.target, r=c.getBoundingClientRect();
+  const x=(e.clientX-r.left)*vdpr, y=(e.clientY-r.top)*vdpr;
+  let bi=-1,bd=14*vdpr;
+  for (let k=0;k<HN;k++){ const [hx,hy]=headMapXY(c,k); const d=Math.hypot(hx-x,hy-y); if(d<bd){bd=d;bi=k;} }
+  geoHeadHover=bi;
+  if (bi>=0) nameCell(headIdx[bi],'gcap'); else if(selectedNeuron<0) el('gcap').textContent='hover or click a cell to name it';
+});
+document.getElementById('geohead').addEventListener('mouseleave',()=>{ geoHeadHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); });
+document.getElementById('geohead').addEventListener('click',()=>{ if (geoHeadHover>=0) pinNeuron(headIdx[geoHeadHover]); });
 function glowSprite(c){
   const s=document.createElement('canvas'); s.width=s.height=48;
   const g=s.getContext('2d'), rg=g.createRadialGradient(24,24,0,24,24,24);
@@ -221,12 +337,21 @@ function nameCell(i,capEl){
   const cat={S:'sensory',I:'interneuron',M:'motor'}[brain.cat[i]];
   el(capEl).textContent=brain.names[i]+' ('+cat+') '+(brain.activity[i]*100).toFixed(0)+'%';
 }
-VC.nerves.addEventListener('mousemove',e=>{
+function nervesK(e){
   const r=VC.nerves.getBoundingClientRect(), G=nervesGrid;
-  const k=Math.floor((e.clientY-r.top)/r.height*G.rows)*G.NC+Math.floor((e.clientX-r.left)/r.width*G.NC);
-  if (k>=0&&k<brain.N) nameCell(order[k],'ncap'); else el('ncap').textContent='';
+  return Math.floor((e.clientY-r.top)/r.height*G.rows)*G.NC+Math.floor((e.clientX-r.left)/r.width*G.NC);
+}
+VC.nerves.addEventListener('mousemove',e=>{
+  const k=nervesK(e);
+  if (k>=0&&k<brain.N) nameCell(order[k],'ncap');
+  else if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap'); else el('ncap').textContent='';
 });
-VC.nerves.addEventListener('mouseleave',()=>{el('ncap').textContent='hover a cell to name it';});
+VC.nerves.addEventListener('click',e=>{
+  const k=nervesK(e); if (k>=0&&k<brain.N) pinNeuron(order[k]);
+});
+VC.nerves.addEventListener('mouseleave',()=>{
+  if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap'); else el('ncap').textContent='hover or click a cell to name it';
+});
 function drawNeurons(){
   const g=VG.nerves, c=VC.nerves, G=nervesGrid;
   g.fillStyle='#07120f'; g.fillRect(0,0,c.width,c.height);
@@ -235,11 +360,15 @@ function drawNeurons(){
     g.fillStyle='rgba('+cc[0]+','+cc[1]+','+cc[2]+','+(0.06+0.94*a*a).toFixed(3)+')';
     g.fillRect((k%G.NC)*G.CS+1,Math.floor(k/G.NC)*G.CS+1,G.CS-2,G.CS-2);
   }
+  if (selectedNeuron>=0){
+    const k=orderPos[selectedNeuron];
+    g.strokeStyle='#e3efe9'; g.lineWidth=1.6*vdpr;
+    g.strokeRect((k%G.NC)*G.CS+1,Math.floor(k/G.NC)*G.CS+1,G.CS-2,G.CS-2);
+  }
 }
 // geometric firing map: every neuron at its true place in the body it is driving.
 // soma positions from the wormneuroatlas anatomical atlas, projected on the
 // anterior-posterior x dorso-ventral plane (the plane the crawl happens in).
-const NPOS=data.pos;
 const geoSX=new Float32Array(brain.N), geoSY=new Float32Array(brain.N);
 let geoHover=-1;
 function bodyPoint(u,off){ // point at arc fraction u, offset along dorsal normal
@@ -260,26 +389,29 @@ function ribbon(g,M,alphaFill,alphaLine,wS){ const WS=wS||1;
   g.strokeStyle='rgba(160,190,175,'+alphaLine+')'; g.lineWidth=vdpr; g.stroke();
 }
 function drawGeo(){
-  const g=VG.geo, c=VC.geo, M=poseMap(c,1.6);
+  const g=VG.geo, c=VC.geo, M=poseMapStatic(c,1.7);
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
-  ribbon(g,M,0.04,0.16,1.6);
+  ribbonStatic(g,M,0.04,0.16,1.7);
   g.save(); g.globalCompositeOperation='lighter';
   for (let i=0;i<brain.N;i++){
     const p=NPOS[i], a=brain.activity[i];
-    const pt=bodyPoint(p[0],p[1]*1.36*widthAt(p[0]));
+    const pt=bodyPointStatic(p[0],p[1]*1.36*widthAt(p[0]));
     const x=M.cx+pt[0]*M.S, y=M.cy+pt[1]*M.S;
     geoSX[i]=x; geoSY[i]=y;
-    const r=(2.2+7*a*a)*vdpr*(vizWide?1.25:1);
+    const r=(1.5+4.5*a*a)*vdpr;
     g.globalAlpha=0.14+0.86*Math.pow(a,1.5);
     g.drawImage(sprites[brain.cat[i]],x-r,y-r,2*r,2*r);
   }
   g.restore(); g.globalAlpha=1;
-  if (geoHover>=0){
-    g.beginPath(); g.arc(geoSX[geoHover],geoSY[geoHover],5*vdpr,0,7);
-    g.strokeStyle='#e3efe9'; g.lineWidth=vdpr; g.stroke();
+  const pin = selectedNeuron>=0 ? selectedNeuron : geoHover;
+  if (pin>=0){
+    g.beginPath(); g.arc(geoSX[pin],geoSY[pin],5*vdpr,0,7);
+    g.strokeStyle='#e3efe9'; g.lineWidth=1.4*vdpr; g.stroke();
   }
   g.fillStyle='rgba(136,163,151,.8)'; g.font=(9*vdpr)+'px "Space Mono",monospace';
-  g.fillText('head',M.cx+(pose.qx[0])*M.S-10*vdpr,M.cy+(pose.qy[0])*M.S-8*vdpr);
+  g.fillText('head',M.cx-M.S*0.5-2*vdpr,M.cy-M.S*0.09-6*vdpr);
+  g.fillText('tail',M.cx+M.S*0.5-20*vdpr,M.cy-M.S*0.09-6*vdpr);
+  drawHeadInset();
 }
 VC.geo.addEventListener('mousemove',e=>{
   const r=VC.geo.getBoundingClientRect();
@@ -287,13 +419,14 @@ VC.geo.addEventListener('mousemove',e=>{
   let bi=-1, bd=12*vdpr;
   for (let i=0;i<brain.N;i++){ const d=Math.hypot(geoSX[i]-x,geoSY[i]-y); if(d<bd){bd=d;bi=i;} }
   geoHover=bi;
-  if (bi>=0) nameCell(bi,'gcap'); else el('gcap').textContent='hover a cell to name it';
+  if (bi>=0) nameCell(bi,'gcap'); else if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell to name it';
 });
-VC.geo.addEventListener('mouseleave',()=>{geoHover=-1; el('gcap').textContent='hover a cell to name it';});
+VC.geo.addEventListener('click',()=>{ if (geoHover>=0) pinNeuron(geoHover); });
+VC.geo.addEventListener('mouseleave',()=>{geoHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell to name it';});
 // muscle map drawn on the live body: 24 segment pairs, dorsal band on the D side
 const mAct=d=>Math.min(1,Math.max(0,(d-0.28)/0.62));
 function drawMuscles(){
-  const g=VG.muscles, c=VC.muscles, M=poseMap(c,2.2);
+  const g=VG.muscles, c=VC.muscles, M=poseMapStatic(c,2.2);
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
   let pkD=0,pkDk=0,pkV=0,pkVk=0;
   for (let k=0;k<24;k++){
@@ -304,19 +437,19 @@ function drawMuscles(){
       const a=side>0?d:v, cc=side>0?'255,125,92':'86,224,194';
       g.beginPath();
       const steps=3;
-      for (let s=0;s<=steps;s++){ const u=u0+(u1-u0)*s/steps, p=bodyPoint(u,0);
+      for (let s=0;s<=steps;s++){ const u=u0+(u1-u0)*s/steps, p=bodyPointStatic(u,0);
         g[s?'lineTo':'moveTo'](M.cx+p[0]*M.S,M.cy+p[1]*M.S); }
-      for (let s=steps;s>=0;s--){ const u=u0+(u1-u0)*s/steps, p=bodyPoint(u,side*2.02*widthAt(u));
+      for (let s=steps;s>=0;s--){ const u=u0+(u1-u0)*s/steps, p=bodyPointStatic(u,side*2.02*widthAt(u));
         g.lineTo(M.cx+p[0]*M.S,M.cy+p[1]*M.S); }
       g.closePath();
       g.fillStyle='rgba('+cc+','+(0.07+0.9*Math.pow(a,1.35)).toFixed(3)+')'; g.fill();
     }
-    if (k){ const p0=bodyPoint(u0,2.02*widthAt(u0)), p1=bodyPoint(u0,-2.02*widthAt(u0));
+    if (k){ const p0=bodyPointStatic(u0,2.02*widthAt(u0)), p1=bodyPointStatic(u0,-2.02*widthAt(u0));
       g.beginPath(); g.moveTo(M.cx+p0[0]*M.S,M.cy+p0[1]*M.S); g.lineTo(M.cx+p1[0]*M.S,M.cy+p1[1]*M.S);
       g.strokeStyle='rgba(6,15,12,.55)'; g.lineWidth=vdpr; g.stroke(); }
   }
-  ribbon(g,M,0,0.22,2.2);
-  const hp=bodyPoint(0.045,0);
+  ribbonStatic(g,M,0,0.22,2.2);
+  const hp=bodyPointStatic(0.045,0);
   g.beginPath(); g.arc(M.cx+hp[0]*M.S,M.cy+hp[1]*M.S,1.2*widthAt(0.05)*M.S,0,7);
   g.fillStyle='rgba(90,110,100,.7)'; g.fill();
   g.font=(9*vdpr)+'px "Space Mono",monospace';
@@ -372,8 +505,8 @@ const SIGS=[
   {n:'AVB fwd', c:'#56e0c2', f:()=>(brain.activity[brain.idx.AVBL]+brain.activity[brain.idx.AVBR])/2},
   {n:'AVA rev', c:'#ff7d5c', f:()=>(brain.activity[brain.idx.AVAL]+brain.activity[brain.idx.AVAR])/2},
   {n:'ASE smell',c:'#e6c34f', f:()=>Math.max(brain.activity[brain.idx.ASEL],brain.activity[brain.idx.ASER])},
-  {n:'dopamine',c:'#b48cff', f:()=>brain.dopa},
-  {n:'serotonin',c:'#ff8cc0', f:()=>brain.ser},
+  {n:'dopamine (food contact)',c:'#b48cff', f:()=>brain.dopa},
+  {n:'serotonin (satiety tone)',c:'#ff8cc0', f:()=>brain.serTone},
 ];
 const SN=300, sbuf=SIGS.map(()=>new Float32Array(SN)), stbuf=new Uint8Array(SN); let shead=0;
 function pushSignals(){
@@ -384,21 +517,24 @@ function pushSignals(){
 function drawSignals(){
   const g=VG.signals, c=VC.signals;
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
+  const stripH=7*vdpr;
   const stc=['rgba(86,224,194,.25)','rgba(255,125,92,.55)','rgba(230,195,79,.7)'];
   const dx=c.width/SN;
   for (let s=0;s<SN;s++){ const v=stbuf[(shead+s)%SN];
-    if (v){ g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,5*vdpr); } }
-  const rh=(c.height-8*vdpr)/SIGS.length;
+    if (v){ g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); } }
+  const top=stripH+5*vdpr, gap=5*vdpr;
+  const rh=(c.height-top-gap*(SIGS.length-1))/SIGS.length;
   for (let i=0;i<SIGS.length;i++){
-    const y0=8*vdpr+i*rh;
-    g.strokeStyle='rgba(130,170,150,.12)'; g.lineWidth=1;
-    g.beginPath(); g.moveTo(0,y0+rh-2); g.lineTo(c.width,y0+rh-2); g.stroke();
-    g.strokeStyle=SIGS[i].c; g.lineWidth=1.2*vdpr; g.beginPath();
-    for (let s=0;s<SN;s++){ const v=sbuf[i][(shead+s)%SN];
-      const x=s*dx, y=y0+rh-2-v*(rh-6*vdpr);
+    const y0=top+i*(rh+gap);
+    g.strokeStyle='rgba(130,170,150,.14)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(0,y0+rh); g.lineTo(c.width,y0+rh); g.stroke();
+    g.strokeStyle=SIGS[i].c; g.lineWidth=1.6*vdpr; g.beginPath();
+    for (let s=0;s<SN;s++){ const v=Math.max(0,Math.min(1,sbuf[i][(shead+s)%SN]));
+      const x=s*dx, y=y0+rh-2*vdpr-v*(rh-8*vdpr);
       s?g.lineTo(x,y):g.moveTo(x,y); }
     g.stroke();
-    g.fillStyle=SIGS[i].c; g.font=(8.5*vdpr)+'px "Space Mono",monospace';
+    g.fillStyle='rgba(6,15,12,.68)'; g.fillRect(2*vdpr,y0,c.width*0.34,11*vdpr);
+    g.fillStyle=SIGS[i].c; g.font=(9*vdpr)+'px "Space Mono",monospace';
     g.fillText(SIGS[i].n,4*vdpr,y0+9*vdpr);
   }
 }
@@ -407,7 +543,6 @@ function drawViz(){
   vizFrame++;
   if (vizFrame%5===0 && !paused) pushSignals();
   if (vizOn.size===0) return;
-  computePose();
   if (vizOn.has('nerves')) drawNeurons();
   if (vizOn.has('geo')) drawGeo();
   if (vizOn.has('muscles')) drawMuscles();
