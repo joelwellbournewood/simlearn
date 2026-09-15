@@ -191,6 +191,10 @@ function stepOnce(){
   brain.mech(noseOn,noseSide,bodyA,bodyP,dt,body.speed);
   const conc=env.concentrationAt(body.noseX,body.noseY);
   brain.chemosense(conc);
+  // basal slowing response: dopaminergic cells feel food under the body
+  const midi=Math.floor(body.px.length*0.55);
+  const concP=env.concentrationAt(body.px[midi],body.py[midi]);
+  brain.food(conc>0.05?1:0, concP>0.05?1:0, conc>0.05?1:0, dt);
   if (pokePulse){ brain.touch(pokePulse.region,1.3); pokePulse.t-=dt; if(pokePulse.t<=0) pokePulse=null; }
   brain.step(dt,body.curvature);
   body.step(dt,brain.muscleDorsal,brain.muscleVentral,env);

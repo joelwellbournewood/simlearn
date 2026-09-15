@@ -1,5 +1,7 @@
 // worm-brain: graded-potential dynamics on the real C. elegans connectome.
-// Data: OpenWorm CElegansNeuronTables (White 1986 wiring, Varshney 2011 weights).
+// Data: Cook 2019 whole-animal wiring via the OpenWorm Connectome Toolbox (cect),
+// transmitters per connection from Wang 2024 (eLife 95402), synapse signs from
+// Fenyves 2020 receptor predictions, extrasynaptic amines from Bentley 2016.
 // Neurons are non-spiking; model is leaky integrator + sigmoid transfer,
 // ohmic gap junctions. Everything beyond the wiring data is tagged MODEL ASSUMPTION.
 export const TUNE = {
@@ -60,6 +62,14 @@ export const TUNE = {
   klGain: 0.9,      // klinotaxis: if scent rises while the head is bent one way,
                     // keep bending that way (Iino and Yoshida 2009, ASE -> RIA)
   forageHz: 1.5,    // MODEL ASSUMPTION: the animal's flicks are irregular, a few Hz
+  dopaSlow: 0.38,   // basal slowing response: dopaminergic CEP/ADE/PDE feel the
+                    // texture of bacteria and slow the crawl on food (Sawin 2000);
+                    // routed extrasynaptically (Bentley 2016 amine connectome)
+  dopaTau: 1.6,     // dopamine builds and washes out over seconds
+  serSlow: 0.18,    // serotonergic NSM fires while feeding and deepens the slowdown
+  gMGJ: 0.08,       // electrical coupling between neighbouring muscle cells (Cook 2019):
+                    // smooths the activation wave; without it the whole-animal NMJ table
+                    // leaves the crawl waveform ragged (measured: purity 0.65 -> 0.91)
   load: 1.0,        // medium, 0 water .. 1 agar; the head oscillator slows under load
                     // (Fang-Yen 2010; in the animal this emerges from mechanics, and the
                     // stand-in oscillator has to be told - MODEL ASSUMPTION)
@@ -103,8 +113,16 @@ export class WormBrain {
     // nmj entries -> (neuron, side D/V, row 0..23, w). Per-row normalization.
     const dN=[],dR=[],dW=[],vN=[],vR=[],vW=[];
     const dAbs=new Float32Array(24), vAbs=new Float32Array(24);
-    for (const [n,m,w] of data.nmj){
+    // The whole-animal NMJ table (Cook 2019) includes junctions from cells with
+    // no patterned activity model here (SAB, SIA/SIB sublaterals, URA/IL1, RMG...).
+    // MODEL ASSUMPTION: cells outside the ventral-cord locomotor classes and the
+    // head motor system contribute muscle TONE, not the phasic wave, so their
+    // drive is scaled down rather than allowed to inject DC into the bend.
+    const phasic=/^(DA|DB|VA|VB|DD|VD|AS)\d/, headM=/^(SMB|SMD|RMD|RIV)/;
+    for (const [n,m,w0] of data.nmj){
       const name=data.muscles[m], row=parseInt(name.slice(3),10)-1;
+      const nm=data.neurons[n];
+      const w=w0*(phasic.test(nm)||headM.test(nm)?1:0.15);
       if (name[1]==='D'){ dN.push(n);dR.push(row);dW.push(w);dAbs[row]+=Math.abs(w); }
       else { vN.push(n);vR.push(row);vW.push(w);vAbs[row]+=Math.abs(w); }
     }
@@ -118,6 +136,17 @@ export class WormBrain {
       posSum[n]+=Math.abs(w)*(row+0.5)/24; posW[n]+=Math.abs(w); }
     this.bodyPos=new Float32Array(this.N);
     for (let i=0;i<this.N;i++) this.bodyPos[i]=posW[i]>0?posSum[i]/posW[i]:-1;
+    // Muscle-to-muscle gap junctions (Cook 2019): neighbouring body wall muscle
+    // cells in a quadrant are electrically coupled, which smooths the wave of
+    // activation as it travels. Stored as row-pair couplings per side.
+    this.mgjD=[]; this.mgjV=[];
+    if (data.mgj) for (const [m1,m2,w] of data.mgj){
+      const n1=data.muscles[m1], n2=data.muscles[m2];
+      const r1=parseInt(n1.slice(3),10)-1, r2=parseInt(n2.slice(3),10)-1;
+      if (r1===r2) continue;
+      if (n1[1]==='D'&&n2[1]==='D') this.mgjD.push([r1,r2,w]);
+      else if (n1[1]==='V'&&n2[1]==='V') this.mgjV.push([r1,r2,w]);
+    }
   }
   _grp(list){ return Int32Array.from(list.filter(n=>n in this.idx).map(n=>this.idx[n])); }
   _buildGroups(){
@@ -134,13 +163,20 @@ export class WormBrain {
     this.gWdV=this._grp(['OLQVL','OLQVR','IL1VL','IL1VR']);
     this.gBodyA=this._grp(['ALML','ALMR','AVM']);
     this.gRIM=this._grp(['RIML','RIMR']);
+    this.gDopaA=this._grp(['CEPDL','CEPDR','CEPVL','CEPVR','ADEL','ADER']); // head dopamine
+    this.gDopaP=this._grp(['PDEL','PDER']);                                  // tail dopamine
+    this.gNSM=this._grp(['NSML','NSMR']);                                    // serotonergic, fires while feeding
     this.gOn=this._grp(['ASEL','AWCL','AWCR']);   // ASEL is the ON cell
     this.gOff=this._grp(['ASER']);                // ASER is the OFF cell
     // classify locomotor classes by name
-    const isB=[],isA=[],isDorsal=[];
+    const isB=[],isA=[],isAS=[],isDorsal=[];
     for (let i=0;i<this.N;i++){ const n=this.names[i];
-      isB.push(/^(DB|VB)\d/.test(n)); isA.push(/^(DA|VA)\d/.test(n)); isDorsal.push(/^D/.test(n)); }
-    this.isB=isB; this.isA=isA; this.isDorsal=isDorsal;
+      isB.push(/^(DB|VB)\d/.test(n)); isA.push(/^(DA|VA)\d/.test(n));
+      isAS.push(/^AS\d/.test(n)); // AS class: dorsal-only cholinergic motor neurons,
+      // active during forward AND backward locomotion, keepers of dorsoventral
+      // balance (Tolstenkov 2018); modeled as dorsal proprioceptive switches
+      isDorsal.push(/^D/.test(n)||/^AS\d/.test(n)); }
+    this.isB=isB; this.isA=isA; this.isAS=isAS; this.isDorsal=isDorsal;
     // command interneurons hold state for the length of a run (Pierce-Shimomura
     // 1999 runs last tens of seconds), so they do not adapt either
     this.noAdapt=new Uint8Array(this.N);
@@ -156,6 +192,7 @@ export class WormBrain {
     this.command=1; this.revTime=0; this.omegaT=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
+    this.dopa=0; this.ser=0;
     this.A=new Float32Array(N); // adaptation state
     this.propS=new Float32Array(N); // bistable proprioceptive switch state, -1/0/+1
     this.Iper=new Float32Array(N); // persistent drives, rebuilt every step (frame-rate independent)
@@ -226,6 +263,20 @@ export class WormBrain {
     for (const i of this.gOn) this.Iext[i]+=this.on*0.8;
     for (const i of this.gOff) this.Iext[i]+=this.off*0.8;
   }
+  // food(onAnterior, onPosterior, eating, dt): the basal slowing response.
+  // Dopaminergic CEP/ADE/PDE are mechanosensors of bacterial texture (Sawin
+  // 2000): they fire while the body is over food and the released dopamine
+  // slows locomotion extrasynaptically (Bentley 2016). NSM tastes food in the
+  // pharynx while actually feeding and its serotonin deepens the slowdown.
+  food(onA,onP,eating,dt){
+    const T=TUNE;
+    if (onA>0.02) for (const i of this.gDopaA) this.Iext[i]+=onA*dt*60*0.35;
+    if (onP>0.02) for (const i of this.gDopaP) this.Iext[i]+=onP*dt*60*0.35;
+    if (eating>0.02) for (const i of this.gNSM) this.Iext[i]+=eating*dt*60*0.4;
+    const target=Math.min(1,onA+0.6*onP);
+    this.dopa+=(target-this.dopa)*Math.min(1,dt/T.dopaTau);
+    this.ser+=(Math.min(1,eating)-this.ser)*Math.min(1,dt/0.8);
+  }
   _mean(g){ let s=0; for (const i of g) s+=this.act[i]; return g.length?s/g.length:0; }
   step(dt,curvature){
     const N=this.N, V=this.V, act=this.act, I=this.Iext, T=TUNE;
@@ -259,7 +310,9 @@ export class WormBrain {
     // under lighter load the whole rhythm runs faster (0.5 Hz on agar, near
     // 1.7 Hz in water, Fang-Yen 2010): scale the oscillator clock with load
     const clk = Math.pow(0.23,1-T.load); // 0.48 Hz on agar up to ~2 Hz in water (Fang-Yen 2010)
-    const oTau=T.oscTau*clk, oAd=T.oscAdapt*clk;
+    // basal slowing on food: dopamine stretches the rhythm (Sawin 2000)
+    const slowF=Math.max(0.45, 1 - T.dopaSlow*this.dopa - T.serSlow*this.ser);
+    const oTau=T.oscTau*clk/slowF, oAd=T.oscAdapt*clk/slowF;
     const dD = (-this.oscD + Math.max(0, drv - T.oscInh*this.oscV - this.adD + 0.02))/oTau;
     const dV = (-this.oscV + Math.max(0, drv - T.oscInh*this.oscD - this.adV))/oTau;
     this.oscD+=dD*dt; this.oscV+=dV*dt;
@@ -329,6 +382,16 @@ export class WormBrain {
         if (sg>pOn) this.propS[i]=1; else if (sg<-pOn) this.propS[i]=-1;
         c=T.gProp*gF*this.propS[i];
         }
+      } else if (this.isAS[i]&&(gF>0.02||gB>0.02)){
+        // AS: anterior-bend switches like B, but listening to both commands
+        // (Tolstenkov 2018: AVA gap junctions, activity in both directions)
+        if (own>pWin){
+          let s=0,m=0;
+          for(let j=own-pWin;j<own-T.propOff;j++){s+=curvature[j];m++;}
+          const sg=(T.propWa*(m?s/m:0)-curvature[own]); // dorsal cell: positive bend is its own side
+          if (sg>pOn) this.propS[i]=1; else if (sg<-pOn) this.propS[i]=-1;
+          c=T.gProp*(T.asGain??0)*Math.max(gF,0.7*gB)*this.propS[i];
+        }
       } else if (this.isA[i]&&gB>0.02){
         // the tail seed rides the RAW oscillator: tyramine silences the neck,
         // not the source of the retrograde wave, and gating it here is what
@@ -380,7 +443,13 @@ export class WormBrain {
       if (k<T.seedRows){ const w=0.5*(1+Math.cos(Math.PI*k/T.seedRows)); // smooth taper, no kink at the seam
         d=Math.min(1,d+T.oscSeed*w*oD); v=Math.min(1,v+T.oscSeed*w*oV); } // seed the wave (MODEL ASSUMPTION)
       if (k<3){ const wn=1-k/3; // foraging flicks live in the nose tip only
-        d=Math.min(1,d+this.castD*wn); v=Math.min(1,v+this.castV*wn); }
+        // reciprocal (push-pull) and headroom-scaled: the whole-animal NMJ table
+        // leaves head rows near saturation, where a purely additive nudge clips
+        // on one side; the real IL1/OLQ->RMD reflex is reciprocal (Hart 1995)
+        const cd=this.castD*wn, cv=this.castV*wn;
+        const d0=d, v0=v;
+        d=Math.max(0,Math.min(1, d0+cd*(1-d0)-cv*d0*0.9));
+        v=Math.max(0,Math.min(1, v0+cv*(1-v0)-cd*v0*0.9)); }
       if (k<4&&this.rimAct>0.02){ // LGC-55 chloride on neck muscle: tyramine
         const relax=this.rimAct*0.75*(1-k/4), m=0.5*(d+v); // relaxes the neck toward slack during backing (Pirri 2009)
         d+=(m-d)*relax; v+=(m-v)*relax; }
@@ -390,6 +459,12 @@ export class WormBrain {
       const rd=(d>this.muscleDorsal[k]?T.mRise:T.mFall)*mScl, rv=(v>this.muscleVentral[k]?T.mRise:T.mFall)*mScl;
       this.muscleDorsal[k]+=(d-this.muscleDorsal[k])*dt/rd;
       this.muscleVentral[k]+=(v-this.muscleVentral[k])*dt/rv;
+    }
+    // electrical coupling between neighbouring muscle cells (Cook 2019)
+    const gm=(T.gMGJ??0.08)*dt;
+    if (gm>0){
+      for (const [a,b,w] of this.mgjD){ const f=gm*w*(this.muscleDorsal[b]-this.muscleDorsal[a]); this.muscleDorsal[a]+=f; this.muscleDorsal[b]-=f; }
+      for (const [a,b,w] of this.mgjV){ const f=gm*w*(this.muscleVentral[b]-this.muscleVentral[a]); this.muscleVentral[a]+=f; this.muscleVentral[b]-=f; }
     }
   }
 }
