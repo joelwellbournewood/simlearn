@@ -11,8 +11,11 @@ export const TUNE = {
   gGap: 0.55,       // global gap junction gain
   theta: 0.3,       // sigmoid threshold
   slope: 5.0,       // sigmoid slope
-  gProp: 2.6,       // proprioceptive current gain into B/A motor classes
+  gProp: 2.4,       // proprioceptive current gain into B/A motor classes
   motorChem: 0.15,   // chem input scale into B/A classes: their bending is proprioceptively dominated (Wen 2012; Boyle 2012)
+  pepGain: -1.5,     // extrasynaptic neuropeptide layer (Ripoll-Sanchez 2023 short-range model): signed global gain, calibrated against half the Randi 2023 atlas
+  pepTauAct: 2.0,    // s, dense-core release follows activity slowly
+  pepTauBase: 30.0,  // s, GPCR pathways adapt; the layer signals change, not tonic level
   propOn: 0.24,     // hysteresis threshold: motor classes are bistable switches (Boyle, Berri, Cohen 2012); a switch flips once per wave, so it cannot double the head's frequency
   propOff: 3,       // sensing region ends this many points anterior of the neuron
   propWa: 1.15,     // weight of anterior bend vs own bend; own-bend NEGATIVE feedback is what makes a latched coil flip itself loose
@@ -21,9 +24,9 @@ export const TUNE = {
   oscAdapt: 0.7,
   oscAdaptGain: 2.0, // adaptation overshoot destabilizes the fixed point so it oscillates   // head oscillator adaptation, s -> ~0.5 Hz cycle
   oscInh: 1.9,      // mutual inhibition between dorsal/ventral head groups
-  oscDrive: 1.0,    // tonic arousal driving the oscillator
-  oscToNeuron: 0.9, // oscillator current into SMB/SMD/RMD head neurons
-  oscSeed: 0.85,    // direct seed of first 3 muscle rows (MODEL ASSUMPTION)
+  oscDrive: 0.86,    // tonic arousal driving the oscillator (retuned with the peptide layer on, run 105)
+  oscToNeuron: 0.82, // oscillator current into SMB/SMD/RMD head neurons
+  oscSeed: 0.92,    // direct seed of first 3 muscle rows (MODEL ASSUMPTION)
   tonicF: 0.30,     // tonic drive to AVB/PVC: forward is the default state
   xInh: 1.5,        // AVA<->AVB soft flip-flop cross-inhibition (MODEL ASSUMPTION)
   revDecay: 0.5,    // touch-evoked reversal drive decay, s
@@ -46,7 +49,7 @@ export const TUNE = {
   gAdapt: 2.1,      // spike-frequency adaptation strength: stops network-wide saturation
   adaptTau: 2.6,    // adaptation time constant, s   // decay of setInput/touch injected currents, s
   // --- mechanotransduction from the environment (run 102) ---
-  noseGain: 2.0,    // head-on collision drive into ASH/FLP/OLQ (Kaplan and Horvitz 1993)
+  noseGain: 2.8,    // head-on collision drive into ASH/FLP/OLQ (Kaplan and Horvitz 1993); recalibrated after the peptide layer damped ASH/FLP (run 105)
   habTau: 14.0,      // nose touch habituation recovery, s (response fades under a held stimulus)
   habRate: 1.35,     // how fast a sustained bump wears the response down
   wdGain: 2.2,      // side-of-nose contact: OLQ/IL1 head withdrawal (Hart 1995)
@@ -107,7 +110,40 @@ export class WormBrain {
     }
     this.gNorm = new Float32Array(N);
     for (let i=0;i<N;i++) this.gNorm[i] = gAbs[i]>0 ? 1/Math.sqrt(gAbs[i]) : 0;
-    this._buildMuscles(data); this._buildGroups(); this.reset();
+    // extrasynaptic neuropeptide layer: Ripoll-Sanchez et al. 2023 short-range
+    // model via OpenWorm cect; weight = number of distinct NPP-GPCR pathways
+    if (data.pep){
+      const pin = new Array(N).fill(0);
+      for (const [a,b] of data.pep) pin[b]++;
+      this.pPtr = new Int32Array(N+1);
+      for (let i=0;i<N;i++) this.pPtr[i+1] = this.pPtr[i]+pin[i];
+      this.pSrc = new Int32Array(data.pep.length);
+      this.pW = new Float32Array(data.pep.length);
+      const pfill = this.pPtr.slice(0,N); const pAbs = new Float32Array(N);
+      // the locomotor pattern classes are excluded as peptide SENDERS as well:
+      // their coherent gait-locked oscillation would broadcast a rhythmic
+      // signal the immobilized-worm recordings that calibrate this layer
+      // cannot see, and phasic release is not what dense-core vesicles do best
+      const pattS=/^(DA|DB|VA|VB|DD|VD|AS)\d/, headMS=/^(SMB|SMD|RMD|RIV)/;
+      for (const [a,b,w] of data.pep){
+        const ws=(pattS.test(data.neurons[a])||headMS.test(data.neurons[a]))?0:w;
+        const p=pfill[b]++; this.pSrc[p]=a; this.pW[p]=ws; pAbs[b]+=ws;
+      }
+      this.pNorm = new Float32Array(N);
+      for (let i=0;i<N;i++) this.pNorm[i] = pAbs[i]>0 ? 1/pAbs[i] : 0;
+      this.actS = new Float32Array(N); this.pepIn = new Float32Array(N); this.pepB = new Float32Array(N);
+    }
+    this._buildMuscles(data); this._buildGroups();
+    // peptide gate: the locomotor pattern system (cord motor classes, command
+    // cells, head motor cells) keeps its tuned dynamics; the fitted global
+    // peptide inhibition acts on the sensory and interneuron layers, which is
+    // where the Randi 2023 evidence for it comes from (head-ganglia recordings)
+    this.pepGate=new Float32Array(N).fill(1);
+    const patt=/^(DA|DB|VA|VB|DD|VD|AS)\d/, headM=/^(SMB|SMD|RMD|RIV)/;
+    for (let i=0;i<N;i++){
+      if (patt.test(this.names[i])||headM.test(this.names[i])||this.noAdapt[i]) this.pepGate[i]=0;
+    }
+    this.reset();
   }
   _buildMuscles(data){
     // nmj entries -> (neuron, side D/V, row 0..23, w). Per-row normalization.
@@ -186,6 +222,7 @@ export class WormBrain {
   reset(){
     const N=this.N;
     this.V=new Float32Array(N); this.act=new Float32Array(N); this.Iext=new Float32Array(N);
+    if (this.pSrc){ this.actS.fill(0); this.pepIn.fill(0); this.pepB.fill(0); this._pepWarm=300; }
     this.activity=new Float32Array(N);
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
@@ -411,6 +448,18 @@ export class WormBrain {
       }
       P[i]+=c;
     }
+    // extrasynaptic neuropeptide layer: slow release proxy, baseline-relative
+    if (this.pSrc && T.pepGain!==0){
+      const aS=this.actS, kA=dt/T.pepTauAct, kB=dt/T.pepTauBase;
+      for (let i=0;i<N;i++) aS[i]+=(act[i]-aS[i])*kA;
+      for (let i=0;i<N;i++){
+        let s=0;
+        for (let p=this.pPtr[i];p<this.pPtr[i+1];p++) s+=this.pW[p]*aS[this.pSrc[p]];
+        this.pepIn[i]=s;
+        if (this._pepWarm>0) this.pepB[i]=s; else this.pepB[i]+=(s-this.pepB[i])*kB;
+      }
+      if (this._pepWarm>0) this._pepWarm--;
+    }
     // membrane update
     for (let i=0;i<N;i++){
       let s=0;
@@ -426,7 +475,14 @@ export class WormBrain {
         g+=w*(V[src]-V[i]);
       }
       const ga=(this.isB[i]||this.isA[i]||this.noAdapt[i])?0:T.gAdapt; // motor switches and command cells do not adapt (Boyle 2012; Pierce-Shimomura 1999), adaptation made them self-oscillate
-      const inp=T.gChem*this.cNorm[i]*s + T.gGap*this.gNorm[i]*g + T.iGain*P[i] + I[i] - ga*this.A[i];
+      let inp=T.gChem*this.cNorm[i]*s + T.gGap*this.gNorm[i]*g + T.iGain*P[i] + I[i] - ga*this.A[i];
+      // peptide input is gated out of the locomotor pattern classes the same
+      // way chemical chatter is (motorChem): their bending is proprioceptively
+      // dominated (Wen 2012), and slow inhibition into the oscillating cord
+      // wrecks the waveform without any support in the recordings, which are
+      // of head-ganglia neurons (Randi 2023)
+      if (this.pSrc && T.pepGain!==0)
+        inp+=this.pepGate[i]*T.pepGain*this.pNorm[i]*(this.pepIn[i]-this.pepB[i]);
       V[i]+=(-V[i]+inp)*dt/(this.noAdapt[i]?T.cmdTau:T.tau);
       if (V[i]>T.vCap) V[i]=T.vCap; else if (V[i]<-T.vCap) V[i]=-T.vCap; // graded potentials saturate: bounded V keeps gap-junction currents physiological
     }

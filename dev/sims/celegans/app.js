@@ -126,18 +126,7 @@ const order=[...Array(brain.N).keys()].sort((a,b)=>{
 });
 const nv=el('nerves'), nctx=nv.getContext('2d'), NC=20, NR=15, CS=11; // 220x165
 const catColor={S:[230,195,79],I:[86,224,194],M:[255,125,92]};
-let viz='neurons';
-const CAP={neurons:'hover a cell to name it',
-  muscles:'muscle drive per row, head at top: dorsal | ventral',
-  wave:'bend along the body (rows) through time (columns)',
-  scent:'the scent field the nose actually smells; dot = nose'};
-document.querySelectorAll('.vtab').forEach(b=>b.addEventListener('click',()=>{
-  viz=b.dataset.viz;
-  document.querySelectorAll('.vtab').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-  el('ncap').textContent=CAP[viz];
-}));
 nv.addEventListener('mousemove',e=>{
-  if(viz!=='neurons') return;
   const r=nv.getBoundingClientRect();
   const cx=Math.floor((e.clientX-r.left)/r.width*NC), cy=Math.floor((e.clientY-r.top)/r.height*NR);
   const k=cy*NC+cx;
@@ -146,7 +135,7 @@ nv.addEventListener('mousemove',e=>{
     el('ncap').textContent=brain.names[i]+' ('+cat+') '+(brain.activity[i]*100).toFixed(0)+'%';
   } else el('ncap').textContent='';
 });
-nv.addEventListener('mouseleave',()=>{if(viz==='neurons')el('ncap').textContent=CAP.neurons;});
+nv.addEventListener('mouseleave',()=>{el('ncap').textContent='hover a cell to name it';});
 function drawNeurons(){
   nctx.fillStyle='#07120f'; nctx.fillRect(0,0,220,165);
   for (let k=0;k<brain.N;k++){
@@ -155,52 +144,37 @@ function drawNeurons(){
     nctx.fillRect((k%NC)*CS+1,Math.floor(k/NC)*CS+1,CS-2,CS-2);
   }
 }
+const mv=el('muscles'), mctx=mv.getContext('2d');
 function drawMuscles(){
-  nctx.fillStyle='#07120f'; nctx.fillRect(0,0,220,165);
-  const rh=165/24;
+  mctx.fillStyle='#07120f'; mctx.fillRect(0,0,220,120);
+  const rh=120/24;
   for (let k=0;k<24;k++){
     const d=brain.muscleDorsal[k], v=brain.muscleVentral[k], y=k*rh;
-    nctx.fillStyle='rgba(255,125,92,'+(0.15+0.85*d)+')';
-    nctx.fillRect(108-d*104,y+1,d*104,rh-2);
-    nctx.fillStyle='rgba(86,224,194,'+(0.15+0.85*v)+')';
-    nctx.fillRect(112,y+1,v*104,rh-2);
+    mctx.fillStyle='rgba(255,125,92,'+(0.15+0.85*d)+')';
+    mctx.fillRect(108-d*104,y+0.5,d*104,rh-1);
+    mctx.fillStyle='rgba(86,224,194,'+(0.15+0.85*v)+')';
+    mctx.fillRect(112,y+0.5,v*104,rh-1);
   }
-  nctx.fillStyle='rgba(160,190,175,.35)'; nctx.fillRect(109,0,2,165);
+  mctx.fillStyle='rgba(160,190,175,.35)'; mctx.fillRect(109,0,2,120);
 }
-const kymo=document.createElement('canvas'); kymo.width=220; kymo.height=165;
-const kctx=kymo.getContext('2d'); kctx.fillStyle='#07120f'; kctx.fillRect(0,0,220,165);
-let kf=0;
-function pushKymo(){
-  kctx.drawImage(kymo,-1,0);
-  const NCU=body.curvature.length, rh=165/NCU;
-  for (let j=0;j<NCU;j++){
-    const c=Math.max(-1,Math.min(1,body.curvature[j]*2.4));
-    kctx.fillStyle=c>0?'rgba(255,125,92,'+(0.12+0.88*c)+')':'rgba(86,224,194,'+(0.12-0.88*c)+')';
-    kctx.fillRect(219,j*rh,1,rh+1);
-  }
-}
+const sv=el('scentcv'), sctx=sv.getContext('2d');
 const SGX=44,SGY=28,sf=new Float32Array(SGX*SGY); let sframe=0;
 function drawScent(){
   if (sframe++%8===0){
     for (let j=0;j<SGY;j++) for (let i=0;i<SGX;i++)
       sf[j*SGX+i]=env.concentrationAt((i+0.5)/SGX*W,(j+0.5)/SGY*H);
   }
-  nctx.fillStyle='#07120f'; nctx.fillRect(0,0,220,165);
+  sctx.fillStyle='#07120f'; sctx.fillRect(0,0,220,140);
   for (let j=0;j<SGY;j++) for (let i=0;i<SGX;i++){
     const a=Math.min(1,Math.pow(sf[j*SGX+i],0.45)*1.15);
     if(a<0.03) continue;
-    nctx.fillStyle='rgba(222,196,110,'+(a*0.9).toFixed(3)+')';
-    nctx.fillRect(i*5,12+j*5,5,5);
+    sctx.fillStyle='rgba(222,196,110,'+(a*0.9).toFixed(3)+')';
+    sctx.fillRect(i*5,j*5,5,5);
   }
-  nctx.fillStyle='#e2eee5';
-  nctx.fillRect(body.noseX/W*220-2,12+body.noseY/H*140-2,4,4);
+  sctx.fillStyle='#e2eee5';
+  sctx.fillRect(body.noseX/W*220-2,body.noseY/H*140-2,4,4);
 }
-function drawViz(){
-  if (viz==='neurons') drawNeurons();
-  else if (viz==='muscles') drawMuscles();
-  else if (viz==='wave'){ nctx.drawImage(kymo,0,0); }
-  else drawScent();
-}
+function drawViz(){ drawNeurons(); drawMuscles(); drawScent(); }
 // ---- rendering the dish ----
 function draw(){
   const w=cv.clientWidth,h=cv.clientHeight;
@@ -309,7 +283,6 @@ function loop(){
     acc+=simSpeed;
     while (acc>=1){ stepOnce(); acc-=1; }
     frame++;
-    if (frame%2===0) pushKymo();
     if (frame%4===0){
       trail.push([body.noseX,body.noseY]);
       if (trail.length>900) trail.shift();
@@ -342,8 +315,6 @@ window.addEventListener('keydown',e=>{
   else if (k==='r'||k==='R') el('b-reset').click();
   else if (k==='h'||k==='H') el('b-clean').click();
   else if (k==='f'||k==='F') el('b-full').click();
-  else if (k==='v'||k==='V'){ const t=[...document.querySelectorAll('.vtab')];
-    const c=t.findIndex(b=>b.dataset.viz===viz); t[(c+1)%t.length].click(); }
   else if (k>='1'&&k<='5'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
 });
 if (window.self!==window.top) document.body.classList.add('in-frame');
