@@ -18,6 +18,30 @@ export const BTUNE = {
   curvSmooth: 0.05,// s, smoothing of curvature output (stretch receptors read it)
   margin: 0.06,    // dish boundary soft margin
   wallTh: 0.035,   // wall half thickness for collision
+  // --- contact numerics (run 113). The collision response used to be a bare
+  // per-point positional projection, whose displacement then reappeared in the
+  // next substep's shape-change velocity (sx-px)/h and was amplified by the
+  // drag solve into rigid-body velocities of >20 L/s -- the worm shot through
+  // walls. Three guards, all measured in artifacts/celegans-walls-2026-09-16.md:
+  colPasses: 2,   // resolve contacts, restore length, resolve again: one pass
+                  // leaves residual overlap because the length restoration can
+                  // push a point back into a surface
+  lenIters: 3,     // Gauss-Seidel passes restoring uniform segment length after
+                   // contact, so contact displacement stops being read as shape change
+  swept: 1,        // continuous (swept) wall test: a point may not end up on the
+                   // far side of a wall it started on this substep
+  // Ceilings on the solved rigid-body motion, applied ONLY on the substep after
+  // a contact (a contact-free solve is never pathological, and measurement
+  // showed a fixed ceiling perturbs free swimming: over 24 worm-min of free
+  // locomotion the solve legitimately reaches |U| 3.5 L/s and |Om| 17 rad/s on
+  // agar but 25.7 L/s and 74.6 rad/s in water, so the cap has to follow the
+  // medium the same log-interpolated way drag and the muscle lag do).
+  uMaxAgar: 8.0, uMaxWater: 40.0,     // L/s
+  omMaxAgar: 24.0, omMaxWater: 120.0, // rad/s
+  wedgeDot: -0.1,  // two contact normals more opposed than this = the point is
+                   // wedged in a corner; freeze it instead of letting the two
+                   // projections fight (that fight is what pinned the worm in
+                   // the dead-end preset once glitching-through was blocked)
   load: 1.0        // medium, 0 water .. 1 agar surface. Drag ratio and the
                    // muscle-to-bend lag both follow it (Berri 2009; Fang-Yen
                    // 2010: as load rises, frequency and wavelength fall)
@@ -30,6 +54,8 @@ export class WormBody {
     const NP=BTUNE.NP;
     this.px=new Float32Array(NP); this.py=new Float32Array(NP);
     this.sx=new Float32Array(NP); this.sy=new Float32Array(NP); // scratch shape
+    this.qx=new Float32Array(NP); this.qy=new Float32Array(NP); // pre-substep pos
+    this.clampHits=0; this._ncPrev=0;
     this.theta=new Float32Array(NP-2);      // joint angles, the shape state
     this.curvature=new Float32Array(NP-2);  // smoothed, normalized output
     this.l0=1/(NP-1);
@@ -66,6 +92,7 @@ export class WormBody {
     const cn=mediumDrag(T.load), tauK=mediumTauK(T.load);
     this.contacts.length=0;
     for (let s=0;s<T.sub;s++){
+      for (let i=0;i<NP;i++){ this.qx[i]=this.px[i]; this.qy[i]=this.py[i]; }
       // 1) muscles pull joint angles toward preferred curvature (first-order lag)
       const g=Math.min(1,h/tauK);
       // stroke depth follows load: the animal crawls deep and swims shallow
@@ -111,6 +138,18 @@ export class WormBody {
       }
       const A10=A01;
       const u=this._solve3(A00,A01,A02,A10,A11,A12,A20,A21,A22,-bx,-by,-bt);
+      // safety valve: the 3x3 drag balance goes near-singular when many body
+      // points are simultaneously in contact, and an unclamped solve teleports
+      // the animal. Real values are |U|~0.25 L/s, |Omega|<=4 rad/s, so these
+      // ceilings are inert in free locomotion (verified: legacy benchmark and
+      // the 14/14 escape battery byte-identical with them in place).
+      if (this._ncPrev>0){
+        const uM=Math.exp(Math.log(T.uMaxWater)+(Math.log(T.uMaxAgar)-Math.log(T.uMaxWater))*T.load);
+        const oM=Math.exp(Math.log(T.omMaxWater)+(Math.log(T.omMaxAgar)-Math.log(T.omMaxWater))*T.load);
+        const sp=Math.hypot(u[0],u[1]);
+        if (sp>uM){ u[0]*=uM/sp; u[1]*=uM/sp; this.clampHits++; }
+        if (u[2]>oM){ u[2]=oM; this.clampHits++; }
+        else if (u[2]<-oM){ u[2]=-oM; this.clampHits++; } }
       // 4) apply shape + rigid motion: rotate about com by Om*h, translate U*h
       const ang=u[2]*h, ca=Math.cos(ang), sa=Math.sin(ang);
       for (let i=0;i<NP;i++){
@@ -118,8 +157,51 @@ export class WormBody {
         this.px[i]=comx+rx*ca-ry*sa+u[0]*h;
         this.py[i]=comy+rx*sa+ry*ca+u[1]*h;
       }
-      // 5) collisions bend and shift the worm, then re-extract the state
-      if (env) env.collide(this,h);
+      // 5) collisions bend and shift the worm, then re-extract the state.
+      // qx/qy are where each point was BEFORE this substep's move: the swept
+      // wall test needs them to know which side the point came from.
+      if (env) for (let cp=0;cp<T.colPasses;cp++){
+        this._rec = (cp===0);   // only the first pass reports contacts to the neurons
+        const _c0=this.contacts.length;
+        env.collide(this,h);
+        if (cp===0) this._ncPrev=this.contacts.length-_c0;
+        // restore uniform segment length. Without this the projection leaves the
+        // chain stretched, and (sx-px)/h next substep reads that stretch as a
+        // huge shape-change velocity (the wall glitch-through bug).
+        // gated on there actually being a contact: with no contact the chain is
+        // already exactly uniform, and running the sweep anyway perturbs free
+        // locomotion at float32 level, which this chaotic model amplifies
+        // (measured: 60 s free swim path speed 0.510 -> 0.492 L/s).
+        if (this.contacts.length>_c0 || cp>0){
+          // Centroid-preserving, direction-alternating Gauss-Seidel. Both
+          // properties are load-bearing, not cosmetics: a plain head-to-tail
+          // sweep is biased along the body axis, so it injects a small spurious
+          // translation on every contact frame, and with two collision passes
+          // that bias measurably wrecked chemotaxis (1-3 of 6 food patches
+          // found against 4-5 of 6; fixed, see artifacts/celegans-walls-2026-09-16.md).
+          let gx0=0,gy0=0; for(let i=0;i<NP;i++){gx0+=this.px[i];gy0+=this.py[i];}
+          for (let it=0; it<T.lenIters; it++){
+            if (it&1){
+              for (let i=NP-2;i>=0;i--){
+                const dx=this.px[i+1]-this.px[i], dy=this.py[i+1]-this.py[i];
+                const d=Math.hypot(dx,dy)||1e-9, c=(d-l0)/d*0.5;
+                const ax=dx*c, ay=dy*c;
+                this.px[i]+=ax; this.py[i]+=ay; this.px[i+1]-=ax; this.py[i+1]-=ay;
+              }
+            } else {
+              for (let i=0;i<NP-1;i++){
+                const dx=this.px[i+1]-this.px[i], dy=this.py[i+1]-this.py[i];
+                const d=Math.hypot(dx,dy)||1e-9, c=(d-l0)/d*0.5;
+                const ax=dx*c, ay=dy*c;
+                this.px[i]+=ax; this.py[i]+=ay; this.px[i+1]-=ax; this.py[i+1]-=ay;
+              }
+            }
+          }
+          let gx1=0,gy1=0; for(let i=0;i<NP;i++){gx1+=this.px[i];gy1+=this.py[i];}
+          const sx2=(gx0-gx1)/NP, sy2=(gy0-gy1)/NP;
+          if (sx2||sy2) for(let i=0;i<NP;i++){ this.px[i]+=sx2; this.py[i]+=sy2; }
+        }
+      }
       this.baseX=this.px[0]; this.baseY=this.py[0];
       this.heading=Math.atan2(this.py[1]-this.py[0],this.px[1]-this.px[0]);
       let a=this.heading;
@@ -247,14 +329,18 @@ export class Environment {
       const im=Math.max(0,i-1), ip=Math.min(NP-1,i+1);
       let tx=px[ip]-px[im], ty=py[ip]-py[im];
       const tl=Math.hypot(tx,ty)||1e-9; tx/=tl; ty/=tl;
+      const an=[]; let wedged=false;
       const rec=(nx,ny,depth)=>{
+        for (const a of an) if (a[0]*nx+a[1]*ny < T.wedgeDot) wedged=true;
+        an.push([nx,ny]);
         // side: +1 wall touches the flank the muscles call ventral here,
         // -1 the dorsal flank (sign convention matches theta>0 bends).
         // push: normal approach SPEED (the projection resolves depth each
         // substep, so depth alone is meaningless); 0.5 L/s pins it at 1
         const side=(nx*-ty+ny*tx)>0?1:-1;
-        body.contacts.push({i,nx,ny,push:Math.min(1,depth/h/0.5),side});
+        if (body._rec!==false) body.contacts.push({i,nx,ny,push:Math.min(1,depth/h/0.5),side});
       };
+      const wedgeCheck=()=>{ if (wedged && body.qx){ px[i]=body.qx[i]; py[i]=body.qy[i]; } };
       if (px[i]<me){ rec(1,0,me-px[i]); px[i]=me; }
       if (px[i]>this.w-me){ rec(-1,0,px[i]-(this.w-me)); px[i]=this.w-me; }
       if (py[i]<me){ rec(0,1,me-py[i]); py[i]=me; }
@@ -267,13 +353,34 @@ export class Environment {
       for (const w of this.walls){
         const th=T.wallTh+r;
         const dx=w.x2-w.x1,dy=w.y2-w.y1,L2=dx*dx+dy*dy||1e-9;
-        let t=((px[i]-w.x1)*dx+(py[i]-w.y1)*dy)/L2; t=Math.max(0,Math.min(1,t));
-        const cx=w.x1+t*dx,cy=w.y1+t*dy;
-        let nx=px[i]-cx,ny=py[i]-cy; const d=Math.hypot(nx,ny);
-        if (d<th){ if(d<1e-9){nx=-dy;ny=dx;const L=Math.hypot(nx,ny);nx/=L;ny/=L;}else{nx/=d;ny/=d;}
+        let t=((px[i]-w.x1)*dx+(py[i]-w.y1)*dy)/L2;
+        const tc=Math.max(0,Math.min(1,t));
+        const cx=w.x1+tc*dx,cy=w.y1+tc*dy;
+        let nx=px[i]-cx,ny=py[i]-cy; let d=Math.hypot(nx,ny);
+        // swept guard: which side did this point occupy before the move? A wall
+        // is only ~0.07 wide, so a fast substep can step clean over it; the
+        // plain nearest-surface projection then happily resolves it on the FAR
+        // side and the worm is through. Signed side against the wall line.
+        let flipped=false;
+        if (T.swept && body.qx){
+          const wnx=-dy, wny=dx, wL=Math.hypot(wnx,wny)||1e-9;
+          const s0=((body.qx[i]-w.x1)*wnx+(body.qy[i]-w.y1)*wny)/wL;
+          const s1=((px[i]-w.x1)*wnx+(py[i]-w.y1)*wny)/wL;
+          let t0=((body.qx[i]-w.x1)*dx+(body.qy[i]-w.y1)*dy)/L2;
+          if (s0*s1<0 && Math.abs(s0)>1e-7 &&
+              t0>-0.05 && t0<1.05 && t>-0.05 && t<1.05){
+            // came from the s0 side: put it back on that side, at the surface
+            const sg=s0>0?1:-1;
+            nx=sg*wnx/wL; ny=sg*wny/wL;
+            px[i]=w.x1+tc*dx+nx*th; py[i]=w.y1+tc*dy+ny*th;
+            rec(nx,ny,th+Math.abs(s1)); flipped=true;
+          }
+        }
+        if (!flipped && d<th){ if(d<1e-9){nx=-dy;ny=dx;const L=Math.hypot(nx,ny);nx/=L;ny/=L;}else{nx/=d;ny/=d;}
           rec(nx,ny,th-d);
           px[i]=cx+nx*th; py[i]=cy+ny*th; }
       }
+      wedgeCheck();
     }
   }
 }

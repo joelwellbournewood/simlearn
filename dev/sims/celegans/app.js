@@ -142,7 +142,11 @@ bind('s-medium','v-medium',v=>v<0.25?'water':v<0.75?'thick gel':'agar surface',v
 const VIEWS=['nerves','geo','muscles','scent','signals'];
 let vizOn; try{ vizOn=new Set(JSON.parse(localStorage.getItem('celeg-viz'))||[]); }catch(e){ vizOn=new Set(); }
 if (![...vizOn].some(v=>VIEWS.includes(v))) vizOn=new Set(['nerves','muscles','scent']);
-let vizWide=false; try{ vizWide=localStorage.getItem('celeg-wide')==='1'; }catch(e){}
+// the visualizations are half the point of this sim, so on a big screen the
+// panel starts expanded (and the dish gives up the width) unless the reader
+// has previously chosen otherwise
+let vizWide=window.innerWidth>=1500;
+try{ const st=localStorage.getItem('celeg-wide'); if(st!==null) vizWide=(st==='1'); }catch(e){}
 const vdpr=Math.min(window.devicePixelRatio||1,2);
 const VC={}; for (const v of VIEWS) VC[v]=el({nerves:'nerves',geo:'geo',muscles:'muscles',scent:'scentcv',signals:'signals'}[v]);
 const VG={}; for (const v of VIEWS) VG[v]=VC[v].getContext('2d');
@@ -152,12 +156,30 @@ function sizeViz(){
   // narrower desktop windows: only honour the "wide" preference once there
   // is comfortably room for both panels plus a usable dish between them
   const wideOK=vizWide && window.innerWidth>=1180;
-  el('vizpanel').classList.toggle('wide',wideOK);
+  const vp=el('vizpanel');
+  vp.classList.toggle('wide',wideOK);
   el('v-wide').setAttribute('aria-pressed',String(wideOK));
   for (const v of VIEWS){
     const on=vizOn.has(v);
     el('sec-'+v).classList.toggle('on',on);
     document.querySelector('.vchip[data-v="'+v+'"]').setAttribute('aria-pressed',String(on));
+  }
+  // two-column packing once each column would still be at least 300px wide,
+  // measured rather than guessed from the viewport
+  const pw=vp.clientWidth-30;
+  vp.classList.toggle('cols2', pw>=560);
+  // the first open section in each grid column must not carry a top rule
+  {
+    const open=VIEWS.map(v=>el('sec-'+v)).filter(e=>e.classList.contains('on'));
+    open.forEach(e=>e.classList.remove('notop'));
+    // the section at the top of each grid column carries no rule above it
+    const nCols=vp.classList.contains('cols2')?2:1;
+    let col=0;
+    for (const e of open){
+      if (e.classList.contains('vspan')){ if(col===0) e.classList.add('notop'); break; }
+      e.classList.add('notop');
+      if (++col>=nCols) break;
+    }
   }
   for (const v of VIEWS){
     if (!vizOn.has(v)) continue;
@@ -175,7 +197,7 @@ function sizeViz(){
     }
     if (v==='muscles') ch=Math.round(cw*0.46);
     else if (v==='scent') ch=Math.round(cw*0.625);
-    else ch=230;
+    else ch=Math.max(200,Math.min(300,Math.round(cw*0.30)));
     c.width=Math.round(cw*vdpr); c.height=Math.round(ch*vdpr); c.style.height=ch+'px';
   }
 }
