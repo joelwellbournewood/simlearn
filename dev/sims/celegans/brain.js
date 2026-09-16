@@ -55,9 +55,43 @@ export const TUNE = {
                      // (dC/dt and dwell-mode) reversal drive - touch/escape
                      // drive deliberately bypasses it (Kaplan & Horvitz 1993)
   inertiaGain: 0.0,  // extra tonic drive to AVB just after a reversal
+  dTau: 1.0,         // s, low-pass on the SIGNED chemosensory derivative before
+                     // rectification: cancels the head-sweep ripple (symmetric,
+                     // zero-mean) while a sustained descent survives. 0 = raw.
+  offThresh: 0.85,   // instantaneous-breakthrough threshold: OFF above this
+                     // still drives AVA at full gain, so a large abrupt drop
+                     // still fires a pirouette. 0 = everything passes (legacy).
+                     // MEASURED (run 112, 5 independent 6-seed chemotaxis
+                     // batteries per condition): dTau 1.0 + offThresh 0.85
+                     // finds the patch in 5.3/6 trials vs 2.6/6 raw, and the
+                     // mean closest approach falls from 1.09 to 0.33 dish
+                     // units. Reversal rate near food 10.6 -> 9.4/min and the
+                     // fraction of inter-reversal intervals under 2 s
+                     // 0.665 -> 0.62. Gait, escape battery (14/14 omega with
+                     // identical reversal durations), the locoFree=false
+                     // legacy benchmark (1.535 / 0.510) and 3x20 min
+                     // stability with pokes are all unchanged.
   offTau: 0.0,       // s, low-pass on the OFF (dC/dt) drive into AVA: a real
                      // pirouette integrates a falling concentration over
                      // seconds; 0 = instantaneous, the run-110 behaviour
+  // --- area-restricted search -> dispersal after losing food -------------
+  // Gray, Hill & Bargmann 2005 (PNAS 102:3184) and Hills, Brockie & Maricq
+  // 2004 (J Neurosci 24:1217): an animal removed from food first performs
+  // ~15 min of LOCAL search - high reversal and omega-turn frequency, tiny
+  // net displacement - and only then switches to GLOBAL search (dispersal:
+  // long, nearly straight runs, few turns). The local phase requires
+  // dopamine (cat-2 and dop-1 mutants disperse immediately, Hills 2004), so
+  // it is gated here on the memory of recent feeding, not on a bare timer.
+  arsTau: 400,       // s, decay of the local-search drive (half gone by ~4.6
+                     // min, ~90% by 15 min, matching the Gray 2005 time course)
+  arsMemTau: 2400,   // s, how long the "I was recently on food" memory that
+                     // licenses local search survives; after this the animal
+                     // behaves as a never-fed disperser
+  arsRevGain: 1.0,   // extra AVA pulse drive during local search
+  arsInt: 7.0,       // s, mean interval between local-search reversal attempts
+  dispGain: 0.45,    // extra tonic AVB drive during dispersal (long runs)
+  dispSupp: 0.85,    // suppression of spontaneous reversal drive during
+                     // dispersal - the straight-run phase of global search
   senseAdapt: 2.8,  // chemosensory adaptation time constant, s
   senseGain: 6.0,   // dC/dt scaling into ON/OFF cells
   revOnOff: 0.9,    // OFF signal -> AVA drive (pirouette: Pierce-Shimomura 1999)
@@ -266,9 +300,10 @@ export class WormBrain {
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
     this.command=1; this.revTime=0; this.revRefract=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
-    this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this._t=0;
+    this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this.dS=0; this.offGate=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
+    this.arsT=1e4; this.fedMem=0; this.ars=0; this.disp=0; this._arsNext=3; this._arsPulse=0;
     // --- spontaneous roaming/dwelling behavioral state (Cermak, Yu, Clark,
     // Huang, Baskoylu, Flavell 2020, eLife 9:e57093): posture-HMM on 30
     // well-fed animals over 180 h found ONE roaming state (high forward
@@ -369,6 +404,31 @@ export class WormBrain {
     this.cSlow += (conc-this.cSlow)*(1/60)/TUNE.senseAdapt;
     const d=(conc-this.cSlow)/(0.02+conc+this.cSlow)*TUNE.senseGain*2.5;
     this.on = Math.max(0,Math.min(1,d)); this.off = Math.max(0,Math.min(1,-d));
+    // --- thresholded pirouette gate (run 112) -------------------------------
+    // The raw OFF signal is dominated by the head-sweep ripple: the nose
+    // swings in and out of the gradient every undulation (~0.5 Hz on agar),
+    // so an instantaneous OFF->AVA drive re-triggers a reversal every cycle
+    // (measured run 111: 11 reversals/min near food, 66-70% of intervals
+    // under 2 s, vs a smooth lognormal with a ~13 s median in real animals,
+    // Zhao et al. 2003 J Neurosci 23:5319). Real worms do not reverse on the
+    // sweep: AIY/AIB integrate ASER over seconds before a pirouette is
+    // committed (Kato et al. 2014, Neuron 81:616 - sensory integration is
+    // low-pass on the order of seconds), while a large, abrupt drop (leaving
+    // a patch edge, or the step stimuli of Pierce-Shimomura 1999) still
+    // triggers immediately.
+    // So: smooth the SIGNED derivative (the ripple is symmetric and cancels;
+    // a genuine descent has a sustained negative mean and survives), and OR
+    // it with an instantaneous breakthrough term for large drops.
+    // dTau = 0 and offThresh = 0 reproduce the raw signal exactly.
+    this.dS += TUNE.dTau>0 ? (d-this.dS)*Math.min(1,(1/60)/TUNE.dTau) : (d-this.dS);
+    const offSlow = Math.max(0,Math.min(1,-this.dS));
+    // NOTE (measured run 112): near food the raw OFF signal is SATURATED at 1
+    // for ~29% of frames - the head-sweep ripple itself clips - so amplitude
+    // alone cannot separate ripple from a real descent. offThresh is kept as
+    // an explicit knob but the discriminating variable is persistence (dTau);
+    // offThresh = 1 disables the instantaneous breakthrough entirely.
+    const offBig = TUNE.offThresh>0 ? Math.min(1,Math.max(0,this.off-TUNE.offThresh)/Math.max(0.05,1-TUNE.offThresh)) : this.off;
+    this.offGate = Math.max(offSlow, offBig);
     for (const i of this.gOn) this.Iext[i]+=this.on*0.8;
     for (const i of this.gOff) this.Iext[i]+=this.off*0.8;
   }
@@ -394,6 +454,13 @@ export class WormBrain {
     // T.serToneTau (minutes), so it survives brief gaps off food and short
     // touch-evoked dips above, unlike the fast NSM pumping signal
     this.serTone+=(effEating-this.serTone)*Math.min(1,dt/T.serToneTau);
+    // clocks for area-restricted search: arsT = time since food was last in
+    // the mouth, fedMem = dopamine-dependent memory that there WAS food
+    if (effEating>0.02){ this.arsT=0; this.fedMem=1; }
+    else { this.arsT+=dt; this.fedMem*=Math.exp(-dt/T.arsMemTau); }
+    const decay=Math.exp(-this.arsT/T.arsTau);
+    this.ars = this.fedMem*decay;          // local search: 1 right after loss
+    this.disp = this.fedMem*(1-decay);     // global search: takes over later
   }
   _mean(g){ let s=0; for (const i of g) s+=this.act[i]; return g.length?s/g.length:0; }
   // deterministic PRNG (mulberry32) so behavior is reproducible when a seed
@@ -437,7 +504,7 @@ export class WormBrain {
         // the dwell one above so serTone=0.5 (neutral) reproduces the old
         // pure-timer bounds exactly
     }
-    if (this.locoMode==='roam'){ this.locoTonicMul=1.0; this.locoTurnMul=1.0; this._revNext=0; this._revPulseT=0; this.locoRevDrive=0; return; } // exactly the validated legacy crawl (both a >1 tonic boost and a <1 turn suppression here measurably hurt sine purity); 'low angular speed' in roam falls out naturally because wide sweeps/reversals are confined to dwelling
+    if (this.locoMode==='roam'){ this.locoTonicMul=1.0; this.locoTurnMul=1.0; this._revNext=0; this._revPulseT=0; this.locoRevDrive=0; this._arsLocal(dt); return; } // exactly the validated legacy crawl (both a >1 tonic boost and a <1 turn suppression here measurably hurt sine purity); 'low angular speed' in roam falls out naturally because wide sweeps/reversals are confined to dwelling
     switch (this.subMode){
       case 'pause':      this.locoTonicMul=0.10; this.locoTurnMul=0.7; break;
       case 'slowcrawl':  this.locoTonicMul=0.50; this.locoTurnMul=0.8; break;
@@ -450,6 +517,20 @@ export class WormBrain {
       if (this._revNext<=0){ this._revPulseT=0.9; this._revNext=1.8+this._rnd()*2.4; }
     } else { this._revNext=0; }
     if (this._revPulseT>0){ this._revPulseT-=dt; this.locoRevDrive=1.1; } else this.locoRevDrive=0;
+    this._arsLocal(dt);
+  }
+  // Local (area-restricted) search: independent of the roam/dwell timer,
+  // this adds reversal attempts whose PROBABILITY is the local-search drive,
+  // so the rate falls off smoothly over ~15 min instead of switching off.
+  // Gray 2005 measured exactly this decay in turn frequency after removal.
+  _arsLocal(dt){
+    const T=TUNE;
+    this._arsNext-=dt;
+    if (this._arsNext<=0){
+      this._arsPulse = (this._rnd()<this.ars) ? 0.8 : 0;
+      this._arsNext = T.arsInt*(0.5+this._rnd());
+    }
+    if (this._arsPulse>0){ this._arsPulse-=dt; this.locoRevDrive=Math.max(this.locoRevDrive,T.arsRevGain); }
   }
   step(dt,curvature){
     const N=this.N, V=this.V, act=this.act, I=this.Iext, T=TUNE;
@@ -462,10 +543,14 @@ export class WormBrain {
     // behavioural inertia: a run that has just started resists being broken
     // again (RIM gap junctions stabilizing forward, Sordillo & Bargmann 2021)
     this.revRefract*=Math.exp(-dt/T.refractTau);
-    this.offS += T.offTau>0 ? (this.off-this.offS)*Math.min(1,dt/T.offTau) : (this.off-this.offS);
+    this.offS += T.offTau>0 ? (this.offGate-this.offS)*Math.min(1,dt/T.offTau) : (this.offGate-this.offS);
     const spont=Math.max(0,1-T.refractGain*this.revRefract);
-    for (const i of this.gAVB) P[i]+=(T.tonicF+T.inertiaGain*this.revRefract)*this.locoTonicMul - T.xInh*B*0.9;
-    for (const i of this.gAVA) P[i]+=(T.revOnOff*this.offS + this.locoRevDrive)*spont - T.xInh*F*0.6;
+    // dispersal suppresses SPONTANEOUS reversals only (the long-run phase of
+    // global search); the chemosensory pirouette drive is deliberately left
+    // at full gain so a disperser that meets a new gradient still navigates
+    const spontLoc=Math.max(0,1-T.dispSupp*this.disp);
+    for (const i of this.gAVB) P[i]+=(T.tonicF+T.inertiaGain*this.revRefract+T.dispGain*this.disp)*this.locoTonicMul - T.xInh*B*0.9;
+    for (const i of this.gAVA) P[i]+=(T.revOnOff*this.offS + this.locoRevDrive*spontLoc)*spont - T.xInh*F*0.6;
     // reversal bookkeeping and omega turn on resumption
     this.noseTouchRecent*=Math.exp(-dt/1.5);
     if (this.command<-0.08) this.revTime+=dt;
