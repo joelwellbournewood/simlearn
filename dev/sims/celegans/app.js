@@ -1,7 +1,29 @@
 import { WormBrain, TUNE } from './brain.js';
 import { WormBody, Environment, BTUNE, widthAt } from './body.js';
 
-const W=8, H=5, el=id=>document.getElementById(id);
+const el=id=>document.getElementById(id);
+// set the dashboard class before anything measures the stage: the docked
+// column widths (and therefore the dish's shape) depend on it
+if (window.innerWidth>=1100) document.body.classList.add('dash');
+// The dish is a rectangle of fixed AREA (40 mm^2-ish in model units) whose
+// aspect ratio is chosen from the shape of the column it has to live in, so a
+// tall narrow stage gets a tall narrow dish instead of a letterboxed strip.
+// Preset geometry is authored in the canonical 8x5 frame and mapped (mx/my/mr).
+let W=8, H=5;
+const DISH_AREA=40, KW=8, KH=5;
+function pickDish(){
+  const st=el('stage'); if(!st) return;
+  const w=st.clientWidth, h=st.clientHeight; if(!w||!h) return;
+  const a=Math.min(2.2,Math.max(0.60,w/h));
+  W=Math.sqrt(DISH_AREA*a); H=Math.sqrt(DISH_AREA/a);
+}
+pickDish();
+// x and y stretch with the dish; radii use the AREA-preserving mean so a food
+// patch is the same size of meal whatever shape the dish is
+const mx=x=>x/KW*W, my=y=>y/KH*H, mr=r=>r*Math.sqrt((W/KW)*(H/KH));
+const AF=(x,y,r,a)=>env.addFood(mx(x),my(y),mr(r),a);
+const AW=(x1,y1,x2,y2)=>env.addWall(mx(x1),my(y1),mx(x2),my(y2));
+const AO=(x,y,r)=>env.addObstacle(mx(x),my(y),mr(r));
 const data=await fetch('./celegans-connectome.json').then(r=>r.json());
 const brain=new WormBrain(data);
 const body=new WormBody(W*0.35,H*0.5,0.3);
@@ -76,23 +98,27 @@ const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 
 // ---- presets: fixed dishes, no randomness ----
 const PRESETS={
-  'Open dish':{tag:'One worm, one meal, a lot of agar', make(){ env.addFood(6.1,3.6,1.0,0.6); }},
+  'Open dish':{tag:'One worm, one meal, a lot of agar', make(){ AF(6.1,3.6,1.0,0.6); }},
   'Dinner trail':{tag:'Five drops laid in an arc, scent overlapping', make(){
     const pts=[[2.2,1.3],[3.4,1.1],[4.6,1.5],[5.7,2.3],[6.4,3.4]];
-    for (const [x,y] of pts) env.addFood(x,y,0.55,0.45); }},
+    for (const [x,y] of pts) AF(x,y,0.55,0.45); }},
   'The corridor':{tag:'Food at the end of a bent hallway', make(){
-    env.addWall(2.2,1.4,5.8,1.4); env.addWall(2.2,2.6,5.0,2.6);
-    env.addWall(5.8,1.4,5.8,3.9); env.addWall(5.0,2.6,5.0,3.9);
-    env.addFood(5.4,4.3,1.2,0.5); }},
+    AW(2.2,1.4,5.8,1.4); AW(2.2,2.6,5.0,2.6);
+    AW(5.8,1.4,5.8,3.9); AW(5.0,2.6,5.0,3.9);
+    AF(5.4,4.3,1.2,0.5); }},
   'Post forest':{tag:'Thread the pillars to reach the lawn', make(){
-    for (let i=0;i<4;i++) for (let j=0;j<3;j++) env.addObstacle(2.6+i*1.0,1.4+j*1.1,0.22);
-    env.addFood(7.0,2.5,1.2,0.6); }},
+    for (let i=0;i<4;i++) for (let j=0;j<3;j++) AO(2.6+i*1.0,1.4+j*1.1,0.22);
+    AF(7.0,2.5,1.2,0.6); }},
   'The corner':{tag:'A dead end; watch the nose neurons argue it out', make(){
-    env.addWall(6.6,2.5,4.4,1.1); env.addWall(6.6,2.5,4.4,3.9);
-    env.addFood(7.3,4.2,0.9,0.5); }},
+    AW(6.6,2.5,4.4,1.1); AW(6.6,2.5,4.4,3.9);
+    AF(7.3,4.2,0.9,0.5); }},
 };
+let lastPreset=null;
 function loadPreset(name,btn){
+  lastPreset=name;
+  pickDish();
   env=new Environment(W,H); PRESETS[name].make();
+  resize(); makeBg();
   body.reset(W*0.22,H*0.55,0.2); brain.reset(); trail.length=0; eaten=0;
   document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
 }
@@ -145,19 +171,65 @@ bind('s-smell','v-smell',v=>v.toFixed(1),v=>TUNE.senseGain=6*v);
 bind('s-medium','v-medium',v=>v<0.25?'water':v<0.75?'thick gel':'agar surface',v=>{ BTUNE.load=v; TUNE.load=v; });
 
 // ---- right-hand visualization: five selectable windows into the machine ----
-const VIEWS=['nerves','geo','muscles','scent','signals'];
+const VIEWS=['nerves','gang','geo','muscles','scent','signals'];
 let vizOn; try{ vizOn=new Set(JSON.parse(localStorage.getItem('celeg-viz'))||[]); }catch(e){ vizOn=new Set(); }
-if (![...vizOn].some(v=>VIEWS.includes(v))) vizOn=new Set(['nerves','muscles','scent']);
+if (![...vizOn].some(v=>VIEWS.includes(v))) vizOn=new Set(['nerves','gang','muscles','scent']);
+vizOn.delete('geo_legacy');
 // the visualizations are half the point of this sim, so on a big screen the
 // panel starts expanded (and the dish gives up the width) unless the reader
 // has previously chosen otherwise
 let vizWide=window.innerWidth>=1500;
 try{ const st=localStorage.getItem('celeg-wide'); if(st!==null) vizWide=(st==='1'); }catch(e){}
 const vdpr=Math.min(window.devicePixelRatio||1,2);
-const VC={}; for (const v of VIEWS) VC[v]=el({nerves:'nerves',geo:'geo',muscles:'muscles',scent:'scentcv',signals:'signals'}[v]);
+const VC={}; for (const v of VIEWS) VC[v]=el({nerves:'nerves',gang:'geohead',geo:'geo',muscles:'muscles',scent:'scentcv',signals:'signals'}[v]);
 const VG={}; for (const v of VIEWS) VG[v]=VC[v].getContext('2d');
 let nervesGrid={NC:20,CS:11,rows:15};
+// Dashboard mode: >=1100px every readout is on at once and every canvas is
+// sized from the space actually left in the window, so nothing scrolls.
+function dashOn(){ return window.innerWidth>=1100 && !document.body.classList.contains('clean') && !document.body.classList.contains('fs'); }
+function shown(v){ return dashOn() ? true : vizOn.has(v); }
+function sizeDash(){
+  const vp=el('vizpanel'), vb=document.querySelector('.vbody');
+  for (const v of VIEWS) el('sec-'+v).classList.add('on');
+  const pw=vb.clientWidth; if(!pw) return;
+  const colW=Math.floor((pw-12)/2);
+  const top=vb.getBoundingClientRect().top;
+  const availH=Math.max(360, window.innerHeight-top-24);
+  const CHROME=38, GAP=9;                       // label + caption, and the row gap
+  let canvasH=availH-4*CHROME-3*GAP;
+  const sigH=Math.round(Math.max(96,Math.min(170,canvasH*0.17)));
+  let rest=canvasH-sigH;
+  // row 3: muscles beside the (deliberately smaller) scent map
+  const h3=Math.round(Math.max(84,Math.min(rest*0.38,colW*1.0)));
+  rest-=h3;
+  // rows 1-2: ganglia and whole body, same box, stacked
+  const h12=Math.round(Math.max(96,Math.min(rest/2,colW*0.92)));
+  const set=(v,w,h)=>{ const c=VC[v]; c.width=Math.round(w*vdpr); c.height=Math.round(h*vdpr);
+    c.style.width=Math.round(w)+'px'; c.style.height=Math.round(h)+'px'; };
+  set('gang',colW,h12);
+  set('geo',colW,h12);
+  const mw=colW; set('muscles',mw,Math.round(Math.min(h3,mw*0.46)));
+  const sw=Math.min(colW,Math.round(h3*W/H));  set('scent',sw,Math.round(sw*H/W));
+  set('signals',pw,sigH);
+  // the neuron table fills the tall left cell: pick a column count that tiles it
+  const nH=2*h12+CHROME+GAP;
+  const cell=Math.sqrt(colW*nH/brain.N);
+  let NC=Math.max(6,Math.floor(colW/cell)); let rows=Math.ceil(brain.N/NC);
+  while (rows*Math.floor(colW/NC)>nH && NC<40){ NC++; rows=Math.ceil(brain.N/NC); }
+  const CSpx=Math.min(Math.floor(colW/NC),Math.floor(nH/rows));
+  const CS=Math.max(3,Math.floor(CSpx*vdpr));
+  nervesGrid={NC,CS,rows};
+  const nc=VC.nerves; nc.width=NC*CS; nc.height=rows*CS;
+  nc.style.width=(NC*CS/vdpr)+'px'; nc.style.height=(rows*CS/vdpr)+'px';
+}
 function sizeViz(){
+  document.body.classList.toggle('dash',dashOn());
+  if (dashOn()){
+    el('vizpanel').classList.remove('wide','cols2'); document.body.classList.remove('vwide');
+    for (const v of VIEWS) document.querySelector('.vchip[data-v="'+v+'"]').setAttribute('aria-pressed','true');
+    sizeDash(); return;
+  }
+  for (const v of VIEWS){ const c=VC[v]; c.style.width=''; c.style.height=''; }
   // don't let the expanded panel crowd the dish into the left panel on
   // narrower desktop windows: only honour the "wide" preference once there
   // is comfortably room for both panels plus a usable dish between them
@@ -196,16 +268,10 @@ function sizeViz(){
     let ch;
     if (v==='nerves'){ const NC=cw>=380?30:20, rows=Math.ceil(brain.N/NC), CS=Math.floor(cw*vdpr/NC);
       nervesGrid={NC,CS,rows}; c.width=NC*CS; c.height=rows*CS; c.style.height=(rows*CS/vdpr)+'px'; continue; }
-    if (v==='geo'){
-      const gh=document.getElementById('geohead');
-      const ch1=Math.round(cw*0.34), ch2=Math.round(cw*0.95);
-      c.width=Math.round(cw*vdpr); c.height=Math.round(ch1*vdpr); c.style.height=ch1+'px';
-      const ghw=gh.clientWidth||cw;
-      gh.width=Math.round(ghw*vdpr); gh.height=Math.round(ch2*vdpr); gh.style.height=ch2+'px';
-      continue;
-    }
-    if (v==='muscles') ch=Math.round(cw*0.46);
-    else if (v==='scent') ch=Math.round(cw*0.625);
+    if (v==='geo') ch=Math.round(cw*0.34);
+    else if (v==='gang') ch=Math.round(cw*0.95);
+    else if (v==='muscles') ch=Math.round(cw*0.46);
+    else if (v==='scent') ch=Math.round(cw*H/W);
     else ch=Math.max(200,Math.min(300,Math.round(cw*0.30)));
     c.width=Math.round(cw*vdpr); c.height=Math.round(ch*vdpr); c.style.height=ch+'px';
   }
@@ -261,7 +327,7 @@ const order=[...Array(brain.N).keys()].sort((a,b)=>{
 const catColor={S:[230,195,79],I:[86,224,194],M:[255,125,92]};
 const orderPos=new Int16Array(brain.N); order.forEach((gi,k)=>orderPos[gi]=k);
 let selectedNeuron=-1; // persists across frames; set by clicking the grid or either body view
-function pinNeuron(i){ selectedNeuron=i; nameCell(i,'ncap'); nameCell(i,'gcap'); }
+function pinNeuron(i){ selectedNeuron=i; nameCell(i,'ncap'); nameCell(i,'gcap'); if(headPos[i]!==undefined) nameCell(i,'hcap'); }
 
 // ---- static anatomical layout for "where, not how it's moving" panels ----
 // (muscles + firing map): the live crawl is already visible on the main
@@ -330,33 +396,79 @@ const hlx=new Float32Array(HN), hly=new Float32Array(HN);
 })();
 let geoHeadHover=-1;
 function headMapXY(c,k){
-  const pad=16*vdpr, S=(Math.min(c.width,c.height)-2*pad)/2, cx=c.width/2, cy=c.height/2;
-  return [cx+hlx[k]*S, cy+hly[k]*S, S, cx, cy];
+  // anisotropic fit, ratio-capped: a wide short box should still be used, but
+  // the ganglion schematic must not stretch into an unrecognisable smear
+  const pad=14*vdpr, cx=c.width/2, cy=c.height/2;
+  let sx=(c.width-2*pad)/2, sy=(c.height-2*pad)/2;
+  const R=1.7;
+  if (sx>sy*R) sx=sy*R; if (sy>sx*R) sy=sx*R;
+  return [cx+hlx[k]*sx, cy+hly[k]*sy, Math.min(sx,sy), cx, cy];
 }
+// Head-ganglion view. The old version added every glow together ('lighter')
+// and drew a line for any cell above a threshold, so a busy moment washed out
+// to a white blur. Now: a dim static scaffold of the real wiring, the ACTIVE
+// synapses drawn on top coloured by sign and weighted by how much signal is
+// actually passing (pre x post x |w|), capped at the strongest few so the
+// picture stays readable, and node glow that cannot saturate.
+const headEdges=(function(){
+  const out=[], hset=new Set(headIdx), seen=new Set();
+  for (const e of data.chem){
+    if (!hset.has(e[0])||!hset.has(e[1])) continue;
+    out.push([headPos[e[0]],headPos[e[1]],e[2],e[2]<0?-1:1]);
+  }
+  for (const e of data.gap){
+    if (!hset.has(e[0])||!hset.has(e[1])) continue;
+    const k=Math.min(e[0],e[1])+'-'+Math.max(e[0],e[1]); if(seen.has(k)) continue; seen.add(k);
+    out.push([headPos[e[0]],headPos[e[1]],e[2]||1,0]);
+  }
+  let mw=1e-6; for (const e of out) mw=Math.max(mw,Math.abs(e[2]));
+  for (const e of out) e[2]=Math.abs(e[2])/mw;
+  return out;
+})();
+const EDGE_COL={1:'134,255,214', '-1':'186,150,255', 0:'150,196,226'};
 function drawHeadInset(){
   const c=document.getElementById('geohead'); if (!c || !c.width) return;
   const g=c.getContext('2d');
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
-  const hx=k=>headMapXY(c,k)[0], hy=k=>headMapXY(c,k)[1];
-  const tiers=[{lo:0.55,cc:'rgba(226,238,229,0.6)'},{lo:0.3,cc:'rgba(226,238,229,0.3)'},{lo:0.12,cc:'rgba(226,238,229,0.13)'}];
-  for (const t of tiers){ g.beginPath(); let any=false;
-    for (let a=0;a<HN;a++){ const ai=headIdx[a]; if (brain.activity[ai]<t.lo) continue;
-      for (const b of headAdj[a]){ if (brain.activity[headIdx[b]]<0.08) continue;
-        any=true; g.moveTo(hx(a),hy(a)); g.lineTo(hx(b),hy(b)); } }
-    if (any){ g.strokeStyle=t.cc; g.lineWidth=vdpr; g.stroke(); }
+  const P=[]; for (let k=0;k<HN;k++){ const m=headMapXY(c,k); P.push([m[0],m[1]]); }
+  // scaffold: the whole head wiring, barely there
+  g.strokeStyle='rgba(120,152,140,0.055)'; g.lineWidth=vdpr; g.beginPath();
+  for (const e of headEdges){ g.moveTo(P[e[0]][0],P[e[0]][1]); g.lineTo(P[e[1]][0],P[e[1]][1]); }
+  g.stroke();
+  // live traffic: keep the strongest, draw weakest first so the loud ones win
+  const live=[];
+  for (const e of headEdges){
+    const a=brain.activity[headIdx[e[0]]], b=brain.activity[headIdx[e[1]]];
+    const sgl=a*(0.35+0.65*b)*(0.35+0.65*e[2]);
+    if (sgl>0.05) live.push([sgl,e]);
   }
-  g.save(); g.globalCompositeOperation='lighter';
+  live.sort((u,v)=>u[0]-v[0]);
+  const keep=live.slice(-90);
+  for (const [sgl,e] of keep){
+    const col=EDGE_COL[e[3]];
+    g.strokeStyle='rgba('+col+','+(0.10+0.55*Math.min(1,sgl)).toFixed(3)+')';
+    g.lineWidth=(0.8+1.5*Math.min(1,sgl))*vdpr;
+    g.beginPath(); g.moveTo(P[e[0]][0],P[e[0]][1]); g.lineTo(P[e[1]][0],P[e[1]][1]); g.stroke();
+  }
+  // nodes: a dark seat so overlapping cells stay separate, then a bounded glow
   for (let k=0;k<HN;k++){
     const gi=headIdx[k], a=brain.activity[gi], cc=catColor[brain.cat[gi]];
-    const r=(2.8+7*a*a)*vdpr, x=hx(k), y=hy(k);
-    g.globalAlpha=0.18+0.82*Math.pow(a,1.5);
-    g.drawImage(sprites[brain.cat[gi]],x-r,y-r,2*r,2*r);
+    const x=P[k][0], y=P[k][1];
+    if (a>0.25){
+      g.globalAlpha=Math.min(0.5,0.5*(a-0.25)/0.75+0.08);
+      const r=(4+5*a)*vdpr;
+      g.drawImage(sprites[brain.cat[gi]],x-r,y-r,2*r,2*r);
+      g.globalAlpha=1;
+    }
+    const rr=(1.7+1.5*a)*vdpr;
+    g.beginPath(); g.arc(x,y,rr+vdpr,0,7); g.fillStyle='rgba(6,15,12,0.9)'; g.fill();
+    g.beginPath(); g.arc(x,y,rr,0,7);
+    g.fillStyle='rgba('+cc[0]+','+cc[1]+','+cc[2]+','+(0.3+0.7*a).toFixed(3)+')'; g.fill();
   }
-  g.restore(); g.globalAlpha=1;
   const pin = selectedNeuron>=0 && headPos[selectedNeuron]!==undefined ? headPos[selectedNeuron] : (geoHeadHover>=0?geoHeadHover:-1);
-  if (pin>=0){ g.beginPath(); g.arc(hx(pin),hy(pin),6*vdpr,0,7); g.strokeStyle='#e3efe9'; g.lineWidth=1.4*vdpr; g.stroke(); }
-  g.fillStyle='rgba(136,163,151,.75)'; g.font=(9*vdpr)+'px "Space Mono",monospace';
-  g.fillText(HN+' head-ganglion cells \u00b7 lines are real wired synapses, lit while both ends fire',8*vdpr,c.height-8*vdpr);
+  if (pin>=0){ g.beginPath(); g.arc(P[pin][0],P[pin][1],7*vdpr,0,7); g.strokeStyle='#e3efe9'; g.lineWidth=1.4*vdpr; g.stroke(); }
+  g.fillStyle='rgba(136,163,151,.7)'; g.font=(9*vdpr)+'px "Space Mono",monospace';
+  g.fillText(HN+' cells \u00b7 teal excite, violet inhibit, blue gap',7*vdpr,c.height-7*vdpr);
 }
 document.getElementById('geohead').addEventListener('mousemove',e=>{
   const c=e.target, r=c.getBoundingClientRect();
@@ -364,9 +476,9 @@ document.getElementById('geohead').addEventListener('mousemove',e=>{
   let bi=-1,bd=14*vdpr;
   for (let k=0;k<HN;k++){ const [hx,hy]=headMapXY(c,k); const d=Math.hypot(hx-x,hy-y); if(d<bd){bd=d;bi=k;} }
   geoHeadHover=bi;
-  if (bi>=0) nameCell(headIdx[bi],'gcap'); else if(selectedNeuron<0) el('gcap').textContent='hover or click a cell to name it';
+  if (bi>=0) nameCell(headIdx[bi],'hcap'); else if(selectedNeuron<0) el('hcap').textContent='hover a cell';
 });
-document.getElementById('geohead').addEventListener('mouseleave',()=>{ geoHeadHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); });
+document.getElementById('geohead').addEventListener('mouseleave',()=>{ geoHeadHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'hcap'); else el('hcap').textContent='hover a cell'; });
 document.getElementById('geohead').addEventListener('click',()=>{ if (geoHeadHover>=0) pinNeuron(headIdx[geoHeadHover]); });
 function glowSprite(c){
   const s=document.createElement('canvas'); s.width=s.height=48;
@@ -433,17 +545,26 @@ function ribbon(g,M,alphaFill,alphaLine,wS){ const WS=wS||1;
   g.strokeStyle='rgba(160,190,175,'+alphaLine+')'; g.lineWidth=vdpr; g.stroke();
 }
 function drawGeo(){
-  const g=VG.geo, c=VC.geo, M=poseMapStatic(c,1.7);
+  const g=VG.geo, c=VC.geo;
+  // choose the dorso-ventral exaggeration that fills the box: the real animal
+  // is far too thin to read at this size, and this is a schematic map, not a
+  // scale drawing (labelled as such in the caption)
+  let M=poseMapStatic(c,1.7), WS=1.7;
+  {
+    const pad=14*vdpr, want=(c.height-2*pad)/M.S;
+    WS=Math.max(1.7,Math.min(4.2,(want-0.12)/(2*maxBodyW)));
+    M=poseMapStatic(c,WS);
+  }
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
-  ribbonStatic(g,M,0.04,0.16,1.7);
+  ribbonStatic(g,M,0.04,0.16,WS);
   g.save(); g.globalCompositeOperation='lighter';
   for (let i=0;i<brain.N;i++){
     const p=NPOS[i], a=brain.activity[i];
-    const pt=bodyPointStatic(p[0],p[1]*1.36*widthAt(p[0]));
+    const pt=bodyPointStatic(p[0],p[1]*0.8*WS*widthAt(p[0]));
     const x=M.cx+pt[0]*M.S, y=M.cy+pt[1]*M.S;
     geoSX[i]=x; geoSY[i]=y;
-    const r=(1.5+4.5*a*a)*vdpr;
-    g.globalAlpha=0.14+0.86*Math.pow(a,1.5);
+    const r=(1.4+3.6*a*a)*vdpr;
+    g.globalAlpha=0.10+0.62*Math.pow(a,1.5);
     g.drawImage(sprites[brain.cat[i]],x-r,y-r,2*r,2*r);
   }
   g.restore(); g.globalAlpha=1;
@@ -455,7 +576,6 @@ function drawGeo(){
   g.fillStyle='rgba(136,163,151,.8)'; g.font=(9*vdpr)+'px "Space Mono",monospace';
   g.fillText('head',M.cx-M.S*0.5-2*vdpr,M.cy-M.S*0.09-6*vdpr);
   g.fillText('tail',M.cx+M.S*0.5-20*vdpr,M.cy-M.S*0.09-6*vdpr);
-  drawHeadInset();
 }
 VC.geo.addEventListener('mousemove',e=>{
   const r=VC.geo.getBoundingClientRect();
@@ -463,10 +583,10 @@ VC.geo.addEventListener('mousemove',e=>{
   let bi=-1, bd=12*vdpr;
   for (let i=0;i<brain.N;i++){ const d=Math.hypot(geoSX[i]-x,geoSY[i]-y); if(d<bd){bd=d;bi=i;} }
   geoHover=bi;
-  if (bi>=0) nameCell(bi,'gcap'); else if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell to name it';
+  if (bi>=0) nameCell(bi,'gcap'); else if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell';
 });
 VC.geo.addEventListener('click',()=>{ if (geoHover>=0) pinNeuron(geoHover); });
-VC.geo.addEventListener('mouseleave',()=>{geoHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell to name it';});
+VC.geo.addEventListener('mouseleave',()=>{geoHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell';});
 // muscle map drawn on the live body: 24 segment pairs, dorsal band on the D side
 const mAct=d=>Math.min(1,Math.max(0,(d-0.28)/0.62));
 function drawMuscles(){
@@ -586,12 +706,13 @@ let vizFrame=0;
 function drawViz(){
   vizFrame++;
   if (vizFrame%5===0 && !paused) pushSignals();
-  if (vizOn.size===0) return;
-  if (vizOn.has('nerves')) drawNeurons();
-  if (vizOn.has('geo')) drawGeo();
-  if (vizOn.has('muscles')) drawMuscles();
-  if (vizOn.has('scent')) drawScent();
-  if (vizOn.has('signals')) drawSignals();
+  if (!dashOn() && vizOn.size===0) return;
+  if (shown('nerves')) drawNeurons();
+  if (shown('geo')) drawGeo();
+  if (shown('gang')) drawHeadInset();
+  if (shown('muscles')) drawMuscles();
+  if (shown('scent')) drawScent();
+  if (shown('signals')) drawSignals();
 }
 sizeViz();
 // ---- rendering the dish ----
@@ -733,4 +854,5 @@ window.addEventListener('keydown',e=>{
 if (window.self!==window.top) document.body.classList.add('in-frame');
 // test hook: lets automated checks find the worm
 window.__worm={body,brain,env,poke};
+window.__dishW=W; window.__dishH=H;
 window.__viz={get ox(){return ox},get oy(){return oy},get scale(){return scale},vizOn};

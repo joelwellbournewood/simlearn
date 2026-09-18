@@ -179,7 +179,6 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 .tool[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
 body.clean .brand{display:none}
 #nerves,#muscles,#scentcv,#geo,#geohead,#signals{width:100%;display:block;border:1px solid var(--line);border-radius:10px;background:var(--field);cursor:crosshair}
-.georow{display:flex;flex-direction:column;gap:8px}
 .selcap{color:var(--accent)!important}
 #nerves,#scentcv{image-rendering:pixelated}
 .vizpanel{position:absolute;right:20px;top:106px;width:clamp(330px,35vw,680px);max-height:calc(100% - 126px);overflow-y:auto;z-index:6;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:16px;padding:13px 15px}
@@ -191,9 +190,6 @@ body.clean .brand{display:none}
 .vbody{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
 .vizpanel.cols2 .vbody{grid-template-columns:1fr 1fr}
 .vizpanel.cols2 .vbody{column-gap:15px}
-.vizpanel.cols2 .georow{flex-direction:row;align-items:flex-start}
-.vizpanel.cols2 .georow #geo{flex:1 1 42%}
-.vizpanel.cols2 .georow #geohead{flex:1 1 58%}
 /* Signals is a time series: it reads far better as one full-width strip */
 .vizpanel.cols2 .vbody .vspan{grid-column:1 / -1}
 .vgroup{margin-bottom:8px}
@@ -246,6 +242,30 @@ body.fs .panel,body.fs .hint{display:none}
   .hint{left:calc(var(--railw) + (100vw - var(--railw) - var(--vizw))/2);right:auto;
     transform:translateX(-50%);max-width:calc(100vw - var(--railw) - var(--vizw) - 40px)}
   body.clean{--railw:0px;--vizw:0px}
+  /* the readouts are half the point of this sim: give them half the room */
+  body.dash{--vizw:clamp(430px,calc((100vw - var(--railw))/2),1150px)}
+
+/* ---- dashboard readout grid (>=1100px) -----------------------------------
+   Everything is on at once and sized to the window, so nothing scrolls:
+     neuron table | head ganglia
+                  | whole body
+     muscles      | scent
+     signals (full width)
+   Canvas pixel sizes come from sizeViz(); the grid only places the boxes. */
+  body.dash .vhead{display:none}
+  body.dash .vizpanel{padding-top:14px;overflow:hidden}
+  body.dash .vbody{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:9px;
+    grid-template-areas:"nerves gang" "nerves geo" "musc scent" "sig sig";align-content:start}
+  body.dash #sec-nerves{grid-area:nerves}
+  body.dash #sec-gang{grid-area:gang}
+  body.dash #sec-geo{grid-area:geo}
+  body.dash #sec-muscles{grid-area:musc}
+  body.dash #sec-scent{grid-area:scent}
+  body.dash #sec-signals{grid-area:sig}
+  body.dash .vsec{display:block;border-top:0!important;padding-top:0!important;min-width:0}
+  body.dash .vsec canvas{margin:0 auto}
+  body.dash .vlab{margin:0 0 4px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.dash .vcap{margin:3px 0 0;min-height:0;height:14px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 </style>
 <div id="stage"><canvas id="c"></canvas></div>
@@ -315,7 +335,7 @@ body.fs .panel,body.fs .hint{display:none}
   <div class="vgroup">
     <span class="vgrouplab">Anatomy &middot; where</span>
     <div class="vchips">
-      <button class="vchip" data-v="nerves">Neurons</button><button class="vchip" data-v="geo">Firing map</button><button class="vchip" data-v="muscles">Muscles</button>
+      <button class="vchip" data-v="nerves">Neurons</button><button class="vchip" data-v="gang">Ganglia</button><button class="vchip" data-v="geo">Whole body</button><button class="vchip" data-v="muscles">Muscles</button>
     </div>
   </div>
   <div class="vgroup">
@@ -327,32 +347,34 @@ body.fs .panel,body.fs .hint{display:none}
   </div>
   <div class="vbody">
   <section class="vsec" id="sec-nerves">
-    <p class="vlab">Neurons <span>all 300 cells &middot; gold sensory, teal inter, orange motor</span></p>
+    <p class="vlab">Neurons <span>300 cells &middot; gold sense, teal inter, orange motor</span></p>
     <canvas id="nerves"></canvas>
-    <p id="ncap" class="vcap">hover a cell to name it</p>
+    <p id="ncap" class="vcap">hover or click a cell</p>
+  </section>
+  <section class="vsec" id="sec-gang">
+    <p class="vlab">Head ganglia <span>real synapses, lit while signal passes</span></p>
+    <canvas id="geohead"></canvas>
+    <p id="hcap" class="vcap">hover a cell</p>
   </section>
   <section class="vsec" id="sec-geo">
-    <p class="vlab">Firing map <span>true anatomical place; head ganglia expanded below, click any cell to pin it</span></p>
-    <div class="georow">
-      <canvas id="geo"></canvas>
-      <canvas id="geohead"></canvas>
-    </div>
-    <p id="gcap" class="vcap">hover or click a cell to name it</p>
+    <p class="vlab">Whole body <span>every cell at its true position</span></p>
+    <canvas id="geo"></canvas>
+    <p id="gcap" class="vcap">hover or click a cell</p>
   </section>
   <section class="vsec" id="sec-muscles">
-    <p class="vlab">Muscles <span>24 segment pairs on a fixed body outline, head at left</span></p>
+    <p class="vlab">Muscles <span>24 pairs, head left</span></p>
     <canvas id="muscles"></canvas>
     <p id="mcap" class="vcap"></p>
   </section>
   <section class="vsec" id="sec-scent">
-    <p class="vlab">Scent <span>the smellscape, its gradient, and the grazed gaps</span></p>
+    <p class="vlab">Scent <span>smellscape &middot; grazed gaps</span></p>
     <canvas id="scentcv"></canvas>
     <p id="scap" class="vcap"></p>
   </section>
   <section class="vsec vspan" id="sec-signals">
-    <p class="vlab">Signals <span>the last 25 seconds, like a chart recorder</span></p>
+    <p class="vlab">Signals <span>last 25 s</span></p>
     <canvas id="signals"></canvas>
-    <p class="vcap">strip: teal forward &middot; orange reversal &middot; amber upsilon turn &middot; gold omega turn &middot; dopamine: immediate food contact, ~2s &middot; serotonin: satiety tone built over ~90s, dips a few seconds when poked</p>
+    <p class="vcap">strip: teal forward &middot; orange reverse &middot; amber upsilon &middot; gold omega</p>
   </section>
   </div>
 </div>
