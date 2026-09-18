@@ -51,6 +51,17 @@ export const TUNE = {
   // train. These three knobs implement that; at 0/0/0 the model is exactly
   // the run-110 model.
   refractTau: 6.0,   // s, decay of the post-reversal state
+  offAdaptTau: 20.0,  // s, adaptation time constant of the OFF drive (0 = legacy)
+  offAdaptGain: 1.0, // how much of the adapted level is subtracted
+  cmdArous: 0.0,     // how much roam/dwell arousal scaling reaches the AVA/AVB
+                     // command circuit (1 = legacy, 0 = speed only)
+  refractChemo: 0.0, // as refractGain but for the chemosensory pirouette drive;
+                     // keep at 0 unless you want reversals to gate navigation
+  revInt: 1.8,       // s, floor of the interval between reversal attempts inside
+                     // the high-reversal-incidence dwell sub-mode (Flavell 2013
+                     // Dwell7). The paper gives the sub-mode, not a rate: this
+                     // pair of numbers is the MODEL ASSUMPTION that sets it.
+  revIntSpread: 2.4, // s, uniform spread added to revInt
   refractGain: 0.0,  // how much the refractory state suppresses SPONTANEOUS
                      // (dC/dt and dwell-mode) reversal drive - touch/escape
                      // drive deliberately bypasses it (Kaplan & Horvitz 1993)
@@ -87,10 +98,12 @@ export const TUNE = {
   arsMemTau: 2400,   // s, how long the "I was recently on food" memory that
                      // licenses local search survives; after this the animal
                      // behaves as a never-fed disperser
+  arsOnFood: 0.0,    // how much of the local-search drive survives while the
+                     // animal is still ON the lawn (1 = legacy, 0 = none)
   arsRevGain: 1.0,   // extra AVA pulse drive during local search
   arsInt: 7.0,       // s, mean interval between local-search reversal attempts
   dispGain: 0.45,    // extra tonic AVB drive during dispersal (long runs)
-  dispSupp: 0.85,    // suppression of spontaneous reversal drive during
+  dispSupp: 0.5,    // suppression of spontaneous reversal drive during
                      // dispersal - the straight-run phase of global search
   senseAdapt: 2.8,  // chemosensory adaptation time constant, s
   senseGain: 6.0,   // dC/dt scaling into ON/OFF cells
@@ -299,11 +312,11 @@ export class WormBrain {
     this.activity=new Float32Array(N);
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
-    this.command=1; this.revTime=0; this.revRefract=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
+    this.command=1; this.revTime=0; this.revRefract=0; this.offBase=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this.dS=0; this.offGate=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
-    this.arsT=1e4; this.fedMem=0; this.ars=0; this.disp=0; this._arsNext=3; this._arsPulse=0;
+    this.arsT=1e4; this.fedMem=0; this._onFoodSm=0; this.ars=0; this.disp=0; this._arsNext=3; this._arsPulse=0;
     // --- spontaneous roaming/dwelling behavioral state (Cermak, Yu, Clark,
     // Huang, Baskoylu, Flavell 2020, eLife 9:e57093): posture-HMM on 30
     // well-fed animals over 180 h found ONE roaming state (high forward
@@ -459,7 +472,15 @@ export class WormBrain {
     if (effEating>0.02){ this.arsT=0; this.fedMem=1; }
     else { this.arsT+=dt; this.fedMem*=Math.exp(-dt/T.arsMemTau); }
     const decay=Math.exp(-this.arsT/T.arsTau);
-    this.ars = this.fedMem*decay;          // local search: 1 right after loss
+    // Area-restricted search is what a worm does when it has LOST food (Gray
+    // 2005; Hills 2004 - the assay is literally "remove the animal from the
+    // lawn"). Until run 114 the drive was full strength while the animal was
+    // still eating, which by itself fired a reversal pulse every ~7 s on the
+    // lawn: measured as the single largest contributor to the model's
+    // on-food reversal chatter. arsOnFood 1 = the old behaviour.
+    this._onFoodSm += ((effEating>0.02?1:0)-this._onFoodSm)*Math.min(1,dt/4);
+    const onLawn = 1-(1-T.arsOnFood)*this._onFoodSm;
+    this.ars = this.fedMem*decay*onLawn;   // local search: 1 right after loss
     this.disp = this.fedMem*(1-decay);     // global search: takes over later
   }
   _mean(g){ let s=0; for (const i of g) s+=this.act[i]; return g.length?s/g.length:0; }
@@ -514,7 +535,7 @@ export class WormBrain {
     }
     if (this.subMode==='reversal'){
       this._revNext-=dt;
-      if (this._revNext<=0){ this._revPulseT=0.9; this._revNext=1.8+this._rnd()*2.4; }
+      if (this._revNext<=0){ this._revPulseT=0.9; this._revNext=TUNE.revInt+this._rnd()*TUNE.revIntSpread; }
     } else { this._revNext=0; }
     if (this._revPulseT>0){ this._revPulseT-=dt; this.locoRevDrive=1.1; } else this.locoRevDrive=0;
     this._arsLocal(dt);
@@ -544,13 +565,36 @@ export class WormBrain {
     // again (RIM gap junctions stabilizing forward, Sordillo & Bargmann 2021)
     this.revRefract*=Math.exp(-dt/T.refractTau);
     this.offS += T.offTau>0 ? (this.offGate-this.offS)*Math.min(1,dt/T.offTau) : (this.offGate-this.offS);
+    // AWC/ASE OFF responses ADAPT: a sustained decrease stops driving the
+    // circuit after a few seconds (Chalasani et al. 2007, Nature 450:63).
+    // Without this the model sits in a tonic OFF pedestal whenever it is on a
+    // patch it is eating down (measured run 114: mean offS 0.39-0.45 near
+    // food, which alone out-drives tonicF and leaves AVA dominant 66% of the
+    // time even while roaming). offAdaptTau 0 = no adaptation = legacy.
+    if (T.offAdaptTau>0) this.offBase += (this.offS-this.offBase)*Math.min(1,dt/T.offAdaptTau);
+    else this.offBase=0;
+    const offEff = Math.max(0, this.offS - T.offAdaptGain*this.offBase);
     const spont=Math.max(0,1-T.refractGain*this.revRefract);
     // dispersal suppresses SPONTANEOUS reversals only (the long-run phase of
     // global search); the chemosensory pirouette drive is deliberately left
     // at full gain so a disperser that meets a new gradient still navigates
     const spontLoc=Math.max(0,1-T.dispSupp*this.disp);
-    for (const i of this.gAVB) P[i]+=(T.tonicF+T.inertiaGain*this.revRefract+T.dispGain*this.disp)*this.locoTonicMul - T.xInh*B*0.9;
-    for (const i of this.gAVA) P[i]+=(T.revOnOff*this.offS + this.locoRevDrive*spontLoc)*spont - T.xInh*F*0.6;
+    // Arousal (roam/dwell sub-mode) scales the OSCILLATOR drive - that is what
+    // makes a dwelling worm slow - but scaling the AVB tonic term by the same
+    // factor also biases the flip-flop backward, because AVA's phasic drive is
+    // not scaled: at locoTonicMul 0.10 (pause) any AVA blip wins. cmdArous
+    // controls how much of the arousal scaling reaches the COMMAND circuit;
+    // 1 = the pre-run-114 behaviour, 0 = arousal changes speed only.
+    const cmdMul = 1 - T.cmdArous*(1-this.locoTonicMul);
+    for (const i of this.gAVB) P[i]+=(T.tonicF+T.inertiaGain*this.revRefract+T.dispGain*this.disp)*cmdMul - T.xInh*B*0.9;
+    // refractGain suppresses the SPONTANEOUS (roam/dwell + local-search)
+    // reversal drive only. Until run 114 it also multiplied the chemosensory
+    // dC/dt drive, which is why every refractoriness setting tested in runs
+    // 111-112 killed chemotaxis: the pirouette signal was being gated by the
+    // worm's own recent reversals. refractChemo (default 0) is the separate,
+    // explicit knob if that gating is ever wanted.
+    for (const i of this.gAVA) P[i]+=T.revOnOff*offEff*Math.max(0,1-T.refractChemo*this.revRefract)
+                                    + this.locoRevDrive*spontLoc*spont - T.xInh*F*0.6;
     // reversal bookkeeping and omega turn on resumption
     this.noseTouchRecent*=Math.exp(-dt/1.5);
     if (this.command<-0.08) this.revTime+=dt;

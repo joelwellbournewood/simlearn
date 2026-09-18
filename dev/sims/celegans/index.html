@@ -214,6 +214,39 @@ body.clean .vizpanel{display:none}
 body.in-frame .vizpanel{top:18px}
 body.fs .panel,body.fs .hint{display:none}
 @media (max-width:760px){ .vizpanel{display:none} }
+
+/* ---- docked three-column layout (>=1100px) -------------------------------
+   Above 1100px the two panels stop FLOATING OVER the dish and become real
+   columns: controls left, dish centre, readouts right. Nothing overlaps
+   anything, the dish gets exactly the width that is left over instead of
+   hiding a strip of itself under each panel, and both columns can use the
+   full height of the window instead of a max-height with a scrollbar. */
+@media (min-width:1100px){
+  :root{--railw:290px;--vizw:clamp(340px,33vw,660px)}
+  /* never let the expanded column squeeze the dish below 520px */
+  body.vwide{--vizw:min(980px,54vw,calc(100vw - var(--railw) - 520px))}
+  #stage{inset:0 var(--vizw) 0 var(--railw)}
+  .panel{position:fixed;left:0;top:0;bottom:0;width:var(--railw);max-height:none;z-index:6;
+    border:0;border-right:1px solid var(--line);border-radius:0;background:var(--panel-2);
+    backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 18px 22px}
+  .vizpanel,.vizpanel.wide{position:fixed;right:0;top:0;bottom:0;width:var(--vizw);max-height:none;
+    border:0;border-left:1px solid var(--line);border-radius:0;background:var(--panel-2);
+    backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 16px 22px}
+  /* the controls header and the view switcher stay put while their column scrolls */
+  .panel .about-btn{position:sticky;top:0;z-index:4;margin:0 0 11px;
+    padding:14px;border-radius:0 0 12px 12px;box-shadow:0 10px 12px -10px rgba(0,0,0,.7)}
+  .panel .about-btn::before{content:'';position:absolute;left:-18px;right:-18px;top:-14px;height:14px;background:var(--panel-2)}
+  .vhead{position:sticky;top:0;z-index:4;background:var(--panel-2);padding:14px 0 10px;
+    display:flex;gap:16px;flex-wrap:wrap;box-shadow:0 10px 12px -10px rgba(0,0,0,.7)}
+  .vhead .vgroup{margin:0;flex:1 1 150px}
+  .vhead .vgroup+.vgroup{border-top:0;padding-top:0}
+  .brand{left:calc(var(--railw) + 20px)}
+  .actions{right:calc(var(--vizw) + 20px)}
+  .sel{left:calc(var(--railw) + 20px)}
+  .hint{left:calc(var(--railw) + (100vw - var(--railw) - var(--vizw))/2);right:auto;
+    transform:translateX(-50%);max-width:calc(100vw - var(--railw) - var(--vizw) - 40px)}
+  body.clean{--railw:0px;--vizw:0px}
+}
 </style>
 <div id="stage"><canvas id="c"></canvas></div>
 
@@ -278,6 +311,7 @@ body.fs .panel,body.fs .hint{display:none}
 </div>
 
 <div class="vizpanel" id="vizpanel">
+  <div class="vhead">
   <div class="vgroup">
     <span class="vgrouplab">Anatomy &middot; where</span>
     <div class="vchips">
@@ -289,6 +323,7 @@ body.fs .panel,body.fs .hint{display:none}
     <div class="vchips">
       <button class="vchip" data-v="scent">Scent</button><button class="vchip" data-v="signals">Signals</button><button class="vchip vwide" id="v-wide" title="Expand the panel" aria-label="Expand the panel">&#x2922;</button>
     </div>
+  </div>
   </div>
   <div class="vbody">
   <section class="vsec" id="sec-nerves">
@@ -337,6 +372,8 @@ body.fs .panel,body.fs .hint{display:none}
 <p>Two changes this build make the search itself look purposeful rather than twitchy. The first is in how a falling odour concentration triggers a pirouette. The worm's nose sweeps side to side with every undulation, so the raw sensory derivative swings negative twice a second whatever direction the animal is actually heading; feeding that straight into the reversal command made it stutter, reversing about eleven times a minute near food, two thirds of those gaps under two seconds, where real animals' inter-reversal intervals form a smooth lognormal with a median around thirteen seconds (Zhao, Khare, Feng, Butler and Lockery 2003). The fix is to commit on evidence rather than on the instant: the signed derivative is now integrated over about a second before it can flip the command, which cancels the sweep (it is symmetric, so it averages away) while a genuine descent, which is one-sided, survives intact; on top of that a large abrupt drop still fires immediately, so the step stimuli of Pierce-Shimomura, Morse and Lockery (1999) work as they should. Measured over five independent six-trial batteries, the worm now finds a food patch it cannot see in about five trials in six, against fewer than three in six before, and its closest approach improves roughly threefold. Counterintuitively, being slower to panic makes it a much better navigator.</p>
 
 <p>The second is what happens when the food runs out. Gray, Hill and Bargmann (2005) and Hills, Brockie and Maricq (2004) showed that a worm taken off food does not simply wander away: for roughly the first fifteen minutes it performs a local, area-restricted search, reversing and turning far more often than usual and staying almost on the spot, and only then switches to global search, dispersing in long, nearly straight runs. The local phase needs dopamine, which is why animals that cannot make it disperse straight away, so here it is gated on a decaying memory of recent feeding rather than on a bare clock. Measured on this model: in the first five minutes after the patch is removed the worm reverses about ten times a minute and travels a net nine body-lengths, and twenty minutes later it reverses three times a minute and covers twice the ground in a straighter line; a worm that never found food at all shows neither phase. The chemotaxis drive is deliberately left at full strength throughout, so a disperser that runs into a new gradient still turns and climbs it.</p>
+<p>This build goes after the model's most stubborn number: how often the worm backs up. Three separate things were driving reversals that should not have been. First, the OFF response of the odour-sensing cells never adapted, so a worm eating its way through a patch sat in a permanently falling concentration and kept re-firing the reversal command neuron AVA; real AWC responses adapt within seconds (Chalasani et al. 2007). Second, the area-restricted search drive &mdash; the turn-heavy hunt a worm performs once it has <i>lost</i> its food (Gray et al. 2005; Hills et al. 2004) &mdash; was running at full strength while the animal was still sitting on the lawn, firing a reversal attempt every few seconds. Third, the roam/dwell arousal level was scaling the forward command cell AVB but not the phasic drive onto AVA, so a resting worm's command circuit was quietly biased into reverse. With all three fixed the command circuit spends 52% of its time in reverse near food instead of 76%, the median gap between reversals grows by about half, and the worm is <i>better</i> at finding a patch it cannot see. The headline rate &mdash; still around twelve reversals a minute, against a real median interval near 13 s (Zhao et al. 2003) &mdash; barely moved, and the honest reading is that the rest of the excess is below the command circuit: the body changes direction even while the command neurons hold their state. That is the next thing to chase, and it stays on the scorecard as a failure rather than being quietly rounded off.</p>
+
 <h3>Things to try</h3>
 <ul>
 <li>Drop one meal of food far from the worm, turn the scent down low, and watch how long the search takes. Then turn the scent up and watch the path straighten.</li>
@@ -385,6 +422,7 @@ body.fs .panel,body.fs .hint{display:none}
 <li>Pirri, McPherson, Donnelly, Francis, and Alkema (2009), A tyramine-gated chloride channel coordinates distinct motor programs of a C. elegans escape response. Neuron 62.</li>
 <li>Randi, Sharma, Dvali, and Leifer (2023), Neural signal propagation atlas of Caenorhabditis elegans. Nature 623. The functional atlas this model is benchmarked against, via the wormneuroatlas package.</li>
 <li>Ripoll-Sanchez, Watteyne, Sun, Fernandez, Taylor, Weinreb, Bentley, Hammarlund, Miller, Hobert, Beets, Vertes, and Schafer (2023), The neuropeptidergic connectome of C. elegans. Neuron 111. The wireless peptide network, via the OpenWorm Connectome Toolbox.</li>
+<li>Chalasani, Chronis, Tsunozaki, Gray, Ramot, Goodman, and Bargmann (2007), Dissecting a circuit for olfactory behaviour in Caenorhabditis elegans. Nature 450.</li>
 <li>Larsch, Flavell, Liu, Gordus, Albrecht, and Bargmann (2015), A circuit for gradient climbing in C. elegans chemotaxis. Cell Reports 12.</li>
 <li>Berri, Boyle, Tassieri, Hope, and Cohen (2009), Forward locomotion of the nematode C. elegans is achieved through modulation of a single gait. HFSP Journal 3.</li>
 <li>The OpenWorm project (Szigeti et al. 2014, Front. Comput. Neurosci. 8), openworm.org. This worm is built on OpenWorm's open data path: the connectome and muscle tables come through the OpenWorm Connectome Toolbox (cect), the network abstraction follows the c302 framework for models of the 302-neuron nervous system (Gleeson et al. 2018, Phil. Trans. R. Soc. B 373), the body's target kinematics are the same swim and crawl measurements that validate Sibernetic, OpenWorm's particle-hydrodynamics body simulator (Palyanov, Khayrulin, and Larson 2018, Phil. Trans. R. Soc. B 373), and the idea that all of it should run live in a browser is Geppetto's (Cantarelli et al. 2018, Phil. Trans. R. Soc. B 373). Sibernetic itself integrates tens of thousands of fluid particles per step on a GPU; the two-dimensional body here uses resistive force theory so that the same closed loop of brain, body, and dish fits in your browser at sixty frames a second.</li>

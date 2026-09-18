@@ -15,9 +15,15 @@ function safeRect(w,h){
   let L=14,R=w-14,T=14,B=h-46;
   const overlayMode=window.innerWidth<=820||document.body.classList.contains('clean');
   if(!overlayMode){
+    // Panel rectangles are in VIEWPORT coordinates and the dish rect is in
+    // STAGE coordinates. Above 1100px the stage is a real grid column that
+    // starts where the left panel ends, so the two frames differ and the
+    // panels do not overlap the stage at all - converting first makes the
+    // squeeze fall out to zero there instead of double-counting the columns.
+    const sr=el('stage').getBoundingClientRect();
     const pe=el('panel'), ve=el('vizpanel');
-    if(pe&&getComputedStyle(pe).display!=='none'){const r=pe.getBoundingClientRect(); if(r.width>0) L=Math.max(L,r.right+14);}
-    if(ve&&getComputedStyle(ve).display!=='none'){const r=ve.getBoundingClientRect(); if(r.width>0) R=Math.min(R,r.left-14);}
+    if(pe&&getComputedStyle(pe).display!=='none'){const r=pe.getBoundingClientRect(); if(r.width>0&&r.right-sr.left>0&&r.left-sr.left<w) L=Math.max(L,r.right-sr.left+14);}
+    if(ve&&getComputedStyle(ve).display!=='none'){const r=ve.getBoundingClientRect(); if(r.width>0&&r.left-sr.left<w&&r.right-sr.left>0) R=Math.min(R,r.left-sr.left-14);}
   }
   // never fully hand the dish rect back to full-bleed here: that would put
   // the dish UNDER the panels, which is the one thing this function exists
@@ -158,6 +164,9 @@ function sizeViz(){
   const wideOK=vizWide && window.innerWidth>=1180;
   const vp=el('vizpanel');
   vp.classList.toggle('wide',wideOK);
+  // docked layout: the column width is a custom property on <body> so the
+  // stage's right inset and the icon buttons track it automatically
+  document.body.classList.toggle('vwide',wideOK);
   el('v-wide').setAttribute('aria-pressed',String(wideOK));
   for (const v of VIEWS){
     const on=vizOn.has(v);
@@ -211,6 +220,10 @@ el('v-wide').addEventListener('click',()=>{
   sizeViz(); resize(); makeBg(); sizeViz();
 });
 window.addEventListener('resize',sizeViz);
+// In the docked layout the controls column has the whole window height, so
+// every group starts open - there is no reason to make the reader hunt for
+// the sliders. Narrow windows keep the compact bottom-sheet defaults.
+if (window.innerWidth>=1100) document.querySelectorAll('.panel details.grp').forEach(d=>{d.open=true;});
 // shared pose: the body rotated head-left into its own frame, with dorsal normals.
 // dorsal drive bends the chain toward the (-ty,tx) normal (verified against the
 // sign of the joint turn), so that side carries the dorsal band and the D label.
