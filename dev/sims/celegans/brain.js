@@ -29,6 +29,33 @@ export const TUNE = {
   oscSeed: 0.92,    // direct seed of first 3 muscle rows (MODEL ASSUMPTION)
   tonicF: 0.30,     // tonic drive to AVB/PVC: forward is the default state
   xInh: 1.5,        // AVA<->AVB soft flip-flop cross-inhibition (MODEL ASSUMPTION)
+  // --- deliberate (finger) touch: the escape response, not a nudge ---
+  // A real prod is a volley onto ALM/AVM/ASH that drives a LONG reversal
+  // (Chalfie & Sulston 1981; Kaplan & Horvitz 1993), an omega turn, and then
+  // several seconds of ACCELERATED forward locomotion - the tyramine/RIM
+  // escape sequence Pirri & Alkema (2008/2012) describe. It also habituates
+  // to repeated stimuli (Rankin & Broster 1992).
+  escDrive: 0.85,   // sustained drive onto AVA/AVD/AVE while escaping
+  escDur: 2.6,      // s of commanded backing after an anterior/nose prod
+  sprintDur: 4.5,   // s of accelerated forward running after the escape turn
+  sprintGain: 0.45, // fractional boost to locomotor drive during the sprint
+  pokeHabDrop: 0.28,// each prod within the recovery window costs this much
+  pokeHabTau: 60,   // s, recovery of the touch response (Rankin & Broster 1992)
+  // --- worm-worm interaction (only used when more than one animal is on the dish) ---
+  // Aggregation in C. elegans is a one-gene story: npr-1 lf / wild isolates
+  // aggregate and border, N2 stays solitary (de Bono & Bargmann 1998). The
+  // sensory route is the RMG hub-and-spoke circuit - ADL/ASK pheromone
+  // (ascaroside) neurons and the URX/AQR/PQR oxygen neurons are gap-junctioned
+  // to RMG, and npr-1 inhibits RMG (Macosko et al. 2009; Gray et al. 2004).
+  // The behavioural rules are Ding et al. 2019 (eLife 8:e43318), who fitted an
+  // agent model to multi-worm tracking: taxis toward neighbours, a
+  // density-dependent slowdown, and reversals at the cluster edge.
+  pheroGain: 0.55,   // ascaroside drive onto ADL/ASK
+  o2Gain: 0.45,      // oxygen drive onto URX/AQR/PQR (high O2 = few neighbours)
+  socAttract: 0.40,  // social strain: steer toward neighbours
+  socAvoid: 0.08,    // solitary strain: mild turning away (ASH ascr#3 avoidance)
+  socSlowGain: 0.42, // density-dependent slowdown inside a cluster (Ding 2019)
+  socEdgeRev: 0.60,  // cluster-edge reversal drive onto AVA (Ding 2019)
   revDecay: 0.5,    // touch-evoked reversal drive decay, s
   omegaThresh: 0.7, // reversals longer than this end in an omega turn, s
   omegaDur: 1.5,    // omega ventral head bend duration, s
@@ -142,6 +169,16 @@ export const TUNE = {
                     // routed extrasynaptically (Bentley 2016 amine connectome)
   dopaTau: 1.6,     // dopamine builds and washes out over seconds (fast, mechanosensory:
                     // CEP/ADE/PDE report bacterial texture contact within ~1-2s, Sawin 2000)
+  // Basal slowing acts on the MOTOR side as well as the rhythm: dopamine
+  // released onto the cholinergic ventral-cord motor neurons through DOP-3
+  // is what actually slows the animal (Chase, Pepper and Koelle 2004), and
+  // stretching the head oscillator alone was measured to move path speed by
+  // only ~10% (run 116). These compress the muscle swing around resting tone.
+  dopaMotor: 0.52,  // dopamine -> DOP-3 on cholinergic motor neurons
+  serMotor: 0.20,   // serotonin (NSM, MOD-1) deepens it; larger when starved,
+                    // which is the enhanced slowing response (Sawin 2000)
+  serMotorStarve: 1.6, // extra serotonergic weight at zero satiety tone
+  motorFloor: 0.34, // the animal on a lawn still crawls; it does not freeze
   serSlow: 0.18,    // serotonergic NSM fires while feeding and deepens the slowdown
   serToneTau: 90,   // MODEL ASSUMPTION (exact constant not published): a second, much
                     // slower serotonin integral standing in for the extrasynaptic/
@@ -288,6 +325,9 @@ export class WormBrain {
     this.gDopaA=this._grp(['CEPDL','CEPDR','CEPVL','CEPVR','ADEL','ADER']); // head dopamine
     this.gDopaP=this._grp(['PDEL','PDER']);                                  // tail dopamine
     this.gNSM=this._grp(['NSML','NSMR']);                                    // serotonergic, fires while feeding
+    this.gPhero=this._grp(['ADLL','ADLR','ASKL','ASKR']);   // ascaroside sensors
+    this.gRMG=this._grp(['RMGL','RMGR']);                   // hub of the npr-1 circuit
+    this.gO2=this._grp(['URXL','URXR','AQR','PQR']);        // oxygen sensors
     this.gOn=this._grp(['ASEL','AWCL','AWCR']);   // ASEL is the ON cell
     this.gOff=this._grp(['ASER']);                // ASER is the OFF cell
     // classify locomotor classes by name
@@ -312,10 +352,13 @@ export class WormBrain {
     this.activity=new Float32Array(N);
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
+    this.escapeT=0; this.sprintT=0; this.pokeHab=1;
+    this.socBias=0; this.socSlow=1; this.phero=0; this.socO2=1;
     this.command=1; this.revTime=0; this.revRefract=0; this.offBase=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this.dS=0; this.offGate=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
+    this.slowGain=1;
     this.arsT=1e4; this.fedMem=0; this._onFoodSm=0; this.ars=0; this.disp=0; this._arsNext=3; this._arsPulse=0;
     // --- spontaneous roaming/dwelling behavioral state (Cermak, Yu, Clark,
     // Huang, Baskoylu, Flavell 2020, eLife 9:e57093): posture-HMM on 30
@@ -343,7 +386,42 @@ export class WormBrain {
     for (let i=0;i<N;i++) this.act[i]=sig(0);
   }
   setInput(name,v){ const i=this.idx[name]; if (i!==undefined) this.Iext[i]+=v; }
+  // One frame of worm-worm interaction. ph: local ascaroside/neighbour
+  // density (0 = alone). side: signed lateral direction of the neighbours in
+  // the head frame. headC/tailC: body contact with another animal at the
+  // front / back half. social=true models an npr-1 loss-of-function (social)
+  // strain, false the solitary N2 wild type.
+  social(ph,side,headC,tailC,dt,social){
+    const T=TUNE, soc=social?1:0;
+    this.phero=ph;
+    const s=T.pheroGain*Math.min(2,ph)*dt*60*0.1;
+    for (const i of this.gPhero) this.Iext[i]+=s;
+    // npr-1 (high in N2) inhibits the RMG hub, which is why the same
+    // pheromone signal drives aggregation in one strain and not the other
+    for (const i of this.gRMG) this.Iext[i]+=s*(soc?1.1:0.2);
+    // a cluster of animals is a low-oxygen pocket; URX/AQR/PQR report the
+    // 21% surface oxygen the worms are escaping (Gray 2004, Rogers 2006)
+    this.socO2=Math.max(0,1-0.5*Math.min(2,ph));
+    for (const i of this.gO2) this.Iext[i]+=T.o2Gain*this.socO2*dt*60*0.1*(soc?1:0.4);
+    // sign fixed by measurement, not by guesswork: with +side the group flew
+    // apart (mean pairwise distance 2.4 -> 4.1 body lengths in 4 min, 3 seeds),
+    // with -side it aggregated (2.4 -> 0.5-1.0). run 116.
+    const target = soc ? -T.socAttract*Math.min(1.5,ph)*side
+                       :  T.socAvoid*Math.min(1.5,ph)*side;
+    this.socBias += (target-this.socBias)*Math.min(1,dt/0.8);
+    // density-dependent speed: social animals slow in a group and stay,
+    // solitary ones keep moving and leave it (Ding 2019)
+    this.socSlow = soc ? Math.max(0.5,1-T.socSlowGain*Math.min(1.5,ph))
+                       : Math.min(1.25,1+0.12*Math.min(1,ph));
+    // cluster-edge reversal: contact at one end of the body and not the
+    // other means you are leaving the group, and a social worm turns back in
+    const edge=Math.max(0,headC-0.6*tailC);
+    if (soc && edge>0.2) for (const i of this.gAVA) this.Iext[i]+=T.socEdgeRev*edge*dt*60*0.1;
+  }
   touch(region,s){
+    const T=TUNE;
+    if (this.pokeHab===undefined) this.pokeHab=1;
+    s*=this.pokeHab;
     const g = region==='nose'?this.gNose : region==='posterior'?this.gTouchP : this.gTouchA;
     for (const i of g) this.Iext[i]+=s;
     if (region==='nose') this.noseTouchRecent=Math.min(1,this.noseTouchRecent+Math.abs(s));
@@ -355,6 +433,21 @@ export class WormBrain {
     // (Keane and Avery 2003): any touch anywhere on the body dips the feeding/
     // serotonin signal for a few seconds rather than leaving it untouched
     this.touchSuppress=Math.min(1,this.touchSuppress+Math.abs(s)*0.7);
+    // The escape sequence proper. Anterior/nose: commanded backing for a
+    // couple of seconds, an omega turn on release (noseTouchRecent marks the
+    // reversal as contact-evoked), then a forward sprint. Posterior: no
+    // reversal - PLM drives the animal FORWARD, faster, straight away.
+    if (region==='posterior'){ this.sprintT=Math.max(this.sprintT||0,T.sprintDur*0.8); this.escapeT=0; }
+    else {
+      this.escapeT=Math.max(this.escapeT||0,T.escDur*this.pokeHab);
+      this.noseTouchRecent=Math.min(1,(this.noseTouchRecent||0)+0.6*this.pokeHab);
+    }
+  }
+  // one deliberate prod: a volley, plus habituation bookkeeping
+  prod(region,strength){
+    if (this.pokeHab===undefined) this.pokeHab=1;
+    this.touch(region,strength);
+    this.pokeHab=Math.max(0.25,this.pokeHab-TUNE.pokeHabDrop);
   }
   // mechanotransduction from body-environment contact, called once per frame.
   // noseOn: head-driving-into-wall strength 0..1. noseSide: signed lateral nose
@@ -558,6 +651,25 @@ export class WormBrain {
     const P=this.Iper; P.fill(0); // persistent currents live one step, never accumulate
     this._t+=dt;
     this._locoStep(dt);
+    // touch-evoked escape: sustained AVA drive while it lasts, then a sprint
+    if (this.pokeHab===undefined){ this.pokeHab=1; this.escapeT=0; this.sprintT=0; }
+    this.pokeHab=Math.min(1,this.pokeHab+dt/TUNE.pokeHabTau);
+    if (this.escapeT>0){
+      this.escapeT-=dt;
+      for (const i of this.gAVA) this.Iext[i]+=TUNE.escDrive*dt*60*0.1;
+      for (const i of this.gAVB) this.Iext[i]-=TUNE.escDrive*dt*60*0.06;
+      this.noseTouchRecent=Math.max(this.noseTouchRecent,0.5);
+      this.locoTonicMul=Math.max(this.locoTonicMul,1);   // back away hard even from a pause
+      if (this.escapeT<=0) this.sprintT=TUNE.sprintDur;   // the run that follows the turn
+    }
+    if (this.sprintT>0){
+      this.sprintT-=dt;
+      const k=Math.min(1,this.sprintT/1.2);   // fades out over the last second
+      // the sprint OVERRIDES a dwelling pause: prodding a stationary animal
+      // makes it move, which is the whole point of the escape response
+      this.locoTonicMul=Math.min(1.6,Math.max(this.locoTonicMul,1)*(1+TUNE.sprintGain*k));
+      this._sprintK=k;
+    }
     const F=this._mean(this.gAVB), B=this._mean(this.gAVA);
     this.command=(F-B)/(F+B+1e-6);
     // command flip-flop: tonic forward + cross-inhibition (MODEL ASSUMPTION)
@@ -642,6 +754,11 @@ export class WormBrain {
     const clk = Math.pow(0.23,1-T.load); // 0.48 Hz on agar up to ~2 Hz in water (Fang-Yen 2010)
     // basal slowing on food: dopamine stretches the rhythm (Sawin 2000)
     const slowF=Math.max(0.45, 1 - T.dopaSlow*this.dopa - T.serSlow*this.ser);
+    // motor-side slowing (see dopaMotor): the serotonergic term is heavier in
+    // a food-deprived animal - Sawin's enhanced slowing response
+    const serW=T.serMotor*(1+T.serMotorStarve*Math.max(0,0.5-this.serTone)*2);
+    this.slowGain=Math.max(T.motorFloor, 1 - T.dopaMotor*this.dopa - serW*this.ser)
+                 *(this.socSlow===undefined?1:this.socSlow);
     const oTau=T.oscTau*clk/slowF, oAd=T.oscAdapt*clk/slowF;
     const dD = (-this.oscD + Math.max(0, drv - T.oscInh*this.oscV - this.adD + 0.02))/oTau;
     const dV = (-this.oscV + Math.max(0, drv - T.oscInh*this.oscD - this.adV))/oTau;
@@ -679,7 +796,7 @@ export class WormBrain {
     // resulting reorientation to roughly a right angle instead of ~180 deg.
     const om=this.omegaT>0?Math.min(1,this.omegaT/0.3):0;
     const up=this.upsilonT>0?Math.min(1,this.upsilonT/0.25):0;
-    const steer=this.wdBias+this.klBias*gFcast(this);
+    const steer=this.wdBias+this.klBias*gFcast(this)+(this.socBias||0);
     const dorsalSupp=Math.max(0,1-om-0.55*up);
     const oD=Math.min(1,Math.max(0,(this.oscD+Math.max(0,steer))*headSupp))*dorsalSupp;
     const oV=Math.min(1,Math.max(0,(this.oscV+Math.max(0,-steer))*headSupp))*dorsalSupp+om*1.25+up*0.7;
@@ -800,7 +917,8 @@ export class WormBrain {
       // signal, so attenuating upstream current alone barely dims the crawl
       // (measured: no visible change). This compresses the SWING around rest,
       // which is what lets 'pause' sub-bouts genuinely go still (MODEL ASSUMPTION).
-      d=Math.max(0,Math.min(1,0.5+(d-0.5)*this.locoTonicMul)); v=Math.max(0,Math.min(1,0.5+(v-0.5)*this.locoTonicMul));
+      const mg=this.locoTonicMul*(this.slowGain===undefined?1:this.slowGain);
+      d=Math.max(0,Math.min(1,0.5+(d-0.5)*mg)); v=Math.max(0,Math.min(1,0.5+(v-0.5)*mg));
       if (k<T.seedRows){ const w=0.5*(1+Math.cos(Math.PI*k/T.seedRows)); // smooth taper, no kink at the seam
         d=Math.min(1,d+T.oscSeed*w*oD); v=Math.min(1,v+T.oscSeed*w*oV); } // seed the wave (MODEL ASSUMPTION)
       if (k<3){ const wn=1-k/3; // foraging flicks live in the nose tip only

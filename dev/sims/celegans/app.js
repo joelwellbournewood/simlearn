@@ -1,5 +1,6 @@
 import { WormBrain, TUNE } from './brain.js';
 import { WormBody, Environment, BTUNE, widthAt } from './body.js';
+import { SOC, socialStep } from './social.js';
 
 const el=id=>document.getElementById(id);
 // set the dashboard class before anything measures the stage: the docked
@@ -25,13 +26,33 @@ const AF=(x,y,r,a)=>env.addFood(mx(x),my(y),mr(r),a);
 const AW=(x1,y1,x2,y2)=>env.addWall(mx(x1),my(y1),mx(x2),my(y2));
 const AO=(x,y,r)=>env.addObstacle(mx(x),my(y),mr(r));
 const data=await fetch('./celegans-connectome.json').then(r=>r.json());
-const brain=new WormBrain(data);
-const body=new WormBody(W*0.35,H*0.5,0.3);
+// ---- the animals -------------------------------------------------------
+// Up to MAXW independent worms share the dish: each one owns a full brain, a
+// full body and its own trail. Everything downstream (readouts, poses,
+// captions) reads the SELECTED worm through the `brain`/`body` aliases.
+const MAXW=8;
+let nextId=0;
+class Worm{
+  constructor(x,y,ang){
+    this.id=++nextId;
+    this.brain=new WormBrain(data);
+    this.body=new WormBody(x,y,ang);
+    this.trail=[]; this.pokePulse=null; this.eaten=0; this.soc={};
+  }
+}
+let worms=[new Worm(W*0.35,H*0.5,0.3)];
+let sel=0;
+let brain=worms[0].brain, body=worms[0].body;
 let env=new Environment(W,H);
+function selectWorm(k){
+  if(k<0||k>=worms.length||k===sel) { syncWormChips(); return; }
+  sel=k; brain=worms[k].brain; body=worms[k].body; selectedNeuron=-1;
+  syncWormChips(); if(typeof sizeViz==='function') sizeViz();
+}
 
 const cv=el('c'), ctx=cv.getContext('2d');
 let scale=1, ox=0, oy=0, paused=false, eaten=0, tool='food';
-let trail=[], ripples=[], dragA=null, dragB=null, pokePulse=null;
+let ripples=[], dragA=null, dragB=null;
 // the dish is fitted into the space BETWEEN the floating panels, never under them
 function safeRect(w,h){
   let L=14,R=w-14,T=14,B=h-46;
@@ -119,7 +140,13 @@ function loadPreset(name,btn){
   pickDish();
   env=new Environment(W,H); PRESETS[name].make();
   resize(); makeBg();
-  body.reset(W*0.22,H*0.55,0.2); brain.reset(); trail.length=0; eaten=0;
+  // every animal gets a fresh start, spread across the new dish
+  worms.forEach((w,k)=>{
+    const f=(k+1)/(worms.length+1);
+    w.body.reset(W*(0.18+0.6*f), H*(0.3+0.4*((k%3)/2)), 0.2+k*0.9);
+    w.brain.reset(); w.trail.length=0; w.pokePulse=null;
+  });
+  eaten=0;
   document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
 }
 { const holder=el('presets'); let first=null;
@@ -131,24 +158,77 @@ function loadPreset(name,btn){
   });
   loadPreset('Open dish',first);
 }
+// ---- the colony ---------------------------------------------------------
+function addWorm(x,y,ang){
+  if (worms.length>=MAXW) return null;
+  const a=(ang===undefined)?Math.random()*6.283:ang;
+  const w=new Worm(Math.max(0.35,Math.min(W-0.35,x)),Math.max(0.35,Math.min(H-0.35,y)),a);
+  worms.push(w); selectWorm(worms.length-1); syncWormChips(); return w;
+}
+function removeWorm(k){
+  if (worms.length<=1) return;
+  worms.splice(k,1);
+  selectWorm(Math.min(sel,worms.length-1));
+  sel=Math.min(sel,worms.length-1); brain=worms[sel].brain; body=worms[sel].body;
+  syncWormChips();
+}
+function syncWormChips(){
+  const box=el('wchips'); if(!box) return;
+  box.innerHTML='';
+  worms.forEach((w,k)=>{
+    const b=document.createElement('button');
+    b.className='wchip'; b.textContent=String(w.id);
+    b.setAttribute('aria-pressed',String(k===sel));
+    b.title='Show worm '+w.id+' in the readouts';
+    b.addEventListener('click',()=>selectWorm(k));
+    box.appendChild(b);
+  });
+  const add=el('b-addworm'); if(add) add.disabled=worms.length>=MAXW;
+  const rm=el('b-rmworm'); if(rm) rm.disabled=worms.length<=1;
+}
+function updateHud(n){
+  const e=el('wormstat'); if(!e) return;
+  const nb=worms[sel].soc.nb||0;
+  e.textContent=worms.length+(worms.length>1?' worms':' worm')+' \u00b7 readouts show #'+worms[sel].id
+    +' \u00b7 '+realSpeed.toFixed(1)+'x actual'+(worms.length>1?' \u00b7 neighbours '+nb.toFixed(2):'');
+}
 // ---- tools ----
 document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>{
   tool=b.dataset.tool;
   document.querySelectorAll('.tool').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
 }));
+function wormAt(x,y,rad){
+  let best=-1,bd=rad||0.28,bi=-1;
+  for (let k=0;k<worms.length;k++){
+    const b=worms[k].body;
+    for (let i=0;i<BTUNE.NP;i++){ const d=Math.hypot(b.px[i]-x,b.py[i]-y); if(d<bd){bd=d;best=k;bi=i;} }
+  }
+  return {k:best,i:bi};
+}
 function poke(x,y){
-  let bi=-1,bd=0.35;
-  for (let i=0;i<BTUNE.NP;i++){const d=Math.hypot(body.px[i]-x,body.py[i]-y);if(d<bd){bd=d;bi=i;}}
+  const hit=wormAt(x,y,0.35);
+  const bi=hit.i;
   if (bi<0) return false;
+  selectWorm(hit.k);
+  const w=worms[hit.k], brain=w.brain;
   const region=bi<6?'nose':bi<20?'anterior':'posterior';
-  pokePulse={region,t:0.45}; // a real prod is a volley, not one spike
+  // a deliberate prod is the full escape response, not a nudge: prod() sets
+  // the commanded backing / forward sprint and the habituation, and the
+  // volley keeps the touch cells firing for a third of a second so you can
+  // watch ALM/AVM/ASH light up on the readouts
+  brain.prod(region,2.0);
+  w.pokePulse={region,t:0.35};
   ripples.push({x,y,r:0.06,a:1});
+  ripples.push({x,y,r:0.02,a:1.4});
   return true;
 }
 cv.addEventListener('pointerdown',e=>{
   const x=x2w(e.offsetX),y=y2w(e.offsetY);
   if (x<0||x>W||y<0||y>H) return;
   if (tool==='wall'){ dragA=[x,y]; dragB=[x,y]; return; }
+  if (tool==='worm'){ addWorm(x,y); return; }
+  // clicking an animal always makes it the one the readouts are about
+  { const hit=wormAt(x,y,0.3); if(hit.k>=0) selectWorm(hit.k); }
   if (tool==='food') env.addFood(x,y,1.0,0.55);
   else if (tool==='post') env.addObstacle(x,y,0.22);
   else if (tool==='erase') env.removeAt(x,y);
@@ -166,7 +246,7 @@ function bind(id,vid,fmt,set){ const s=el(id),v=el(vid);
   const f=()=>{v.textContent=fmt(parseFloat(s.value)); set(parseFloat(s.value));};
   s.addEventListener('input',f); f(); }
 let simSpeed=1;
-bind('s-speed','v-speed',v=>v.toFixed(2)+'x',v=>simSpeed=v);
+bind('s-speed','v-speed',v=>(v<1?v.toFixed(2):v.toFixed(v%1?1:0))+'x',v=>simSpeed=v);
 bind('s-smell','v-smell',v=>v.toFixed(1),v=>TUNE.senseGain=6*v);
 bind('s-medium','v-medium',v=>v<0.25?'water':v<0.75?'thick gel':'agar surface',v=>{ BTUNE.load=v; TUNE.load=v; });
 
@@ -192,31 +272,30 @@ function sizeDash(){
   const vp=el('vizpanel'), vb=document.querySelector('.vbody');
   for (const v of VIEWS) el('sec-'+v).classList.add('on');
   const pw=vb.clientWidth; if(!pw) return;
-  const colW=Math.floor((pw-12)/2);
   const top=vb.getBoundingClientRect().top;
-  const availH=Math.max(360, window.innerHeight-top-24);
-  const CHROME=38, GAP=9;                       // label + caption, and the row gap
-  let canvasH=availH-4*CHROME-3*GAP;
-  const sigH=Math.round(Math.max(96,Math.min(170,canvasH*0.17)));
-  let rest=canvasH-sigH;
-  // row 3: muscles beside the (deliberately smaller) scent map
-  const h3=Math.round(Math.max(84,Math.min(rest*0.30,colW*0.85)));
-  rest-=h3;
-  // rows 1-2: ganglia and whole body, same box, stacked
-  const h12=Math.round(Math.max(96,Math.min(rest/2,colW*0.92)));
-  const set=(v,w,h)=>{ const c=VC[v]; c.width=Math.round(w*vdpr); c.height=Math.round(h*vdpr);
+  document.documentElement.style.setProperty('--vtop',Math.round(top+24)+'px');
+  const availH=Math.max(330, window.innerHeight-top-24);
+  const GAP=9, CGAP=12, CHROME=34;              // row gap, column gap, label+caption
+  const rowH=Math.floor((availH-2*GAP)/3);
+  const cellH=Math.max(60,rowH-CHROME);
+  // 12 equal columns with a gap between each: a box spanning n of them is
+  // n columns plus the n-1 gaps it swallows
+  const col=(pw-11*CGAP)/12, span=n=>Math.floor(n*col+(n-1)*CGAP);
+  const w7=span(7), w5=span(5);      // row 1: neuron table | ganglia
+  const w6=span(6);                  // row 2: whole body | muscles
+  const w9=span(9), w3=span(3);      // row 3: traces | scent
+  const set=(v,w,h)=>{ const c=VC[v]; c.width=Math.max(8,Math.round(w*vdpr)); c.height=Math.max(8,Math.round(h*vdpr));
     c.style.width=Math.round(w)+'px'; c.style.height=Math.round(h)+'px'; };
-  set('gang',colW,h12);
-  set('geo',colW,h12);
-  const mw=colW; set('muscles',mw,Math.round(Math.min(h3,mw*0.46)));
-  const sw=Math.min(colW,Math.round(h3*W/H));  set('scent',sw,Math.round(sw*H/W));
-  set('signals',pw,sigH);
-  // the neuron table fills the tall left cell: pick a column count that tiles it
-  const nH=2*h12+CHROME+GAP;
-  const cell=Math.sqrt(colW*nH/brain.N);
-  let NC=Math.max(6,Math.floor(colW/cell)); let rows=Math.ceil(brain.N/NC);
-  while (rows*Math.floor(colW/NC)>nH && NC<40){ NC++; rows=Math.ceil(brain.N/NC); }
-  const CSpx=Math.min(Math.floor(colW/NC),Math.floor(nH/rows));
+  set('gang',w5,cellH);
+  set('geo',w6,Math.min(cellH,Math.round(w6*0.52)));
+  set('muscles',w6,Math.min(cellH,Math.round(w6*0.46)));
+  set('signals',w9,cellH);
+  const sw=Math.min(w3,Math.round(cellH*W/H)); set('scent',sw,Math.round(sw*H/W));
+  // the neuron table tiles its own cell: pick the column count that fits
+  const cell=Math.sqrt(w7*cellH/brain.N);
+  let NC=Math.max(6,Math.floor(w7/cell)); let rows=Math.ceil(brain.N/NC);
+  while (rows*Math.floor(w7/NC)>cellH && NC<46){ NC++; rows=Math.ceil(brain.N/NC); }
+  const CSpx=Math.min(Math.floor(w7/NC),Math.floor(cellH/rows));
   const CS=Math.max(3,Math.floor(CSpx*vdpr));
   nervesGrid={NC,CS,rows};
   const nc=VC.nerves; nc.width=NC*CS; nc.height=rows*CS;
@@ -747,10 +826,14 @@ function draw(){
       ctx.fillRect(snap(w2x(p.x)),snap(w2y(p.y)),sz,sz);
     }
   }
-  // trail
-  if (trail.length>2){ ctx.beginPath(); ctx.moveTo(w2x(trail[0][0]),w2y(trail[0][1]));
-    for (const p of trail) ctx.lineTo(w2x(p[0]),w2y(p[1]));
-    ctx.strokeStyle='rgba(86,224,194,.13)'; ctx.lineWidth=1.2; ctx.stroke(); }
+  // trails, one per animal (the selected one brighter)
+  for (let k=0;k<worms.length;k++){
+    const tr=worms[k].trail; if(tr.length<3) continue;
+    ctx.beginPath(); ctx.moveTo(w2x(tr[0][0]),w2y(tr[0][1]));
+    for (const p of tr) ctx.lineTo(w2x(p[0]),w2y(p[1]));
+    ctx.strokeStyle=(k===sel)?'rgba(86,224,194,.15)':'rgba(86,224,194,.06)';
+    ctx.lineWidth=1.2; ctx.stroke();
+  }
   // walls and posts
   ctx.lineCap='round';
   for (const wl of env.walls){ ctx.beginPath(); ctx.moveTo(w2x(wl.x1),w2y(wl.y1)); ctx.lineTo(w2x(wl.x2),w2y(wl.y2));
@@ -763,7 +846,11 @@ function draw(){
   // ripples
   for (const r of ripples){ ctx.beginPath(); ctx.arc(w2x(r.x),w2y(r.y),r.r*scale,0,7);
     ctx.strokeStyle='rgba(255,125,92,'+(0.6*r.a)+')'; ctx.lineWidth=2; ctx.stroke(); }
-  // worm: ribbon with a spindle width profile
+  // worms: every animal on the dish, the selected one picked out
+  for (let k=0;k<worms.length;k++) drawWorm(worms[k],k===sel);
+}
+function drawWorm(w,isSel){
+  const body=w.body;
   const NP=BTUNE.NP, lx=[],ly=[],rx=[],ry=[];
   for (let i=0;i<NP;i++){
     const im=Math.max(0,i-1), ip=Math.min(NP-1,i+1);
@@ -778,22 +865,37 @@ function draw(){
   for (let i=NP-1;i>=0;i--) ctx.lineTo(w2x(rx[i]),w2y(ry[i]));
   ctx.closePath();
   const hg=ctx.createLinearGradient(w2x(body.px[0]),w2y(body.py[0]),w2x(body.px[NP-1]),w2y(body.py[NP-1]));
-  hg.addColorStop(0,'rgba(226,238,229,.95)'); hg.addColorStop(1,'rgba(180,205,192,.88)');
+  if (isSel){ hg.addColorStop(0,'rgba(226,238,229,.95)'); hg.addColorStop(1,'rgba(180,205,192,.88)'); }
+  else { hg.addColorStop(0,'rgba(196,214,203,.72)'); hg.addColorStop(1,'rgba(150,175,163,.66)'); }
   ctx.fillStyle=hg; ctx.fill();
-  ctx.strokeStyle='rgba(20,40,33,.5)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.strokeStyle=isSel?'rgba(20,40,33,.5)':'rgba(20,40,33,.35)'; ctx.lineWidth=1; ctx.stroke();
   // pharynx: two darker bulbs behind the nose
   ctx.fillStyle='rgba(90,110,100,.65)';
   for (const t of [0.045,0.09]){ const i=Math.round(t*(NP-1));
     ctx.beginPath(); ctx.arc(w2x(body.px[i]),w2y(body.py[i]),widthAt(t)*0.62*scale,0,7); ctx.fill(); }
+  if (worms.length>1){
+    // marker: which animal the right-hand column is about
+    const hx=w2x(body.px[0]), hy=w2y(body.py[0]);
+    ctx.beginPath(); ctx.arc(hx,hy,Math.max(9,0.17*scale),0,7);
+    ctx.strokeStyle=isSel?'rgba(86,224,194,.95)':'rgba(120,150,138,.35)';
+    ctx.lineWidth=isSel?2:1; ctx.stroke();
+    ctx.fillStyle=isSel?'rgba(86,224,194,.95)':'rgba(150,180,168,.6)';
+    ctx.font='600 '+Math.max(9,Math.round(0.1*scale))+'px "Space Mono",monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(w.id),hx,hy);
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  }
 }
 
 // ---- loop ----
 const dt=1/60;
-function stepOnce(){
+function stepWorm(w){
+  const body=w.body, brain=w.brain;
   // mechanotransduction: last frame's body-wall contacts reach the neurons.
   // Nose tip pressed forward = ASH/FLP/OLQ nose touch; side of the nose =
-  // OLQ/IL1 head withdrawal; body flank = ALM/AVM (entrainment along walls)
-  let noseOn=0,noseSide=0,bodyA=0,bodyP=0;
+  // OLQ/IL1 head withdrawal; body flank = ALM/AVM (entrainment along walls).
+  // Contact with ANOTHER WORM enters through the same body touch cells.
+  let noseOn=0,noseSide=0,bodyA=w.soc.head||0,bodyP=w.soc.tail||0;
   for (const c of body.contacts){
     if (c.i<=4){ const dot=-(c.nx*body.noseDirX+c.ny*body.noseDirY);
       noseOn=Math.max(noseOn,Math.max(0,dot)); noseSide+=c.side*Math.min(0.4,c.push);
@@ -801,40 +903,78 @@ function stepOnce(){
     else bodyP=Math.max(bodyP,c.push);
   }
   brain.mech(noseOn,noseSide,bodyA,bodyP,dt,body.speed);
-  const conc=env.concentrationAt(body.noseX,body.noseY);
-  brain.chemosense(conc);
+  brain.chemosense(env.concentrationAt(body.noseX,body.noseY));
   // basal slowing: the dopamine cells feel bacteria mechanically under the
   // body, so they are gated by particle-local density, never by smell alone
   const midi=Math.floor(body.px.length*0.55);
   const lf=env.localFoodAt(body.noseX,body.noseY);
   const lfP=env.localFoodAt(body.px[midi],body.py[midi]);
   brain.food(lf>0.5?1:0, lfP>0.5?1:0, lf>0.5?1:0, dt);
-  if (pokePulse){ brain.touch(pokePulse.region,1.3); pokePulse.t-=dt; if(pokePulse.t<=0) pokePulse=null; }
+  if (w.pokePulse){ brain.touch(w.pokePulse.region,1.1); w.pokePulse.t-=dt; if(w.pokePulse.t<=0) w.pokePulse=null; }
   brain.step(dt,body.curvature);
   body.step(dt,brain.muscleDorsal,brain.muscleVentral,env);
-  if (lf>0.5) eaten+=env.consume(body.noseX,body.noseY,dt,0.06);
+  if (lf>0.5){ const e=env.consume(body.noseX,body.noseY,dt,0.06); w.eaten+=e; eaten+=e; }
+}
+function stepOnce(){
+  if (worms.length>1) socialStep(worms,dt);
+  else { const S=worms[0].soc; S.head=0; S.tail=0; S.nb=0; }
+  for (const w of worms) stepWorm(w);
   for (const r of ripples){ r.r+=dt*1.6; r.a-=dt*1.8; }
   for (let i=ripples.length-1;i>=0;i--) if (ripples[i].a<=0) ripples.splice(i,1);
 }
-let frame=0, acc=0;
+let frame=0, acc=0, realSpeed=1;
+// With several animals a 10x request can cost more than a frame, so the
+// substep loop is capped by TIME, not by count, and the HUD reports the speed
+// actually achieved rather than the one asked for.
+const STEP_BUDGET_MS=11;
 function loop(){
   requestAnimationFrame(loop);
   if (!paused){
     acc+=simSpeed;
-    while (acc>=1){ stepOnce(); acc-=1; }
+    const t0=performance.now(); let n=0;
+    while (acc>=1){ stepOnce(); acc-=1; n++;
+      if (n>=2 && performance.now()-t0>STEP_BUDGET_MS){ acc=0; break; } }
+    realSpeed+=(n-realSpeed)*0.08;
     frame++;
     if (frame%4===0){
-      trail.push([body.noseX,body.noseY]);
-      if (trail.length>900) trail.shift();
+      for (const w of worms){ w.trail.push([w.body.noseX,w.body.noseY]); if (w.trail.length>900) w.trail.shift(); }
     }
+    if (frame%15===0) updateHud(n);
   }
-  draw(); drawViz(frame);
+  draw();
+  // at high speed the readouts do not need a redraw every frame
+  if (simSpeed<=3 || frame%2===0) drawViz(frame);
 }
 loop();
 
 // ---- chrome ----
+el('b-addworm').addEventListener('click',()=>{
+  // drop the new animal in open dish space, away from the others
+  let bx=W*0.5,by=H*0.5,bd=-1;
+  for(let t=0;t<24;t++){
+    const x=0.5+Math.random()*(W-1), y=0.5+Math.random()*(H-1);
+    let d=1e9; for(const w of worms) d=Math.min(d,Math.hypot(w.body.px[12]-x,w.body.py[12]-y));
+    if(d>bd){bd=d;bx=x;by=y;}
+  }
+  addWorm(bx,by);
+});
+el('b-rmworm').addEventListener('click',()=>removeWorm(sel));
+function setStrain(mode){
+  SOC.mode=mode;
+  el('b-solitary').setAttribute('aria-pressed',String(mode==='solitary'));
+  el('b-social').setAttribute('aria-pressed',String(mode==='social'));
+}
+el('b-solitary').addEventListener('click',()=>setStrain('solitary'));
+el('b-social').addEventListener('click',()=>setStrain('social'));
+syncWormChips(); updateHud(1);
 el('b-pause').addEventListener('click',()=>{ paused=!paused; el('b-pause').dataset.on=String(paused); });
-el('b-reset').addEventListener('click',()=>{ body.reset(W*0.22,H*0.55,0.2); brain.reset(); trail.length=0; });
+el('b-reset').addEventListener('click',()=>{
+  worms.forEach((w,k)=>{
+    const ang=0.2+k*0.9, f=(k+1)/(worms.length+1);
+    w.body.reset(W*(0.18+0.64*f), H*(0.3+0.4*((k%3)/2)), ang);
+    w.brain.reset(); w.trail.length=0; w.pokePulse=null;
+  });
+});
 el('b-clean').addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); el('b-clean').dataset.on=String(on); sizeViz(); resize(); makeBg(); });
 document.addEventListener('fullscreenchange',()=>{ document.body.classList.toggle('fs',!!document.fullscreenElement); resize(); makeBg(); sizeViz(); });
 el('b-full').addEventListener('click',()=>{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); });
@@ -853,6 +993,7 @@ window.addEventListener('keydown',e=>{
 });
 if (window.self!==window.top) document.body.classList.add('in-frame');
 // test hook: lets automated checks find the worm
-window.__worm={body,brain,env,poke};
+window.__worm={get body(){return body},get brain(){return brain},env,poke,worms,addWorm,removeWorm,
+  get sel(){return sel},selectWorm,SOC,get realSpeed(){return realSpeed}};
 window.__dishW=W; window.__dishH=H;
 window.__viz={get ox(){return ox},get oy(){return oy},get scale(){return scale},vizOn};

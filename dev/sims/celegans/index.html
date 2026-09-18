@@ -177,6 +177,16 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
   font-family:var(--display);font-weight:600;font-size:12.5px;cursor:pointer;transition:border-color .18s}
 .tool:hover{border-color:var(--line-strong)}
 .tool[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim)}
+.tool:disabled{opacity:.35;cursor:default}
+.colony{margin-top:7px;display:flex;flex-direction:column;gap:6px}
+.wrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.wrow .tool{flex:0 0 auto;padding:6px 9px}
+.strainrow .tool{flex:1 1 0}
+.wchips{display:flex;gap:4px;flex-wrap:wrap;margin-left:2px}
+.wchip{width:22px;height:22px;border-radius:7px;border:1px solid var(--line);background:transparent;
+  color:var(--muted);font:600 11px/1 "Space Mono",monospace;cursor:pointer}
+.wchip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.wstat{margin:1px 0 0;font-size:10.5px;color:var(--muted)}
 body.clean .brand{display:none}
 #nerves,#muscles,#scentcv,#geo,#geohead,#signals{width:100%;display:block;border:1px solid var(--line);border-radius:10px;background:var(--field);cursor:crosshair}
 .selcap{color:var(--accent)!important}
@@ -246,16 +256,26 @@ body.fs .panel,body.fs .hint{display:none}
   body.dash{--vizw:clamp(430px,calc((100vw - var(--railw))/2),1150px)}
 
 /* ---- dashboard readout grid (>=1100px) -----------------------------------
-   Everything is on at once and sized to the window, so nothing scrolls:
-     neuron table | head ganglia
-                  | whole body
-     muscles      | scent
-     signals (full width)
+   Everything is on at once and sized to the window, so nothing scrolls.
+   Three rows, each exactly a third of the column's height:
+     row 1  neuron table        | head ganglia
+     row 2  whole-body map      | muscles
+     row 3  traces (most of it) | scent map
    Canvas pixel sizes come from sizeViz(); the grid only places the boxes. */
   body.dash .vhead{display:none}
   body.dash .vizpanel{padding-top:14px;overflow:hidden}
-  body.dash .vbody{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:9px;
-    grid-template-areas:"nerves gang" "nerves geo" "musc scent" "sig sig";align-content:start}
+  body.dash .vbody{display:grid;grid-template-columns:repeat(12,1fr);column-gap:12px;row-gap:9px;
+    grid-template-rows:1fr 1fr 1fr;height:calc(100vh - var(--vtop,150px));
+    grid-template-areas:
+      "nerves nerves nerves nerves nerves nerves nerves gang gang gang gang gang"
+      "geo    geo    geo    geo    geo    geo    musc   musc musc musc musc musc"
+      "sig    sig    sig    sig    sig    sig    sig    sig  sig  scent scent scent";
+    align-content:stretch}
+  body.dash .vsec{overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start}
+  /* the two body ribbons are wide and thin: centre them in their third
+     instead of leaving the gap under them */
+  body.dash #sec-geo,body.dash #sec-muscles{justify-content:center}
+  body.dash .vsec canvas{flex:0 0 auto}
   body.dash #sec-nerves{grid-area:nerves}
   body.dash #sec-gang{grid-area:gang}
   body.dash #sec-geo{grid-area:geo}
@@ -309,7 +329,20 @@ body.fs .panel,body.fs .hint{display:none}
     <button class="tool" data-tool="wall" aria-pressed="false">Wall</button>
     <button class="tool" data-tool="post" aria-pressed="false">Post</button>
     <button class="tool" data-tool="poke" aria-pressed="false">Poke</button>
+    <button class="tool" data-tool="worm" aria-pressed="false">Add worm</button>
     <button class="tool" data-tool="erase" aria-pressed="false">Erase</button>
+  </div>
+  <div class="colony">
+    <div class="wrow">
+      <button class="tool" id="b-addworm" title="Drop another animal in the dish">+ worm</button>
+      <button class="tool" id="b-rmworm" title="Remove the selected animal">&minus; worm</button>
+      <div class="wchips" id="wchips"></div>
+    </div>
+    <div class="wrow strainrow">
+      <button class="tool strain" id="b-solitary" aria-pressed="true" title="N2 wild type: npr-1 high, animals ignore one another">Solitary N2</button>
+      <button class="tool strain" id="b-social" aria-pressed="false" title="npr-1 loss of function: animals aggregate and border (de Bono &amp; Bargmann 1998)">Social npr-1</button>
+    </div>
+    <p class="wstat" id="wormstat"></p>
   </div>
   </details>
 
@@ -317,7 +350,7 @@ body.fs .panel,body.fs .hint{display:none}
   <summary class="grp-title">Conditions</summary>
   <div class="row">
     <label for="s-speed"><span class="nm">Time<button class="tip" data-tip="How fast the dish runs. The worm itself does not change; your patience does." aria-label="What time does">?</button></span><span class="val" id="v-speed"></span></label>
-    <input type="range" id="s-speed" min="0.5" max="4" step="0.25" value="1">
+    <input type="range" id="s-speed" min="0.5" max="10" step="0.5" value="1">
   </div>
   <div class="row">
     <label for="s-smell"><span class="nm">Scent carry<button class="tip" data-tip="How far the smell of food spreads through the agar. Weak scent forces the worm to nearly stumble into dinner." aria-label="What scent carry does">?</button></span><span class="val" id="v-smell"></span></label>
@@ -396,6 +429,10 @@ body.fs .panel,body.fs .hint{display:none}
 <p>The second is what happens when the food runs out. Gray, Hill and Bargmann (2005) and Hills, Brockie and Maricq (2004) showed that a worm taken off food does not simply wander away: for roughly the first fifteen minutes it performs a local, area-restricted search, reversing and turning far more often than usual and staying almost on the spot, and only then switches to global search, dispersing in long, nearly straight runs. The local phase needs dopamine, which is why animals that cannot make it disperse straight away, so here it is gated on a decaying memory of recent feeding rather than on a bare clock. Measured on this model: in the first five minutes after the patch is removed the worm reverses about ten times a minute and travels a net nine body-lengths, and twenty minutes later it reverses three times a minute and covers twice the ground in a straighter line; a worm that never found food at all shows neither phase. The chemotaxis drive is deliberately left at full strength throughout, so a disperser that runs into a new gradient still turns and climbs it.</p>
 <p>This build goes after the model's most stubborn number: how often the worm backs up. Three separate things were driving reversals that should not have been. First, the OFF response of the odour-sensing cells never adapted, so a worm eating its way through a patch sat in a permanently falling concentration and kept re-firing the reversal command neuron AVA; real AWC responses adapt within seconds (Chalasani et al. 2007). Second, the area-restricted search drive &mdash; the turn-heavy hunt a worm performs once it has <i>lost</i> its food (Gray et al. 2005; Hills et al. 2004) &mdash; was running at full strength while the animal was still sitting on the lawn, firing a reversal attempt every few seconds. Third, the roam/dwell arousal level was scaling the forward command cell AVB but not the phasic drive onto AVA, so a resting worm's command circuit was quietly biased into reverse. With all three fixed the command circuit spends 52% of its time in reverse near food instead of 76%, the median gap between reversals grows by about half, and the worm is <i>better</i> at finding a patch it cannot see. The headline rate &mdash; still around twelve reversals a minute, against a real median interval near 13 s (Zhao et al. 2003) &mdash; barely moved, and the honest reading is that the rest of the excess is below the command circuit: the body changes direction even while the command neurons hold their state. That is the next thing to chase, and it stays on the scorecard as a failure rather than being quietly rounded off.</p>
 
+<h3>A prod is not a nudge</h3>
+<p>Touching a worm is not a small event for it. A prod near the head drives the touch cells ALM, AVM and (at the tip) ASH and FLP hard enough to hand the animal over to the reversal command neuron AVA for a couple of seconds &mdash; measured here at a 2.3&nbsp;s reversal covering about 0.6 of a body length, which then ends in a full omega turn because the reversal was caused by contact. A prod near the tail does the opposite: PLM pushes AVB, and the animal runs <i>forward</i> faster, measured at 1.44&times; its ordinary speed for about three and a half seconds. That is the escape response as Chalfie and Sulston described the touch circuit in 1981 and as Pirri and Alkema's tyramine work fills it in: reverse, turn, then sprint away. Two more real details come with it. The prod overrides a dwelling pause, so a worm that was sitting still gets up and goes &mdash; which is exactly what happens on a real plate. And it habituates: each prod costs about a quarter of the response and the sensitivity comes back over roughly a minute, the wearing-down Rankin and Broster measured in the tap-withdrawal reflex in 1992. Poke it four times in a row and you can watch the reversals get shorter.</p>
+<h3>More than one worm</h3>
+<p>Press <b>+&nbsp;worm</b>, or pick <b>Add worm</b> in Your hand and click the dish, and you get up to eight animals, each with its own complete nervous system and its own body. Click any of them &mdash; or its numbered chip &mdash; and every readout on the right switches to that animal. They are not decoration: they interact, and the interaction is built out of the same circuitry as everything else here. Each worm continuously excretes ascaroside pheromone, which its neighbours' ADL and ASK neurons smell; those cells and the oxygen sensors URX, AQR and PQR are gap-junctioned to the hub neuron RMG, and the gene <i>npr-1</i> inhibits that hub (Macosko et al. 2009). That one inhibition is the difference between the two buttons. In <b>Solitary N2</b> &mdash; the ordinary laboratory strain, high npr-1 &mdash; the animals barely register one another. In <b>Social npr-1</b> &mdash; the loss-of-function strain and most wild isolates, the one de Bono and Bargmann identified in 1998 &mdash; RMG is released, and three rules that Ding et al. (2019) fitted to real multi-worm tracking data come on: taxis toward neighbours, a slowdown that deepens with local density, and a reversal when the body touches another animal at the front but not the back, which is what a worm at the edge of a clump feels as it leaves. Aggregation is then emergent, not scripted: measured here over four minutes with five animals and no food, mean distance between animals falls from 2.4 to 0.5&ndash;1.0 body lengths in the social strain, and rises to 3&ndash;4 in the solitary one. Real clumps also form where the oxygen is lowest, which is why a clump in this model is treated as a low-oxygen pocket the URX cells report (Gray et al. 2004). One deliberate simplification: bodies here can slide over one another rather than colliding, because in a real clump they do exactly that &mdash; what contact does is stimulate the touch receptors, not block movement.</p>
 <h3>Things to try</h3>
 <ul>
 <li>Drop one meal of food far from the worm, turn the scent down low, and watch how long the search takes. Then turn the scent up and watch the path straighten.</li>
@@ -408,7 +445,10 @@ body.fs .panel,body.fs .hint{display:none}
 <li>Turn on the Firing map. The small body diagram never bends (it is a fixed reference, the moving worm is already right there on the dish); the panel below it expands the head into the nerve ring and head ganglia, spread out and wired with their real synapses so cells that overlap up top can be told apart. Click any neuron, in the grid or on either body diagram, and the same cell is ringed in all three views at once.</li>
 <li>Turn on Signals and poke the nose: AVB hands over to AVA at the instant of the reversal, the state strip above the traces turns orange for the reversal, then gold for the omega turn it becomes, and the serotonin trace dips for a few seconds and recovers, the pumping-suppression reflex Keane and Avery described.</li>
 <li>Drop a meal and let the worm settle on it: it grazes the lawn particle by particle, and in the Scent view the map dims exactly where it has eaten.</li>
+<li>Put eight worms on one lawn in <b>Solitary N2</b> and watch them spread out and ignore each other. Then press <b>Social npr-1</b> and leave it running at 5&times;: the same eight animals, the same wiring, one gene's worth of difference, and within a couple of minutes they are a clump.</li>
+<li>Poke the same worm four times in twenty seconds and watch the reversal get shorter each time. Then leave it a minute and poke again: the response has recovered.</li>
 <li>Slide the medium from agar to water and watch the stroke lengthen and quicken without a single neuron changing.</li>
+<li>Lay a broad patch of food and watch it drop to about half speed: measured at 0.10&ndash;0.18 body lengths a second on the lawn against 0.20 off it, which is also why it now stays on the patch instead of walking straight across.</li>
 <li>Lay a broad patch of food and watch the worm slow down on it. The dopamine cells CEP, ADE, and PDE light while the body is over food, and NSM joins them while it eats. That slowdown is why the chemotaxis works: finding food is only half the job, staying on it is the other half.</li>
 <li>Leave it alone for a couple of minutes and just watch: it will downshift out of its fast straight run into a still pause, a slow crawl, or a flurry of backing up, then pick a new heading and roam again, unprompted.</li>
 <li>Feed it, then delete the patch and watch the clock: the first few minutes are a tight, turn-heavy local search around where dinner used to be, and after a quarter of an hour it gives up and disperses in long straight runs (Gray et al. 2005).</li>
@@ -437,6 +477,14 @@ body.fs .panel,body.fs .hint{display:none}
 <li>Cermak, Yu, Clark, Huang, Baskoylu, and Flavell (2020), Whole-organism behavioral profiling reveals a role for dopamine in state-dependent motor program coupling in C. elegans. eLife 9:e57093.</li>
 <li>Wen, Po, Hulme, Chen, Liu, Kwok, Gershow, Leifer, Butler, Fang-Yen, Kawano, Schafer, Whitesides, Wyart, Chklovskii, Zhen, and Samuel (2012), Proprioceptive coupling within motor neurons drives C. elegans forward locomotion. Neuron 76.</li>
 <li>Kawano, Po, Gao, Leung, Ryu, and Zhen (2011), An imbalancing act: gap junctions reduce the backward motor circuit activity to bias C. elegans for forward locomotion. Neuron 72.</li>
+<li>de Bono and Bargmann (1998), Natural variation in a neuropeptide Y receptor homolog modifies social behavior and food response in C. elegans. Cell 94.</li>
+<li>Macosko, Pokala, Feinberg, Chalasani, Butcher, Clardy, and Bargmann (2009), A hub-and-spoke circuit drives pheromone attraction and social behaviour in C. elegans. Nature 458.</li>
+<li>Gray, Karow, Lu, Chang, Chang, Ellis, Marletta, and Bargmann (2004), Oxygen sensation and social feeding mediated by a C. elegans guanylate cyclase homologue. Nature 430.</li>
+<li>Ding, Schumacher, Javer, Endres, and Brown (2019), Shared behavioral mechanisms underlie C. elegans aggregation and swarming. eLife 8:e43318.</li>
+<li>Chalfie and Sulston (1981), Developmental genetics of the mechanosensory neurons of Caenorhabditis elegans. Dev. Biol. 82.</li>
+<li>Rankin and Broster (1992), Factors affecting habituation and recovery from habituation in the nematode Caenorhabditis elegans. Behav. Neurosci. 106.</li>
+<li>Pirri, McPherson, Donnelly, Francis, and Alkema (2009), A tyramine-gated chloride channel coordinates distinct motor programs of a Caenorhabditis elegans escape response. Neuron 62.</li>
+<li>Chase, Pepper, and Koelle (2004), Mechanism of extrasynaptic dopamine signaling in Caenorhabditis elegans. Nature Neuroscience 7.</li>
 <li>Kaplan and Horvitz (1993), A dual mechanosensory and chemosensory neuron in Caenorhabditis elegans. PNAS 90.</li>
 <li>Hart, Sims, and Kaplan (1995), Synaptic code for sensory modalities revealed by C. elegans GLR-1 glutamate receptor. Nature 378.</li>
 <li>Croll (1975), Components and patterns in the behaviour of the nematode Caenorhabditis elegans. J. Zool. 176.</li>
