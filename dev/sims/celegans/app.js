@@ -200,7 +200,7 @@ function sizeDash(){
   const sigH=Math.round(Math.max(96,Math.min(170,canvasH*0.17)));
   let rest=canvasH-sigH;
   // row 3: muscles beside the (deliberately smaller) scent map
-  const h3=Math.round(Math.max(84,Math.min(rest*0.38,colW*1.0)));
+  const h3=Math.round(Math.max(84,Math.min(rest*0.30,colW*0.85)));
   rest-=h3;
   // rows 1-2: ganglia and whole body, same box, stacked
   const h12=Math.round(Math.max(96,Math.min(rest/2,colW*0.92)));
@@ -835,7 +835,7 @@ loop();
 // ---- chrome ----
 el('b-pause').addEventListener('click',()=>{ paused=!paused; el('b-pause').dataset.on=String(paused); });
 el('b-reset').addEventListener('click',()=>{ body.reset(W*0.22,H*0.55,0.2); brain.reset(); trail.length=0; });
-el('b-clean').addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); el('b-clean').dataset.on=String(on); resize(); makeBg(); });
+el('b-clean').addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); el('b-clean').dataset.on=String(on); sizeViz(); resize(); makeBg(); });
 document.addEventListener('fullscreenchange',()=>{ document.body.classList.toggle('fs',!!document.fullscreenElement); resize(); makeBg(); sizeViz(); });
 el('b-full').addEventListener('click',()=>{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); });
 el('b-about').addEventListener('click',()=>el('about').showModal());
