@@ -196,6 +196,12 @@ body.barlow .brand p{display:none}
 body.clean .brand{display:none}
 #nerves,#muscles,#scentcv,#geo,#geohead,#signals{width:100%;display:block;border:1px solid var(--line);border-radius:10px;background:var(--field);cursor:crosshair}
 .selcap{color:var(--accent)!important}
+.ablrow{display:flex;gap:6px;margin:6px 0 0;flex-wrap:wrap}
+.ablbtn{padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;
+  color:var(--ink);font-family:var(--body);font-size:11.5px;cursor:pointer;transition:border-color .18s,background .18s}
+.ablbtn:hover{border-color:var(--line-strong)}
+.ablbtn.warn{color:var(--danger);border-color:rgba(255,125,92,.4)}
+.ablbtn[hidden]{display:none}
 #nerves,#scentcv{image-rendering:pixelated}
 .vizpanel{position:absolute;right:20px;top:106px;width:clamp(330px,35vw,680px);max-height:calc(100% - 126px);overflow-y:auto;z-index:6;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:16px;padding:13px 15px}
 .vizpanel::-webkit-scrollbar{width:8px} .vizpanel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
@@ -396,6 +402,7 @@ body.fs .hint{display:none}
     <p class="vlab">Neurons <span>300 cells &middot; <i style="color:#e6c34f">sense</i> <i style="color:#56e0c2">inter</i> <i style="color:#ff7d5c">motor</i></span></p>
     <canvas id="nerves"></canvas>
     <p id="ncap" class="vcap"></p>
+    <div class="ablrow"><button class="ablbtn" id="b-abl" hidden></button><button class="ablbtn warn" id="b-ablr" hidden></button></div>
   </section>
   <section class="vsec" id="sec-gang">
     <p class="vlab">Head ganglia <span><i style="color:#64e8a0">excites</i> <i style="color:#ff7ab8">inhibits</i> <i style="color:#7ab8ff">gap</i></span></p>
@@ -438,7 +445,7 @@ body.fs .hint{display:none}
 
 <p>The dish holds the animal, its food and any walls you add. Food is a lawn of bacterial particles eaten one at a time, and an eaten particle stops smelling. A patch spreads its smell outward through the agar; walls and posts are solid and block both the body and the smell. The readouts open the animal up:</p>
 <ul>
-<li><b>Neurons</b> &mdash; all 300 cells as a grid, each one brightening with its own activity: sensory cells yellow, interneurons teal, motor neurons orange. Hover for what a cell does, click to pin it.</li>
+<li><b>Neurons</b> &mdash; all 300 cells as a grid, each one brightening with its own activity: sensory cells yellow, interneurons teal, motor neurons orange. Hover for what a cell does, click to pin it, then <b>silence</b> it and watch what the animal can no longer do.</li>
 <li><b>Head ganglia</b> &mdash; the nerve ring, where most of the wiring sits, drawn as the graph it is. Green edges excite, pink edges inhibit, blue edges are electrical junctions that pass current both ways.</li>
 <li><b>Muscles</b> &mdash; the 95 body wall muscle cells in their four quadrants, with the wave crossing them.</li>
 <li><b>Scent</b> &mdash; the smell landscape as the animal meets it, and where its nose sits in it.</li>
@@ -449,6 +456,7 @@ body.fs .hint{display:none}
 
 <h3>Things to try</h3>
 <ul>
+<li>Pin a cell in the Neurons grid and silence it. Without ASE the animal crawls normally and stops finding food &mdash; it ate 0.09 of a patch in four minutes against 0.93 intact. Without the DB motor neurons the forward wave breaks up. Without AWC almost nothing changes, because taste is doing the work here. <b>Restore all</b> brings them back.</li>
 <li>Poke it near the head, then near the tail. One backs it up and spins it round; the other makes it sprint away. Watch the two command traces trade places on Signals.</li>
 <li>Poke the same animal four times in twenty seconds. The reversals get shorter each time. Leave it a minute and it recovers.</li>
 <li>Drop a wide patch of food in its path. It falls to about half speed and stays &mdash; which is why a worm that finds food keeps it.</li>
@@ -475,6 +483,9 @@ body.fs .hint{display:none}
 <li><b>DB</b>, <b>VB</b>, <b>DA</b>, <b>VA</b>, <b>DD</b>, <b>VD</b> &mdash; the motor neurons of the ventral cord, numbered along the body. The B classes drive forward, the A classes reverse, the D classes inhibit the opposite side.</li>
 <li><b>SMD</b>, <b>RIV</b> &mdash; head and neck motor neurons; they bend the body into a turn at the end of a reversal.</li>
 </ul>
+
+<h3>Silencing a cell</h3>
+<p>Most of what is known about this nervous system was learned by killing one named cell with a laser beam and watching what the animal could no longer do (Chalfie, Sulston, White, Southgate, Thomson and Brenner 1985). The Neurons panel does the same thing: pin a cell and the button under the grid silences its whole class, left and right member together, because killing one of a pair usually changes nothing visible. A silenced cell holds no voltage and releases nothing, so every cell downstream of it simply loses that input; it shows in the grid as a crossed-out square. Nothing else about the animal is touched, which is the point &mdash; whatever changes on the dish is what that class was contributing.</p>
 
 <h3>The chain from cell to movement</h3>
 <p>Sense organs write current into real cells, the connectome carries it, motor neurons pull on muscle cells, and a body with drag on it bends and travels. Everything on screen is the far end of that chain. A reversal is AVA winning against AVB. Steering is ASE and AWC firing as the smell rises and falls, biasing which way the head casts. Crawling is stretch feedback running down the body. Silence the sensory cells and the animal still moves but stops finding food; break the wiring and none of it survives.</p>
@@ -528,6 +539,7 @@ body.fs .hint{display:none}
 <li>Chase, Pepper, and Koelle (2004), Mechanism of extrasynaptic dopamine signaling in Caenorhabditis elegans. Nature Neuroscience 7.</li>
 <li>Kaplan and Horvitz (1993), A dual mechanosensory and chemosensory neuron in Caenorhabditis elegans. PNAS 90.</li>
 <li>Hart, Sims, and Kaplan (1995), Synaptic code for sensory modalities revealed by C. elegans GLR-1 glutamate receptor. Nature 378.</li>
+<li>Chalfie, Sulston, White, Southgate, Thomson, and Brenner (1985), The neural circuit for touch sensitivity in Caenorhabditis elegans. J. Neurosci. 5.</li>
 <li>Croll (1975), Components and patterns in the behaviour of the nematode Caenorhabditis elegans. J. Zool. 176.</li>
 <li>Alkema, Hunter-Ensor, Ringstad, and Horvitz (2005), Tyramine functions independently of octopamine in the Caenorhabditis elegans nervous system. Neuron 46.</li>
 <li>Pirri, McPherson, Donnelly, Francis, and Alkema (2009), A tyramine-gated chloride channel coordinates distinct motor programs of a C. elegans escape response. Neuron 62.</li>

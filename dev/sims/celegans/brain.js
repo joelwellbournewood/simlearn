@@ -399,6 +399,7 @@ export class WormBrain {
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
     this.escapeT=0; this.sprintT=0; this.pokeHab=1;
     this.socBias=0; this.socSlow=1; this.phero=0; this.socO2=1;
+    if(!this.abl){ this.abl=new Uint8Array(this.N); this.ablN=0; }
     this.command=1; this.revTime=0; this.revRefract=0; this.offBase=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.avaAdapt=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this.dS=0; this.offGate=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
@@ -955,6 +956,12 @@ export class WormBrain {
     }
     const dec=Math.exp(-dt/T.inputTau);
     for (let i=0;i<N;i++){ act[i]=sig(V[i]); this.activity[i]=act[i]; I[i]*=dec; this.A[i]+=(act[i]-this.A[i])*dt/T.adaptTau; }
+    // Laser ablation. Killing a named cell and watching what the animal can
+    // no longer do is how this nervous system was read in the first place
+    // (Chalfie et al. 1985). A silenced cell holds no voltage and releases
+    // nothing, so everything downstream of it simply loses that input.
+    if (this.ablN){ const ab=this.abl;
+      for (let i=0;i<N;i++) if (ab[i]){ V[i]=0; act[i]=0; this.activity[i]=0; this.A[i]=0; } }
     // muscles: signed NMJ sums per row (DD/VD arrive negative), calcium-like smoothing
     const md=this._md||(this._md=new Float32Array(24)), mv=this._mv||(this._mv=new Float32Array(24));
     const tgD=this._tgD||(this._tgD=new Float32Array(24)), tgV=this._tgV||(this._tgV=new Float32Array(24));

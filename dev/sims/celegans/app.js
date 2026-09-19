@@ -114,7 +114,7 @@ let env=new Environment(W,H);
 function selectWorm(k){
   if(k<0||k>=worms.length||k===sel) { syncWormChips(); return; }
   sel=k; brain=worms[k].brain; body=worms[k].body; selectedNeuron=-1;
-  syncWormChips(); if(typeof sizeViz==='function') sizeViz();
+  syncWormChips(); if(typeof sizeViz==='function') sizeViz(); if(typeof syncAbl==='function') syncAbl();
 }
 
 const cv=el('c'), ctx=cv.getContext('2d');
@@ -643,7 +643,7 @@ const order=[...Array(brain.N).keys()].sort((a,b)=>{
 const catColor={S:[230,195,79],I:[86,224,194],M:[255,125,92]};
 const orderPos=new Int16Array(brain.N); order.forEach((gi,k)=>orderPos[gi]=k);
 let selectedNeuron=-1; // persists across frames; set by clicking the grid or either body view
-function pinNeuron(i){ selectedNeuron=i; nameCell(i,'ncap'); nameCell(i,'gcap'); if(headPos[i]!==undefined) nameCell(i,'hcap'); }
+function pinNeuron(i){ selectedNeuron=i; nameCell(i,'ncap'); nameCell(i,'gcap'); if(headPos[i]!==undefined) nameCell(i,'hcap'); if(typeof syncAbl==='function') syncAbl(); }
 
 // ---- static anatomical layout for "where, not how it's moving" panels ----
 // (muscles + firing map): the live crawl is already visible on the main
@@ -852,8 +852,47 @@ function nameCell(i,capEl){
   const nm=brain.names[i];
   const cat={S:'sensory',I:'interneuron',M:'motor'}[brain.cat[i]];
   const role=CELLROLE[cellClass(nm)]||CELLROLE[nm]||cat;
-  el(capEl).textContent=nm+' \u00b7 '+role+' \u00b7 '+(brain.activity[i]*100).toFixed(0)+'% active';
+  const tail = brain.abl && brain.abl[i] ? ' \u00b7 silenced' : ' \u00b7 '+(brain.activity[i]*100).toFixed(0)+'% active';
+  el(capEl).textContent=nm+' \u00b7 '+role+tail;
 }
+// ---- ablation: silence a cell class and watch what the animal loses -------
+// The whole class goes, left and right member together, because that is what
+// a laser ablation experiment does and killing one of a pair usually changes
+// nothing visible.
+function classMembers(i){
+  const c=cellClass(brain.names[i]), out=[];
+  for (let k=0;k<brain.N;k++) if (cellClass(brain.names[k])===c) out.push(k);
+  return out;
+}
+function setAblation(idxs,on){
+  const b=brain;
+  for (const k of idxs){ if (!!b.abl[k]===!!on) continue; b.abl[k]=on?1:0; b.ablN+=on?1:-1; }
+  if (on){ for (const k of idxs){ b.V[k]=0; b.act[k]=0; b.activity[k]=0; } }
+  syncAbl();
+}
+function syncAbl(){
+  const a=el('b-abl'), r=el('b-ablr');
+  if (!a||!r) return;
+  if (selectedNeuron>=0){
+    const cls=cellClass(brain.names[selectedNeuron]), n=classMembers(selectedNeuron).length;
+    const off=!!brain.abl[selectedNeuron];
+    a.hidden=false;
+    a.textContent=(off?'Restore ':'Silence ')+cls+(n>1?' ('+n+' cells)':'');
+  } else a.hidden=true;
+  r.hidden=!brain.ablN;
+  r.textContent='Restore all ('+brain.ablN+')';
+}
+document.addEventListener('click',e=>{
+  if (e.target&&e.target.id==='b-abl'&&selectedNeuron>=0){
+    setAblation(classMembers(selectedNeuron), !brain.abl[selectedNeuron]);
+    nameCell(selectedNeuron,'ncap');
+  }
+  if (e.target&&e.target.id==='b-ablr'){
+    for (let k=0;k<brain.N;k++) brain.abl[k]=0;
+    brain.ablN=0; syncAbl();
+    if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap');
+  }
+});
 function nervesK(e){
   const r=VC.nerves.getBoundingClientRect(), G=nervesGrid;
   return Math.floor((e.clientY-r.top)/r.height*G.rows)*G.NC+Math.floor((e.clientX-r.left)/r.width*G.NC);
@@ -872,10 +911,19 @@ VC.nerves.addEventListener('mouseleave',()=>{
 function drawNeurons(){
   const g=VG.nerves, c=VC.nerves, G=nervesGrid;
   g.fillStyle='#07120f'; g.fillRect(0,0,c.width,c.height);
+  const ab=brain.abl, anyAbl=brain.ablN>0;
   for (let k=0;k<brain.N;k++){
     const i=order[k], a=brain.activity[i], cc=catColor[brain.cat[i]];
+    const x=(k%G.NC)*G.CS+1, y=Math.floor(k/G.NC)*G.CS+1, w=G.CS-2;
+    if (anyAbl && ab[i]){ // a silenced cell reads as an empty socket
+      g.fillStyle='rgba(120,30,24,.55)'; g.fillRect(x,y,w,w);
+      g.strokeStyle='rgba(255,125,92,.85)'; g.lineWidth=Math.max(1,vdpr*0.9);
+      g.beginPath(); g.moveTo(x+1,y+1); g.lineTo(x+w-1,y+w-1);
+      g.moveTo(x+w-1,y+1); g.lineTo(x+1,y+w-1); g.stroke();
+      continue;
+    }
     g.fillStyle='rgba('+cc[0]+','+cc[1]+','+cc[2]+','+(0.06+0.94*a*a).toFixed(3)+')';
-    g.fillRect((k%G.NC)*G.CS+1,Math.floor(k/G.NC)*G.CS+1,G.CS-2,G.CS-2);
+    g.fillRect(x,y,w,w);
   }
   if (selectedNeuron>=0){
     const k=orderPos[selectedNeuron];
