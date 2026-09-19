@@ -690,8 +690,17 @@ export class WormBrain {
         const r=this._rnd();
         // categorical draw matching the paper's 8 sub-modes: 5/8 paused
         // (Dwell2,3,4,5,8), 1/8 steady slow crawl (Dwell1), 1/8 high
-        // reversal incidence (Dwell7), 1/8 wide head/neck sweeps (Dwell6)
-        this.subMode = r<0.625?'pause' : r<0.75?'slowcrawl' : r<0.875?'reversal' : 'sweep';
+        // reversal incidence (Dwell7), 1/8 wide head/neck sweeps (Dwell6).
+        // A pause is never drawn twice running. Each sub-bout lasts 5-15 s, so
+        // an independent draw put two or three pauses back to back often
+        // enough that one animal in eight would sit motionless for 20-45 s
+        // (measured run 123) - which reads as an animal stuck in the scenery,
+        // and is not what the paper describes: the sub-modes are distinct
+        // states an animal moves between, and the chaining was an artefact of
+        // resampling the same distribution. MODEL ASSUMPTION.
+        this.subMode = (this.subMode==='pause')
+          ? (r<0.334?'slowcrawl' : r<0.667?'reversal' : 'sweep')
+          : (r<0.625?'pause' : r<0.75?'slowcrawl' : r<0.875?'reversal' : 'sweep');
         this.subT=10*(0.5+this._rnd()); // ~10 s average (paper), 5-15 s spread
       }
       if (this.locoT<=0){
@@ -708,7 +717,9 @@ export class WormBrain {
     }
     if (this.locoMode==='roam'){ this.locoTonicMul=1.0; this.locoTurnMul=1.0; this._revNext=0; this._revPulseT=0; this.locoRevDrive=0; this._arsLocal(dt); return; } // exactly the validated legacy crawl (both a >1 tonic boost and a <1 turn suppression here measurably hurt sine purity); 'low angular speed' in roam falls out naturally because wide sweeps/reversals are confined to dwelling
     switch (this.subMode){
-      case 'pause':      this.locoTonicMul=0.10; this.locoTurnMul=0.7; break;
+      // a paused animal is slow, not dead: Flavell's dwelling states all keep
+      // some head movement, and at 0.10 the body wave stopped outright
+      case 'pause':      this.locoTonicMul=0.17; this.locoTurnMul=0.7; break;
       case 'slowcrawl':  this.locoTonicMul=0.50; this.locoTurnMul=0.8; break;
       case 'sweep':      this.locoTonicMul=0.60; this.locoTurnMul=2.4; break;
       case 'reversal':   this.locoTonicMul=0.55; this.locoTurnMul=0.9; break;

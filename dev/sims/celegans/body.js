@@ -38,6 +38,11 @@ export const BTUNE = {
   // medium the same log-interpolated way drag and the muscle lag do).
   uMaxAgar: 8.0, uMaxWater: 40.0,     // L/s
   omMaxAgar: 24.0, omMaxWater: 120.0, // rad/s
+  pinSec: 6,       // s of body-wide contact with the centre of mass going
+                   // nowhere before the animal is walked out of the corner
+  pinPush: 0.35,   // L/s, the speed it is walked out at
+  pinBack: 9,      // segments per second it backs along its own body once the
+                   // simple push has failed (a segment is about 1/24 of it)
   wedgeDot: -0.1,  // two contact normals more opposed than this = the point is
                    // wedged in a corner; freeze it instead of letting the two
                    // projections fight (that fight is what pinned the worm in
@@ -239,7 +244,60 @@ export class WormBody {
     this.turnAng=Math.atan2(this.tsx*this.tfy-this.tsy*this.tfx,
                             this.tfx*this.tsx+this.tfy*this.tsy);
     this._comx=this._cx; this._comy=this._cy;
+    this._pin(dt);
     this._nose();
+  }
+  // ---- PINNED IN GEOMETRY --------------------------------------------
+  // A corner where a wall ends on the dish edge, or where two walls meet, is
+  // not a WEDGE: its two surfaces are at right angles, so their normals never
+  // oppose each other and the wedge test never fires. The projection simply
+  // satisfies both of them every step, and an animal driven into such a corner
+  // can stay there indefinitely - measured in the Maze scene, one animal in
+  // eight held for 66 s with every body point in contact, and it was still
+  // there when the run ended.
+  // So the animal, not the point, is watched: sustained contact along the body
+  // while the centre of mass goes nowhere. After pinSec the body is walked out
+  // along the mean contact normal, which for a corner points diagonally out of
+  // it, and pinFire tells the nervous system to do what a real animal does
+  // when its head is held - back out and turn away (the escape response).
+  _pin(dt){
+    const NP=BTUNE.NP, held=this.contacts.length;
+    if (this._pinRef===undefined){ this._pinRef=[this._cx,this._cy]; this.pinT=0; this.pinFire=false; }
+    const moved=Math.hypot(this._cx-this._pinRef[0],this._cy-this._pinRef[1]);
+    if (held>=NP*0.25 && moved<0.30) this.pinT+=dt;
+    else { this.pinT=Math.max(0,this.pinT-dt*3); this._pinRef=[this._cx,this._cy]; }
+    if (this.pinT<=BTUNE.pinSec) return;
+    // mean outward normal of everything currently touching the body
+    let nx=0,ny=0; for (const c of this.contacts){ nx+=c.nx; ny+=c.ny; }
+    const L=Math.hypot(nx,ny);
+    if (L>1e-6){
+      nx/=L; ny/=L;
+      const st=BTUNE.pinPush*dt;
+      for (let i=0;i<NP;i++){ this.px[i]+=nx*st; this.py[i]+=ny*st; }
+    }
+    // one escape response per attempt, re-armed every two seconds
+    if (this.pinT>BTUNE.pinSec+(this._pinFired||0)){ this.pinFire=true; this._pinFired=(this._pinFired||0)+2.0; }
+    // Still there after twice as long, and the mean normal has not helped: the
+    // body is HOOKED - draped over the end of a wall, or round a post, with
+    // its two arms pulled in opposite directions, so no single translation
+    // frees it. The one direction that always does is the animal's own body,
+    // which lies in open space by construction: slide the whole chain one
+    // segment back along itself, tail first, and repeat. That is a worm
+    // backing out of a crevice, and after a second or two of it the hook is
+    // off.
+    if (this.pinT>BTUNE.pinSec*2){
+      this._unhookAcc=(this._unhookAcc||0)+dt*BTUNE.pinBack;
+      while (this._unhookAcc>=1){
+        this._unhookAcc-=1;
+        // extrapolate a new tail point along the last segment, then shift
+        const ex=this.px[NP-1]+(this.px[NP-1]-this.px[NP-2]);
+        const ey=this.py[NP-1]+(this.py[NP-1]-this.py[NP-2]);
+        for (let i=0;i<NP-1;i++){ this.px[i]=this.px[i+1]; this.py[i]=this.py[i+1]; }
+        this.px[NP-1]=ex; this.py[NP-1]=ey;
+        for (let i=0;i<NP;i++){ this.qx[i]=this.px[i]; this.qy[i]=this.py[i]; }
+      }
+    }
+    if (this.pinT>BTUNE.pinSec*2+10){ this.pinT=0; this._pinFired=0; this._unhookAcc=0; this._pinRef=[this._cx,this._cy]; }
   }
   _solve3(a,b,c,d2,e,f,g2,h2,i2,x,y,z){
     const det=a*(e*i2-f*h2)-b*(d2*i2-f*g2)+c*(d2*h2-e*g2)||1e-12;
@@ -278,8 +336,39 @@ export class Environment {
       const rr=radius*0.6-Math.log(Math.max(1e-6,rnd()))*0.34, th=rnd()*6.28318;
       halo.push({x:x+Math.cos(th)*rr, y:y+Math.sin(th)*rr, d:rr});
     }
-    this.foods.push({x,y,radius,amount,amount0:amount,parts,halo});
+    const f={x,y,radius,amount,amount0:amount,parts,halo};
+    this._index(f);
+    this.foods.push(f);
     this.stamp++; this.geoStamp++;
+  }
+  // uniform bucket index over a patch's particles. A pile laid down as twenty
+  // taps holds 1120 of them, and eating, tasting and the dopamine cells all
+  // ask "what is within a tenth of a body length of this point" sixty times a
+  // second per animal - walking the whole list for that is the one thing on
+  // this page that scales with patch density.
+  _index(f){
+    const CS=0.15;
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    for (const p of f.parts){ if(p.x<x0)x0=p.x; if(p.x>x1)x1=p.x; if(p.y<y0)y0=p.y; if(p.y>y1)y1=p.y; }
+    const gx=Math.max(1,Math.ceil((x1-x0)/CS)+1), gy=Math.max(1,Math.ceil((y1-y0)/CS)+1);
+    const cells=new Array(gx*gy); for(let i=0;i<cells.length;i++) cells[i]=[];
+    f.parts.forEach((p,k)=>{
+      const i=Math.min(gx-1,Math.max(0,Math.floor((p.x-x0)/CS)));
+      const j=Math.min(gy-1,Math.max(0,Math.floor((p.y-y0)/CS)));
+      cells[j*gx+i].push(k);
+    });
+    f.grid={CS,x0,y0,gx,gy,cells};
+  }
+  // every particle whose bucket overlaps a disc of radius r about (x,y)
+  _near(f,x,y,r){
+    const g=f.grid; if(!g) return f.parts;
+    const i0=Math.floor((x-r-g.x0)/g.CS), i1=Math.floor((x+r-g.x0)/g.CS);
+    const j0=Math.floor((y-r-g.y0)/g.CS), j1=Math.floor((y+r-g.y0)/g.CS);
+    const out=[];
+    for (let j=Math.max(0,j0);j<=Math.min(g.gy-1,j1);j++)
+      for (let i=Math.max(0,i0);i<=Math.min(g.gx-1,i1);i++)
+        for (const k of g.cells[j*g.gx+i]) out.push(f.parts[k]);
+    return out;
   }
   clearFood(){ this.foods.length=0; this.stamp++; this.geoStamp++; }
   addWall(x1,y1,x2,y2){ this.walls.push({x1,y1,x2,y2}); this.geoStamp++; }
@@ -421,9 +510,11 @@ export class Environment {
       const g=this._geoDist(fi,x,y);
       if (isFinite(g)) c+=f.amount*0.30*Math.exp(-g/1.25);   // long diffusion plume
       if (Math.hypot(f.x-x,f.y-y)<f.radius*2.2+0.35){        // particle-scale structure
-        for (const p of f.parts){ if(p.a<=0) continue;
+        // beyond 0.4 a crumb contributes exp(-9.9) of its weight: below the
+        // plume by four orders of magnitude, so the bucket query is exact
+        for (const p of this._near(f,x,y,0.4)){ if(p.a<=0) continue;
           const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);
-          if (dd<0.3) c+=p.a*K*Math.exp(-dd/s2)*56;
+          if (dd<0.16) c+=p.a*K*Math.exp(-dd/s2)*56;
         }
       }
     }
@@ -435,7 +526,7 @@ export class Environment {
     let c=0;
     for (const f of this.foods){
       if (Math.hypot(f.x-x,f.y-y)>f.radius*2.2+0.2) continue;
-      for (const p of f.parts){ if(p.a<=0) continue;
+      for (const p of this._near(f,x,y,0.14)){ if(p.a<=0) continue;
         const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);
         if (dd<0.018) c+=p.a*56;
       }
@@ -443,15 +534,27 @@ export class Environment {
     return c;
   }
   consume(x,y,dt,rate){
+    // THE PHARYNX PUMPS AT A BOUNDED RATE. The old code took `rate` from every
+    // particle under the mouth, so a patch laid down at twenty times the
+    // density was eaten twenty times as fast and lasted no longer - which is
+    // not how an animal works and defeats the point of a thick lawn. The cap
+    // is three times `rate`, the number of crumbs that sit under the mouth at
+    // the density one tap of the Food tool produces, so a single-tap patch is
+    // eaten at exactly the speed it always was and a twenty-tap pile takes
+    // twenty times as long.
     let eaten=0;
+    const cap=rate*dt*3;
+    const hit=[]; let avail=0;
     for (const f of this.foods){
       if (Math.hypot(f.x-x,f.y-y)>f.radius*2.2+0.2) continue;
-      for (const p of f.parts){ if(p.a<=0) continue;
-        const d=Math.hypot(p.x-x,p.y-y);
-        if (d<0.08){ const e=Math.min(p.a,rate*dt); p.a-=e; eaten+=e; }
+      for (const p of this._near(f,x,y,0.09)){ if(p.a<=0) continue;
+        if (Math.hypot(p.x-x,p.y-y)<0.08){ hit.push([f,p]); avail+=p.a; }
       }
-      let s=0; for (const p of f.parts) s+=p.a; 
-      if (Math.abs(s-f.amount)>1e-9){ f.amount=s; this.stamp++; }
+    }
+    if (avail>0){
+      const take=Math.min(cap,avail), fr=take/avail;
+      for (const [f,p] of hit){ const e=p.a*fr; p.a-=e; f.amount=Math.max(0,f.amount-e); }
+      eaten=take; this.stamp++;
     }
     for (let i=this.foods.length-1;i>=0;i--)
       if (this.foods[i].amount<0.03*this.foods[i].amount0){ this.foods.splice(i,1); this.stamp++; this.geoStamp++; }
@@ -476,7 +579,34 @@ export class Environment {
         const side=(nx*-ty+ny*tx)>0?1:-1;
         if (body._rec!==false) body.contacts.push({i,nx,ny,push:Math.min(1,depth/h/0.5),side});
       };
-      const wedgeCheck=()=>{ if (wedged && body.qx){ px[i]=body.qx[i]; py[i]=body.qy[i]; } };
+      // WEDGE RESOLUTION. Two surfaces pressing a point from opposite sides
+      // cannot both be satisfied by projection, so the point used to be put
+      // back where it was last step. That is stable - and if the previous
+      // position was itself wedged, it is stable FOREVER: the segment is
+      // pinned to one spot and the animal pivots around it until the scene is
+      // reloaded. Instead, back the point out along the sum of the normals
+      // (the one direction that relieves both surfaces), and count how long
+      // it has been in trouble: a point that cannot be freed gets an
+      // increasing outward nudge, so a pin always ends.
+      const wedgeCheck=()=>{
+        if (!wedged){ if (body.wedgeT) body.wedgeT[i]=0; return; }
+        if (!body.wedgeT) body.wedgeT=new Float32Array(NP);
+        body.wedgeT[i]+=1; body.wedgeHits=(body.wedgeHits||0)+1;
+        let sx=0,sy=0; for (const a of an){ sx+=a[0]; sy+=a[1]; }
+        const sl=Math.hypot(sx,sy);
+        if (sl>1e-6){
+          sx/=sl; sy/=sl;
+          const push=Math.min(0.06,0.004+0.0016*body.wedgeT[i]);
+          px[i]+=sx*push; py[i]+=sy*push;
+        } else {
+          // exactly opposed surfaces - a slot the width of the body. Nothing
+          // relieves both, so slide ALONG them, the way the point was already
+          // going, rather than standing still.
+          const vx=body.qx?px[i]-body.qx[i]:0, vy=body.qy?py[i]-body.qy[i]:0;
+          const sg=(vx*tx+vy*ty)>=0?1:-1;
+          px[i]+=tx*sg*0.01; py[i]+=ty*sg*0.01;
+        }
+      };
       if (px[i]<me){ rec(1,0,me-px[i]); px[i]=me; }
       if (px[i]>this.w-me){ rec(-1,0,px[i]-(this.w-me)); px[i]=this.w-me; }
       if (py[i]<me){ rec(0,1,me-py[i]); py[i]=me; }

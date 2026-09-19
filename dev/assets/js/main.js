@@ -58,35 +58,49 @@ const TURING_MAZE = ['M294.0 112.9 L289.8 107.1 L284.0 102.0 L271.5 96.9 L264.0 
 
 const GLYPH = {
   celegans() {
-    /* A worm, not a string of beads: 54 cells spaced 4px apart with a radius
-       floor of 2.1px, so they overlap into one continuous tapered body while
-       each one still carries its own share of the travelling wave - which is
-       how the sim makes the gait, the head leading and each segment copying
-       the bend in front of it. Eight shared amplitude keyframes plus a
-       per-cell negative delay for the phase, so the card costs a few kB of
-       CSS rather than 54 keyframe blocks and still holds frame 0 until the
-       card is hovered. Every seventh cell is drawn in the second accent: the
-       ventral cord motor neurons the wave is actually made of. */
-    const N = 54, X0 = 22, X1 = 232, WAVES = 1.65, AMP = 15.5, DUR = 2.8, BANDS = 8;
+    /* The animal, stratified the way the model is: one row of body-wall muscle
+       cells on the DORSAL flank and one on the VENTRAL, and a wave of
+       contraction that alternates between them as it travels head to tail.
+       The old art coloured every seventh cell in the second accent, which was
+       a real fact about the sim (those are the cord motor neurons) but read as
+       decoration. Now the two colours mean the two sides of the animal: a
+       block is bright where its side is shortening and dim where it is giving
+       way, so the bend you see is the bend the muscles are making.
+       Eight shared amplitude keyframes plus a per-cell negative delay carry
+       the wave, so the card costs a few kB of CSS rather than 40 keyframe
+       blocks, and it holds frame 0 until the card is hovered. */
+    const N = 40, X0 = 24, X1 = 232, WAVES = 1.5, AMP = 14.5, DUR = 2.8, BANDS = 8;
     for (let k = 0; k < BANDS; k++) {
       const a = AMP * (0.58 + 0.42 * k / (BANDS - 1));
       addAnim(orbitKF('celA' + k, t => [0, a * Math.sin(2 * Math.PI * t)], 28) +
               `.celA${k}{animation:celA${k} ${DUR}s linear infinite}`);
     }
+    /* dorsal and ventral are exactly antiphase: the same keyframes read from
+       opposite ends, so one flank is always the one doing the work */
+    addAnim('@keyframes celDor{0%,100%{opacity:1}50%{opacity:.12}}' +
+            '@keyframes celVen{0%,100%{opacity:.12}50%{opacity:1}}' +
+            `.celDor{animation:celDor ${DUR}s ease-in-out infinite}` +
+            `.celVen{animation:celVen ${DUR}s ease-in-out infinite}`);
     let g = '';
     for (let i = 0; i < N; i++) {
       const u = i / (N - 1), x = X0 + (X1 - X0) * u;
       // radius floor keeps the chain continuous; the bulge is where the animal
       // is thickest, a third of the way back
-      const r = 2.1 + 3.1 * Math.sin(Math.PI * Math.pow(u, 0.66));
+      const r = 2.4 + 3.2 * Math.sin(Math.PI * Math.pow(u, 0.66));
       const band = Math.min(BANDS - 1, Math.round(u * (BANDS - 1)));
       addAnim(`.celS${i}{animation-delay:${(-DUR * WAVES * u).toFixed(3)}s}`);
-      g += `<circle class="${i % 7 === 3 ? 'fill2' : 'fillA'} celA${band} celS${i}" ` +
-           `cx="${x.toFixed(1)}" cy="${CY}" r="${r.toFixed(2)}"/>`;
+      let cell = `<circle class="fillA soft" cx="${x.toFixed(1)}" cy="${CY}" r="${r.toFixed(2)}"/>`;
+      // a muscle cell every third segment: 13 a side, near enough the 24 a real
+      // quadrant carries, and still legible at card size
+      if (i % 3 === 1 && u < 0.97) {
+        const f = (r + 2.9).toFixed(2), w = 3.4, h = 3.4;
+        cell += `<rect class="fill2 celDor celS${i}" x="${(x - w / 2).toFixed(1)}" y="${(CY - f - h / 2).toFixed(1)}" width="${w}" height="${h}" rx="1.2"/>` +
+                `<rect class="fillA celVen celS${i}" x="${(x - w / 2).toFixed(1)}" y="${(CY + f - h / 2).toFixed(1)}" width="${w}" height="${h}" rx="1.2"/>`;
+      }
+      g += `<g class="celA${band} celS${i}">${cell}</g>`;
     }
-    /* the head: a slightly heavier tip with the pharynx behind it */
-    const headBand = BANDS - 1;
-    g += `<circle class="fillA celA${headBand} celS${N - 1}" cx="${X1 + 2.6}" cy="${CY}" r="3.4"/>`;
+    /* the head: a slightly heavier tip, carried by the last band */
+    g += `<g class="celA${BANDS - 1} celS${N - 1}"><circle class="fillA" cx="${X1 + 2.4}" cy="${CY}" r="3.5"/></g>`;
     /* the meal it is heading for, its smell spreading out from it, and the
        track left behind */
     addAnim('@keyframes celMeal{0%,100%{opacity:.34}45%{opacity:.9}}' +

@@ -92,3 +92,28 @@
   .actions{right:calc(var(--tvizw) + 12px)}
   .sel{width:min(40vw,240px)}
 }
+
+/* --- hiding the controls hides the readouts too ---------------------------
+   "Clean" on a phone means the dish and nothing else. The readout pane is
+   fixed over the bottom (portrait) or the right (landscape) of the screen, so
+   leaving it up while the stage goes full-bleed puts it ON TOP of the dish.
+   This rule outranks the layout rules above it (0,2,1 against 0,2,0). */
+@media (max-width:820px), (pointer:coarse){
+  body.clean .vizpanel,body.clean .vizpanel.wide{display:none}
+  /* The shared phone sheet hides any floating .tools row while the sheet is
+     open, because in most sims that row sits over the canvas. Here the tool
+     buttons live INSIDE the sheet, under "Your hand", so that rule deleted
+     them exactly when they were wanted, and its max-width:38vw squeezed the
+     three-column grid down to a sliver. */
+  body.sheet-open .panel .tools,.panel .tools{
+    display:grid;position:static;max-width:none;left:auto;right:auto;
+    top:auto;bottom:auto;transform:none}
+}
+
+/* --- the fast-forward button on a phone ----------------------------------
+   Top left of the dish, so the animal selector moves along to make room for
+   it rather than sitting under it. */
+@media (max-width:820px), (pointer:coarse){
+  .ffbtn{position:fixed;left:12px;top:10px;width:36px;height:36px}
+  .wormbar{left:56px}
+}

@@ -209,9 +209,14 @@ function relayout(){
   fitTouch();
   const st=el('stage'), a=st.clientWidth/st.clientHeight;
   const want=Math.min(2.2,Math.max(0.60,a));
-  // a real change of shape (turning the phone) needs the dish rebuilding, and
-  // the scene with it, because every wall and patch is placed in dish units
-  if (a>0 && lastPreset && Math.abs(Math.log(want/(W/H)))>0.10) loadPreset(lastPreset);
+  // Rebuilding the dish restarts the scene, because every wall and patch is
+  // placed in dish units - so it is worth it only for a change of shape big
+  // enough that letterboxing would waste most of the screen. Turning a phone
+  // is such a change (0.46 -> 2.1); going fullscreen is not: the stage gains
+  // height, keeps its width, and the CSS gives some of it back by narrowing
+  // the readout column, so what is left shows as a thin black bar.
+  const TOL = MOBQ.matches ? 0.10 : 0.40;
+  if (a>0 && lastPreset && Math.abs(Math.log(want/(W/H)))>TOL) loadPreset(lastPreset);
   else { resize(); makeBg(); }
   placeWormBar();
 }
@@ -225,24 +230,30 @@ const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 // Each one is a question the model can answer on screen. `n` is how many
 // animals it starts with, `spawn(k,n)` their places in the canonical 8x5
 // frame, `strain` forces the sociality switch when the scene is about it.
+// A patch the size of twenty taps of the Food tool on the same spot. addFood
+// carries the MEAL (the total amount) and lays down 56 particles per unit of
+// it, each holding the same crumb as a tap does - so this is twenty times the
+// density in the same footprint, not a wider patch, and it takes the animal
+// correspondingly longer to clear.
+const PILE=20;
 const PRESETS={
-  'First meal':{tag:'One patch, straight ahead', make(){ AF(6.5,3.6,1.0,0.6); }},
-  'Crumb trail':{tag:'Five crumbs, plumes overlapping', make(){
+  'First meal':{make(){ AF(6.5,3.6,1.0,0.6); }},
+  'Crumb trail':{make(){
     const pts=[[2.4,1.3],[3.6,1.05],[4.8,1.5],[5.8,2.4],[6.4,3.5]];
     for (const [x,y] of pts) AF(x,y,0.55,0.45); }},
-  'Behind the wall':{tag:'Dinner behind a barrier', make(){
-    AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,2.6,0.70); }, spawn:()=>[1.3,2.5,0.0]},
-  'Maze':{tag:'Two gaps to find', make(){
+  'Behind the wall':{make(){
+    AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,PILE,0.70); }, spawn:()=>[1.3,2.5,0.0]},
+  'Maze':{make(){
     AW(3.2,0.0,3.2,2.5); AW(5.6,2.5,5.6,5.0);
-    AF(7.0,4.0,2.4,0.68); }, spawn:()=>[1.0,1.2,0.6]},
-  'Forest of Pillars':{tag:'Thread the posts', make(){
+    AF(7.0,4.0,PILE,0.68); }, spawn:()=>[1.0,1.2,0.6]},
+  'Forest of Pillars':{make(){
     for (let i=0;i<5;i++) for (let j=0;j<4;j++) AO(2.5+i*0.82,1.15+j*0.8,0.22);
-    AF(7.1,2.5,2.8,0.70); }},
-  'Eight strangers':{tag:'Eight worms, one thick lawn', n:8, strain:'social',
-    // Aggregation in social strains happens ON bacteria, not on bare agar, so
-    // the scene that is about clumping now has a lawn to clump on.
-    make(){ AF(4.0,2.5,3.0,0.82); }, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
-  'Race':{tag:'Eight at the gates, one meal', n:8, strain:'solitary',
+    AF(7.1,2.5,PILE,0.70); }},
+  'Eight strangers':{n:8, strain:'social',
+    // Bare agar on purpose: this scene is about what the animals do to each
+    // other, and a lawn under them is one more thing changing their speed.
+    make(){}, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
+  'Race':{n:8, strain:'solitary',
     make(){
       // A ring with one gate in the middle of each side, and inside each gate
       // a baffle wider than the gate, so the smell leads you in and then the
@@ -256,7 +267,7 @@ const PRESETS={
       AW(6.2,0.9,6.2,2.05); AW(6.2,2.95,6.2,4.1);
       AW(3.05,1.55,4.95,1.55); AW(3.05,3.45,4.95,3.45);
       AW(2.45,1.85,2.45,3.15); AW(5.55,1.85,5.55,3.15);
-      AF(4.0,2.5,2.4,0.62);
+      AF(4.0,2.5,PILE,0.62);
     },
     // first four = one animal per gate, which is what a phone runs
     spawn:(k)=>[[3.6,0.35,1.57],[3.6,4.65,-1.57],[1.25,2.3,0.0],[6.75,2.3,3.1416],
@@ -296,19 +307,17 @@ function loadPreset(name,btn){
   document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
 }
 // a phone runs four animals, so the two colony scenes say four on a phone
-const MOBLAB={'Eight strangers':['Four strangers','Four worms, one lawn'],
-              'Race':['Race','Four gates, one meal']};
+const MOBLAB={'Eight strangers':'Four strangers'};
 function labelPresets(){
   document.querySelectorAll('.preset').forEach(b=>{
-    const name=b.dataset.name, p=PRESETS[name], m=MOBQ.matches&&MOBLAB[name];
-    b.querySelector('b').textContent=m?m[0]:name;
-    b.querySelector('small').textContent=m?m[1]:p.tag;
+    const name=b.dataset.name, m=MOBQ.matches&&MOBLAB[name];
+    b.querySelector('b').textContent=m||name;
   });
 }
 { const holder=el('presets'); let first=null;
   Object.entries(PRESETS).forEach(([name,p],i)=>{
     const b=document.createElement('button'); b.className='preset'; b.dataset.name=name;
-    b.innerHTML='<b></b><small></small>';
+    b.innerHTML='<b></b>';
     b.addEventListener('click',()=>loadPreset(name,b));
     holder.appendChild(b); if(i===0)first=b;
   });
@@ -466,9 +475,10 @@ let nervesGrid={NC:20,CS:11,rows:15};
 function dashOn(){ return window.innerWidth>=1100 && !MOBQ.matches && !document.body.classList.contains('clean'); }
 function mobOn(){ return MOBQ.matches && !document.body.classList.contains('clean'); }
 // Every readout is available on a phone now; they stack in one scrolling
-// column, the two that explain each other first. Anything scrolled out of
+// column in anatomical order: the cells, the ring they sit in, the body they
+// drive, the muscles, then the world and the time course. Anything scrolled out of
 // sight is not redrawn - six live canvases on a phone is not free.
-const MOBVIEWS=['nerves','muscles','signals','gang','scent','geo'];
+const MOBVIEWS=['nerves','gang','geo','muscles','scent','signals'];
 function shown(v){
   if (mobOn()) return MOBVIEWS.indexOf(v)>=0 && el('sec-'+v).dataset.vis!=='0';
   return dashOn() ? true : vizOn.has(v);
@@ -1267,6 +1277,16 @@ function applyLook(name,btn){
   WCOL.length=0; for (const c of LK.worms) WCOL.push(c);
   for (const w of worms){ w.col=WCOL[w.ci%WCOL.length]; w.rgb=hex2rgb(w.col); }
   document.querySelectorAll('.look').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.look===name)));
+  // the fast-forward button is painted from the dish it sits on: the animals'
+  // colour into the food's colour, with the ink chosen for contrast
+  { const R=document.documentElement.style, f=LK.food[0];
+    const a=hex2rgb(LK.worms[0]);
+    const lum=c=>(0.2126*c[0]+0.7152*c[1]+0.0722*c[2])/255;
+    R.setProperty('--ffa',LK.worms[0]);
+    R.setProperty('--ffb','rgb('+f[0]+','+f[1]+','+f[2]+')');
+    R.setProperty('--ffink',(lum(a)+lum(f))/2>0.55?'#12241d':'#ffffff');
+    R.setProperty('--ffglow','rgba('+a[0]+','+a[1]+','+a[2]+',.45)');
+  }
   makeBg(); syncWormChips();
 }
 { const holder=el('looks');
@@ -1404,6 +1424,9 @@ function stepWorm(w){
   const lf=env.localFoodAt(body.noseX,body.noseY);
   const lfP=env.localFoodAt(body.px[midi],body.py[midi]);
   brain.food(lf>0.5?1:0, lfP>0.5?1:0, lf>0.5?1:0, dt);
+  // held in a corner: the nervous system gets the same signal a real animal's
+  // does when its head is held against something - the full escape response
+  if (body.pinFire){ body.pinFire=false; brain.prod('nose',1.6); w.pokePulse={region:'nose',t:0.3}; }
   if (w.pokePulse){ brain.touch(w.pokePulse.region,1.1); w.pokePulse.t-=dt; if(w.pokePulse.t<=0) w.pokePulse=null; }
   brain.step(dt,body.curvature);
   body.step(dt,brain.muscleDorsal,brain.muscleVentral,env);
@@ -1467,6 +1490,23 @@ el('b-reset').addEventListener('click',()=>{
     w.brain.reset(); w.trail.length=0; w.pokePulse=null;
   });
 });
+// FAST FORWARD. One press takes the dish to 10x and the next puts it back
+// where it was. It drives the Time slider rather than a second speed variable,
+// so the readout, the fill bar and the "actual" figure all stay honest.
+var ffPrev=null;
+function ffSet(v){
+  const s=el('s-speed'); s.value=String(v);
+  s.dispatchEvent(new Event('input',{bubbles:true}));
+  el('b-ff').setAttribute('aria-pressed',String(parseFloat(s.value)>=10));
+}
+el('b-ff').addEventListener('click',()=>{
+  const cur=parseFloat(el('s-speed').value);
+  if (cur>=10){ ffSet(ffPrev==null?1:ffPrev); ffPrev=null; }
+  else { ffPrev=cur; ffSet(10); }
+});
+el('s-speed').addEventListener('input',()=>{
+  el('b-ff').setAttribute('aria-pressed',String(parseFloat(el('s-speed').value)>=10));
+});
 el('b-clean').addEventListener('click',()=>{ const on=document.body.classList.toggle('clean'); el('b-clean').dataset.on=String(on); sizeViz(); resize(); makeBg(); });
 document.addEventListener('fullscreenchange',()=>{ document.body.classList.toggle('fs',!!document.fullscreenElement); resize(); makeBg(); sizeViz(); });
 el('b-full').addEventListener('click',()=>{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); });
@@ -1481,6 +1521,7 @@ window.addEventListener('keydown',e=>{
   else if (k==='r'||k==='R') el('b-reset').click();
   else if (k==='h'||k==='H') el('b-clean').click();
   else if (k==='f'||k==='F') el('b-full').click();
+  else if (k==='x'||k==='X') el('b-ff').click();
   else if (k>='1'&&k<='7'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
 });
 if (window.self!==window.top) document.body.classList.add('in-frame');
@@ -1490,3 +1531,6 @@ window.__worm={get body(){return body},get brain(){return brain},get env(){retur
   get sel(){return sel},selectWorm,SOC,get realSpeed(){return realSpeed},TUNE,BTUNE};
 window.__dishW=W; window.__dishH=H;
 window.__viz={get ox(){return ox},get oy(){return oy},get scale(){return scale},vizOn};
+// one simulation step, for the measurement harness (headless runs must advance
+// the model on simulated time, never on wall time)
+window.__step=stepOnce;
