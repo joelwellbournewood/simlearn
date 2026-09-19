@@ -255,7 +255,11 @@ export class Environment {
   // both the food and its scent disappear. On top of the particle scent sits
   // a long shallow plume (the diffusion tail a patch grows on real agar),
   // which is what lets the worm smell dinner from across the dish.
-  constructor(w,h){ this.w=w;this.h=h;this.foods=[];this.walls=[];this.obstacles=[];this.stamp=0; }
+  constructor(w,h){ this.w=w;this.h=h;this.foods=[];this.walls=[];this.obstacles=[];this.stamp=0;
+    // geoStamp changes only when the GEOMETRY does (a patch added or removed, a
+    // wall drawn). Eating changes f.amount, which scales the plume without
+    // moving it, so the distance fields survive and nothing is rebuilt.
+    this.geoStamp=1; this.geoBuilt=0; this.fields=[]; }
   addFood(x,y,amount,radius){
     let seed=((this.foods.length+1)*2654435761 ^ Math.floor(x*997)*40503 ^ Math.floor(y*991))>>>0;
     const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
@@ -275,12 +279,12 @@ export class Environment {
       halo.push({x:x+Math.cos(th)*rr, y:y+Math.sin(th)*rr, d:rr});
     }
     this.foods.push({x,y,radius,amount,amount0:amount,parts,halo});
-    this.stamp++;
+    this.stamp++; this.geoStamp++;
   }
-  clearFood(){ this.foods.length=0; this.stamp++; }
-  addWall(x1,y1,x2,y2){ this.walls.push({x1,y1,x2,y2}); }
-  addObstacle(x,y,r){ this.obstacles.push({x,y,r}); }
-  clear(){ this.foods.length=0;this.walls.length=0;this.obstacles.length=0; this.stamp++; }
+  clearFood(){ this.foods.length=0; this.stamp++; this.geoStamp++; }
+  addWall(x1,y1,x2,y2){ this.walls.push({x1,y1,x2,y2}); this.geoStamp++; }
+  addObstacle(x,y,r){ this.obstacles.push({x,y,r}); this.geoStamp++; }
+  clear(){ this.foods.length=0;this.walls.length=0;this.obstacles.length=0; this.stamp++; this.geoStamp++; }
   removeAt(x,y){
     let best=null,bd=0.35;
     for (const f of this.foods){const d=Math.hypot(f.x-x,f.y-y);if(d<bd+f.radius*0.5){bd=d;best=['f',f];}}
@@ -291,6 +295,7 @@ export class Environment {
     if(t==='f'){this.foods.splice(this.foods.indexOf(o),1);this.stamp++;}
     if(t==='o')this.obstacles.splice(this.obstacles.indexOf(o),1);
     if(t==='w')this.walls.splice(this.walls.indexOf(o),1);
+    this.geoStamp++;
     return true;
   }
   _segDist(x,y,w){
@@ -298,36 +303,124 @@ export class Environment {
     let t=((x-w.x1)*dx+(y-w.y1)*dy)/L2; t=Math.max(0,Math.min(1,t));
     return Math.hypot(x-w.x1-t*dx,y-w.y1-t*dy);
   }
-  // How much of a source at (sx,sy) reaches (x,y): a barrier casts a diffusion
-  // shadow. Attenuation is full in the middle of a wall and fades to nothing
-  // past its ends, so the gradient inside a corridor points at the OPENING
-  // instead of straight through the plastic. Walls are impermeable in the
-  // model's own mechanics, so letting scent ignore them was the inconsistency.
-  _shade(sx,sy,x,y){
-    if (!this.walls.length) return 1;
-    let k=1;
-    const dx=x-sx, dy=y-sy;
-    for (const w of this.walls){
-      const ex=w.x2-w.x1, ey=w.y2-w.y1;
-      const den=dx*ey-dy*ex;
-      if (Math.abs(den)<1e-9) continue;
-      const t=((w.x1-sx)*ey-(w.y1-sy)*ex)/den;      // along source->point
-      const u=((w.x1-sx)*dy-(w.y1-sy)*dx)/den;      // along the wall
-      if (t<=0||t>=1||u<=0||u>=1) continue;
-      const endFrac=Math.min(u,1-u)*Math.hypot(ex,ey);   // distance to nearest end
-      const soft=Math.min(1,endFrac/0.45);
-      k*=1-0.82*soft;
+  // ---- the smellscape --------------------------------------------------
+  // Odour from a bacterial patch reaches a point by DIFFUSING there, and a
+  // barrier is solid to molecules exactly as it is to the animal. So the
+  // concentration a nose feels falls off with the length of the shortest path
+  // that stays in the open agar, not with the straight line through the
+  // plastic. That path is computed once per scene as a geodesic distance
+  // field per food source (Dijkstra on a fine grid with a 16-neighbour
+  // stencil, which is within about 1% of true Euclidean distance), then
+  // sampled bilinearly. Inside a corridor the gradient therefore points at
+  // the OPENING, and a corner leaks no smell at all.
+  _cellSize(){ return Math.min(this.w,this.h)/100; }
+  _buildFields(){
+    const cs=this._cellSize();
+    const GX=Math.max(16,Math.round(this.w/cs)), GY=Math.max(16,Math.round(this.h/cs));
+    this.GX=GX; this.GY=GY; this.cs=cs;
+    // blocked mask: a band ~3.4 cells wide around every wall, and the discs
+    const N=GX*GY, blk=new Uint8Array(N);
+    const band=Math.max(0.085,cs*1.7);
+    for (let j=0;j<GY;j++) for (let i=0;i<GX;i++){
+      const x=(i+0.5)*cs, y=(j+0.5)*cs;
+      let b=0;
+      for (const w of this.walls) if (this._segDist(x,y,w)<band){ b=1; break; }
+      if (!b) for (const o of this.obstacles) if (Math.hypot(x-o.x,y-o.y)<o.r+cs){ b=1; break; }
+      blk[j*GX+i]=b;
     }
-    return Math.max(0.25,k);   // several walls in a row must not silence the plume entirely
+    this.blk=blk;
+    // 16-neighbour stencil. The knight steps need their two intervening cells
+    // open or smell would hop a thin wall.
+    const ST=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1],
+              [1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+    const VIA=ST.map(([dx,dy])=>{
+      if (Math.abs(dx)+Math.abs(dy)<=2) return [];
+      return [[dx- (dx>0?1:dx<0?-1:0)*(Math.abs(dx)>1?1:0), dy-(dy>0?1:dy<0?-1:0)*(Math.abs(dy)>1?1:0)],
+              [(Math.abs(dx)>1?(dx>0?1:-1):dx), (Math.abs(dy)>1?(dy>0?1:-1):dy)]];
+    });
+    const COST=ST.map(([dx,dy])=>Math.hypot(dx,dy)*cs);
+    this.fields=[];
+    for (const f of this.foods) this.fields.push(this._dijkstra(f,blk,GX,GY,cs,ST,VIA,COST));
+    this.geoBuilt=this.geoStamp;
+  }
+  _dijkstra(f,blk,GX,GY,cs,ST,VIA,COST){
+    // Float64, not Float32: the heap key must compare EXACTLY equal to the stored
+    // distance or the lazy-deletion test (d>D[k]) throws away good entries
+    const N=GX*GY, D=new Float64Array(N).fill(Infinity);
+    // lazy-deletion heap: a cell is re-pushed every time it improves, so the
+    // heap can hold more entries than there are cells and has to grow
+    let cap=N+2, hk=new Float64Array(cap), hv=new Int32Array(cap), hn=0;
+    const grow=()=>{ cap*=2; const a=new Float64Array(cap),b=new Int32Array(cap);
+      a.set(hk); b.set(hv); hk=a; hv=b; };
+    const push=(k,d)=>{ if (hn+2>=cap) grow(); let i=++hn; hk[i]=d; hv[i]=k;
+      while(i>1){const p=i>>1; if(hk[p]<=hk[i])break; const a=hk[p],b=hv[p];hk[p]=hk[i];hv[p]=hv[i];hk[i]=a;hv[i]=b;i=p;} };
+    const pop=()=>{ const top=hv[1], d=hk[1]; hk[1]=hk[hn];hv[1]=hv[hn];hn--;
+      let i=1; for(;;){ const l=i<<1,r=l|1; let m=i;
+        if(l<=hn&&hk[l]<hk[m])m=l; if(r<=hn&&hk[r]<hk[m])m=r; if(m===i)break;
+        const a=hk[m],b=hv[m];hk[m]=hk[i];hv[m]=hv[i];hk[i]=a;hv[i]=b;i=m; }
+      return [top,d]; };
+    // seed: every grid cell the patch itself covers, at its own distance from
+    // the centre, so a wide patch is a wide source and not a point
+    const r0=f.radius*0.9;
+    const i0=Math.max(0,Math.floor((f.x-r0)/cs)), i1=Math.min(GX-1,Math.ceil((f.x+r0)/cs));
+    const j0=Math.max(0,Math.floor((f.y-r0)/cs)), j1=Math.min(GY-1,Math.ceil((f.y+r0)/cs));
+    let seeded=0;
+    for (let j=j0;j<=j1;j++) for (let i=i0;i<=i1;i++){
+      const k=j*GX+i; if (blk[k]) continue;
+      const d=Math.hypot((i+0.5)*cs-f.x,(j+0.5)*cs-f.y);
+      if (d<=r0){ D[k]=d; push(k,d); seeded++; }
+    }
+    if (!seeded){ // patch sits on top of a wall: seed its nearest open cell
+      let best=-1,bd=1e9;
+      for (let k=0;k<N;k++){ if(blk[k])continue;
+        const d=Math.hypot((k%GX+0.5)*cs-f.x,((k/GX|0)+0.5)*cs-f.y); if(d<bd){bd=d;best=k;} }
+      if (best<0) return D;
+      D[best]=bd; push(best,bd);
+    }
+    while (hn){
+      const [k,d]=pop(); if (d>D[k]) continue;
+      const i=k%GX, j=(k/GX)|0;
+      for (let s=0;s<ST.length;s++){
+        const ni=i+ST[s][0], nj=j+ST[s][1];
+        if (ni<0||nj<0||ni>=GX||nj>=GY) continue;
+        const nk=nj*GX+ni; if (blk[nk]) continue;
+        const via=VIA[s]; let ok=true;
+        for (let v=0;v<via.length;v++){
+          const vi=i+via[v][0], vj=j+via[v][1];
+          if (vi<0||vj<0||vi>=GX||vj>=GY||blk[vj*GX+vi]){ ok=false; break; }
+        }
+        if (!ok) continue;
+        const nd=d+COST[s];
+        if (nd<D[nk]){ D[nk]=nd; push(nk,nd); }
+      }
+    }
+    return D;
+  }
+  // geodesic distance from food #fi to (x,y), bilinear, Infinity if walled off
+  _geoDist(fi,x,y){
+    const GX=this.GX, GY=this.GY, cs=this.cs, D=this.fields[fi];
+    let fx=x/cs-0.5, fy=y/cs-0.5;
+    let i=Math.floor(fx), j=Math.floor(fy);
+    const tx=fx-i, ty=fy-j;
+    const cl=(v,m)=>v<0?0:(v>m?m:v);
+    const a=D[cl(j,GY-1)*GX+cl(i,GX-1)], b=D[cl(j,GY-1)*GX+cl(i+1,GX-1)],
+          c=D[cl(j+1,GY-1)*GX+cl(i,GX-1)], d=D[cl(j+1,GY-1)*GX+cl(i+1,GX-1)];
+    if (isFinite(a)&&isFinite(b)&&isFinite(c)&&isFinite(d))
+      return (a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+d*tx)*ty;
+    // a corner inside a wall: use the open ones, nudged outward so the
+    // gradient still pushes away from the plastic
+    let m=Infinity; for (const v of [a,b,c,d]) if (v<m) m=v;
+    return isFinite(m)? m+cs : Infinity;
   }
   concentrationAt(x,y){
+    if (this.geoBuilt!==this.geoStamp) this._buildFields();
     let c=0;
     const s2=2*0.09*0.09, K=0.09;
-    for (const f of this.foods){
-      const d=Math.hypot(f.x-x,f.y-y);
-      const sh=this._shade(f.x,f.y,x,y);
-      c+=sh*f.amount*0.30*Math.exp(-d/1.25);       // long diffusion plume
-      if (d<f.radius*2.2+0.35){                    // particle-scale structure
+    for (let fi=0;fi<this.foods.length;fi++){
+      const f=this.foods[fi];
+      const g=this._geoDist(fi,x,y);
+      if (isFinite(g)) c+=f.amount*0.30*Math.exp(-g/1.25);   // long diffusion plume
+      if (Math.hypot(f.x-x,f.y-y)<f.radius*2.2+0.35){        // particle-scale structure
         for (const p of f.parts){ if(p.a<=0) continue;
           const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);
           if (dd<0.3) c+=p.a*K*Math.exp(-dd/s2)*56;
@@ -361,7 +454,7 @@ export class Environment {
       if (Math.abs(s-f.amount)>1e-9){ f.amount=s; this.stamp++; }
     }
     for (let i=this.foods.length-1;i>=0;i--)
-      if (this.foods[i].amount<0.03*this.foods[i].amount0){ this.foods.splice(i,1); this.stamp++; }
+      if (this.foods[i].amount<0.03*this.foods[i].amount0){ this.foods.splice(i,1); this.stamp++; this.geoStamp++; }
     return eaten;
   }
   collide(body,h){

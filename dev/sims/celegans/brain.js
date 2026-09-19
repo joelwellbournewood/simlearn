@@ -189,11 +189,17 @@ export const TUNE = {
   // stretching the head oscillator alone was measured to move path speed by
   // only ~10% (run 116). These compress the muscle swing around resting tone.
   dopaMotor: 0.52,  // dopamine -> DOP-3 on cholinergic motor neurons
-  serMotor: 0.20,   // serotonin (NSM, MOD-1) deepens it; larger when starved,
+  serMotor: 0.33,   // serotonin (NSM, MOD-1) deepens it; larger when starved,
                     // which is the enhanced slowing response (Sawin 2000)
   serMotorStarve: 1.6, // extra serotonergic weight at zero satiety tone
   motorFloor: 0.34, // the animal on a lawn still crawls; it does not freeze
-  serSlow: 0.18,    // serotonergic NSM fires while feeding and deepens the slowdown
+  serSlow: 0.30,    // serotonergic NSM fires while feeding and deepens the slowdown
+  nsmTau: 0.7,      // NSM's own rise/fall (Rhoades 2019: response to ingestion is
+                    // acute, within ~1-2 s of the first pump)
+  nsmAdapt: 0.55,   // how far the transient falls back while feeding continues
+  nsmAdaptTau: 11,  // MODEL ASSUMPTION for the adaptation constant; the adaptation
+                    // itself is in the published traces (Flavell 2013 Fig. 1)
+  serTau: 1.6,      // released serotonin lags the cell and clears over seconds
   serToneTau: 90,   // MODEL ASSUMPTION (exact constant not published): a second, much
                     // slower serotonin integral standing in for the extrasynaptic/
                     // hormonal buildup that outlasts single feeding bouts by minutes
@@ -207,6 +213,8 @@ export const TUNE = {
                     // in adults via a glutamatergic pathway (Keane and Avery 2003,
                     // Genetics 164:153-162), so mechanical disturbance should visibly
                     // suppress the serotonin/feeding signal, not leave it untouched
+  wallRunMax: 13,   // s of unbroken barrier contact before the escape circuit wins
+  wallRunGain: 0.22,
   gMGJ: 0.08,       // electrical coupling between neighbouring muscle cells (Cook 2019):
                     // smooths the activation wave; without it the whole-animal NMJ table
                     // leaves the crawl waveform ragged (measured: purity 0.65 -> 0.91)
@@ -403,7 +411,7 @@ export class WormBrain {
     this.command=1; this.revTime=0; this.revRefract=0; this.offBase=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.avaAdapt=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this.dS=0; this.offGate=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
-    this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
+    this.wallRun=0; this.dopa=0; this.ser=0; this.nsm=0; this.nsmAdapt=0; this.serTone=0.5; this.touchSuppress=0;
     this.slowGain=1;
     this.arsT=1e4; this.fedMem=0; this._onFoodSm=0; this.ars=0; this.disp=0; this._arsNext=3; this._arsPulse=0;
     // --- spontaneous roaming/dwelling behavioral state (Cermak, Yu, Clark,
@@ -546,6 +554,28 @@ export class WormBrain {
     // not the nose: light sustained drive, well below the reversal threshold
     if (bodyA>0.02) for (const i of this.gBodyA) this.Iext[i]+=T.wallGain*Math.min(1,bodyA)*dt*60*0.15;
     if (bodyP>0.02) for (const i of this.gTouchP) this.Iext[i]+=T.wallGain*Math.min(1,bodyP)*dt*60*0.1;
+    // A worm will follow a surface, and a real one does; what it will not do
+    // is glide along the same barrier for a minute. Sustained contact that is
+    // getting the animal nowhere eventually breaks into a reversal and a turn,
+    // which is what the anterior touch circuit is for. The threshold and gain
+    // are MODEL ASSUMPTIONS - the measured fact behind them is only that
+    // prolonged mechanical drive on the anterior receptive field reaches the
+    // escape command cells (Chalfie 1985; Li, Kang, Xu 2011 on FLP).
+    if (this.wallRun===undefined) this.wallRun=0;
+    const held=(noseOn>0.02||bodyA>0.05)?1:0;
+    this.wallRun = held ? this.wallRun+dt : Math.max(0,this.wallRun-dt*2.5);
+    // ...and it is suppressed while the smell is RISING. An animal working its
+    // way along a barrier with the odour climbing is doing the right thing and
+    // should not be interrupted; that suppression of reversals on a rising
+    // gradient is the measured core of klinokinesis (Pierce-Shimomura 1999).
+    const climbing=Math.min(1,Math.max(0,this.on)*2.5);
+    if (this.wallRun>T.wallRunMax && climbing<0.9){
+      const over=Math.min(1,(this.wallRun-T.wallRunMax)/3)*(1-climbing);
+      const s=T.wallRunGain*over*dt*60;
+      for (const i of this.gAVA) this.Iext[i]+=s;
+      for (const i of this.gAVB) this.Iext[i]-=0.5*s;
+      if (over>0.9 && this.wallRun>T.wallRunMax+4){ this.wallRun=0; this.noseTouchRecent=1; this.hab=Math.min(1,this.hab+0.4); }
+    }
   }
   chemosense(conc){
     // ON/OFF adaptation: cells respond to change, not level (MODEL ASSUMPTION values).
@@ -598,10 +628,22 @@ export class WormBrain {
     if (onA>0.02) for (const i of this.gDopaA) this.Iext[i]+=onA*dt*60*0.35;
     if (onP>0.02) for (const i of this.gDopaP) this.Iext[i]+=onP*dt*60*0.35;
     const effEating=Math.min(1,eating)*gate;
-    if (effEating>0.02) for (const i of this.gNSM) this.Iext[i]+=effEating*dt*60*0.4;
+    if (this.nsm>0.02) for (const i of this.gNSM) this.Iext[i]+=this.nsm*dt*60*0.4;
     const target=Math.min(1,onA+0.6*onP);
     this.dopa+=(target-this.dopa)*Math.min(1,dt/T.dopaTau);
-    this.ser+=(effEating-this.ser)*Math.min(1,dt/0.8);
+    // NSM is an ENTERIC sensory neuron: it detects food arriving in the
+    // pharynx within a second or two of the first pump, through the
+    // acid-sensing channels DEL-7 and DEL-3 (Rhoades, Kaye, Flavell et al.
+    // 2019, Cell 176:85-97), and its calcium transient is large at the START
+    // of a feeding bout and then adapts downward while feeding continues
+    // (Flavell et al. 2013, Cell 154:1023-1035). So the serotonergic signal
+    // is an event-shaped, seconds-scale variable, not a slow ramp: it is the
+    // ARRIVAL of food that it announces.
+    this.nsmAdapt+=(effEating-this.nsmAdapt)*Math.min(1,dt/T.nsmAdaptTau);
+    const nsmDrive=Math.max(0, effEating*(1-T.nsmAdapt*this.nsmAdapt));
+    this.nsm+=(nsmDrive-this.nsm)*Math.min(1,dt/T.nsmTau);
+    // released serotonin lags the cell a little and clears over a few seconds
+    this.ser+=(this.nsm-this.ser)*Math.min(1,dt/T.serTau);
     // slow satiety-like tone (Flavell 2013): builds and washes out over
     // T.serToneTau (minutes), so it survives brief gaps off food and short
     // touch-evoked dips above, unlike the fast NSM pumping signal

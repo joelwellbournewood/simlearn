@@ -231,15 +231,17 @@ const PRESETS={
     const pts=[[2.4,1.3],[3.6,1.05],[4.8,1.5],[5.8,2.4],[6.4,3.5]];
     for (const [x,y] of pts) AF(x,y,0.55,0.45); }},
   'Behind the wall':{tag:'Dinner behind a barrier', make(){
-    AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,0.95,0.6); }, spawn:()=>[1.3,2.5,0.0]},
+    AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,2.6,0.70); }, spawn:()=>[1.3,2.5,0.0]},
   'Maze':{tag:'Two gaps to find', make(){
     AW(3.2,0.0,3.2,2.5); AW(5.6,2.5,5.6,5.0);
-    AF(7.0,1.2,0.95,0.55); }, spawn:()=>[1.0,1.2,0.6]},
+    AF(7.0,4.0,2.4,0.68); }, spawn:()=>[1.0,1.2,0.6]},
   'Forest of Pillars':{tag:'Thread the posts', make(){
     for (let i=0;i<5;i++) for (let j=0;j<4;j++) AO(2.5+i*0.82,1.15+j*0.8,0.22);
-    AF(7.1,2.5,1.2,0.6); }},
-  'Eight strangers':{tag:'Eight worms, no food', n:8, strain:'social',
-    make(){}, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
+    AF(7.1,2.5,2.8,0.70); }},
+  'Eight strangers':{tag:'Eight worms, one thick lawn', n:8, strain:'social',
+    // Aggregation in social strains happens ON bacteria, not on bare agar, so
+    // the scene that is about clumping now has a lawn to clump on.
+    make(){ AF(4.0,2.5,3.0,0.82); }, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
   'Race':{tag:'Eight at the gates, one meal', n:8, strain:'solitary',
     make(){
       // A ring with one gate in the middle of each side, and inside each gate
@@ -254,7 +256,7 @@ const PRESETS={
       AW(6.2,0.9,6.2,2.05); AW(6.2,2.95,6.2,4.1);
       AW(3.05,1.55,4.95,1.55); AW(3.05,3.45,4.95,3.45);
       AW(2.45,1.85,2.45,3.15); AW(5.55,1.85,5.55,3.15);
-      AF(4.0,2.5,0.9,0.5);
+      AF(4.0,2.5,2.4,0.62);
     },
     // first four = one animal per gate, which is what a phone runs
     spawn:(k)=>[[3.6,0.35,1.57],[3.6,4.65,-1.57],[1.25,2.3,0.0],[6.75,2.3,3.1416],
@@ -294,7 +296,7 @@ function loadPreset(name,btn){
   document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
 }
 // a phone runs four animals, so the two colony scenes say four on a phone
-const MOBLAB={'Eight strangers':['Four strangers','Four worms, no food'],
+const MOBLAB={'Eight strangers':['Four strangers','Four worms, one lawn'],
               'Race':['Race','Four gates, one meal']};
 function labelPresets(){
   document.querySelectorAll('.preset').forEach(b=>{
@@ -810,7 +812,7 @@ document.getElementById('geohead').addEventListener('mousemove',e=>{
   if (bi>=0) nameCell(headIdx[bi],'hcap'); else if(selectedNeuron<0) el('hcap').textContent='';
 });
 document.getElementById('geohead').addEventListener('mouseleave',()=>{ geoHeadHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'hcap'); else el('hcap').textContent=''; });
-document.getElementById('geohead').addEventListener('click',()=>{ if (geoHeadHover>=0) pinNeuron(headIdx[geoHeadHover]); });
+document.getElementById('geohead').addEventListener('click',()=>{ if (geoHeadHover>=0){ selCells.clear(); selAnchor=-1; pinNeuron(headIdx[geoHeadHover]); } });
 function glowSprite(c){
   const s=document.createElement('canvas'); s.width=s.height=48;
   const g=s.getContext('2d'), rg=g.createRadialGradient(24,24,0,24,24,24);
@@ -852,7 +854,10 @@ function nameCell(i,capEl){
   const nm=brain.names[i];
   const cat={S:'sensory',I:'interneuron',M:'motor'}[brain.cat[i]];
   const role=CELLROLE[cellClass(nm)]||CELLROLE[nm]||cat;
-  const tail = brain.abl && brain.abl[i] ? ' \u00b7 silenced' : ' \u00b7 '+(brain.activity[i]*100).toFixed(0)+'% active';
+  // The live percentage is gone: it is the cell's simulated activation, it
+  // updates faster than anyone can read it, and it told you nothing about
+  // what the cell is. The name and the job do.
+  const tail = brain.abl && brain.abl[i] ? ' \u00b7 silenced' : '';
   el(capEl).textContent=nm+' \u00b7 '+role+tail;
 }
 // ---- ablation: silence a cell class and watch what the animal loses -------
@@ -870,44 +875,109 @@ function setAblation(idxs,on){
   if (on){ for (const k of idxs){ b.V[k]=0; b.act[k]=0; b.activity[k]=0; } }
   syncAbl();
 }
+// One cell picked out on its own means the CLASS, left and right member
+// together, because that is what a laser ablation does. A box drawn across
+// several cells means exactly those cells and nothing else.
+function ablTargets(){
+  if (selCells.size>1) return [...selCells].map(k=>order[k]);
+  if (selectedNeuron>=0) return classMembers(selectedNeuron);
+  return [];
+}
 function syncAbl(){
   const a=el('b-abl'), r=el('b-ablr');
   if (!a||!r) return;
-  if (selectedNeuron>=0){
-    const cls=cellClass(brain.names[selectedNeuron]), n=classMembers(selectedNeuron).length;
-    const off=!!brain.abl[selectedNeuron];
+  const t=ablTargets();
+  if (t.length){
+    const off=t.every(i=>!!brain.abl[i]);
+    const what = selCells.size>1 ? t.length+' selected cells'
+               : cellClass(brain.names[selectedNeuron])+(t.length>1?' ('+t.length+' cells)':'');
     a.hidden=false;
-    a.textContent=(off?'Restore ':'Silence ')+cls+(n>1?' ('+n+' cells)':'');
+    a.textContent=(off?'Restore ':'Silence ')+what;
   } else a.hidden=true;
   r.hidden=!brain.ablN;
   r.textContent='Restore all ('+brain.ablN+')';
 }
 document.addEventListener('click',e=>{
-  if (e.target&&e.target.id==='b-abl'&&selectedNeuron>=0){
-    setAblation(classMembers(selectedNeuron), !brain.abl[selectedNeuron]);
-    nameCell(selectedNeuron,'ncap');
+  if (e.target&&e.target.id==='b-abl'){
+    const t=ablTargets(); if(!t.length) return;
+    setAblation(t, !t.every(i=>!!brain.abl[i]));
+    captionSelection();
   }
   if (e.target&&e.target.id==='b-ablr'){
     for (let k=0;k<brain.N;k++) brain.abl[k]=0;
-    brain.ablN=0; syncAbl();
-    if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap');
+    brain.ablN=0; syncAbl(); captionSelection();
   }
 });
+// ---- selecting cells in the grid, the way a spreadsheet does ------------
+// The grid is a table, so it behaves like one: drag a rectangle across it,
+// shift-click to stretch the block out to another cell, ctrl/cmd-click to add
+// or drop one cell. Whatever is boxed can then be silenced in one go, which is
+// how a multi-cell ablation experiment is actually done. Touch keeps plain
+// tap-to-pin, because a drag on a phone has to stay a scroll.
+var selCells=new Set();       // grid positions k (order[] space), not cell ids
+var selAnchor=-1, dragging=false, dragFrom=-1, dragTo=-1, dragAdd=false;
 function nervesK(e){
   const r=VC.nerves.getBoundingClientRect(), G=nervesGrid;
-  return Math.floor((e.clientY-r.top)/r.height*G.rows)*G.NC+Math.floor((e.clientX-r.left)/r.width*G.NC);
+  const col=Math.floor((e.clientX-r.left)/r.width*G.NC), row=Math.floor((e.clientY-r.top)/r.height*G.rows);
+  if (col<0||col>=G.NC||row<0||row>=G.rows) return -1;
+  const k=row*G.NC+col;
+  return k<brain.N?k:-1;
 }
-VC.nerves.addEventListener('mousemove',e=>{
+function rectCells(a,b,out){
+  const NC=nervesGrid.NC;
+  const r0=Math.min(a/NC|0,b/NC|0), r1=Math.max(a/NC|0,b/NC|0);
+  const c0=Math.min(a%NC,b%NC), c1=Math.max(a%NC,b%NC);
+  for (let r=r0;r<=r1;r++) for (let c=c0;c<=c1;c++){ const k=r*NC+c; if(k<brain.N) out.add(k); }
+  return out;
+}
+function setSelection(ks,keep){
+  if (!keep) selCells.clear();
+  for (const k of ks) selCells.add(k);
+  syncAbl(); captionSelection();
+}
+function captionSelection(){
+  if (selCells.size>1){
+    let sen=0,inter=0,mot=0,off=0;
+    for (const k of selCells){ const i=order[k];
+      if (brain.abl[i]) off++;
+      const c=brain.cat[i]; if(c==='S')sen++; else if(c==='I')inter++; else mot++; }
+    const bits=[]; if(sen)bits.push(sen+' sensory'); if(inter)bits.push(inter+' inter'); if(mot)bits.push(mot+' motor');
+    el('ncap').textContent=selCells.size+' cells selected \u00b7 '+bits.join(', ')+(off?' \u00b7 '+off+' silenced':'');
+  } else if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap');
+  else el('ncap').textContent='';
+}
+VC.nerves.addEventListener('pointerdown',e=>{
+  if (e.pointerType&&e.pointerType!=='mouse') return;       // a touch drag is a scroll
+  const k=nervesK(e); if (k<0) return;
+  e.preventDefault();
+  const add=e.ctrlKey||e.metaKey;
+  if (e.shiftKey&&selAnchor>=0){ setSelection(rectCells(selAnchor,k,new Set()),false); }
+  else if (add){ if(selCells.has(k)) selCells.delete(k); else selCells.add(k); selAnchor=k; syncAbl(); captionSelection(); }
+  else { selAnchor=k; setSelection([k],false); pinNeuron(order[k]); }
+  dragging=true; dragFrom=selAnchor; dragTo=k; dragAdd=add;
+  try{ VC.nerves.setPointerCapture(e.pointerId); }catch(_){}
+});
+VC.nerves.addEventListener('pointermove',e=>{
   const k=nervesK(e);
-  if (k>=0&&k<brain.N) nameCell(order[k],'ncap');
-  else if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap'); else el('ncap').textContent='';
+  if (dragging){
+    if (k<0||k===dragTo) return;
+    dragTo=k;
+    const box=rectCells(dragFrom,k,new Set());
+    setSelection(box,dragAdd);
+    return;
+  }
+  if (k>=0) nameCell(order[k],'ncap'); else captionSelection();
 });
+const endDrag=()=>{ if(!dragging) return; dragging=false;
+  if (selCells.size===1) pinNeuron(order[[...selCells][0]]);
+  captionSelection(); };
+VC.nerves.addEventListener('pointerup',endDrag);
+VC.nerves.addEventListener('pointercancel',endDrag);
 VC.nerves.addEventListener('click',e=>{
-  const k=nervesK(e); if (k>=0&&k<brain.N) pinNeuron(order[k]);
+  if (e.pointerType==='mouse') return;                      // handled by pointerdown
+  const k=nervesK(e); if (k>=0){ selAnchor=k; setSelection([k],false); pinNeuron(order[k]); }
 });
-VC.nerves.addEventListener('mouseleave',()=>{
-  if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap'); else el('ncap').textContent='';
-});
+VC.nerves.addEventListener('mouseleave',()=>{ if(!dragging) captionSelection(); });
 function drawNeurons(){
   const g=VG.nerves, c=VC.nerves, G=nervesGrid;
   g.fillStyle='#07120f'; g.fillRect(0,0,c.width,c.height);
@@ -924,6 +994,14 @@ function drawNeurons(){
     }
     g.fillStyle='rgba('+cc[0]+','+cc[1]+','+cc[2]+','+(0.06+0.94*a*a).toFixed(3)+')';
     g.fillRect(x,y,w,w);
+  }
+  if (selCells.size>1){
+    g.fillStyle='rgba(86,224,194,.20)'; g.strokeStyle='rgba(227,239,233,.75)';
+    g.lineWidth=Math.max(1,vdpr);
+    for (const k of selCells){
+      const x=(k%G.NC)*G.CS+1, y=Math.floor(k/G.NC)*G.CS+1, w=G.CS-2;
+      g.fillRect(x,y,w,w); g.strokeRect(x+0.5,y+0.5,w-1,w-1);
+    }
   }
   if (selectedNeuron>=0){
     const k=orderPos[selectedNeuron];
@@ -1032,8 +1110,13 @@ function drawMuscles(){
   g.font=(9*vdpr)+'px "Space Mono",monospace';
   el('mcap').textContent='';
 }
-// scent minimap: the whole smellscape, normalized so structure is always visible
-const SGX=64,SGY=40,sf=new Float32Array(SGX*SGY); let sframe=0, sMax=1e-6, lastNose=0, noseTrend=0;
+// scent minimap: the whole smellscape. It is normalised against the strength
+// of the SCENE, fixed when the food is laid down, not against the brightest
+// pixel in the current frame. Normalising per frame was self-defeating: the
+// worm could eat half the lawn and the picture would renormalise straight
+// back to the same brightness, so nothing appeared to happen until the last
+// particle went. Now grazing visibly dims and hollows out the plume.
+const SGX=96,SGY=60,sf=new Float32Array(SGX*SGY); let sframe=0, sMax=1e-6, sRef=1e-6, sRefStamp=-1, lastNose=0, noseTrend=0;
 function scentColor(q){
   const a=Math.pow(q,0.42);
   const r=10+245*a, gg=20+205*a, b=16+130*Math.pow(a,1.5);
@@ -1047,7 +1130,9 @@ function drawScent(){
       const v=env.concentrationAt((i+0.5)/SGX*W,(j+0.5)/SGY*H);
       sf[j*SGX+i]=v; if(v>mx)mx=v;
     }
-    sMax=Math.max(mx,sMax*0.6+mx*0.4);
+    if (env.geoStamp!==sRefStamp){ sRefStamp=env.geoStamp; sRef=Math.max(mx,1e-6); }
+    else sRef=Math.max(sRef,mx);          // never dimmer than the food it holds
+    sMax=sRef;
     const cn=env.concentrationAt(body.noseX,body.noseY);
     noseTrend=cn-lastNose; lastNose=cn;
     // (the numeric "at the nose" readout was removed - the map shows it)
@@ -1083,7 +1168,7 @@ const SIGS=[
   {n:'AVA \u00b7 reverse command interneuron', s:'AVA \u00b7 reverse', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
   {n:'ASE \u00b7 food-tasting neuron in the nose', s:'ASE \u00b7 food taste', c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
   {n:'Dopamine \u00b7 bacteria under the body', s:'Dopamine', c:'#b48cff', f:b=>b.dopa},
-  {n:'Serotonin \u00b7 recently fed', s:'Serotonin', c:'#ff8cc0', f:b=>b.serTone},
+  {n:'Serotonin \u00b7 NSM, food in the pharynx', s:'Serotonin \u00b7 NSM', c:'#ff8cc0', f:b=>b.nsm},
 ];
 const SN=300;
 // The chart used to be sampled every 5th ANIMATION frame, so its time axis was
