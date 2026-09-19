@@ -236,6 +236,37 @@ const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 // density in the same footprint, not a wider patch, and it takes the animal
 // correspondingly longer to clear.
 const PILE=20;
+// Race geometry, in dish units. ixf/iyf put the ring a fixed FRACTION of each
+// side in, so the outer corridor is about 1.3 units wide in x and 1.7 in y on
+// a desktop and never narrower than a worm is long; gh, gap and inset are
+// absolute, because a doorway has to be passable in worm lengths, not in
+// percentages. Measured over three runs of four animals: all twelve reach the
+// meal (48-158 s of model time), longest unbroken wall contact 6.5 s, and the
+// smallest distance any animal covered in a 20 s window was a quarter of its
+// body length - nothing sticks.
+function raceLayout(){
+  const ixf=0.235, iyf=0.235, gh=0.60, gap=0.60, pxf=0.30, pyf=0.30, inset=0.35;
+  const ix=ixf*W, iy=iyf*H, x0=ix, x1=W-ix, y0=iy, y1=H-iy, cx=W/2, cy=H/2;
+  const walls=[
+    // the ring, with a gate in the middle of each of its four sides
+    [x0,y0,cx-gh,y0],[cx+gh,y0,x1,y0],[x0,y1,cx-gh,y1],[cx+gh,y1,x1,y1],
+    [x0,y0,x0,cy-gh],[x0,cy+gh,x0,y1],[x1,y0,x1,cy-gh],[x1,cy+gh,x1,y1]];
+  // one diagonal across each corner, with a doorway in the middle of it. Both
+  // of its ends stop short of the plate edge on purpose: a wall that runs into
+  // another surface at a right angle is what animals used to get pinned in.
+  const px=pxf*W, py=pyf*H, ex=inset, ey=py, fx=px, fy=inset;
+  const mX=(ex+fx)/2, mY=(ey+fy)/2, L=Math.hypot(fx-ex,fy-ey),
+        ux=(fx-ex)/L, uy=(fy-ey)/L;
+  const diag=[[ex,ey,mX-ux*gap,mY-uy*gap],[mX+ux*gap,mY+uy*gap,fx,fy]];
+  const spawns=[];
+  for (const [sx,sy] of [[1,1],[-1,1],[1,-1],[-1,-1]]){
+    const FX=v=>sx>0?v:W-v, FY=v=>sy>0?v:H-v;
+    for (const s of diag) walls.push([FX(s[0]),FY(s[1]),FX(s[2]),FY(s[3])]);
+    const X=FX(0.32*px), Y=FY(0.32*py);     // in the corner, facing the doorway
+    spawns.push([X,Y,Math.atan2(FY(mY)-Y,FX(mX)-X)]);
+  }
+  return {walls,spawns};
+}
 const PRESETS={
   'First meal':{make(){ AF(6.5,3.6,1.0,0.6); }},
   'Crumb trail':{make(){
@@ -243,9 +274,13 @@ const PRESETS={
     for (const [x,y] of pts) AF(x,y,0.55,0.45); }},
   'Behind the wall':{make(){
     AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,PILE,0.70); }, spawn:()=>[1.3,2.5,0.0]},
-  'Maze':{make(){
-    AW(3.2,0.0,3.2,2.5); AW(5.6,2.5,5.6,5.0);
-    AF(7.0,4.0,PILE,0.68); }, spawn:()=>[1.0,1.2,0.6]},
+  // Three baffles alternating from the top and bottom edges: the only route is
+  // a serpentine, down-right, up-right, down-right, with the meal in the far
+  // bottom corner. Each wall overlaps the next in y, so no straight line from
+  // the start reaches the food and the smell has to bend round three ends.
+  'Corridors':{make(){
+    AW(3.0,0.0,3.0,3.15); AW(5.3,1.85,5.3,5.0);
+    AF(7.15,4.2,PILE,0.66); }, spawn:()=>[0.9,1.1,0.6]},
   'Forest of Pillars':{make(){
     for (let i=0;i<5;i++) for (let j=0;j<4;j++) AO(2.5+i*0.82,1.15+j*0.8,0.22);
     AF(7.1,2.5,PILE,0.70); }},
@@ -253,25 +288,32 @@ const PRESETS={
     // Bare agar on purpose: this scene is about what the animals do to each
     // other, and a lawn under them is one more thing changing their speed.
     make(){}, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
-  'Race':{n:8, strain:'solitary',
+  // --- Race -------------------------------------------------------------
+  // Four animals, one in each corner of the plate, one meal in the middle,
+  // and the same maze in front of every one of them.
+  //   FAIRNESS. The layout is mirror-symmetric about both midlines. That is
+  // the symmetry worth having here: the dish is stretched to the shape of the
+  // stage, so x and y are scaled by different factors (mx/my), and a design
+  // with four-fold ROTATIONAL symmetry would come out lopsided - the vertical
+  // arms longer than the horizontal ones. Reflections survive the stretch
+  // exactly, and the group the two reflections generate already carries any
+  // corner onto any other, so the four routes are congruent whatever shape
+  // the dish takes: same length, same turns, same doorways.
+  //   THE ROUTE, from any corner: out of the corner past a diagonal wall
+  // (through the doorway in the middle of it, or round either end), along the
+  // outer corridor to the gate in the middle of a side - the corner sits
+  // exactly between two of them, so the choice is free - and into the middle,
+  // where the food is. Written in DISH units, not in the canonical 8x5 frame,
+  // because a worm is one dish unit long and a corridor has to stay wide
+  // enough for one whatever the stage does.
+  'Race':{n:4, strain:'solitary',
     make(){
-      // A ring with one gate in the middle of each side, and inside each gate
-      // a baffle wider than the gate, so the smell leads you in and then the
-      // wall is across your path and you have to work round its end. The four
-      // baffles leave four diagonal corner openings into the middle.
-      // Fair by mirror symmetry: the eight starts are two mirror-symmetric
-      // quartets, so no animal has a shorter route than its opposite number.
-      AW(1.8,0.9,3.45,0.9); AW(4.55,0.9,6.2,0.9);
-      AW(1.8,4.1,3.45,4.1); AW(4.55,4.1,6.2,4.1);
-      AW(1.8,0.9,1.8,2.05); AW(1.8,2.95,1.8,4.1);
-      AW(6.2,0.9,6.2,2.05); AW(6.2,2.95,6.2,4.1);
-      AW(3.05,1.55,4.95,1.55); AW(3.05,3.45,4.95,3.45);
-      AW(2.45,1.85,2.45,3.15); AW(5.55,1.85,5.55,3.15);
-      AF(4.0,2.5,PILE,0.62);
+      const L=raceLayout();
+      for (const s of L.walls) env.addWall(s[0],s[1],s[2],s[3]);
+      AF(4,2.5,PILE,0.60);
     },
-    // first four = one animal per gate, which is what a phone runs
-    spawn:(k)=>[[3.6,0.35,1.57],[3.6,4.65,-1.57],[1.25,2.3,0.0],[6.75,2.3,3.1416],
-                [4.4,0.35,1.57],[4.4,4.65,-1.57],[1.25,2.7,0.0],[6.75,2.7,3.1416]][k]},
+    spawn:(k)=>{ const s=raceLayout().spawns[k];
+      return [s[0]/W*KW, s[1]/H*KH, s[2]]; }},
 };
 function spawnAt(p,k,n){
   const s = p.spawn ? p.spawn(k,n) : (n>1

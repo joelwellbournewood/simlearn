@@ -50,10 +50,9 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 .ffbtn::before{content:'';position:absolute;left:-15%;top:-60%;width:130%;height:100%;
   border-radius:50%;pointer-events:none;
   background:radial-gradient(ellipse at 50% 100%,rgba(255,255,255,.55) 0%,rgba(255,255,255,.12) 55%,rgba(255,255,255,0) 76%)}
-.ffbtn svg{width:19px;height:19px;fill:currentColor;stroke:none;position:relative}
+.ffbtn svg{width:21px;height:21px;fill:currentColor;stroke:none;position:relative}
 .ffbtn:hover{filter:brightness(1.08)}
 .ffbtn:active{transform:translateY(1px)}
-.ffbtn .x10{position:absolute;right:3px;bottom:1px;font:600 8.5px/1 var(--display);opacity:.75}
 .ffbtn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ffa,#56e0c2), 0 0 22px 2px var(--ffglow,rgba(86,224,194,.55)),
   inset 0 1px 0 rgba(255,255,255,.55)}
 body.clean .ffbtn{opacity:.35} body.clean .ffbtn:hover{opacity:1}
@@ -345,9 +344,8 @@ body.fs .hint{display:none}
 </style>
 <link rel="stylesheet" href="touch.css?v=20260919c">
 <div id="stage"><canvas id="c"></canvas><div class="wormbar" id="wormbar"></div>
-  <button class="ffbtn" id="b-ff" aria-pressed="false" title="Fast forward - run the dish at 10x (X)" aria-label="Fast forward to ten times speed">
+  <button class="ffbtn" id="b-ff" aria-pressed="false" title="Fast forward (X)" aria-label="Fast forward to ten times speed">
     <svg viewBox="0 0 24 24"><path d="M3.5 5.5l8 6.5-8 6.5z"/><path d="M12.5 5.5l8 6.5-8 6.5z"/></svg>
-    <span class="x10">10&times;</span>
   </button></div>
 
 <div class="brand">
@@ -501,7 +499,7 @@ body.fs .hint{display:none}
 <li>Drop a wide patch of food in its path. It falls to about half speed and stays &mdash; which is why a worm that finds food keeps it.</li>
 <li>Let it eat, then erase the patch. It searches tightly for a few minutes, then gives up and disperses in long straight runs.</li>
 <li>Slide the medium from agar to water and watch the same circuit change gait.</li>
-<li>Run <b>Race</b> at 10&times;: several animals with identical nervous systems, one meal, four gates.</li>
+<li>Run <b>Race</b> at 10&times;: four animals with identical nervous systems start in the four corners of a mirror-symmetric maze, and only the paths their bodies take are different.</li>
 <li>Put <b>Eight strangers</b> on Groupers, then on Loners, and leave it running for two minutes.</li>
 <li>Leave one animal alone with no food. It slides into pauses and slow crawling, then rouses itself and roams again.</li>
 </ul>
@@ -560,7 +558,7 @@ body.fs .hint{display:none}
 
 <h3>Why a wall is hard</h3>
 <p>There is no path-finding anywhere in this animal. A gradient gives a direction and nothing else: keep going while the smell rises, turn when it falls.</p>
-<p>What makes a barrier interesting is that the smell has to get round it too. Odour reaches the nose by diffusing through the agar, and a wall is as solid to a molecule as it is to a worm, so the concentration at any point falls off with the length of the shortest open path back to the food &mdash; not with the straight line through the plastic. The dish computes that path for every point on the plate. Stand in a corridor and the strongest smell is genuinely toward the gap, not toward the wall, and a corner leaks nothing at all. Watch the <b>Scent</b> panel with the <b>Maze</b> preset and the shape of the answer is drawn there: two bright lobes joined through the openings.</p>
+<p>What makes a barrier interesting is that the smell has to get round it too. Odour reaches the nose by diffusing through the agar, and a wall is as solid to a molecule as it is to a worm, so the concentration at any point falls off with the length of the shortest open path back to the food &mdash; not with the straight line through the plastic. The dish computes that path for every point on the plate. Stand in a corridor and the strongest smell is genuinely toward the gap, not toward the wall, and a corner leaks nothing at all. Watch the <b>Scent</b> panel with the <b>Corridors</b> preset and the shape of the answer is drawn there: the bright field bends round the end of each wall instead of shining through it, so the way the smell gets to you is the way you can get to the food.</p>
 <p>That still does not hand the animal a route. It only means that following the smell uphill is a strategy that can work, and a worm has no more than that. Press it into the wall anyway and four things eventually free it: the nose reflex habituates, the smell sense adapts to a steady concentration until the direction fades, every reversal long enough to count ends in a turn that re-aims the body by a large angle, and sustained contact that is getting the animal nowhere finally reaches the escape cells. Escape is a race between a fading reflex and a lucky turn, which is why it looks like sudden insight after a minute of stupidity. Real worms in real mazes solve them the same way, by biased chance.</p>
 
 <h3>Measured against the living animal</h3>
