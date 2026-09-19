@@ -33,7 +33,12 @@ const data=await fetch('./celegans-connectome.json').then(r=>r.json());
 const MAXW=8;
 // Phone mode. Matches the CSS breakpoints exactly (one strip carrying only the
 // neuron table and the muscles), so JS and layout can never disagree.
-const MOBQ=window.matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
+// Touch layout is chosen by the POINTER, not by the width. A tablet is
+// 820-1366 CSS px wide, so a width-only rule dropped it into the desktop
+// layouts: floating panels ON TOP of the dish in portrait, a left control
+// rail in landscape. Both are wrong for a finger. This matches touch.css.
+const MOBQ=window.matchMedia('(max-width:820px), (pointer:coarse)');
+const LANDQ=window.matchMedia('(orientation:landscape)');
 // a phone dish is small and a phone GPU is not: four animals, not eight
 function maxWorms(){ return MOBQ.matches ? 4 : MAXW; }
 let nextId=0;
@@ -116,7 +121,30 @@ const cv=el('c'), ctx=cv.getContext('2d');
 let scale=1, ox=0, oy=0, paused=false, eaten=0, tool='food';
 let ripples=[], dragA=null, dragB=null;
 // the dish is fitted into the space BETWEEN the floating panels, never under them
+// The stage box is chosen from the viewport first, and the DISH then takes
+// the shape of the box (pickDish). Done the other way round the dish keeps
+// the proportions it had before the phone was turned and the difference is
+// paid for in black margin, which on a phone is most of the screen.
+const TSHEET=56;
+function fitTouch(){
+  const R=document.documentElement.style;
+  if (!MOBQ.matches){ R.removeProperty('--tstage'); R.removeProperty('--tvizw'); return; }
+  const vw=window.innerWidth, vh=window.innerHeight, availH=Math.max(200,vh-TSHEET);
+  if (vw>vh){                       // landscape: dish left, readouts right
+    const viz=Math.round(Math.max(200,Math.min(380,vw*0.32)));
+    R.setProperty('--tvizw',viz+'px');
+    R.setProperty('--tstage',availH+'px');
+  } else {                          // portrait: dish on top, readouts under
+    const stage=Math.round(Math.max(availH*0.34,Math.min(availH*0.52,vw*0.95)));
+    R.setProperty('--tstage',stage+'px');
+    R.setProperty('--tvizw','0px');
+  }
+}
+fitTouch();
 function safeRect(w,h){
+  // on touch nothing floats over the dish any more, so it gets the whole box
+  if (MOBQ.matches && !document.body.classList.contains('clean'))
+    return {L:8,R:w-8,T:8,B:h-8};
   let L=14,R=w-14,T=14,B=h-46;
   const overlayMode=window.innerWidth<=820||document.body.classList.contains('clean');
   if(!overlayMode){
@@ -177,7 +205,19 @@ function makeBg(){
     c.fillRect(i,j,1,1);
   }
 }
-window.addEventListener('resize',()=>{resize();makeBg();placeWormBar();}); resize(); makeBg();
+function relayout(){
+  fitTouch();
+  const st=el('stage'), a=st.clientWidth/st.clientHeight;
+  const want=Math.min(2.2,Math.max(0.60,a));
+  // a real change of shape (turning the phone) needs the dish rebuilding, and
+  // the scene with it, because every wall and patch is placed in dish units
+  if (a>0 && lastPreset && Math.abs(Math.log(want/(W/H)))>0.10) loadPreset(lastPreset);
+  else { resize(); makeBg(); }
+  placeWormBar();
+}
+window.addEventListener('resize',relayout);
+window.addEventListener('orientationchange',()=>setTimeout(relayout,250));
+resize(); makeBg();
 const w2x=x=>ox+x*scale, w2y=y=>oy+y*scale;
 const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 
@@ -318,9 +358,13 @@ function placeWormBar(){
   if (!bar||!act) return;
   if (worms.length<2){ bar.classList.remove('low'); document.body.classList.remove('barlow'); return; }
   bar.classList.remove('low'); document.body.classList.remove('barlow');
+  // the dish is letterboxed inside the stage by whatever margin is left, so
+  // the strip is pinned to the top edge of the DISH, not of the box
+  bar.style.top = MOBQ.matches ? Math.max(8,Math.round(oy)+8)+'px' : '';
   const rb=bar.getBoundingClientRect(), ra=act.getBoundingClientRect();
   if (rb.right>ra.left-10 && rb.top<ra.bottom && rb.bottom>ra.top){
-    bar.classList.add('low'); document.body.classList.add('barlow');
+    if (MOBQ.matches) bar.style.top = Math.round(ra.bottom - el('stage').getBoundingClientRect().top + 8)+'px';
+    else { bar.classList.add('low'); document.body.classList.add('barlow'); }
   }
 }
 // The status line under the strain buttons is gone. The one thing in it worth
@@ -417,10 +461,16 @@ const VG={}; for (const v of VIEWS) VG[v]=VC[v].getContext('2d');
 let nervesGrid={NC:20,CS:11,rows:15};
 // Dashboard mode: >=1100px every readout is on at once and every canvas is
 // sized from the space actually left in the window, so nothing scrolls.
-function dashOn(){ return window.innerWidth>=1100 && !document.body.classList.contains('clean'); }
+function dashOn(){ return window.innerWidth>=1100 && !MOBQ.matches && !document.body.classList.contains('clean'); }
 function mobOn(){ return MOBQ.matches && !document.body.classList.contains('clean'); }
-const MOBVIEWS=['nerves','muscles'];
-function shown(v){ return mobOn() ? MOBVIEWS.indexOf(v)>=0 : (dashOn() ? true : vizOn.has(v)); }
+// Every readout is available on a phone now; they stack in one scrolling
+// column, the two that explain each other first. Anything scrolled out of
+// sight is not redrawn - six live canvases on a phone is not free.
+const MOBVIEWS=['nerves','muscles','signals','gang','scent','geo'];
+function shown(v){
+  if (mobOn()) return MOBVIEWS.indexOf(v)>=0 && el('sec-'+v).dataset.vis!=='0';
+  return dashOn() ? true : vizOn.has(v);
+}
 function setCv(v,w,h){ const c=VC[v];
   c.width=Math.max(8,Math.round(w*vdpr)); c.height=Math.max(8,Math.round(h*vdpr));
   c.style.width=Math.round(w)+'px'; c.style.height=Math.round(h)+'px'; }
@@ -467,20 +517,18 @@ function sizeMob(){
   const vp=el('vizpanel'), vb=document.querySelector('.vbody');
   vp.classList.remove('wide','cols2'); document.body.classList.remove('vwide');
   for (const v of VIEWS) el('sec-'+v).classList.toggle('on', MOBVIEWS.indexOf(v)>=0);
+  MOBVIEWS.forEach((v,i)=>{ const sec=el('sec-'+v); sec.style.order=i;
+    sec.classList.toggle('notop', i===0); });
   for (const v of VIEWS){ const c=VC[v]; c.style.width=''; c.style.height=''; }
-  const pw=vb.clientWidth, ph=vp.clientHeight; if (!pw||!ph) return;
-  const LAB=15, GAP=9;
-  const land=window.innerHeight<=560;
-  if (land){
-    const h=Math.max(60,ph-GAP-12);
-    const hM=Math.min(Math.round(pw*0.42), Math.round(h*0.34));
-    fitNerves(pw,h-hM-2*LAB-GAP);
-    setCv('muscles',pw,hM);
-  } else {
-    const col=Math.floor((pw-GAP)/2), h=Math.max(52,ph-LAB-10);
-    fitNerves(col,h);
-    setCv('muscles',col,Math.min(h,Math.round(col*0.5)));
-  }
+  const pw=vb.clientWidth; if(!pw) return;
+  // a tablet pane is 1000px wide; a 800px-tall ganglion picture is not useful
+  const w=Math.max(120,Math.min(620,Math.floor(pw)));
+  setCv('muscles',w,Math.round(w*0.46));
+  setCv('signals',w,Math.max(150,Math.round(w*0.66)));
+  setCv('gang',w,Math.round(w*0.82));
+  setCv('scent',w,Math.round(w*H/W));
+  setCv('geo',w,Math.round(w*0.34));
+  fitNerves(w,Math.round(w*0.58));
 }
 function sizeViz(){
   document.body.classList.toggle('dash',dashOn());
@@ -548,6 +596,12 @@ el('v-wide').addEventListener('click',()=>{
   sizeViz(); resize(); makeBg(); sizeViz();
 });
 window.addEventListener('resize',sizeViz);
+// which readouts are actually on screen (touch layout scrolls them)
+if (window.IntersectionObserver){
+  const io=new IntersectionObserver(es=>{ for (const e of es) e.target.dataset.vis=e.isIntersecting?'1':'0'; },
+                                    {root:null,rootMargin:'120px'});
+  for (const v of VIEWS) io.observe(el('sec-'+v));
+}
 // In the docked layout the controls column has the whole window height, so
 // every group starts open - there is no reason to make the reader hunt for
 // the sliders. Narrow windows keep the compact bottom-sheet defaults.
@@ -995,17 +1049,25 @@ const SIG_DT=0.08; let sigAcc=0;           // 300 x 0.08 s = 24 s window
 // forward drive while the oscillator is suppressed, so it reads 'forward'
 // while sitting still. Below this centre-of-mass speed (L/s) we say so.
 const STILL_SPEED=0.06;
-// salience order for collapsing a sampling interval: omega > upsilon >
-// reverse > still > forward
-// salience: omega > upsilon > reverse > feeding > still > forward
-const ST_RANK=[0,3,4,5,1,2];
+// A third of all the reorientations this animal makes happen with no
+// reversal at all: it curves as it goes, steering by the asymmetry between
+// its own head casts (weathervaning, Iino & Yoshida 2009). Those turns have
+// no command-state signature, so before this they were painted as plain
+// forward and the strip looked as if it had missed them. TURN_ANG is the
+// angle between the fast and slow smoothed track direction, measured in
+// body.js; 0.6 rad catches 90% of the reorientations the trajectory shows.
+const TURN_ANG=0.6;
+// salience for collapsing a sampling interval:
+// omega > upsilon > reverse > feeding > steering > still > forward
+const ST_RANK=[0,5,6,7,1,4,2];
 function wormState(w){
   const b=w.brain;
   if (b.omegaT>0) return 3;
   if (b.upsilonT>0) return 2;
   if (b.command<-0.08) return 1;
   if ((w._feedT||0)>0) return 5;
-  return w.body.speedFast<STILL_SPEED ? 4 : 0;
+  if (w.body.speedFast<STILL_SPEED) return 4;
+  return Math.abs(w.body.turnAng)>TURN_ANG ? 6 : 0;
 }
 function newSig(){ return {b:SIGS.map(()=>new Float32Array(SN)), t:new Uint8Array(SN), h:0}; }
 function clearSig(g){ for(const a of g.b) a.fill(0); g.t.fill(0); g.h=0; }
@@ -1028,7 +1090,8 @@ function drawSignals(){
   // upsilon (amber) and omega (violet) used to be two shades of yellow and
   // were impossible to tell apart on a 7px strip
   const stc=['rgba(86,224,194,.55)','rgba(255,125,92,.78)','rgba(255,168,60,.90)',
-             'rgba(183,124,255,.95)','rgba(143,163,154,.42)','rgba(160,224,74,.80)'];
+             'rgba(183,124,255,.95)','rgba(143,163,154,.42)','rgba(160,224,74,.80)',
+             'rgba(111,183,255,.78)'];
   const dx=c.width/SN;
   for (let s=0;s<SN;s++){ const v=stbuf[(shead+s)%SN];
     g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); }
@@ -1242,7 +1305,7 @@ function loop(){
   }
   draw();
   // at high speed the readouts do not need a redraw every frame
-  if (simSpeed<=3 || frame%2===0) drawViz(frame);
+  if (mobOn() ? frame%3===0 : (simSpeed<=3 || frame%2===0)) drawViz(frame);
 }
 loop();
 
@@ -1287,6 +1350,6 @@ if (window.self!==window.top) document.body.classList.add('in-frame');
 // test hook: lets automated checks find the worm
 window.__worm={get body(){return body},get brain(){return brain},get env(){return env},poke,worms,addWorm,removeWorm,
   get PRESETS(){return PRESETS},loadPreset,
-  get sel(){return sel},selectWorm,SOC,get realSpeed(){return realSpeed}};
+  get sel(){return sel},selectWorm,SOC,get realSpeed(){return realSpeed},TUNE,BTUNE};
 window.__dishW=W; window.__dishH=H;
 window.__viz={get ox(){return ox},get oy(){return oy},get scale(){return scale},vizOn};

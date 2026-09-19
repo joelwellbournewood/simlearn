@@ -89,10 +89,10 @@ export const TUNE = {
                      // Dwell7). The paper gives the sub-mode, not a rate: this
                      // pair of numbers is the MODEL ASSUMPTION that sets it.
   revIntSpread: 2.4, // s, uniform spread added to revInt
-  refractGain: 0.0,  // how much the refractory state suppresses SPONTANEOUS
+  refractGain: 0.50,  // how much the refractory state suppresses SPONTANEOUS
                      // (dC/dt and dwell-mode) reversal drive - touch/escape
                      // drive deliberately bypasses it (Kaplan & Horvitz 1993)
-  inertiaGain: 0.0,  // extra tonic drive to AVB just after a reversal
+  inertiaGain: 0.08,  // extra tonic drive to AVB just after a reversal
   dTau: 1.0,         // s, low-pass on the SIGNED chemosensory derivative before
                      // rectification: cancels the head-sweep ripple (symmetric,
                      // zero-mean) while a sustained descent survives. 0 = raw.
@@ -160,6 +160,19 @@ export const TUNE = {
   rimDrive: 0.9,    // AVA drives RIM (gap junctions in the wiring; this term keeps it reliable)
   rimOsc: 0.9,      // fraction of head-oscillator output the tyramine shuts off during backing
   tyrGain: 1.8,     // RIM inhibits AVB, which is what stretches escape reversals out
+  // Alkema 2005 measured tyramine-dependent SUSTAINED backing after anterior
+  // touch; the spontaneous (pirouette) reversal is a short event and does not
+  // depend on it. tyrSpont is how much of the RIM->AVB inhibition survives
+  // when nothing has touched the nose. 1 = legacy (every reversal gets the
+  // escape-length hold, which is what made mean reversals 3.4 s, run 120).
+  tyrSpont: 0.25,
+  // AVA's calcium transient at a reversal onset rises and then decays even
+  // while the stimulus persists (Kato 2015, Cell 163:656 - the reversal state
+  // is a transient on the population manifold, not a latch). avaAdaptGain is
+  // how strongly that self-adaptation opposes its own drive; 0 = legacy.
+  avaAdaptGain: 0.30,
+  avaAdaptTau: 0.9,  // s, rise time of the adaptation while AVA is winning
+  avaRelaxTau: 2.5,  // s, decay once forward has resumed
   // --- foraging nose casts (Hart 1995: OLQ/IL1 -> RMD rhythm) ---
   forageAmp: 0.4,   // small fast dorsoventral flicks of the nose during forward runs
   klGain: 0.9,      // klinotaxis: if scent rises while the head is bent one way,
@@ -386,7 +399,7 @@ export class WormBrain {
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
     this.escapeT=0; this.sprintT=0; this.pokeHab=1;
     this.socBias=0; this.socSlow=1; this.phero=0; this.socO2=1;
-    this.command=1; this.revTime=0; this.revRefract=0; this.offBase=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.noseTouchRecent=0;
+    this.command=1; this.revTime=0; this.revRefract=0; this.offBase=0; this.offS=0; this.omegaT=0; this.upsilonT=0; this.avaAdapt=0; this.noseTouchRecent=0;
     this.cPrev=0; this.cSlow=0; this.on=0; this.off=0; this.dS=0; this.offGate=0; this._t=0;
     this.hab=1; this.wdBias=0; this.foragePhase=0; this.rimAct=0; this.noseP=0; this.klBias=0;
     this.dopa=0; this.ser=0; this.serTone=0.5; this.touchSuppress=0;
@@ -718,6 +731,12 @@ export class WormBrain {
     if (T.offAdaptTau>0) this.offBase += (this.offS-this.offBase)*Math.min(1,dt/T.offAdaptTau);
     else this.offBase=0;
     const offEff = Math.max(0, this.offS - T.offAdaptGain*this.offBase);
+    // AVA self-adaptation (see avaAdaptGain): builds while AVA is winning,
+    // relaxes once the animal is going forward again
+    if (this.avaAdapt===undefined) this.avaAdapt=0;
+    const backing = this.command<-0.08 ? 1 : 0;
+    this.avaAdapt += backing ? (1-this.avaAdapt)*Math.min(1,dt/T.avaAdaptTau)
+                             : -this.avaAdapt*Math.min(1,dt/T.avaRelaxTau);
     const spont=Math.max(0,1-T.refractGain*this.revRefract);
     // dispersal suppresses SPONTANEOUS reversals only (the long-run phase of
     // global search); the chemosensory pirouette drive is deliberately left
@@ -738,7 +757,8 @@ export class WormBrain {
     // worm's own recent reversals. refractChemo (default 0) is the separate,
     // explicit knob if that gating is ever wanted.
     for (const i of this.gAVA) P[i]+=T.revOnOff*offEff*Math.max(0,1-T.refractChemo*this.revRefract)
-                                    + this.locoRevDrive*spontLoc*spont - T.xInh*F*0.6;
+                                    + this.locoRevDrive*spontLoc*spont - T.xInh*F*0.6
+                                    - T.avaAdaptGain*this.avaAdapt;
     // reversal bookkeeping and omega turn on resumption
     this.noseTouchRecent*=Math.exp(-dt/1.5);
     if (this.command<-0.08) this.revTime+=dt;
@@ -777,7 +797,10 @@ export class WormBrain {
     // the RIM membrane from bleeding into the forward gait
     const rimInst=Math.min(1,Math.max(0,(this._mean(this.gRIM)-0.4)/0.3))*Math.max(0,-this.command);
     this.rimAct+=(rimInst-this.rimAct)*Math.min(1,dt/0.25);
-    for (const i of this.gAVB) P[i]-=T.tyrGain*this.rimAct;
+    // tyramine's hold on AVB is the escape-reversal mechanism: gate it on
+    // recent nose contact so a spontaneous reversal is not self-sustaining
+    const tyrCtx = T.tyrSpont + (1-T.tyrSpont)*Math.min(1, this.noseTouchRecent/0.3);
+    for (const i of this.gAVB) P[i]-=T.tyrGain*this.rimAct*tyrCtx;
     // head oscillator: mutual inhibition + adaptation (MODEL ASSUMPTION, Boyle-Cohen style CPG stand-in)
     const turn = Math.max(0.25, 1 - T.klino*this.on + 0.5*this.off); // climbers run straight, descenders cast
     const drv = T.oscDrive*Math.max(F,B*0.9)*this.locoTonicMul; // roam/dwell arousal gates CPG drive directly (normalized command cannot: it saturates near +-1 regardless of magnitude)

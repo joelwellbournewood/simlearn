@@ -67,6 +67,7 @@ export class WormBody {
   reset(x,y,angle){
     this.baseX=x; this.baseY=y; this.heading=angle+Math.PI; // chain runs tailward
     this.theta.fill(0); this.curvature.fill(0); this.speed=0; this.speedFast=0;
+    this.tfx=1; this.tfy=0; this.tsx=1; this.tsy=0; this.turnAng=0;
     this._build(this.px,this.py); this._nose();
     this._comx=this._cx; this._comy=this._cy;
   }
@@ -222,6 +223,21 @@ export class WormBody {
     // made the 'still' state on the chart appear half a second after the
     // animal had visibly stopped
     this.speedFast+=(v-this.speedFast)*Math.min(1,dt/0.15);
+    // Track direction of the centre of mass, smoothed twice. The angle
+    // between the fast copy and the slow one is how sharply the animal is
+    // curving, which is what separates a straight run from a gradual
+    // steering turn (weathervaning / klinotaxis, Iino & Yoshida 2009) - a
+    // reorientation that happens with no reversal at all and so has no
+    // command-state signature.
+    if (v>1e-4){
+      const inv=1/Math.hypot(this._cx-this._comx,this._cy-this._comy);
+      const ux=(this._cx-this._comx)*inv, uy=(this._cy-this._comy)*inv;
+      const af=Math.min(1,dt/0.5), as=Math.min(1,dt/1.6);
+      this.tfx+=(ux-this.tfx)*af; this.tfy+=(uy-this.tfy)*af;
+      this.tsx+=(ux-this.tsx)*as; this.tsy+=(uy-this.tsy)*as;
+    }
+    this.turnAng=Math.atan2(this.tsx*this.tfy-this.tsy*this.tfx,
+                            this.tfx*this.tsx+this.tfy*this.tsy);
     this._comx=this._cx; this._comy=this._cy;
     this._nose();
   }

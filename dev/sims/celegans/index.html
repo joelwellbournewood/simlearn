@@ -148,21 +148,7 @@ dialog.about::backdrop{background:rgba(4,10,8,.64);backdrop-filter:blur(4px)}
 .about-close:hover{color:var(--ink);border-color:var(--line-strong)}
 body.in-frame .brand{display:none}
 body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
-@media (max-width:820px), (max-height:560px) and (pointer:coarse){
-  .brand{left:14px;top:12px} .brand h1{font-size:21px} .brand p{display:none} .brand .kicker{margin-bottom:3px}
-  .actions{right:12px;top:12px;gap:6px} .icon-btn{width:34px;height:34px}
-  .panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:min(60vh,520px);border-radius:16px 16px 0 0;padding:0 13px 13px;
-    transform:translateY(calc(100% - 46px));transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow-y:hidden}
-  .panel.open{transform:none;overflow-y:auto}
-  .p-toggle{display:flex;position:sticky;top:0;width:100%;height:46px;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;
-    color:var(--ink);font-family:var(--display);font-weight:600;font-size:14px;z-index:2}
-  .p-toggle::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:var(--line-strong)}
-  .panel.open .p-toggle{background:var(--panel-2);margin:0 -13px;width:calc(100% + 26px)}
-  .stat{padding:5px 9px;min-width:0} .stat .v{font-size:14px} .stat .k{font-size:8.5px}
-  .hint{display:none}
-  .sel{left:12px;top:64px;bottom:auto;width:212px;padding:9px 11px}
-  .sel table{font-size:12px}
-}
+
 @media (prefers-reduced-motion:reduce){ .panel{transition:none} }
 </style>
 <link rel="stylesheet" href="../../assets/css/sim-touch.css">
@@ -245,37 +231,9 @@ body.fs .hint{display:none}
    strip carrying just the neuron table and the muscles. Everything else in
    the right column is off: on a phone the dashboard is unreadable, and these
    two are the pair that explain each other (cells fire -> muscle bends). --- */
-@media (max-width:820px), (max-height:560px) and (pointer:coarse){
-  :root{--sheeth:54px;--mobviz:clamp(126px,25vh,210px)}
-  #stage{inset:0 0 calc(var(--mobviz) + var(--sheeth) + env(safe-area-inset-bottom)) 0}
-  .vizpanel,.vizpanel.wide{display:block;position:fixed;left:0;right:0;top:auto;
-    bottom:calc(var(--sheeth) + env(safe-area-inset-bottom));
-    width:100%;height:var(--mobviz);max-height:none;z-index:4;
-    border:0;border-top:1px solid var(--line);border-radius:0;background:var(--panel-2);
-    backdrop-filter:none;-webkit-backdrop-filter:none;padding:7px 11px 0;overflow:hidden}
-  .vizpanel .vhead{display:none}
-  .vbody,.vizpanel.cols2 .vbody{grid-template-columns:1fr 1fr;gap:10px;align-items:start}
-  .vbody .vsec.on{border-top:0;padding-top:0}
-  .vizpanel .vcap{display:none}
-  .vlab{font-size:10px;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* the stats float clear of the strip */
-  .hud{bottom:calc(var(--mobviz) + var(--sheeth) + 10px + env(safe-area-inset-bottom))!important}
-  body.clean #stage{inset:0}
-}
+
 /* landscape phone: the strip becomes a right-hand column, inside the drawer tab */
-@media (max-height:560px) and (pointer:coarse){
-  :root{--drawer:46px;--mobvizw:clamp(150px,31vw,250px)}
-  #stage{inset:0 calc(var(--mobvizw) + var(--drawer) + env(safe-area-inset-right,0px)) 0 0}
-  .vizpanel,.vizpanel.wide{position:fixed;left:auto;top:0;bottom:0;
-    right:calc(var(--drawer) + env(safe-area-inset-right,0px));
-    width:var(--mobvizw);height:auto;max-height:none;overflow:hidden;
-    border-top:0;border-left:1px solid var(--line);border-radius:0;padding:8px 10px 0}
-  .vbody,.vizpanel.cols2 .vbody{grid-template-columns:1fr;gap:8px}
-  .hud{bottom:calc(10px + env(safe-area-inset-bottom))!important;
-       right:calc(var(--mobvizw) + var(--drawer) + 10px)!important;max-width:40vw}
-  .wormbar{top:8px}
-  body.clean #stage{inset:0}
-}
+
 
 /* ---- docked three-column layout (>=1100px) -------------------------------
    Above 1100px the two panels stop FLOATING OVER the dish and become real
@@ -344,6 +302,7 @@ body.fs .hint{display:none}
   body.dash .vcap{margin:3px 0 0;min-height:0;height:14px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 </style>
+<link rel="stylesheet" href="touch.css?v=20260919c">
 <div id="stage"><canvas id="c"></canvas><div class="wormbar" id="wormbar"></div></div>
 
 <div class="brand">
@@ -461,7 +420,7 @@ body.fs .hint{display:none}
   <section class="vsec vspan" id="sec-signals">
     <p class="vlab">Signals <span>last 24 s of worm time</span></p>
     <canvas id="signals"></canvas>
-    <p class="vcap"><i style="color:#56e0c2">forward</i> <i style="color:#a0e04a">feeding</i> <i style="color:#8fa39a">still</i> <i style="color:#ff7d5c">reverse</i> <i style="color:#ffa83c">shallow turn</i> <i style="color:#b77cff">deep turn</i></p>
+    <p class="vcap"><i style="color:#56e0c2">forward</i> <i style="color:#a0e04a">feeding</i> <i style="color:#8fa39a">still</i> <i style="color:#ff7d5c">reverse</i> <i style="color:#ffa83c">shallow turn</i> <i style="color:#b77cff">deep turn</i> <i style="color:#6fb7ff">curving</i></p>
   </section>
   </div>
 </div>
