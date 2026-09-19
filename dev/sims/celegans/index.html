@@ -31,7 +31,7 @@ button,input{font:inherit;color:inherit} button{cursor:pointer}
 #stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair}
 #stage canvas.panning{cursor:grabbing}
 #stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 42%,rgba(0,0,0,.5) 100%)}
-.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none}
+.brand{position:absolute;left:20px;top:16px;z-index:5;pointer-events:none;width:max-content}
 .brand .kicker{font-family:var(--body);font-size:12px;letter-spacing:.01em;text-transform:none;color:var(--muted);margin:0 0 5px}
 .brand h1{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.02em;margin:0;line-height:1}
 .brand p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:42ch}
@@ -182,8 +182,16 @@ body.in-frame .panel{top:18px;max-height:calc(100% - 38px)}
 .wrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .wrow .tool{flex:0 0 auto;padding:6px 9px}
 .strainrow .tool{flex:1 1 0}
-.wchips{display:flex;gap:4px;flex-wrap:wrap;margin-left:2px}
-.wchip{width:22px;height:22px;border-radius:7px;border:1px solid var(--line);background:transparent;
+.wormbar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:none;gap:6px;z-index:6;
+  padding:5px 6px;border-radius:12px;background:rgba(9,20,16,.6);border:1px solid var(--line);
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+body.clean .wormbar{display:none!important}
+/* if the strip would run into the icon buttons it drops to a second row and
+   the standfirst gets out of its way */
+.wormbar.low{top:72px}
+body.barlow .brand p{display:none}
+.strainrow.idle{opacity:.5}
+.wchip{width:21px;height:21px;border-radius:6px;border:1px solid rgba(0,0,0,.35);padding:0;cursor:pointer;
   color:var(--muted);font:600 11px/1 "Space Mono",monospace;cursor:pointer}
 .wchip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
 .wstat{margin:1px 0 0;font-size:10.5px;color:var(--muted)}
@@ -215,6 +223,7 @@ body.clean .brand{display:none}
 .vbody .vsec.on.notop{border-top:0;padding-top:0}
 .vlab{font-family:var(--mono);font-size:11px;color:var(--ink);margin:0 0 5px;letter-spacing:.04em}
 .vlab span{color:var(--muted)}
+.vlab i,.vcap i{font-style:normal;font-weight:600}
 .vcap{font-family:var(--mono);font-size:11px;color:var(--muted);min-height:15px;margin:4px 0 0}
 body.clean .vizpanel{display:none}
 body.in-frame .vizpanel{top:18px}
@@ -288,7 +297,7 @@ body.fs .panel,body.fs .hint{display:none}
   body.dash .vcap{margin:3px 0 0;min-height:0;height:14px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 </style>
-<div id="stage"><canvas id="c"></canvas></div>
+<div id="stage"><canvas id="c"></canvas><div class="wormbar" id="wormbar"></div></div>
 
 <div class="brand">
   <p class="kicker">The complete connectome</p>
@@ -318,7 +327,7 @@ body.fs .panel,body.fs .hint{display:none}
   <button class="about-btn" id="b-about">What am I looking at?</button>
 
   <details class="grp" open>
-  <summary class="grp-title">Dishes</summary>
+  <summary class="grp-title">Presets</summary>
   <div class="presets" id="presets"></div>
   </details>
 
@@ -333,15 +342,12 @@ body.fs .panel,body.fs .hint{display:none}
     <button class="tool" data-tool="erase" aria-pressed="false">Erase</button>
   </div>
   <div class="colony">
-    <div class="wrow">
-      <button class="tool" id="b-addworm" title="Drop another animal in the dish">+ worm</button>
-      <button class="tool" id="b-rmworm" title="Remove the selected animal">&minus; worm</button>
-      <div class="wchips" id="wchips"></div>
+    <div class="wrow strainrow" id="strainrow">
+      <button class="tool strain" id="b-solitary" aria-pressed="true">Loners</button>
+      <button class="tool strain" id="b-social" aria-pressed="false">Groupers</button>
+      <button class="tip" data-tip="The same 302 neurons, one gene apart. Loners are N2, the strain every laboratory keeps, dug out of Bristol soil in 1963. Groupers lack npr-1, a receptor that damps the hub neuron RMG; without it, pheromone and low oxygen pull the animals into clumps. Most worms caught in the wild are groupers (de Bono &amp; Bargmann 1998)." aria-label="What loners and groupers mean">?</button>
     </div>
-    <div class="wrow strainrow">
-      <button class="tool strain" id="b-solitary" aria-pressed="true" title="N2 wild type: npr-1 high, animals ignore one another">Solitary N2</button>
-      <button class="tool strain" id="b-social" aria-pressed="false" title="npr-1 loss of function: animals aggregate and border (de Bono &amp; Bargmann 1998)">Social npr-1</button>
-    </div>
+    <p class="wstat" id="strainwhy">Loners spread out and feed alone.</p>
     <p class="wstat" id="wormstat"></p>
   </div>
   </details>
@@ -360,7 +366,7 @@ body.fs .panel,body.fs .hint{display:none}
   </div>
   </details>
 
-  <p class="keys">1-5 dishes &middot; Space pause &middot; R new worm &middot; H hide &middot; F fullscreen</p>
+  <p class="keys">1-7 presets &middot; Space pause &middot; R reset &middot; H hide &middot; F fullscreen</p>
 </div>
 
 <div class="vizpanel" id="vizpanel">
@@ -380,12 +386,12 @@ body.fs .panel,body.fs .hint{display:none}
   </div>
   <div class="vbody">
   <section class="vsec" id="sec-nerves">
-    <p class="vlab">Neurons <span>300 cells &middot; gold sense, teal inter, orange motor</span></p>
+    <p class="vlab">Neurons <span>300 cells &middot; <i style="color:#e6c34f">sense</i> <i style="color:#56e0c2">inter</i> <i style="color:#ff7d5c">motor</i></span></p>
     <canvas id="nerves"></canvas>
     <p id="ncap" class="vcap">hover or click a cell</p>
   </section>
   <section class="vsec" id="sec-gang">
-    <p class="vlab">Head ganglia <span>real synapses, lit while signal passes</span></p>
+    <p class="vlab">Head ganglia <span>live synapses: <i style="color:#86ffd6">excites</i> <i style="color:#ba96ff">inhibits</i> <i style="color:#96c4e2">gap</i></span></p>
     <canvas id="geohead"></canvas>
     <p id="hcap" class="vcap">hover a cell</p>
   </section>
@@ -407,7 +413,7 @@ body.fs .panel,body.fs .hint{display:none}
   <section class="vsec vspan" id="sec-signals">
     <p class="vlab">Signals <span>last 25 s</span></p>
     <canvas id="signals"></canvas>
-    <p class="vcap">strip: teal forward &middot; orange reverse &middot; amber upsilon &middot; gold omega</p>
+    <p class="vcap">strip: <i style="color:#56e0c2">forward</i> &middot; <i style="color:#ff7d5c">reverse</i> &middot; <i style="color:#ffb454">upsilon</i> &middot; <i style="color:#e6c34f">omega</i></p>
   </section>
   </div>
 </div>
@@ -432,7 +438,8 @@ body.fs .panel,body.fs .hint{display:none}
 <h3>A prod is not a nudge</h3>
 <p>Touching a worm is not a small event for it. A prod near the head drives the touch cells ALM, AVM and (at the tip) ASH and FLP hard enough to hand the animal over to the reversal command neuron AVA for a couple of seconds &mdash; measured here at a 2.3&nbsp;s reversal covering about 0.6 of a body length, which then ends in a full omega turn because the reversal was caused by contact. A prod near the tail does the opposite: PLM pushes AVB, and the animal runs <i>forward</i> faster, measured at 1.44&times; its ordinary speed for about three and a half seconds. That is the escape response as Chalfie and Sulston described the touch circuit in 1981 and as Pirri and Alkema's tyramine work fills it in: reverse, turn, then sprint away. Two more real details come with it. The prod overrides a dwelling pause, so a worm that was sitting still gets up and goes &mdash; which is exactly what happens on a real plate. And it habituates: each prod costs about a quarter of the response and the sensitivity comes back over roughly a minute, the wearing-down Rankin and Broster measured in the tap-withdrawal reflex in 1992. Poke it four times in a row and you can watch the reversals get shorter.</p>
 <h3>More than one worm</h3>
-<p>Press <b>+&nbsp;worm</b>, or pick <b>Add worm</b> in Your hand and click the dish, and you get up to eight animals, each with its own complete nervous system and its own body. Click any of them &mdash; or its numbered chip &mdash; and every readout on the right switches to that animal. They are not decoration: they interact, and the interaction is built out of the same circuitry as everything else here. Each worm continuously excretes ascaroside pheromone, which its neighbours' ADL and ASK neurons smell; those cells and the oxygen sensors URX, AQR and PQR are gap-junctioned to the hub neuron RMG, and the gene <i>npr-1</i> inhibits that hub (Macosko et al. 2009). That one inhibition is the difference between the two buttons. In <b>Solitary N2</b> &mdash; the ordinary laboratory strain, high npr-1 &mdash; the animals barely register one another. In <b>Social npr-1</b> &mdash; the loss-of-function strain and most wild isolates, the one de Bono and Bargmann identified in 1998 &mdash; RMG is released, and three rules that Ding et al. (2019) fitted to real multi-worm tracking data come on: taxis toward neighbours, a slowdown that deepens with local density, and a reversal when the body touches another animal at the front but not the back, which is what a worm at the edge of a clump feels as it leaves. Aggregation is then emergent, not scripted: measured here over four minutes with five animals and no food, mean distance between animals falls from 2.4 to 0.5&ndash;1.0 body lengths in the social strain, and rises to 3&ndash;4 in the solitary one. Real clumps also form where the oxygen is lowest, which is why a clump in this model is treated as a low-oxygen pocket the URX cells report (Gray et al. 2004). One deliberate simplification: bodies here can slide over one another rather than colliding, because in a real clump they do exactly that &mdash; what contact does is stimulate the touch receptors, not block movement.</p>
+<p>Pick <b>Add worm</b> in Your hand and click the dish and you get up to eight animals, each with its own complete nervous system, its own body and its own pale colour. Click one &mdash; or its colour in the strip above the dish &mdash; and every readout on the right switches to that animal, its own last twenty-five seconds included. The eraser takes animals off the dish again. They are not decoration: they interact, and the interaction is built out of the same circuitry as everything else here. Each worm continuously excretes ascaroside pheromone, which its neighbours' ADL and ASK neurons smell; those cells and the oxygen sensors URX, AQR and PQR are gap-junctioned to the hub neuron RMG, and the gene <i>npr-1</i> inhibits that hub (Macosko et al. 2009). That one inhibition is the difference between the two buttons. In <b>Loners</b> &mdash; strain N2, the animal every laboratory keeps, dug out of Bristol soil in 1963, with npr-1 intact &mdash; the animals barely register one another. In <b>Groupers</b> &mdash; the same animal with npr-1 broken, which is also what most worms caught in the wild are, the difference de Bono and Bargmann found in 1998 &mdash; RMG is released, and three rules that Ding et al. (2019) fitted to real multi-worm tracking data come on: taxis toward neighbours, a slowdown that deepens with local density, and a reversal when the body touches another animal at the front but not the back, which is what a worm at the edge of a clump feels as it leaves. Aggregation is then emergent, not scripted: measured here over four minutes with five animals and no food, mean distance between animals falls from 2.4 to 0.5&ndash;1.0 body lengths in the social strain, and rises to 3&ndash;4 in the solitary one. Real clumps also form where the oxygen is lowest, which is why a clump in this model is treated as a low-oxygen pocket the URX cells report (Gray et al. 2004). One deliberate simplification: bodies here can slide over one another rather than colliding, because in a real clump they do exactly that &mdash; what contact does is stimulate the touch receptors, not block movement.</p>
+<p><b>Why it presses into a corner for a minute, and how it gets out anyway.</b> Put a wall between the worm and the food (the <b>Behind the wall</b> preset does exactly that) and you will watch it drive its nose into the barrier for a long time before it leaves. That is not a bug, and there is no path-finding code in here to fix. A gradient is a direction, not a map: the animal steers on two local rules &mdash; keep going while the smell is rising, turn when it is falling &mdash; and from inside the corner the smell really is strongest straight ahead, through the wall. It has no way to represent an obstacle it must first move <i>away</i> from. What eventually frees it is four independent things running down at once. The nose-touch reflex <b>habituates</b>: ASH and FLP fire hard on the first contact and progressively less on each repeat, recovering over about fifteen seconds, so the press-and-back-off loop weakens the longer it lasts. The smell sense <b>adapts</b>: ASE and AWC report the change in concentration, not its level, so a worm held still at a constant concentration has its odour drive fade out over seconds &mdash; &ldquo;dinner is that way&rdquo; literally stops being signalled. Every reversal long enough to count <b>ends in a turn</b>, a deep omega after a real collision or a shallower upsilon otherwise, and that turn re-aims the body by a large, variable angle; it is the only source of &ldquo;try somewhere else&rdquo; the animal has. And contact on the <i>side</i> of the nose drives the OLQ and IL1 withdrawal reflex while contact along the flank feeds ALM and AVM below the reversal threshold, which together make it slide along a surface rather than square up to it. So the escape is a race between a reflex that is fading and a turn aimed at random, which is why it can look like sudden insight after a minute of stupidity. The moment the head clears the end of the wall the concentration starts rising again, the ON response fires, and the worm commits to the new heading as if it had meant to go that way all along. Real worms in real mazes do the same thing, and for the same reason: their navigation is a biased random walk, the bias is local, and getting round a barrier is left to chance.</p>
 <h3>Things to try</h3>
 <ul>
 <li>Drop one meal of food far from the worm, turn the scent down low, and watch how long the search takes. Then turn the scent up and watch the path straighten.</li>

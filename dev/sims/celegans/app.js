@@ -32,15 +32,25 @@ const data=await fetch('./celegans-connectome.json').then(r=>r.json());
 // captions) reads the SELECTED worm through the `brain`/`body` aliases.
 const MAXW=8;
 let nextId=0;
+// Each animal is told apart by COLOUR, not by a number: a pale, desaturated
+// palette that reads against the olive agar and stays legible at 20px in the
+// selector at the top of the stage.
+const WCOL=['#f3efe2','#d6e6f4','#f5dde2','#dcf0d9','#f6e7c6','#e0daf5','#c9eeea','#f6dccc'];
+const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 class Worm{
-  constructor(x,y,ang){
+  constructor(x,y,ang,ci){
     this.id=++nextId;
+    this.ci=ci|0; this.col=WCOL[this.ci%WCOL.length]; this.rgb=hex2rgb(this.col);
     this.brain=new WormBrain(data);
     this.body=new WormBody(x,y,ang);
     this.trail=[]; this.pokePulse=null; this.eaten=0; this.soc={};
   }
 }
-let worms=[new Worm(W*0.35,H*0.5,0.3)];
+let frame=0, acc=0, realSpeed=1;   // hoisted: loadPreset() reports the HUD at init
+let worms=[new Worm(W*0.35,H*0.5,0.3,0)];
+// the first unused colour, so a worm erased in the middle frees its colour
+function freeColor(){ const u=new Set(worms.map(w=>w.ci));
+  for(let i=0;i<WCOL.length;i++) if(!u.has(i)) return i; return worms.length%WCOL.length; }
 let sel=0;
 let brain=worms[0].brain, body=worms[0].body;
 let env=new Environment(W,H);
@@ -113,40 +123,64 @@ function makeBg(){
     c.fillRect(i,j,1,1);
   }
 }
-window.addEventListener('resize',()=>{resize();makeBg();}); resize(); makeBg();
+window.addEventListener('resize',()=>{resize();makeBg();placeWormBar();}); resize(); makeBg();
 const w2x=x=>ox+x*scale, w2y=y=>oy+y*scale;
 const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 
-// ---- presets: fixed dishes, no randomness ----
+// ---- presets: fixed scenes, no randomness ------------------------------
+// Each one is a question the model can answer on screen. `n` is how many
+// animals it starts with, `spawn(k,n)` their places in the canonical 8x5
+// frame, `strain` forces the sociality switch when the scene is about it.
 const PRESETS={
-  'Open dish':{tag:'One worm, one meal, a lot of agar', make(){ AF(6.1,3.6,1.0,0.6); }},
-  'Dinner trail':{tag:'Five drops laid in an arc, scent overlapping', make(){
-    const pts=[[2.2,1.3],[3.4,1.1],[4.6,1.5],[5.7,2.3],[6.4,3.4]];
+  'First meal':{tag:'One lawn, right across the dish', make(){ AF(6.5,3.6,1.0,0.6); }},
+  'Crumb trail':{tag:'Five drops in an arc, plumes overlapping', make(){
+    const pts=[[2.4,1.3],[3.6,1.05],[4.8,1.5],[5.8,2.4],[6.4,3.5]];
     for (const [x,y] of pts) AF(x,y,0.55,0.45); }},
-  'The corridor':{tag:'Food at the end of a bent hallway', make(){
-    AW(2.2,1.4,5.8,1.4); AW(2.2,2.6,5.0,2.6);
-    AW(5.8,1.4,5.8,3.9); AW(5.0,2.6,5.0,3.9);
-    AF(5.4,4.3,1.2,0.5); }},
-  'Post forest':{tag:'Thread the pillars to reach the lawn', make(){
+  'Behind the wall':{tag:'Scent points through a barrier. Give it minutes', make(){
+    AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,0.95,0.6); }, spawn:()=>[1.3,2.5,0.0]},
+  'Blind alley':{tag:'A dead end, with dinner just outside it', make(){
+    AW(6.6,2.5,4.4,1.1); AW(6.6,2.5,4.4,3.9);
+    AF(7.3,4.2,0.9,0.5); }, spawn:()=>[1.4,2.5,0.1]},
+  'Pillar field':{tag:'Thread the posts to reach the lawn', make(){
     for (let i=0;i<4;i++) for (let j=0;j<3;j++) AO(2.6+i*1.0,1.4+j*1.1,0.22);
     AF(7.0,2.5,1.2,0.6); }},
-  'The corner':{tag:'A dead end; watch the nose neurons argue it out', make(){
-    AW(6.6,2.5,4.4,1.1); AW(6.6,2.5,4.4,3.9);
-    AF(7.3,4.2,0.9,0.5); }},
+  'Eight strangers':{tag:'No food at all - do they find each other?', n:8, strain:'social',
+    make(){}, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
+  'Crowded table':{tag:'Eight animals, one meal', n:8, strain:'social',
+    make(){ AF(4.1,2.5,1.2,0.65); },
+    spawn:(k,n)=>[4.1+3.0*Math.cos(k/n*6.283),2.5+1.9*Math.sin(k/n*6.283),k/n*6.283+3.14]},
 };
+function spawnAt(p,k,n){
+  const s = p.spawn ? p.spawn(k,n) : (n>1
+      ? [2.2+(k%4)*1.3, 1.4+Math.floor(k/4)*1.9, 0.4+k*0.8]
+      : [1.2,2.5,0.25]);
+  return [Math.max(0.35,Math.min(W-0.35,mx(s[0]))),Math.max(0.35,Math.min(H-0.35,my(s[1]))),
+          s[2]===undefined?0.3:s[2]];
+}
+function setWormCount(n){
+  n=Math.max(1,Math.min(MAXW,n));
+  while (worms.length>n) worms.pop();
+  while (worms.length<n) worms.push(new Worm(W*0.5,H*0.5,0,freeColor()));
+  if (sel>=worms.length) sel=worms.length-1;
+  brain=worms[sel].brain; body=worms[sel].body;
+}
 let lastPreset=null;
 function loadPreset(name,btn){
   lastPreset=name;
   pickDish();
-  env=new Environment(W,H); PRESETS[name].make();
+  const p=PRESETS[name];
+  env=new Environment(W,H); p.make();
   resize(); makeBg();
-  // every animal gets a fresh start, spread across the new dish
+  if (p.strain) setStrain(p.strain);
+  const n=p.n||1;
+  setWormCount(n);
   worms.forEach((w,k)=>{
-    const f=(k+1)/(worms.length+1);
-    w.body.reset(W*(0.18+0.6*f), H*(0.3+0.4*((k%3)/2)), 0.2+k*0.9);
-    w.brain.reset(); w.trail.length=0; w.pokePulse=null;
+    const sp=spawnAt(p,k,n);
+    w.body.reset(sp[0],sp[1],sp[2]);
+    w.brain.reset(); w.trail.length=0; w.pokePulse=null; if(w.sig) clearSig(w.sig);
   });
   eaten=0;
+  syncWormChips(); updateHud(1);
   document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
 }
 { const holder=el('presets'); let first=null;
@@ -156,13 +190,13 @@ function loadPreset(name,btn){
     b.addEventListener('click',()=>loadPreset(name,b));
     holder.appendChild(b); if(i===0)first=b;
   });
-  loadPreset('Open dish',first);
+  loadPreset('First meal',first);
 }
 // ---- the colony ---------------------------------------------------------
 function addWorm(x,y,ang){
   if (worms.length>=MAXW) return null;
   const a=(ang===undefined)?Math.random()*6.283:ang;
-  const w=new Worm(Math.max(0.35,Math.min(W-0.35,x)),Math.max(0.35,Math.min(H-0.35,y)),a);
+  const w=new Worm(Math.max(0.35,Math.min(W-0.35,x)),Math.max(0.35,Math.min(H-0.35,y)),a,freeColor());
   worms.push(w); selectWorm(worms.length-1); syncWormChips(); return w;
 }
 function removeWorm(k){
@@ -172,30 +206,46 @@ function removeWorm(k){
   sel=Math.min(sel,worms.length-1); brain=worms[sel].brain; body=worms[sel].body;
   syncWormChips();
 }
+// the selector lives at the top of the DISH, not in the control rail: one
+// small box per animal, filled with that animal's own colour
 function syncWormChips(){
-  const box=el('wchips'); if(!box) return;
+  const box=el('wormbar'); if(!box) return;
   box.innerHTML='';
+  box.style.display=worms.length>1?'flex':'none';
   worms.forEach((w,k)=>{
     const b=document.createElement('button');
-    b.className='wchip'; b.textContent=String(w.id);
+    b.className='wchip'; b.style.background=w.col;
     b.setAttribute('aria-pressed',String(k===sel));
-    b.title='Show worm '+w.id+' in the readouts';
+    b.title='Show this animal in the readouts';
     b.addEventListener('click',()=>selectWorm(k));
     box.appendChild(b);
   });
-  const add=el('b-addworm'); if(add) add.disabled=worms.length>=MAXW;
-  const rm=el('b-rmworm'); if(rm) rm.disabled=worms.length<=1;
+  const sr=el('strainrow'); if(sr) sr.classList.toggle('idle',worms.length<2);
+  placeWormBar();
+}
+// the strip sits at the top of the dish; if it would collide with the icon
+// buttons at that width it drops below them instead of hiding under them
+function placeWormBar(){
+  const bar=el('wormbar'), act=document.querySelector('.actions');
+  if (!bar||!act) return;
+  if (worms.length<2){ bar.classList.remove('low'); document.body.classList.remove('barlow'); return; }
+  bar.classList.remove('low'); document.body.classList.remove('barlow');
+  const rb=bar.getBoundingClientRect(), ra=act.getBoundingClientRect();
+  if (rb.right>ra.left-10 && rb.top<ra.bottom && rb.bottom>ra.top){
+    bar.classList.add('low'); document.body.classList.add('barlow');
+  }
 }
 function updateHud(n){
   const e=el('wormstat'); if(!e) return;
   const nb=worms[sel].soc.nb||0;
-  e.textContent=worms.length+(worms.length>1?' worms':' worm')+' \u00b7 readouts show #'+worms[sel].id
-    +' \u00b7 '+realSpeed.toFixed(1)+'x actual'+(worms.length>1?' \u00b7 neighbours '+nb.toFixed(2):'');
+  e.textContent=worms.length+(worms.length>1?' worms':' worm')
+    +' \u00b7 '+realSpeed.toFixed(1)+'x actual'
+    +(worms.length>1?' \u00b7 neighbours '+nb.toFixed(2)+' \u00b7 click an animal to read it':'');
 }
 // ---- tools ----
-document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>{
+document.querySelectorAll('#tools .tool').forEach(b=>b.addEventListener('click',()=>{
   tool=b.dataset.tool;
-  document.querySelectorAll('.tool').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  document.querySelectorAll('#tools .tool').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
 }));
 function wormAt(x,y,rad){
   let best=-1,bd=rad||0.28,bi=-1;
@@ -231,7 +281,11 @@ cv.addEventListener('pointerdown',e=>{
   { const hit=wormAt(x,y,0.3); if(hit.k>=0) selectWorm(hit.k); }
   if (tool==='food') env.addFood(x,y,1.0,0.55);
   else if (tool==='post') env.addObstacle(x,y,0.22);
-  else if (tool==='erase') env.removeAt(x,y);
+  else if (tool==='erase'){
+    // the eraser takes animals too, not only food and walls (never the last one)
+    const h=wormAt(x,y,0.3);
+    if (h.k>=0 && worms.length>1) removeWorm(h.k); else env.removeAt(x,y);
+  }
   else if (tool==='poke') poke(x,y);
 });
 cv.addEventListener('pointermove',e=>{ if(dragA) dragB=[x2w(e.offsetX),y2w(e.offsetY)]; });
@@ -744,21 +798,31 @@ function drawScent(){
     g.strokeStyle='rgba(230,195,79,.9)'; g.lineWidth=vdpr; g.stroke(); }
 }
 // signals: a scrolling chart of the command state and the slow chemistry
+// EVERY animal keeps its own history, so selecting a different worm shows that
+// worm's last 25 seconds instead of scrolling the old one's away.
 const SIGS=[
-  {n:'AVB fwd', c:'#56e0c2', f:()=>(brain.activity[brain.idx.AVBL]+brain.activity[brain.idx.AVBR])/2},
-  {n:'AVA rev', c:'#ff7d5c', f:()=>(brain.activity[brain.idx.AVAL]+brain.activity[brain.idx.AVAR])/2},
-  {n:'ASE smell',c:'#e6c34f', f:()=>Math.max(brain.activity[brain.idx.ASEL],brain.activity[brain.idx.ASER])},
-  {n:'dopamine (food contact)',c:'#b48cff', f:()=>brain.dopa},
-  {n:'serotonin (satiety tone)',c:'#ff8cc0', f:()=>brain.serTone},
+  {n:'AVB fwd', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
+  {n:'AVA rev', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
+  {n:'ASE smell',c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
+  {n:'dopamine (food contact)',c:'#b48cff', f:b=>b.dopa},
+  {n:'serotonin (satiety tone)',c:'#ff8cc0', f:b=>b.serTone},
 ];
-const SN=300, sbuf=SIGS.map(()=>new Float32Array(SN)), stbuf=new Uint8Array(SN); let shead=0;
+const SN=300;
+function newSig(){ return {b:SIGS.map(()=>new Float32Array(SN)), t:new Uint8Array(SN), h:0}; }
+function clearSig(g){ for(const a of g.b) a.fill(0); g.t.fill(0); g.h=0; }
 function pushSignals(){
-  for (let i=0;i<SIGS.length;i++) sbuf[i][shead]=SIGS[i].f();
-  stbuf[shead]=brain.omegaT>0?3:brain.upsilonT>0?2:brain.command<-0.08?1:0;
-  shead=(shead+1)%SN;
+  for (const w of worms){
+    if (!w.sig) w.sig=newSig();
+    const g=w.sig, br=w.brain;
+    for (let i=0;i<SIGS.length;i++) g.b[i][g.h]=SIGS[i].f(br);
+    g.t[g.h]=br.omegaT>0?3:br.upsilonT>0?2:br.command<-0.08?1:0;
+    g.h=(g.h+1)%SN;
+  }
 }
 function drawSignals(){
   const g=VG.signals, c=VC.signals;
+  const S=worms[sel].sig||(worms[sel].sig=newSig());
+  const sbuf=S.b, stbuf=S.t, shead=S.h;
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
   const stripH=7*vdpr;
   const stc=['rgba(86,224,194,.25)','rgba(255,125,92,.55)','rgba(255,180,84,.7)','rgba(230,195,79,.85)'];
@@ -831,7 +895,8 @@ function draw(){
     const tr=worms[k].trail; if(tr.length<3) continue;
     ctx.beginPath(); ctx.moveTo(w2x(tr[0][0]),w2y(tr[0][1]));
     for (const p of tr) ctx.lineTo(w2x(p[0]),w2y(p[1]));
-    ctx.strokeStyle=(k===sel)?'rgba(86,224,194,.15)':'rgba(86,224,194,.06)';
+    const tc=worms[k].rgb;
+    ctx.strokeStyle='rgba('+tc[0]+','+tc[1]+','+tc[2]+','+(k===sel?0.17:0.075)+')';
     ctx.lineWidth=1.2; ctx.stroke();
   }
   // walls and posts
@@ -864,27 +929,23 @@ function drawWorm(w,isSel){
   for (let i=1;i<NP;i++) ctx.lineTo(w2x(lx[i]),w2y(ly[i]));
   for (let i=NP-1;i>=0;i--) ctx.lineTo(w2x(rx[i]),w2y(ry[i]));
   ctx.closePath();
+  const CR=w.rgb[0], CG=w.rgb[1], CB=w.rgb[2];
+  // the selected animal is the one with the coloured halo; the colour itself
+  // is what names it, in the dish and in the selector at the top
+  if (isSel && worms.length>1){
+    ctx.strokeStyle='rgba('+CR+','+CG+','+CB+',.32)';
+    ctx.lineWidth=Math.max(4,0.055*scale); ctx.stroke();
+  }
   const hg=ctx.createLinearGradient(w2x(body.px[0]),w2y(body.py[0]),w2x(body.px[NP-1]),w2y(body.py[NP-1]));
-  if (isSel){ hg.addColorStop(0,'rgba(226,238,229,.95)'); hg.addColorStop(1,'rgba(180,205,192,.88)'); }
-  else { hg.addColorStop(0,'rgba(196,214,203,.72)'); hg.addColorStop(1,'rgba(150,175,163,.66)'); }
+  const dim=isSel?1:0.82, a1=isSel?0.96:0.74, a2=isSel?0.88:0.66;
+  hg.addColorStop(0,'rgba('+(CR*dim|0)+','+(CG*dim|0)+','+(CB*dim|0)+','+a1+')');
+  hg.addColorStop(1,'rgba('+(CR*0.74*dim|0)+','+(CG*0.79*dim|0)+','+(CB*0.77*dim|0)+','+a2+')');
   ctx.fillStyle=hg; ctx.fill();
   ctx.strokeStyle=isSel?'rgba(20,40,33,.5)':'rgba(20,40,33,.35)'; ctx.lineWidth=1; ctx.stroke();
   // pharynx: two darker bulbs behind the nose
   ctx.fillStyle='rgba(90,110,100,.65)';
   for (const t of [0.045,0.09]){ const i=Math.round(t*(NP-1));
     ctx.beginPath(); ctx.arc(w2x(body.px[i]),w2y(body.py[i]),widthAt(t)*0.62*scale,0,7); ctx.fill(); }
-  if (worms.length>1){
-    // marker: which animal the right-hand column is about
-    const hx=w2x(body.px[0]), hy=w2y(body.py[0]);
-    ctx.beginPath(); ctx.arc(hx,hy,Math.max(9,0.17*scale),0,7);
-    ctx.strokeStyle=isSel?'rgba(86,224,194,.95)':'rgba(120,150,138,.35)';
-    ctx.lineWidth=isSel?2:1; ctx.stroke();
-    ctx.fillStyle=isSel?'rgba(86,224,194,.95)':'rgba(150,180,168,.6)';
-    ctx.font='600 '+Math.max(9,Math.round(0.1*scale))+'px "Space Mono",monospace';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(w.id),hx,hy);
-    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-  }
 }
 
 // ---- loop ----
@@ -922,7 +983,6 @@ function stepOnce(){
   for (const r of ripples){ r.r+=dt*1.6; r.a-=dt*1.8; }
   for (let i=ripples.length-1;i>=0;i--) if (ripples[i].a<=0) ripples.splice(i,1);
 }
-let frame=0, acc=0, realSpeed=1;
 // With several animals a 10x request can cost more than a frame, so the
 // substep loop is capped by TIME, not by count, and the HUD reports the speed
 // actually achieved rather than the one asked for.
@@ -948,21 +1008,14 @@ function loop(){
 loop();
 
 // ---- chrome ----
-el('b-addworm').addEventListener('click',()=>{
-  // drop the new animal in open dish space, away from the others
-  let bx=W*0.5,by=H*0.5,bd=-1;
-  for(let t=0;t<24;t++){
-    const x=0.5+Math.random()*(W-1), y=0.5+Math.random()*(H-1);
-    let d=1e9; for(const w of worms) d=Math.min(d,Math.hypot(w.body.px[12]-x,w.body.py[12]-y));
-    if(d>bd){bd=d;bx=x;by=y;}
-  }
-  addWorm(bx,by);
-});
-el('b-rmworm').addEventListener('click',()=>removeWorm(sel));
 function setStrain(mode){
   SOC.mode=mode;
   el('b-solitary').setAttribute('aria-pressed',String(mode==='solitary'));
   el('b-social').setAttribute('aria-pressed',String(mode==='social'));
+  const w=el('strainwhy');
+  if (w) w.textContent = mode==='social'
+    ? 'Groupers pile into clumps and feed shoulder to shoulder.'
+    : 'Loners spread out and feed alone.';
 }
 el('b-solitary').addEventListener('click',()=>setStrain('solitary'));
 el('b-social').addEventListener('click',()=>setStrain('social'));
@@ -989,11 +1042,12 @@ window.addEventListener('keydown',e=>{
   else if (k==='r'||k==='R') el('b-reset').click();
   else if (k==='h'||k==='H') el('b-clean').click();
   else if (k==='f'||k==='F') el('b-full').click();
-  else if (k>='1'&&k<='5'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
+  else if (k>='1'&&k<='7'){ const b=document.querySelectorAll('.preset')[+k-1]; if(b) b.click(); }
 });
 if (window.self!==window.top) document.body.classList.add('in-frame');
 // test hook: lets automated checks find the worm
-window.__worm={get body(){return body},get brain(){return brain},env,poke,worms,addWorm,removeWorm,
+window.__worm={get body(){return body},get brain(){return brain},get env(){return env},poke,worms,addWorm,removeWorm,
+  get PRESETS(){return PRESETS},loadPreset,
   get sel(){return sel},selectWorm,SOC,get realSpeed(){return realSpeed}};
 window.__dishW=W; window.__dishH=H;
 window.__viz={get ox(){return ox},get oy(){return oy},get scale(){return scale},vizOn};
