@@ -54,6 +54,39 @@ class Worm{
 let frame=0, acc=0, realSpeed=1;   // hoisted: loadPreset() reports the HUD at init
 let worms=[new Worm(W*0.35,H*0.5,0.3,0)];
 // the first unused colour, so a worm erased in the middle frees its colour
+// ---- Look: the dish and the animals can be re-skinned ------------------
+// Only the PAINT changes here. No look touches the model: the same neurons,
+// the same physics, the same scene geometry. Each one names eight worm
+// colours (the animals are named by colour, so a look renames them), the
+// noise parameters the agar is generated from, and the few dish colours.
+const LOOKS={
+  'Agar':{why:'Soil under a stereo microscope, which is where the animal lives.',
+    worms:['#f3efe2','#d6e6f4','#f5dde2','#dcf0d9','#f6e7c6','#e0daf5','#c9eeea','#f6dccc'],
+    glow:0, trail:1, voidc:'#050c0a', edge:'160,190,175',
+    bg:{base:[22,24,14],amp:[26,30,16],grain:[30,28,12],fleck:[8,20,4],vig:0.55,star:0},
+    food:[[233,219,160],[214,198,130],[186,172,112]], halo:[196,180,110],
+    wall:'160,190,175', post:'50,72,63', pharynx:'90,110,100', outline:'20,40,33'},
+  'Cosmic neon':{why:'Nothing about the worm changed. Only the paint did.',
+    worms:['#ff4fd8','#4fe8ff','#b6ff3d','#ffb020','#9d7bff','#3dffb0','#ff5f7a','#ffe14f'],
+    glow:1, trail:2.4, voidc:'#04040d', edge:'150,130,255',
+    bg:{base:[10,7,24],amp:[16,10,46],grain:[70,44,110],fleck:[26,60,120],vig:0.42,star:0.004},
+    food:[[190,255,236],[130,232,214],[86,190,182]], halo:[110,220,205],
+    wall:'150,130,255', post:'36,26,72', pharynx:'255,255,255', outline:'8,6,22'},
+  'Dark field':{why:'Dark-field microscopy: the specimen lit, the ground black.',
+    worms:['#ffffff','#e3edf7','#cfe0ea','#f3f8ff','#c4d4e2','#e9eff3','#b8cbda','#f7fafc'],
+    glow:0.55, trail:1.5, voidc:'#020304', edge:'120,150,170',
+    bg:{base:[5,7,9],amp:[7,9,12],grain:[26,32,40],fleck:[10,14,20],vig:0.72,star:0.0012},
+    food:[[226,238,250],[178,196,214],[132,150,170]], halo:[150,175,200],
+    wall:'130,160,180', post:'18,24,30', pharynx:'120,140,160', outline:'2,4,6'},
+  'Lantern':{why:'Warm, low light - the dish on a bench at the end of the day.',
+    worms:['#ffd9a0','#ffc46b','#f7e6bb','#ffb27a','#ecd096','#ffd36e','#f2b98a','#ffeccd'],
+    glow:0.35, trail:1.4, voidc:'#0c0704', edge:'196,152,96',
+    bg:{base:[30,19,9],amp:[42,27,11],grain:[44,30,10],fleck:[22,14,4],vig:0.5,star:0},
+    food:[[255,232,170],[232,200,132],[198,166,104]], halo:[214,178,104],
+    wall:'196,152,96', post:'58,40,22', pharynx:'120,92,60', outline:'34,20,8'}
+};
+let LK=LOOKS['Agar'];
+
 function freeColor(){ const u=new Set(worms.map(w=>w.ci));
   for(let i=0;i<WCOL.length;i++) if(!u.has(i)) return i; return worms.length%WCOL.length; }
 let sel=0;
@@ -118,12 +151,14 @@ function makeBg(){
   for(let j=0;j<bh;j++) for(let i=0;i<bw;i++){
     const u=i/bw,v=j/bh;
     const n=0.62*val(u,v)+0.38*val(u*3.7%1,v*3.7%1);
-    const light=1-0.55*Math.hypot(u-0.5,(v-0.5)*0.9); // scope illumination
-    let r=22+26*n*light, gg=24+30*n*light, b=14+16*n*light; // humus olive-browns
+    const B=LK.bg;
+    const light=1-B.vig*Math.hypot(u-0.5,(v-0.5)*0.9); // scope illumination
+    let r=B.base[0]+B.amp[0]*n*light, gg=B.base[1]+B.amp[1]*n*light, b=B.base[2]+B.amp[2]*n*light;
     const q=rnd();
-    if(q>0.982){ r+=30;gg+=28;b+=12; }        // pale grain of detritus
-    else if(q<0.012){ r*=0.55;gg*=0.6;b*=0.55; } // dark pore
-    else if(q>0.965){ r+=8;gg+=20;b+=4; }     // moss fleck
+    if(B.star&&q>1-B.star){ r=225+30*n; gg=232+22*n; b=250; }   // a star / a dust mote
+    else if(q>0.982){ r+=B.grain[0];gg+=B.grain[1];b+=B.grain[2]; }   // pale grain
+    else if(q<0.012){ r*=0.55;gg*=0.6;b*=0.55; }                      // dark pore
+    else if(q>0.965){ r+=B.fleck[0];gg+=B.fleck[1];b+=B.fleck[2]; }   // fleck
     c.fillStyle='rgb('+(r|0)+','+(gg|0)+','+(b|0)+')';
     c.fillRect(i,j,1,1);
   }
@@ -961,10 +996,29 @@ function drawViz(){
   if (shown('signals')) drawSignals();
 }
 sizeViz();
+function applyLook(name,btn){
+  LK=LOOKS[name]||LOOKS['Agar'];
+  WCOL.length=0; for (const c of LK.worms) WCOL.push(c);
+  for (const w of worms){ w.col=WCOL[w.ci%WCOL.length]; w.rgb=hex2rgb(w.col); }
+  const why=el('lookwhy'); if (why) why.textContent=LK.why;
+  document.querySelectorAll('.look').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.look===name)));
+  makeBg(); syncWormChips();
+}
+{ const holder=el('looks');
+  if (holder) Object.entries(LOOKS).forEach(([name,L])=>{
+    const b=document.createElement('button'); b.className='look'; b.type='button'; b.dataset.look=name;
+    b.setAttribute('aria-pressed',String(name==='Agar'));
+    b.innerHTML='<span class="chips"><i style="background:'+L.worms[0]+'"></i><i style="background:'+
+      L.worms[1]+'"></i><i style="background:'+L.worms[3]+'"></i></span><span class="pn">'+name+'</span>';
+    b.addEventListener('click',()=>applyLook(name,b));
+    holder.appendChild(b);
+  });
+  applyLook('Agar');
+}
 // ---- rendering the dish ----
 function draw(){
   const w=cv.clientWidth,h=cv.clientHeight;
-  ctx.fillStyle='#050c0a'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle=LK.voidc; ctx.fillRect(0,0,w,h);
   // dish: pixel-art agar
   ctx.save();
   ctx.beginPath(); ctx.roundRect(w2x(0),w2y(0),W*scale,H*scale,14); ctx.clip();
@@ -972,7 +1026,7 @@ function draw(){
   if(bgCv) ctx.drawImage(bgCv,w2x(0),w2y(0),W*scale,H*scale);
   ctx.restore();
   ctx.beginPath(); ctx.roundRect(w2x(0),w2y(0),W*scale,H*scale,14);
-  ctx.strokeStyle='rgba(130,170,150,.22)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.strokeStyle='rgba('+LK.edge+',.22)'; ctx.lineWidth=1.5; ctx.stroke();
   // food: a lawn of pixel particles, dense centre thinning outward, plus a
   // dithered scent halo whose pixel density falls off like the gradient does
   const snap=q=>Math.floor(q/PIX)*PIX;
@@ -981,15 +1035,15 @@ function draw(){
     for (const hp of f.halo){
       const a=0.16*rel*Math.exp(-hp.d/1.0);
       if(a<0.015) continue;
-      ctx.fillStyle='rgba(196,180,110,'+a.toFixed(3)+')';
+      ctx.fillStyle='rgba('+LK.halo+','+a.toFixed(3)+')';
       ctx.fillRect(snap(w2x(hp.x)),snap(w2y(hp.y)),PIX,PIX);
     }
     for (const p of f.parts){
       if(p.a<=0) continue;
       const fr=p.a/p.a0, sz=PIX*(p.sz>2?2:1);
-      ctx.fillStyle=p.sz>2?'rgba(233,219,160,'+(0.45+0.5*fr).toFixed(2)+')'
-                   :p.sz>1?'rgba(214,198,130,'+(0.4+0.5*fr).toFixed(2)+')'
-                          :'rgba(186,172,112,'+(0.35+0.5*fr).toFixed(2)+')';
+      ctx.fillStyle=p.sz>2?'rgba('+LK.food[0]+','+(0.45+0.5*fr).toFixed(2)+')'
+                   :p.sz>1?'rgba('+LK.food[1]+','+(0.4+0.5*fr).toFixed(2)+')'
+                          :'rgba('+LK.food[2]+','+(0.35+0.5*fr).toFixed(2)+')';
       ctx.fillRect(snap(w2x(p.x)),snap(w2y(p.y)),sz,sz);
     }
   }
@@ -999,15 +1053,15 @@ function draw(){
     ctx.beginPath(); ctx.moveTo(w2x(tr[0][0]),w2y(tr[0][1]));
     for (const p of tr) ctx.lineTo(w2x(p[0]),w2y(p[1]));
     const tc=worms[k].rgb;
-    ctx.strokeStyle='rgba('+tc[0]+','+tc[1]+','+tc[2]+','+(k===sel?0.17:0.075)+')';
+    ctx.strokeStyle='rgba('+tc[0]+','+tc[1]+','+tc[2]+','+((k===sel?0.17:0.075)*LK.trail).toFixed(3)+')';
     ctx.lineWidth=1.2; ctx.stroke();
   }
   // walls and posts
   ctx.lineCap='round';
   for (const wl of env.walls){ ctx.beginPath(); ctx.moveTo(w2x(wl.x1),w2y(wl.y1)); ctx.lineTo(w2x(wl.x2),w2y(wl.y2));
-    ctx.strokeStyle='rgba(160,190,175,.55)'; ctx.lineWidth=Math.max(3,0.07*scale); ctx.stroke(); }
+    ctx.strokeStyle='rgba('+LK.wall+',.55)'; ctx.lineWidth=Math.max(3,0.07*scale); ctx.stroke(); }
   for (const o of env.obstacles){ ctx.beginPath(); ctx.arc(w2x(o.x),w2y(o.y),o.r*scale,0,7);
-    ctx.fillStyle='rgba(50,72,63,.9)'; ctx.fill(); ctx.strokeStyle='rgba(160,190,175,.4)'; ctx.lineWidth=1.5; ctx.stroke(); }
+    ctx.fillStyle='rgba('+LK.post+',.9)'; ctx.fill(); ctx.strokeStyle='rgba('+LK.wall+',.4)'; ctx.lineWidth=1.5; ctx.stroke(); }
   // wall preview
   if (dragA&&dragB){ ctx.beginPath(); ctx.moveTo(w2x(dragA[0]),w2y(dragA[1])); ctx.lineTo(w2x(dragB[0]),w2y(dragB[1]));
     ctx.strokeStyle='rgba(160,190,175,.35)'; ctx.setLineDash([6,5]); ctx.lineWidth=3; ctx.stroke(); ctx.setLineDash([]); }
@@ -1039,15 +1093,23 @@ function drawWorm(w,isSel){
     ctx.strokeStyle='rgba('+CR+','+CG+','+CB+',.32)';
     ctx.lineWidth=Math.max(4,0.055*scale); ctx.stroke();
   }
+  if (LK.glow>0){
+    // a cheap two-pass bloom: wide faint stroke, then a tighter brighter one.
+    // shadowBlur would look the same and cost several ms a frame with 8 animals.
+    ctx.strokeStyle='rgba('+CR+','+CG+','+CB+','+(0.09*LK.glow).toFixed(3)+')';
+    ctx.lineWidth=Math.max(7,0.16*scale)*LK.glow; ctx.stroke();
+    ctx.strokeStyle='rgba('+CR+','+CG+','+CB+','+(0.15*LK.glow).toFixed(3)+')';
+    ctx.lineWidth=Math.max(3.5,0.075*scale)*LK.glow; ctx.stroke();
+  }
   const hg=ctx.createLinearGradient(w2x(body.px[0]),w2y(body.py[0]),w2x(body.px[NP-1]),w2y(body.py[NP-1]));
   const dim=isSel?1:0.82, a1=isSel?0.96:0.74, a2=isSel?0.88:0.66;
   hg.addColorStop(0,'rgba('+(CR*dim|0)+','+(CG*dim|0)+','+(CB*dim|0)+','+a1+')');
   hg.addColorStop(1,'rgba('+(CR*0.74*dim|0)+','+(CG*0.79*dim|0)+','+(CB*0.77*dim|0)+','+a2+')');
   ctx.fillStyle=hg; ctx.fill();
   if (isSel && worms.length>1){ ctx.strokeStyle='rgba(4,12,9,.92)'; ctx.lineWidth=Math.max(1.8,0.012*scale); ctx.stroke(); }
-  else { ctx.strokeStyle='rgba(20,40,33,.35)'; ctx.lineWidth=1; ctx.stroke(); }
+  else { ctx.strokeStyle='rgba('+LK.outline+',.35)'; ctx.lineWidth=1; ctx.stroke(); }
   // pharynx: two darker bulbs behind the nose
-  ctx.fillStyle='rgba(90,110,100,.65)';
+  ctx.fillStyle='rgba('+LK.pharynx+',.65)';
   for (const t of [0.045,0.09]){ const i=Math.round(t*(NP-1));
     ctx.beginPath(); ctx.arc(w2x(body.px[i]),w2y(body.py[i]),widthAt(t)*0.62*scale,0,7); ctx.fill(); }
 }

@@ -57,6 +57,40 @@ const TURING_MAZE = ['M294.0 112.9 L289.8 107.1 L284.0 102.0 L271.5 96.9 L264.0 
 'M294.0 19.7 L289.0 28.5 L287.8 36.1 L290.1 46.3 L294.0 50.8'];
 
 const GLYPH = {
+  celegans() {
+    /* The body is a chain of 30 cells carrying a travelling wave from head to
+       tail - which is how the sim produces the gait: the head leads and each
+       segment copies the bend in front of it. Four shared amplitude keyframes
+       plus a per-cell negative animation-delay for the phase, so the whole
+       card costs a few kB of CSS instead of thirty keyframe blocks, and the
+       animation still holds frame 0 until the card is hovered. Every fifth
+       cell is drawn in the second accent: the cord motor neurons the wave is
+       actually made of. */
+    const N = 30, X0 = 28, X1 = 228, WAVES = 1.55, AMP = 17, DUR = 2.6, BANDS = 6;
+    for (let k = 0; k < BANDS; k++) {
+      const a = AMP * (0.62 + 0.38 * k / (BANDS - 1));   // taper kept small so the
+      // band boundaries cannot show as a kink in the body
+      addAnim(orbitKF('celA' + k, t => [0, a * Math.sin(2 * Math.PI * t)], 24) +
+              `.celA${k}{animation:celA${k} ${DUR}s linear infinite}`);
+    }
+    let g = '';
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1), x = X0 + (X1 - X0) * u;
+      const r = 1.5 + 3.4 * Math.sin(Math.PI * Math.pow(u, 0.72));
+      const band = Math.min(BANDS - 1, Math.round(u * (BANDS - 1)));
+      addAnim(`.celS${i}{animation-delay:${(-DUR * WAVES * u).toFixed(3)}s}`);
+      g += `<circle class="${i % 5 === 2 ? 'fill2' : 'fillA'} celA${band} celS${i}" ` +
+           `cx="${x.toFixed(1)}" cy="${CY}" r="${r.toFixed(2)}"/>`;
+    }
+    /* the meal it is heading for, and the track it left behind */
+    addAnim('@keyframes celMeal{0%,100%{opacity:.30}45%{opacity:.85}}' +
+            `.cel-meal{animation:celMeal ${DUR}s ease-in-out infinite}`);
+    const meal = `<g class="cel-meal"><circle class="soft" cx="258" cy="64" r="15" stroke-dasharray="2 5"/>` +
+      [[258, 64, 2.4], [251, 58, 1.5], [264, 59, 1.4], [253, 70, 1.5], [265, 69, 1.3]]
+        .map(p => dot(p[0], p[1], p[2], 'fill2')).join('') + '</g>';
+    const track = `<path class="soft" d="M6 64 H24" stroke-dasharray="3 6"/>`;
+    return track + g + meal;
+  },
   boids() {
     // The flock flies right; the predator is the odd-coloured bird at the BACK, chasing.
     const bird = (x, y, k, s) => {
