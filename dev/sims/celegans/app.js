@@ -31,6 +31,11 @@ const data=await fetch('./celegans-connectome.json').then(r=>r.json());
 // full body and its own trail. Everything downstream (readouts, poses,
 // captions) reads the SELECTED worm through the `brain`/`body` aliases.
 const MAXW=8;
+// Phone mode. Matches the CSS breakpoints exactly (one strip carrying only the
+// neuron table and the muscles), so JS and layout can never disagree.
+const MOBQ=window.matchMedia('(max-width:820px), (max-height:560px) and (pointer:coarse)');
+// a phone dish is small and a phone GPU is not: four animals, not eight
+function maxWorms(){ return MOBQ.matches ? 4 : MAXW; }
 let nextId=0;
 // Each animal is told apart by COLOUR, not by a number: a pale, desaturated
 // palette that reads against the olive agar and stays legible at 20px in the
@@ -168,7 +173,7 @@ function spawnAt(p,k,n){
           s[2]===undefined?0.3:s[2]];
 }
 function setWormCount(n){
-  n=Math.max(1,Math.min(MAXW,n));
+  n=Math.max(1,Math.min(maxWorms(),n));
   while (worms.length>n) worms.pop();
   while (worms.length<n) worms.push(new Worm(W*0.5,H*0.5,0,freeColor()));
   if (sel>=worms.length) sel=worms.length-1;
@@ -193,18 +198,36 @@ function loadPreset(name,btn){
   syncWormChips(); updateHud(1);
   document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
 }
+// a phone runs four animals, so the two colony scenes say four on a phone
+const MOBLAB={'Eight strangers':['Four strangers','Four worms, no food'],
+              'Race':['Race','Four at the gates, one meal']};
+function labelPresets(){
+  document.querySelectorAll('.preset').forEach(b=>{
+    const name=b.dataset.name, p=PRESETS[name], m=MOBQ.matches&&MOBLAB[name];
+    b.querySelector('b').textContent=m?m[0]:name;
+    b.querySelector('small').textContent=m?m[1]:p.tag;
+  });
+}
 { const holder=el('presets'); let first=null;
   Object.entries(PRESETS).forEach(([name,p],i)=>{
-    const b=document.createElement('button'); b.className='preset';
-    b.innerHTML='<b>'+name+'</b><small>'+p.tag+'</small>';
+    const b=document.createElement('button'); b.className='preset'; b.dataset.name=name;
+    b.innerHTML='<b></b><small></small>';
     b.addEventListener('click',()=>loadPreset(name,b));
     holder.appendChild(b); if(i===0)first=b;
   });
+  labelPresets();
   loadPreset('First meal',first);
 }
+// crossing the phone/desktop boundary re-labels, re-sizes and, if the dish
+// just shrank, drops the animals that no longer fit
+MOBQ.addEventListener('change',()=>{
+  labelPresets();
+  if (worms.length>maxWorms()) setWormCount(maxWorms());
+  syncWormChips(); resize(); makeBg(); sizeViz(); placeWormBar();
+});
 // ---- the colony ---------------------------------------------------------
 function addWorm(x,y,ang){
-  if (worms.length>=MAXW) return null;
+  if (worms.length>=maxWorms()) return null;
   const a=(ang===undefined)?Math.random()*6.283:ang;
   const w=new Worm(Math.max(0.35,Math.min(W-0.35,x)),Math.max(0.35,Math.min(H-0.35,y)),a,freeColor());
   worms.push(w); selectWorm(worms.length-1); syncWormChips(); return w;
@@ -331,7 +354,23 @@ let nervesGrid={NC:20,CS:11,rows:15};
 // Dashboard mode: >=1100px every readout is on at once and every canvas is
 // sized from the space actually left in the window, so nothing scrolls.
 function dashOn(){ return window.innerWidth>=1100 && !document.body.classList.contains('clean'); }
-function shown(v){ return dashOn() ? true : vizOn.has(v); }
+function mobOn(){ return MOBQ.matches && !document.body.classList.contains('clean'); }
+const MOBVIEWS=['nerves','muscles'];
+function shown(v){ return mobOn() ? MOBVIEWS.indexOf(v)>=0 : (dashOn() ? true : vizOn.has(v)); }
+function setCv(v,w,h){ const c=VC[v];
+  c.width=Math.max(8,Math.round(w*vdpr)); c.height=Math.max(8,Math.round(h*vdpr));
+  c.style.width=Math.round(w)+'px'; c.style.height=Math.round(h)+'px'; }
+// the neuron table tiles whatever box it is given: pick the column count that fits
+function fitNerves(w,h){
+  const cell=Math.sqrt(w*h/brain.N);
+  let NC=Math.max(6,Math.floor(w/cell)); let rows=Math.ceil(brain.N/NC);
+  while (rows*Math.floor(w/NC)>h && NC<46){ NC++; rows=Math.ceil(brain.N/NC); }
+  const CSpx=Math.min(Math.floor(w/NC),Math.floor(h/rows));
+  const CS=Math.max(3,Math.floor(CSpx*vdpr));
+  nervesGrid={NC,CS,rows};
+  const nc=VC.nerves; nc.width=NC*CS; nc.height=rows*CS;
+  nc.style.width=(NC*CS/vdpr)+'px'; nc.style.height=(rows*CS/vdpr)+'px';
+}
 function sizeDash(){
   const vp=el('vizpanel'), vb=document.querySelector('.vbody');
   for (const v of VIEWS) el('sec-'+v).classList.add('on');
@@ -348,25 +387,41 @@ function sizeDash(){
   const w7=span(7), w5=span(5);      // row 1: neuron table | ganglia
   const w6=span(6);                  // row 2: whole body | muscles
   const w9=span(9), w3=span(3);      // row 3: traces | scent
-  const set=(v,w,h)=>{ const c=VC[v]; c.width=Math.max(8,Math.round(w*vdpr)); c.height=Math.max(8,Math.round(h*vdpr));
-    c.style.width=Math.round(w)+'px'; c.style.height=Math.round(h)+'px'; };
+  const set=setCv;
   set('gang',w5,cellH);
   set('geo',w6,Math.min(cellH,Math.round(w6*0.52)));
   set('muscles',w6,Math.min(cellH,Math.round(w6*0.46)));
   set('signals',w9,cellH);
   const sw=Math.min(w3,Math.round(cellH*W/H)); set('scent',sw,Math.round(sw*H/W));
-  // the neuron table tiles its own cell: pick the column count that fits
-  const cell=Math.sqrt(w7*cellH/brain.N);
-  let NC=Math.max(6,Math.floor(w7/cell)); let rows=Math.ceil(brain.N/NC);
-  while (rows*Math.floor(w7/NC)>cellH && NC<46){ NC++; rows=Math.ceil(brain.N/NC); }
-  const CSpx=Math.min(Math.floor(w7/NC),Math.floor(cellH/rows));
-  const CS=Math.max(3,Math.floor(CSpx*vdpr));
-  nervesGrid={NC,CS,rows};
-  const nc=VC.nerves; nc.width=NC*CS; nc.height=rows*CS;
-  nc.style.width=(NC*CS/vdpr)+'px'; nc.style.height=(rows*CS/vdpr)+'px';
+  fitNerves(w7,cellH);
+}
+// Phone strip. Portrait: table and muscles side by side under the dish.
+// Landscape: stacked in a column beside it. Both are sized from the box the
+// CSS actually produced, so a notch or a browser chrome bar cannot push a
+// canvas out of view.
+function sizeMob(){
+  const vp=el('vizpanel'), vb=document.querySelector('.vbody');
+  vp.classList.remove('wide','cols2'); document.body.classList.remove('vwide');
+  for (const v of VIEWS) el('sec-'+v).classList.toggle('on', MOBVIEWS.indexOf(v)>=0);
+  for (const v of VIEWS){ const c=VC[v]; c.style.width=''; c.style.height=''; }
+  const pw=vb.clientWidth, ph=vp.clientHeight; if (!pw||!ph) return;
+  const LAB=15, GAP=9;
+  const land=window.innerHeight<=560;
+  if (land){
+    const h=Math.max(60,ph-GAP-12);
+    const hM=Math.min(Math.round(pw*0.42), Math.round(h*0.34));
+    fitNerves(pw,h-hM-2*LAB-GAP);
+    setCv('muscles',pw,hM);
+  } else {
+    const col=Math.floor((pw-GAP)/2), h=Math.max(52,ph-LAB-10);
+    fitNerves(col,h);
+    setCv('muscles',col,Math.min(h,Math.round(col*0.5)));
+  }
 }
 function sizeViz(){
   document.body.classList.toggle('dash',dashOn());
+  document.body.classList.toggle('mob',mobOn());
+  if (mobOn()){ sizeMob(); return; }
   if (dashOn()){
     el('vizpanel').classList.remove('wide','cols2'); document.body.classList.remove('vwide');
     for (const v of VIEWS) document.querySelector('.vchip[data-v="'+v+'"]').setAttribute('aria-pressed','true');
@@ -897,7 +952,7 @@ function drawSignals(){
 let vizFrame=0;
 function drawViz(){
   vizFrame++;
-  if (!dashOn() && vizOn.size===0) return;
+  if (!dashOn() && !mobOn() && vizOn.size===0) return;
   if (shown('nerves')) drawNeurons();
   if (shown('geo')) drawGeo();
   if (shown('gang')) drawHeadInset();
