@@ -1031,11 +1031,11 @@ function drawScent(){
 // EVERY animal keeps its own history, so selecting a different worm shows that
 // worm's last 25 seconds instead of scrolling the old one's away.
 const SIGS=[
-  {n:'Forward command (AVB)', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
-  {n:'Reverse command (AVA)', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
-  {n:'Taste of food (ASE)',   c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
-  {n:'Dopamine (food underfoot)', c:'#b48cff', f:b=>b.dopa},
-  {n:'Serotonin (recently fed)',  c:'#ff8cc0', f:b=>b.serTone},
+  {n:'AVB \u00b7 forward command interneuron', s:'AVB \u00b7 forward', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
+  {n:'AVA \u00b7 reverse command interneuron', s:'AVA \u00b7 reverse', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
+  {n:'ASE \u00b7 food-tasting neuron in the nose', s:'ASE \u00b7 food taste', c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
+  {n:'Dopamine \u00b7 bacteria under the body', s:'Dopamine', c:'#b48cff', f:b=>b.dopa},
+  {n:'Serotonin \u00b7 recently fed', s:'Serotonin', c:'#ff8cc0', f:b=>b.serTone},
 ];
 const SN=300;
 // The chart used to be sampled every 5th ANIMATION frame, so its time axis was
@@ -1107,10 +1107,14 @@ function drawSignals(){
       s?g.lineTo(x,y):g.moveTo(x,y); }
     g.stroke();
     g.font=(9*vdpr)+'px "Space Mono",monospace';
-    const lw=g.measureText(SIGS[i].n).width;
+    // the full name is spelled out where there is room and abbreviated where
+    // there is not, so the plate can never run off the edge of the chart
+    let nm=SIGS[i].n;
+    if (g.measureText(nm).width+9*vdpr>c.width) nm=SIGS[i].s;
+    const lw=g.measureText(nm).width;
     g.fillStyle='rgba(6,15,12,.72)'; g.fillRect(2*vdpr,y0,lw+7*vdpr,11.5*vdpr);
     g.fillStyle=SIGS[i].c;
-    g.fillText(SIGS[i].n,4.5*vdpr,y0+9*vdpr);
+    g.fillText(nm,4.5*vdpr,y0+9*vdpr);
   }
 }
 let vizFrame=0;
