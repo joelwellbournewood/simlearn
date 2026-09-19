@@ -66,7 +66,7 @@ export class WormBody {
   }
   reset(x,y,angle){
     this.baseX=x; this.baseY=y; this.heading=angle+Math.PI; // chain runs tailward
-    this.theta.fill(0); this.curvature.fill(0); this.speed=0;
+    this.theta.fill(0); this.curvature.fill(0); this.speed=0; this.speedFast=0;
     this._build(this.px,this.py); this._nose();
     this._comx=this._cx; this._comy=this._cy;
   }
@@ -218,6 +218,10 @@ export class WormBody {
     this._build(this.sx,this.sy); // refresh com
     const v=Math.hypot(this._cx-this._comx,this._cy-this._comy)/dt;
     this.speed+=(v-this.speed)*Math.min(1,dt/0.5);
+    // a shorter-smoothed copy, only for the readouts: the 0.5 s constant above
+    // made the 'still' state on the chart appear half a second after the
+    // animal had visibly stopped
+    this.speedFast+=(v-this.speedFast)*Math.min(1,dt/0.15);
     this._comx=this._cx; this._comy=this._cy;
     this._nose();
   }

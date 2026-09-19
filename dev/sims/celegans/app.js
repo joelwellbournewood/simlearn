@@ -564,10 +564,16 @@ const headEdges=(function(){
     const k=Math.min(e[0],e[1])+'-'+Math.max(e[0],e[1]); if(seen.has(k)) continue; seen.add(k);
     out.push([headPos[e[0]],headPos[e[1]],e[2]||1,0]);
   }
-  let mw=1e-6; for (const e of out) mw=Math.max(mw,Math.abs(e[2]));
-  for (const e of out) e[2]=Math.abs(e[2])/mw;
+  // Normalise WITHIN each class. Chemical weights are +-1 (the sign carries
+  // the type) while gap weights run 0.5-250, so one global maximum scaled
+  // every chemical synapse down to ~1/81 of a gap junction.
+  const mx={1:1e-6,'-1':1e-6,0:1e-6};
+  for (const e of out) mx[e[3]]=Math.max(mx[e[3]],Math.abs(e[2]));
+  for (const e of out) e[2]=Math.abs(e[2])/mx[e[3]];
   return out;
 })();
+// how many live synapses of each kind survive to the picture
+const EDGE_QUOTA={1:40,'-1':25,0:25};
 const EDGE_COL={1:'100,232,160', '-1':'255,122,184', 0:'122,184,255'};
 function drawHeadInset(){
   const c=document.getElementById('geohead'); if (!c || !c.width) return;
@@ -579,18 +585,29 @@ function drawHeadInset(){
   for (const e of headEdges){ g.moveTo(P[e[0]][0],P[e[0]][1]); g.lineTo(P[e[1]][0],P[e[1]][1]); }
   g.stroke();
   // live traffic: keep the strongest, draw weakest first so the loud ones win
-  const live=[];
+  // Keep the strongest few OF EACH KIND, and brighten each kind relative to
+  // its own loudest line. One pooled top-90 list measured 70 excitatory,
+  // ~20 gap and 0-3 inhibitory, because inhibitory synapses are a fifth of
+  // the head's chemical wiring and sit on quieter cells - so inhibition was
+  // effectively never drawn.
+  const buckets={1:[],'-1':[],0:[]};
   for (const e of headEdges){
     const a=brain.activity[headIdx[e[0]]], b=brain.activity[headIdx[e[1]]];
     const sgl=a*(0.35+0.65*b)*(0.35+0.65*e[2]);
-    if (sgl>0.05) live.push([sgl,e]);
+    if (sgl>0.05) buckets[e[3]].push([sgl,e]);
   }
-  live.sort((u,v)=>u[0]-v[0]);
-  const keep=live.slice(-90);
-  for (const [sgl,e] of keep){
+  const keep=[];
+  for (const k in buckets){
+    const bk=buckets[k]; if (!bk.length) continue;
+    bk.sort((u,v)=>u[0]-v[0]);
+    const cut=bk.slice(-EDGE_QUOTA[k]), top=cut[cut.length-1][0]||1;
+    for (const it of cut) keep.push([it[0],it[1],Math.min(1,it[0]/top)]);
+  }
+  keep.sort((u,v)=>u[2]-v[2]);            // weakest first, loud ones on top
+  for (const [sgl,e,rel] of keep){
     const col=EDGE_COL[e[3]];
-    g.strokeStyle='rgba('+col+','+(0.10+0.55*Math.min(1,sgl)).toFixed(3)+')';
-    g.lineWidth=(0.8+1.5*Math.min(1,sgl))*vdpr;
+    g.strokeStyle='rgba('+col+','+(0.16+0.54*rel).toFixed(3)+')';
+    g.lineWidth=(0.8+1.5*rel)*vdpr;
     g.beginPath(); g.moveTo(P[e[0]][0],P[e[0]][1]); g.lineTo(P[e[1]][0],P[e[1]][1]); g.stroke();
   }
   // nodes: a dark seat so overlapping cells stay separate, then a bounded glow
@@ -818,6 +835,27 @@ const SIGS=[
   {n:'serotonin',c:'#ff8cc0', f:b=>b.serTone},
 ];
 const SN=300;
+// The chart used to be sampled every 5th ANIMATION frame, so its time axis was
+// wall-clock: at 8x the same 300 samples covered ~400 simulated seconds, each
+// sample standing for ~1.4 s of worm time. Short reversals fell between
+// samples and everything looked smeared and late. Sampling is now driven by
+// SIMULATED time, so the window is always the same 24 worm-seconds whatever
+// the speed slider says, and the trace moves in lockstep with the animal.
+const SIG_DT=0.08; let sigAcc=0;           // 300 x 0.08 s = 24 s window
+// 'still' is a real state, not a missing one: a dwelling worm keeps AVB
+// forward drive while the oscillator is suppressed, so it reads 'forward'
+// while sitting still. Below this centre-of-mass speed (L/s) we say so.
+const STILL_SPEED=0.06;
+// salience order for collapsing a sampling interval: omega > upsilon >
+// reverse > still > forward
+const ST_RANK=[0,2,3,4,1];
+function wormState(w){
+  const b=w.brain;
+  if (b.omegaT>0) return 3;
+  if (b.upsilonT>0) return 2;
+  if (b.command<-0.08) return 1;
+  return w.body.speedFast<STILL_SPEED ? 4 : 0;
+}
 function newSig(){ return {b:SIGS.map(()=>new Float32Array(SN)), t:new Uint8Array(SN), h:0}; }
 function clearSig(g){ for(const a of g.b) a.fill(0); g.t.fill(0); g.h=0; }
 function pushSignals(){
@@ -825,7 +863,8 @@ function pushSignals(){
     if (!w.sig) w.sig=newSig();
     const g=w.sig, br=w.brain;
     for (let i=0;i<SIGS.length;i++) g.b[i][g.h]=SIGS[i].f(br);
-    g.t[g.h]=br.omegaT>0?3:br.upsilonT>0?2:br.command<-0.08?1:0;
+    g.t[g.h]=(w._stMax==null)?wormState(w):w._stMax;
+    w._stMax=null;
     g.h=(g.h+1)%SN;
   }
 }
@@ -835,7 +874,7 @@ function drawSignals(){
   const sbuf=S.b, stbuf=S.t, shead=S.h;
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
   const stripH=7*vdpr;
-  const stc=['rgba(86,224,194,.55)','rgba(255,125,92,.75)','rgba(255,180,84,.85)','rgba(230,195,79,.95)'];
+  const stc=['rgba(86,224,194,.55)','rgba(255,125,92,.75)','rgba(255,180,84,.85)','rgba(230,195,79,.95)','rgba(143,163,154,.42)'];
   const dx=c.width/SN;
   for (let s=0;s<SN;s++){ const v=stbuf[(shead+s)%SN];
     g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); }
@@ -858,7 +897,6 @@ function drawSignals(){
 let vizFrame=0;
 function drawViz(){
   vizFrame++;
-  if (vizFrame%5===0 && !paused) pushSignals();
   if (!dashOn() && vizOn.size===0) return;
   if (shown('nerves')) drawNeurons();
   if (shown('geo')) drawGeo();
@@ -991,6 +1029,10 @@ function stepOnce(){
   if (worms.length>1) socialStep(worms,dt);
   else { const S=worms[0].soc; S.head=0; S.tail=0; S.nb=0; }
   for (const w of worms) stepWorm(w);
+  // every animal is sampled every step, keeping the most salient state seen
+  // between chart samples so a half-second reversal cannot fall through
+  for (const w of worms){ const s=wormState(w); if (w._stMax==null||ST_RANK[s]>ST_RANK[w._stMax]) w._stMax=s; }
+  sigAcc+=dt; if (sigAcc>=SIG_DT){ sigAcc-=SIG_DT; pushSignals(); }
   for (const r of ripples){ r.r+=dt*1.6; r.a-=dt*1.8; }
   for (let i=ripples.length-1;i>=0;i--) if (ripples[i].a<=0) ripples.splice(i,1);
 }

@@ -227,7 +227,8 @@ body.clean .brand{display:none}
 .vcap{font-family:var(--mono);font-size:11px;color:var(--muted);min-height:15px;margin:4px 0 0}
 body.clean .vizpanel{display:none}
 body.in-frame .vizpanel{top:18px}
-body.fs .panel,body.fs .hint{display:none}
+/* fullscreen keeps the controls: only the keyboard hint goes */
+body.fs .hint{display:none}
 @media (max-width:760px){ .vizpanel{display:none} }
 
 /* ---- docked three-column layout (>=1100px) -------------------------------
@@ -408,9 +409,9 @@ body.fs .panel,body.fs .hint{display:none}
     <p id="scap" class="vcap"></p>
   </section>
   <section class="vsec vspan" id="sec-signals">
-    <p class="vlab">Signals <span>last 25 s</span></p>
+    <p class="vlab">Signals <span>last 24 s of worm time</span></p>
     <canvas id="signals"></canvas>
-    <p class="vcap"><i style="color:#56e0c2">forward</i> <i style="color:#ff7d5c">reverse</i> <i style="color:#ffb454">upsilon</i> <i style="color:#e6c34f">omega</i></p>
+    <p class="vcap"><i style="color:#56e0c2">forward</i> <i style="color:#8fa39a">still</i> <i style="color:#ff7d5c">reverse</i> <i style="color:#ffb454">upsilon</i> <i style="color:#e6c34f">omega</i></p>
   </section>
   </div>
 </div>
