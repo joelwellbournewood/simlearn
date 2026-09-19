@@ -278,12 +278,35 @@ export class Environment {
     let t=((x-w.x1)*dx+(y-w.y1)*dy)/L2; t=Math.max(0,Math.min(1,t));
     return Math.hypot(x-w.x1-t*dx,y-w.y1-t*dy);
   }
+  // How much of a source at (sx,sy) reaches (x,y): a barrier casts a diffusion
+  // shadow. Attenuation is full in the middle of a wall and fades to nothing
+  // past its ends, so the gradient inside a corridor points at the OPENING
+  // instead of straight through the plastic. Walls are impermeable in the
+  // model's own mechanics, so letting scent ignore them was the inconsistency.
+  _shade(sx,sy,x,y){
+    if (!this.walls.length) return 1;
+    let k=1;
+    const dx=x-sx, dy=y-sy;
+    for (const w of this.walls){
+      const ex=w.x2-w.x1, ey=w.y2-w.y1;
+      const den=dx*ey-dy*ex;
+      if (Math.abs(den)<1e-9) continue;
+      const t=((w.x1-sx)*ey-(w.y1-sy)*ex)/den;      // along source->point
+      const u=((w.x1-sx)*dy-(w.y1-sy)*dx)/den;      // along the wall
+      if (t<=0||t>=1||u<=0||u>=1) continue;
+      const endFrac=Math.min(u,1-u)*Math.hypot(ex,ey);   // distance to nearest end
+      const soft=Math.min(1,endFrac/0.45);
+      k*=1-0.82*soft;
+    }
+    return Math.max(0.25,k);   // several walls in a row must not silence the plume entirely
+  }
   concentrationAt(x,y){
     let c=0;
     const s2=2*0.09*0.09, K=0.09;
     for (const f of this.foods){
       const d=Math.hypot(f.x-x,f.y-y);
-      c+=f.amount*0.30*Math.exp(-d/1.25);          // long diffusion plume
+      const sh=this._shade(f.x,f.y,x,y);
+      c+=sh*f.amount*0.30*Math.exp(-d/1.25);       // long diffusion plume
       if (d<f.radius*2.2+0.35){                    // particle-scale structure
         for (const p of f.parts){ if(p.a<=0) continue;
           const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);

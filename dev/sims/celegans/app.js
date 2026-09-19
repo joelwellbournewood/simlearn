@@ -132,23 +132,33 @@ const x2w=x=>(x-ox)/scale, y2w=y=>(y-oy)/scale;
 // animals it starts with, `spawn(k,n)` their places in the canonical 8x5
 // frame, `strain` forces the sociality switch when the scene is about it.
 const PRESETS={
-  'First meal':{tag:'One lawn, right across the dish', make(){ AF(6.5,3.6,1.0,0.6); }},
-  'Crumb trail':{tag:'Five drops in an arc, plumes overlapping', make(){
+  'First meal':{tag:'One patch, straight ahead', make(){ AF(6.5,3.6,1.0,0.6); }},
+  'Crumb trail':{tag:'Five crumbs, plumes overlapping', make(){
     const pts=[[2.4,1.3],[3.6,1.05],[4.8,1.5],[5.8,2.4],[6.4,3.5]];
     for (const [x,y] of pts) AF(x,y,0.55,0.45); }},
-  'Behind the wall':{tag:'Scent points through a barrier. Give it minutes', make(){
+  'Behind the wall':{tag:'Dinner behind a barrier', make(){
     AW(4.3,1.6,4.3,3.4); AF(6.6,2.5,0.95,0.6); }, spawn:()=>[1.3,2.5,0.0]},
-  'Blind alley':{tag:'A dead end, with dinner just outside it', make(){
-    AW(6.6,2.5,4.4,1.1); AW(6.6,2.5,4.4,3.9);
-    AF(7.3,4.2,0.9,0.5); }, spawn:()=>[1.4,2.5,0.1]},
-  'Pillar field':{tag:'Thread the posts to reach the lawn', make(){
-    for (let i=0;i<4;i++) for (let j=0;j<3;j++) AO(2.6+i*1.0,1.4+j*1.1,0.22);
-    AF(7.0,2.5,1.2,0.6); }},
-  'Eight strangers':{tag:'No food at all - do they find each other?', n:8, strain:'social',
+  'Maze':{tag:'Two gaps to find', make(){
+    AW(3.2,0.0,3.2,2.5); AW(5.6,2.5,5.6,5.0);
+    AF(7.0,1.2,0.95,0.55); }, spawn:()=>[1.0,1.2,0.6]},
+  'Forest of Pillars':{tag:'Thread the posts', make(){
+    for (let i=0;i<5;i++) for (let j=0;j<4;j++) AO(2.5+i*0.82,1.15+j*0.8,0.22);
+    AF(7.1,2.5,1.2,0.6); }},
+  'Eight strangers':{tag:'Eight worms, no food', n:8, strain:'social',
     make(){}, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
-  'Crowded table':{tag:'Eight animals, one meal', n:8, strain:'social',
-    make(){ AF(4.1,2.5,1.2,0.65); },
-    spawn:(k,n)=>[4.1+3.0*Math.cos(k/n*6.283),2.5+1.9*Math.sin(k/n*6.283),k/n*6.283+3.14]},
+  'Race':{tag:'Eight at the gates, one meal', n:8, strain:'solitary',
+    make(){
+      // a ring with one gap in the middle of each side; every animal starts
+      // the same way round from its own gap, so the scene is fair by mirror
+      // symmetry (Race geometry, run 118)
+      AW(2.0,1.1,3.35,1.1); AW(4.65,1.1,6.0,1.1);
+      AW(2.0,3.9,3.35,3.9); AW(4.65,3.9,6.0,3.9);
+      AW(2.0,1.1,2.0,1.85); AW(2.0,3.15,2.0,3.9);
+      AW(6.0,1.1,6.0,1.85); AW(6.0,3.15,6.0,3.9);
+      AF(4.0,2.5,1.0,0.5);
+    },
+    spawn:(k)=>[[3.35,0.4,1.57],[4.65,0.4,1.57],[3.35,4.6,-1.57],[4.65,4.6,-1.57],
+                [0.4,2.0,0.0],[0.4,3.0,0.0],[7.6,2.0,3.14],[7.6,3.0,3.14]][k]},
 };
 function spawnAt(p,k,n){
   const s = p.spawn ? p.spawn(k,n) : (n>1
@@ -320,7 +330,7 @@ const VG={}; for (const v of VIEWS) VG[v]=VC[v].getContext('2d');
 let nervesGrid={NC:20,CS:11,rows:15};
 // Dashboard mode: >=1100px every readout is on at once and every canvas is
 // sized from the space actually left in the window, so nothing scrolls.
-function dashOn(){ return window.innerWidth>=1100 && !document.body.classList.contains('clean') && !document.body.classList.contains('fs'); }
+function dashOn(){ return window.innerWidth>=1100 && !document.body.classList.contains('clean'); }
 function shown(v){ return dashOn() ? true : vizOn.has(v); }
 function sizeDash(){
   const vp=el('vizpanel'), vb=document.querySelector('.vbody');
@@ -558,7 +568,7 @@ const headEdges=(function(){
   for (const e of out) e[2]=Math.abs(e[2])/mw;
   return out;
 })();
-const EDGE_COL={1:'134,255,214', '-1':'186,150,255', 0:'150,196,226'};
+const EDGE_COL={1:'100,232,160', '-1':'255,122,184', 0:'122,184,255'};
 function drawHeadInset(){
   const c=document.getElementById('geohead'); if (!c || !c.width) return;
   const g=c.getContext('2d');
@@ -600,8 +610,6 @@ function drawHeadInset(){
   }
   const pin = selectedNeuron>=0 && headPos[selectedNeuron]!==undefined ? headPos[selectedNeuron] : (geoHeadHover>=0?geoHeadHover:-1);
   if (pin>=0){ g.beginPath(); g.arc(P[pin][0],P[pin][1],7*vdpr,0,7); g.strokeStyle='#e3efe9'; g.lineWidth=1.4*vdpr; g.stroke(); }
-  g.fillStyle='rgba(136,163,151,.7)'; g.font=(9*vdpr)+'px "Space Mono",monospace';
-  g.fillText(HN+' cells \u00b7 teal excite, violet inhibit, blue gap',7*vdpr,c.height-7*vdpr);
 }
 document.getElementById('geohead').addEventListener('mousemove',e=>{
   const c=e.target, r=c.getBoundingClientRect();
@@ -609,9 +617,9 @@ document.getElementById('geohead').addEventListener('mousemove',e=>{
   let bi=-1,bd=14*vdpr;
   for (let k=0;k<HN;k++){ const [hx,hy]=headMapXY(c,k); const d=Math.hypot(hx-x,hy-y); if(d<bd){bd=d;bi=k;} }
   geoHeadHover=bi;
-  if (bi>=0) nameCell(headIdx[bi],'hcap'); else if(selectedNeuron<0) el('hcap').textContent='hover a cell';
+  if (bi>=0) nameCell(headIdx[bi],'hcap'); else if(selectedNeuron<0) el('hcap').textContent='';
 });
-document.getElementById('geohead').addEventListener('mouseleave',()=>{ geoHeadHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'hcap'); else el('hcap').textContent='hover a cell'; });
+document.getElementById('geohead').addEventListener('mouseleave',()=>{ geoHeadHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'hcap'); else el('hcap').textContent=''; });
 document.getElementById('geohead').addEventListener('click',()=>{ if (geoHeadHover>=0) pinNeuron(headIdx[geoHeadHover]); });
 function glowSprite(c){
   const s=document.createElement('canvas'); s.width=s.height=48;
@@ -639,7 +647,7 @@ VC.nerves.addEventListener('click',e=>{
   const k=nervesK(e); if (k>=0&&k<brain.N) pinNeuron(order[k]);
 });
 VC.nerves.addEventListener('mouseleave',()=>{
-  if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap'); else el('ncap').textContent='hover or click a cell to name it';
+  if (selectedNeuron>=0) nameCell(selectedNeuron,'ncap'); else el('ncap').textContent='';
 });
 function drawNeurons(){
   const g=VG.nerves, c=VC.nerves, G=nervesGrid;
@@ -716,27 +724,31 @@ VC.geo.addEventListener('mousemove',e=>{
   let bi=-1, bd=12*vdpr;
   for (let i=0;i<brain.N;i++){ const d=Math.hypot(geoSX[i]-x,geoSY[i]-y); if(d<bd){bd=d;bi=i;} }
   geoHover=bi;
-  if (bi>=0) nameCell(bi,'gcap'); else if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell';
+  if (bi>=0) nameCell(bi,'gcap'); else if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='';
 });
 VC.geo.addEventListener('click',()=>{ if (geoHover>=0) pinNeuron(geoHover); });
-VC.geo.addEventListener('mouseleave',()=>{geoHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='hover or click a cell';});
+VC.geo.addEventListener('mouseleave',()=>{geoHover=-1; if(selectedNeuron>=0) nameCell(selectedNeuron,'gcap'); else el('gcap').textContent='';});
 // muscle map drawn on the live body: 24 segment pairs, dorsal band on the D side
 const mAct=d=>Math.min(1,Math.max(0,(d-0.28)/0.62));
 function drawMuscles(){
   const g=VG.muscles, c=VC.muscles, M=poseMapStatic(c,2.2);
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
-  let pkD=0,pkDk=0,pkV=0,pkVk=0;
+  // four quadrants, 95 cells: dorsal-left / dorsal-right above the midline,
+  // ventral-left / ventral-right below it
+  const QUADS=[['DL',1,0],['DR',1,1],['VL',-1,0],['VR',-1,1]];
   for (let k=0;k<24;k++){
-    const d=mAct(brain.muscleDorsal[k]), v=mAct(brain.muscleVentral[k]);
-    if(d>pkD){pkD=d;pkDk=k;} if(v>pkV){pkV=v;pkVk=k;}
     const u0=k/24, u1=(k+1)/24;
-    for (const side of [1,-1]){
-      const a=side>0?d:v, cc=side>0?'255,125,92':'86,224,194';
+    for (const [q,side,lane] of QUADS){
+      const mi=brain.quadIdx?brain.quadIdx[q][k]:-1;
+      const raw = mi>=0 ? brain.muscleCell[mi]
+                        : (side>0?brain.muscleDorsal[k]:brain.muscleVentral[k]);
+      const a=mAct(raw), cc=side>0?'255,125,92':'86,224,194';
+      const o0=side*1.01*lane, o1=side*1.01*(lane+1);
       g.beginPath();
       const steps=3;
-      for (let s=0;s<=steps;s++){ const u=u0+(u1-u0)*s/steps, p=bodyPointStatic(u,0);
+      for (let s=0;s<=steps;s++){ const u=u0+(u1-u0)*s/steps, p=bodyPointStatic(u,o0*widthAt(u));
         g[s?'lineTo':'moveTo'](M.cx+p[0]*M.S,M.cy+p[1]*M.S); }
-      for (let s=steps;s>=0;s--){ const u=u0+(u1-u0)*s/steps, p=bodyPointStatic(u,side*2.02*widthAt(u));
+      for (let s=steps;s>=0;s--){ const u=u0+(u1-u0)*s/steps, p=bodyPointStatic(u,o1*widthAt(u));
         g.lineTo(M.cx+p[0]*M.S,M.cy+p[1]*M.S); }
       g.closePath();
       g.fillStyle='rgba('+cc+','+(0.07+0.9*Math.pow(a,1.35)).toFixed(3)+')'; g.fill();
@@ -750,9 +762,7 @@ function drawMuscles(){
   g.beginPath(); g.arc(M.cx+hp[0]*M.S,M.cy+hp[1]*M.S,1.2*widthAt(0.05)*M.S,0,7);
   g.fillStyle='rgba(90,110,100,.7)'; g.fill();
   g.font=(9*vdpr)+'px "Space Mono",monospace';
-  g.fillStyle='rgba(255,125,92,.9)'; g.fillText('D dorsal',8*vdpr,c.height-6*vdpr);
-  g.fillStyle='rgba(86,224,194,.9)'; g.fillText('V ventral',8*vdpr,12*vdpr);
-  el('mcap').textContent='peak drive  D'+(pkDk+1)+' '+(pkD*100|0)+'%  \u00b7  V'+(pkVk+1)+' '+(pkV*100|0)+'%';
+  el('mcap').textContent='';
 }
 // scent minimap: the whole smellscape, normalized so structure is always visible
 const SGX=64,SGY=40,sf=new Float32Array(SGX*SGY); let sframe=0, sMax=1e-6, lastNose=0, noseTrend=0;
@@ -801,11 +811,11 @@ function drawScent(){
 // EVERY animal keeps its own history, so selecting a different worm shows that
 // worm's last 25 seconds instead of scrolling the old one's away.
 const SIGS=[
-  {n:'AVB fwd', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
-  {n:'AVA rev', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
-  {n:'ASE smell',c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
-  {n:'dopamine (food contact)',c:'#b48cff', f:b=>b.dopa},
-  {n:'serotonin (satiety tone)',c:'#ff8cc0', f:b=>b.serTone},
+  {n:'AVB', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
+  {n:'AVA', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
+  {n:'ASE', c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
+  {n:'dopamine',c:'#b48cff', f:b=>b.dopa},
+  {n:'serotonin',c:'#ff8cc0', f:b=>b.serTone},
 ];
 const SN=300;
 function newSig(){ return {b:SIGS.map(()=>new Float32Array(SN)), t:new Uint8Array(SN), h:0}; }
@@ -825,10 +835,10 @@ function drawSignals(){
   const sbuf=S.b, stbuf=S.t, shead=S.h;
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
   const stripH=7*vdpr;
-  const stc=['rgba(86,224,194,.25)','rgba(255,125,92,.55)','rgba(255,180,84,.7)','rgba(230,195,79,.85)'];
+  const stc=['rgba(86,224,194,.55)','rgba(255,125,92,.75)','rgba(255,180,84,.85)','rgba(230,195,79,.95)'];
   const dx=c.width/SN;
   for (let s=0;s<SN;s++){ const v=stbuf[(shead+s)%SN];
-    if (v){ g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); } }
+    g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); }
   const top=stripH+5*vdpr, gap=5*vdpr;
   const rh=(c.height-top-gap*(SIGS.length-1))/SIGS.length;
   for (let i=0;i<SIGS.length;i++){
@@ -941,7 +951,8 @@ function drawWorm(w,isSel){
   hg.addColorStop(0,'rgba('+(CR*dim|0)+','+(CG*dim|0)+','+(CB*dim|0)+','+a1+')');
   hg.addColorStop(1,'rgba('+(CR*0.74*dim|0)+','+(CG*0.79*dim|0)+','+(CB*0.77*dim|0)+','+a2+')');
   ctx.fillStyle=hg; ctx.fill();
-  ctx.strokeStyle=isSel?'rgba(20,40,33,.5)':'rgba(20,40,33,.35)'; ctx.lineWidth=1; ctx.stroke();
+  if (isSel && worms.length>1){ ctx.strokeStyle='rgba(4,12,9,.92)'; ctx.lineWidth=Math.max(1.8,0.012*scale); ctx.stroke(); }
+  else { ctx.strokeStyle='rgba(20,40,33,.35)'; ctx.lineWidth=1; ctx.stroke(); }
   // pharynx: two darker bulbs behind the nose
   ctx.fillStyle='rgba(90,110,100,.65)';
   for (const t of [0.045,0.09]){ const i=Math.round(t*(NP-1));

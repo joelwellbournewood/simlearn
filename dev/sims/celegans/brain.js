@@ -137,6 +137,7 @@ export const TUNE = {
   revOnOff: 0.9,    // OFF signal -> AVA drive (pirouette: Pierce-Shimomura 1999)
   klino: 0.5,       // ON suppresses turning amplitude (klinokinesis shortcut)
   gNMJ: 3.2,        // neuromuscular gain
+  mCellDev: 0.5,   // how much a single muscle cell's own junctions pull it off its row's drive
   mSlope: 5.0,      // muscle transfer slope: graded, not clipping (crawl wave is near-sinusoidal, Fang-Yen 2010)
   seedRows: 6,      // oscillator seed tapers over this many anterior rows
   mRise: 0.14,      // muscle activation rise, s (calcium-like)
@@ -306,6 +307,36 @@ export class WormBrain {
       if (n1[1]==='D'&&n2[1]==='D') this.mgjD.push([r1,r2,w]);
       else if (n1[1]==='V'&&n2[1]==='V') this.mgjV.push([r1,r2,w]);
     }
+    // ---- the muscle cells themselves ------------------------------------
+    // The animal has 95 body wall muscle cells in four quadrants (DL, DR, VL,
+    // VR; VL is one short). Collapsing them to 24 dorsal/ventral rows threw
+    // away the per-cell wiring the NMJ table actually carries, so each cell
+    // now integrates its own junctions, has its own activation kinetics, and
+    // is electrically coupled to its quadrant neighbours through the real
+    // muscle-muscle gap junctions. The bend still comes from the row average,
+    // which is all a 2D body can use.
+    this.MC=data.muscles.length;
+    this.mRow=new Int32Array(this.MC); this.mSideD=new Uint8Array(this.MC);
+    this.mcNorm=new Float32Array(this.MC);
+    this.quadIdx={DL:new Int32Array(24).fill(-1),DR:new Int32Array(24).fill(-1),
+                  VL:new Int32Array(24).fill(-1),VR:new Int32Array(24).fill(-1)};
+    const cAbs=new Float32Array(this.MC), cN=[],cM=[],cW=[];
+    for (const [n,m,w0] of data.nmj){
+      const nm=data.neurons[n];
+      const w=w0*(phasic.test(nm)||headM.test(nm)?1:0.15);
+      cN.push(n); cM.push(m); cW.push(w); cAbs[m]+=Math.abs(w);
+    }
+    this.mcN=Int32Array.from(cN); this.mcM=Int32Array.from(cM); this.mcW=Float32Array.from(cW);
+    const rowD=[],rowV=[]; for (let k=0;k<24;k++){ rowD.push([]); rowV.push([]); }
+    for (let m=0;m<this.MC;m++){
+      const nm=data.muscles[m], k=parseInt(nm.slice(3),10)-1;
+      this.mRow[m]=k; this.mSideD[m]=nm[1]==='D'?1:0;
+      this.mcNorm[m]=cAbs[m]>0?1/cAbs[m]:0;
+      this.quadIdx[nm.slice(1,3)][k]=m;
+      (nm[1]==='D'?rowD:rowV)[k].push(m);
+    }
+    this.rowD=rowD.map(a=>Int32Array.from(a)); this.rowV=rowV.map(a=>Int32Array.from(a));
+    this.mgjCell=(data.mgj||[]).map(e=>[e[0],e[1],e[2]]);
   }
   _grp(list){ return Int32Array.from(list.filter(n=>n in this.idx).map(n=>this.idx[n])); }
   _buildGroups(){
@@ -351,6 +382,7 @@ export class WormBrain {
     if (this.pSrc){ this.actS.fill(0); this.pepIn.fill(0); this.pepB.fill(0); this._pepWarm=300; }
     this.activity=new Float32Array(N);
     this.muscleDorsal=new Float32Array(24); this.muscleVentral=new Float32Array(24);
+    this.muscleCell=new Float32Array(this.MC||95);
     this.oscD=0.6; this.oscV=0.1; this.adD=0.3; this.adV=0.05; // asymmetric start seeds the first bend
     this.escapeT=0; this.sprintT=0; this.pokeHab=1;
     this.socBias=0; this.socSlow=1; this.phero=0; this.socO2=1;
@@ -902,6 +934,7 @@ export class WormBrain {
     for (let i=0;i<N;i++){ act[i]=sig(V[i]); this.activity[i]=act[i]; I[i]*=dec; this.A[i]+=(act[i]-this.A[i])*dt/T.adaptTau; }
     // muscles: signed NMJ sums per row (DD/VD arrive negative), calcium-like smoothing
     const md=this._md||(this._md=new Float32Array(24)), mv=this._mv||(this._mv=new Float32Array(24));
+    const tgD=this._tgD||(this._tgD=new Float32Array(24)), tgV=this._tgV||(this._tgV=new Float32Array(24));
     md.fill(0); mv.fill(0);
     for (let e=0;e<this.dN.length;e++) md[this.dR[e]]+=this.dW[e]*act[this.dN[e]];
     for (let e=0;e<this.vN.length;e++) mv[this.vR[e]]+=this.vW[e]*act[this.vN[e]];
@@ -932,18 +965,35 @@ export class WormBrain {
       if (k<4&&this.rimAct>0.02){ // LGC-55 chloride on neck muscle: tyramine
         const relax=this.rimAct*0.75*(1-k/4), m=0.5*(d+v); // relaxes the neck toward slack during backing (Pirri 2009)
         d+=(m-d)*relax; v+=(m-v)*relax; }
-      // muscle rates follow the rhythm into thin fluid, or the 2 Hz swim
-      // would be filtered flat by crawl-tuned activation kinetics
-      const mScl=0.42+0.58*Math.pow(0.23,1-TUNE.load);
-      const rd=(d>this.muscleDorsal[k]?T.mRise:T.mFall)*mScl, rv=(v>this.muscleVentral[k]?T.mRise:T.mFall)*mScl;
-      this.muscleDorsal[k]+=(d-this.muscleDorsal[k])*dt/rd;
-      this.muscleVentral[k]+=(v-this.muscleVentral[k])*dt/rv;
+      tgD[k]=d; tgV[k]=v;
+    }
+    // ---- 95 muscle cells -------------------------------------------------
+    // Each cell's own neuromuscular junctions pull it off its row's drive;
+    // kinetics and electrical coupling are per cell, not per row.
+    const cdrv=this._cdrv||(this._cdrv=new Float32Array(this.MC)); cdrv.fill(0);
+    for (let e=0;e<this.mcN.length;e++) cdrv[this.mcM[e]]+=this.mcW[e]*act[this.mcN[e]];
+    const mScl=0.42+0.58*Math.pow(0.23,1-TUNE.load);
+    const cell=this.muscleCell, dev=T.mCellDev;
+    for (let m=0;m<this.MC;m++){
+      const k=this.mRow[m], D=this.mSideD[m];
+      const base=D?tgD[k]:tgV[k];
+      const rowDrive=D?md[k]*this.dNorm[k]:mv[k]*this.vNorm[k];
+      let t=base+dev*(cdrv[m]*this.mcNorm[m]-rowDrive);
+      if (t<0) t=0; else if (t>1) t=1;
+      const r=(t>cell[m]?T.mRise:T.mFall)*mScl;
+      cell[m]+=(t-cell[m])*dt/r;
     }
     // electrical coupling between neighbouring muscle cells (Cook 2019)
     const gm=(T.gMGJ??0.08)*dt;
-    if (gm>0){
-      for (const [a,b,w] of this.mgjD){ const f=gm*w*(this.muscleDorsal[b]-this.muscleDorsal[a]); this.muscleDorsal[a]+=f; this.muscleDorsal[b]-=f; }
-      for (const [a,b,w] of this.mgjV){ const f=gm*w*(this.muscleVentral[b]-this.muscleVentral[a]); this.muscleVentral[a]+=f; this.muscleVentral[b]-=f; }
+    if (gm>0) for (const [a,b,w] of this.mgjCell){
+      const f=gm*w*(cell[b]-cell[a]); cell[a]+=f; cell[b]-=f; }
+    // the body bends on the row average of its cells
+    for (let k=0;k<24;k++){
+      const rd=this.rowD[k], rv=this.rowV[k];
+      let sd=0; for (let i=0;i<rd.length;i++) sd+=cell[rd[i]];
+      let sv=0; for (let i=0;i<rv.length;i++) sv+=cell[rv[i]];
+      this.muscleDorsal[k]=rd.length?sd/rd.length:this.muscleDorsal[k];
+      this.muscleVentral[k]=rv.length?sv/rv.length:this.muscleVentral[k];
     }
   }
 }
