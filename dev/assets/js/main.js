@@ -58,38 +58,49 @@ const TURING_MAZE = ['M294.0 112.9 L289.8 107.1 L284.0 102.0 L271.5 96.9 L264.0 
 
 const GLYPH = {
   celegans() {
-    /* The body is a chain of 30 cells carrying a travelling wave from head to
-       tail - which is how the sim produces the gait: the head leads and each
-       segment copies the bend in front of it. Four shared amplitude keyframes
-       plus a per-cell negative animation-delay for the phase, so the whole
-       card costs a few kB of CSS instead of thirty keyframe blocks, and the
-       animation still holds frame 0 until the card is hovered. Every fifth
-       cell is drawn in the second accent: the cord motor neurons the wave is
-       actually made of. */
-    const N = 30, X0 = 28, X1 = 228, WAVES = 1.55, AMP = 17, DUR = 2.6, BANDS = 6;
+    /* A worm, not a string of beads: 54 cells spaced 4px apart with a radius
+       floor of 2.1px, so they overlap into one continuous tapered body while
+       each one still carries its own share of the travelling wave - which is
+       how the sim makes the gait, the head leading and each segment copying
+       the bend in front of it. Eight shared amplitude keyframes plus a
+       per-cell negative delay for the phase, so the card costs a few kB of
+       CSS rather than 54 keyframe blocks and still holds frame 0 until the
+       card is hovered. Every seventh cell is drawn in the second accent: the
+       ventral cord motor neurons the wave is actually made of. */
+    const N = 54, X0 = 22, X1 = 232, WAVES = 1.65, AMP = 15.5, DUR = 2.8, BANDS = 8;
     for (let k = 0; k < BANDS; k++) {
-      const a = AMP * (0.62 + 0.38 * k / (BANDS - 1));   // taper kept small so the
-      // band boundaries cannot show as a kink in the body
-      addAnim(orbitKF('celA' + k, t => [0, a * Math.sin(2 * Math.PI * t)], 24) +
+      const a = AMP * (0.58 + 0.42 * k / (BANDS - 1));
+      addAnim(orbitKF('celA' + k, t => [0, a * Math.sin(2 * Math.PI * t)], 28) +
               `.celA${k}{animation:celA${k} ${DUR}s linear infinite}`);
     }
     let g = '';
     for (let i = 0; i < N; i++) {
       const u = i / (N - 1), x = X0 + (X1 - X0) * u;
-      const r = 1.5 + 3.4 * Math.sin(Math.PI * Math.pow(u, 0.72));
+      // radius floor keeps the chain continuous; the bulge is where the animal
+      // is thickest, a third of the way back
+      const r = 2.1 + 3.1 * Math.sin(Math.PI * Math.pow(u, 0.66));
       const band = Math.min(BANDS - 1, Math.round(u * (BANDS - 1)));
       addAnim(`.celS${i}{animation-delay:${(-DUR * WAVES * u).toFixed(3)}s}`);
-      g += `<circle class="${i % 5 === 2 ? 'fill2' : 'fillA'} celA${band} celS${i}" ` +
+      g += `<circle class="${i % 7 === 3 ? 'fill2' : 'fillA'} celA${band} celS${i}" ` +
            `cx="${x.toFixed(1)}" cy="${CY}" r="${r.toFixed(2)}"/>`;
     }
-    /* the meal it is heading for, and the track it left behind */
-    addAnim('@keyframes celMeal{0%,100%{opacity:.30}45%{opacity:.85}}' +
-            `.cel-meal{animation:celMeal ${DUR}s ease-in-out infinite}`);
-    const meal = `<g class="cel-meal"><circle class="soft" cx="258" cy="64" r="15" stroke-dasharray="2 5"/>` +
-      [[258, 64, 2.4], [251, 58, 1.5], [264, 59, 1.4], [253, 70, 1.5], [265, 69, 1.3]]
+    /* the head: a slightly heavier tip with the pharynx behind it */
+    const headBand = BANDS - 1;
+    g += `<circle class="fillA celA${headBand} celS${N - 1}" cx="${X1 + 2.6}" cy="${CY}" r="3.4"/>`;
+    /* the meal it is heading for, its smell spreading out from it, and the
+       track left behind */
+    addAnim('@keyframes celMeal{0%,100%{opacity:.34}45%{opacity:.9}}' +
+            `.cel-meal{animation:celMeal ${DUR}s ease-in-out infinite}` +
+            '@keyframes celRing{0%{transform:scale(.45);opacity:.5}100%{transform:scale(1.4);opacity:0}}' +
+            `.cel-ring{transform-box:fill-box;transform-origin:center;animation:celRing ${DUR}s linear infinite}` +
+            `.cel-ring2{animation-delay:${(-DUR / 2).toFixed(2)}s}`);
+    const rings = `<circle class="soft cel-ring" cx="259" cy="64" r="16"/>` +
+                  `<circle class="soft cel-ring cel-ring2" cx="259" cy="64" r="16"/>`;
+    const meal = `<g class="cel-meal">` +
+      [[259, 64, 2.6], [251, 57, 1.6], [266, 58, 1.5], [252, 71, 1.6], [267, 70, 1.4], [259, 51, 1.2], [259, 77, 1.2]]
         .map(p => dot(p[0], p[1], p[2], 'fill2')).join('') + '</g>';
-    const track = `<path class="soft" d="M6 64 H24" stroke-dasharray="3 6"/>`;
-    return track + g + meal;
+    const track = `<path class="soft" d="M4 64 H18" stroke-dasharray="3 6"/>`;
+    return track + rings + g + meal;
   },
   boids() {
     // The flock flies right; the predator is the odd-coloured bird at the BACK, chasing.

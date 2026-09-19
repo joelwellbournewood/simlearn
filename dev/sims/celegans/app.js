@@ -60,31 +60,45 @@ let worms=[new Worm(W*0.35,H*0.5,0.3,0)];
 // colours (the animals are named by colour, so a look renames them), the
 // noise parameters the agar is generated from, and the few dish colours.
 const LOOKS={
-  'Agar':{why:'Soil under a stereo microscope, which is where the animal lives.',
-    worms:['#f3efe2','#d6e6f4','#f5dde2','#dcf0d9','#f6e7c6','#e0daf5','#c9eeea','#f6dccc'],
+  'Agar':{worms:['#f3efe2','#d6e6f4','#f5dde2','#dcf0d9','#f6e7c6','#e0daf5','#c9eeea','#f6dccc'],
     glow:0, trail:1, voidc:'#050c0a', edge:'160,190,175',
     bg:{base:[22,24,14],amp:[26,30,16],grain:[30,28,12],fleck:[8,20,4],vig:0.55,star:0},
-    food:[[233,219,160],[214,198,130],[186,172,112]], halo:[196,180,110],
+    food:[[240,206,96],[214,176,64],[176,142,44]], halo:[214,178,72],
     wall:'160,190,175', post:'50,72,63', pharynx:'90,110,100', outline:'20,40,33'},
-  'Cosmic neon':{why:'Nothing about the worm changed. Only the paint did.',
-    worms:['#ff4fd8','#4fe8ff','#b6ff3d','#ffb020','#9d7bff','#3dffb0','#ff5f7a','#ffe14f'],
+  'Cosmic':{worms:['#ff4fd8','#4fe8ff','#b6ff3d','#ffb020','#9d7bff','#3dffb0','#ff5f7a','#ffe14f'],
     glow:1, trail:2.4, voidc:'#04040d', edge:'150,130,255',
     bg:{base:[10,7,24],amp:[16,10,46],grain:[70,44,110],fleck:[26,60,120],vig:0.42,star:0.004},
-    food:[[190,255,236],[130,232,214],[86,190,182]], halo:[110,220,205],
+    food:[[255,244,180],[236,214,120],[196,170,80]], halo:[236,220,130],
     wall:'150,130,255', post:'36,26,72', pharynx:'255,255,255', outline:'8,6,22'},
-  'Dark field':{why:'Dark-field microscopy: the specimen lit, the ground black.',
-    worms:['#ffffff','#e3edf7','#cfe0ea','#f3f8ff','#c4d4e2','#e9eff3','#b8cbda','#f7fafc'],
+  'Dark field':{worms:['#ffffff','#e3edf7','#cfe0ea','#f3f8ff','#c4d4e2','#e9eff3','#b8cbda','#f7fafc'],
     glow:0.55, trail:1.5, voidc:'#020304', edge:'120,150,170',
     bg:{base:[5,7,9],amp:[7,9,12],grain:[26,32,40],fleck:[10,14,20],vig:0.72,star:0.0012},
-    food:[[226,238,250],[178,196,214],[132,150,170]], halo:[150,175,200],
+    food:[[120,226,196],[80,186,160],[50,140,120]], halo:[86,196,168],
     wall:'130,160,180', post:'18,24,30', pharynx:'120,140,160', outline:'2,4,6'},
-  'Lantern':{why:'Warm, low light - the dish on a bench at the end of the day.',
-    worms:['#ffd9a0','#ffc46b','#f7e6bb','#ffb27a','#ecd096','#ffd36e','#f2b98a','#ffeccd'],
+  'Lantern':{worms:['#ffd9a0','#ffc46b','#f7e6bb','#ffb27a','#ecd096','#ffd36e','#f2b98a','#ffeccd'],
     glow:0.35, trail:1.4, voidc:'#0c0704', edge:'196,152,96',
     bg:{base:[30,19,9],amp:[42,27,11],grain:[44,30,10],fleck:[22,14,4],vig:0.5,star:0},
-    food:[[255,232,170],[232,200,132],[198,166,104]], halo:[214,178,104],
-    wall:'196,152,96', post:'58,40,22', pharynx:'120,92,60', outline:'34,20,8'}
+    food:[[168,214,120],[132,178,88],[98,138,62]], halo:[140,188,96],
+    wall:'196,152,96', post:'58,40,22', pharynx:'120,92,60', outline:'34,20,8'},
+  'Blueprint':{worms:['#eaf4ff','#9fd8ff','#ffd2e4','#c9ffe8','#ffe9b0','#cdd2ff','#a8f0ff','#ffd8c2'],
+    glow:0.25, trail:1.2, voidc:'#020814', edge:'120,170,230',
+    bg:{base:[10,22,44],amp:[10,20,40],grain:[30,60,104],fleck:[40,90,150],vig:0.5,star:0},
+    food:[[255,140,110],[226,104,78],[186,74,54]], halo:[236,120,92],
+    wall:'140,190,240', post:'18,38,70', pharynx:'150,190,230', outline:'4,12,26'},
+  'Sunset':{worms:['#fff0dd','#ffc9c2','#ffe3a8','#f7c8ff','#ffd8b0','#ffb9d2','#fde9c7','#ffc8e6'],
+    glow:0.45, trail:1.6, voidc:'#10040e', edge:'236,140,120',
+    bg:{base:[44,14,34],amp:[52,20,26],grain:[80,32,44],fleck:[40,12,30],vig:0.5,star:0},
+    food:[[110,230,214],[76,190,178],[46,146,140]], halo:[86,206,192],
+    wall:'236,150,130', post:'70,22,44', pharynx:'150,80,90', outline:'26,6,20'}
 };
+const LOOKORDER=['Agar','Cosmic','Dark field','Lantern','Blueprint','Sunset'];
+// the palette card should show the DISH, not three worms: ground, animal, food
+function lookSwatch(L){
+  const b=L.bg.base, a=L.bg.amp;
+  const ground='rgb('+Math.round(b[0]+a[0]*0.45)+','+Math.round(b[1]+a[1]*0.45)+','+Math.round(b[2]+a[2]*0.45)+')';
+  const food='rgb('+L.food[0][0]+','+L.food[0][1]+','+L.food[0][2]+')';
+  return [ground,L.worms[0],food];
+}
 let LK=LOOKS['Agar'];
 
 function freeColor(){ const u=new Set(worms.map(w=>w.ci));
@@ -188,17 +202,23 @@ const PRESETS={
     make(){}, spawn:(k)=>[1.2+(k%4)*1.9,1.1+Math.floor(k/4)*2.5,k*0.78]},
   'Race':{tag:'Eight at the gates, one meal', n:8, strain:'solitary',
     make(){
-      // a ring with one gap in the middle of each side; every animal starts
-      // the same way round from its own gap, so the scene is fair by mirror
-      // symmetry (Race geometry, run 118)
-      AW(2.0,1.1,3.35,1.1); AW(4.65,1.1,6.0,1.1);
-      AW(2.0,3.9,3.35,3.9); AW(4.65,3.9,6.0,3.9);
-      AW(2.0,1.1,2.0,1.85); AW(2.0,3.15,2.0,3.9);
-      AW(6.0,1.1,6.0,1.85); AW(6.0,3.15,6.0,3.9);
-      AF(4.0,2.5,1.0,0.5);
+      // A ring with one gate in the middle of each side, and inside each gate
+      // a baffle wider than the gate, so the smell leads you in and then the
+      // wall is across your path and you have to work round its end. The four
+      // baffles leave four diagonal corner openings into the middle.
+      // Fair by mirror symmetry: the eight starts are two mirror-symmetric
+      // quartets, so no animal has a shorter route than its opposite number.
+      AW(1.8,0.9,3.45,0.9); AW(4.55,0.9,6.2,0.9);
+      AW(1.8,4.1,3.45,4.1); AW(4.55,4.1,6.2,4.1);
+      AW(1.8,0.9,1.8,2.05); AW(1.8,2.95,1.8,4.1);
+      AW(6.2,0.9,6.2,2.05); AW(6.2,2.95,6.2,4.1);
+      AW(3.05,1.55,4.95,1.55); AW(3.05,3.45,4.95,3.45);
+      AW(2.45,1.85,2.45,3.15); AW(5.55,1.85,5.55,3.15);
+      AF(4.0,2.5,0.9,0.5);
     },
-    spawn:(k)=>[[3.35,0.4,1.57],[4.65,0.4,1.57],[3.35,4.6,-1.57],[4.65,4.6,-1.57],
-                [0.4,2.0,0.0],[0.4,3.0,0.0],[7.6,2.0,3.14],[7.6,3.0,3.14]][k]},
+    // first four = one animal per gate, which is what a phone runs
+    spawn:(k)=>[[3.6,0.35,1.57],[3.6,4.65,-1.57],[1.25,2.3,0.0],[6.75,2.3,3.1416],
+                [4.4,0.35,1.57],[4.4,4.65,-1.57],[1.25,2.7,0.0],[6.75,2.7,3.1416]][k]},
 };
 function spawnAt(p,k,n){
   const s = p.spawn ? p.spawn(k,n) : (n>1
@@ -235,7 +255,7 @@ function loadPreset(name,btn){
 }
 // a phone runs four animals, so the two colony scenes say four on a phone
 const MOBLAB={'Eight strangers':['Four strangers','Four worms, no food'],
-              'Race':['Race','Four at the gates, one meal']};
+              'Race':['Race','Four gates, one meal']};
 function labelPresets(){
   document.querySelectorAll('.preset').forEach(b=>{
     const name=b.dataset.name, p=PRESETS[name], m=MOBQ.matches&&MOBLAB[name];
@@ -303,13 +323,11 @@ function placeWormBar(){
     bar.classList.add('low'); document.body.classList.add('barlow');
   }
 }
-function updateHud(n){
-  const e=el('wormstat'); if(!e) return;
-  const nb=worms[sel].soc.nb||0;
-  e.textContent=worms.length+(worms.length>1?' worms':' worm')
-    +' \u00b7 '+realSpeed.toFixed(1)+'x actual'
-    +(worms.length>1?' \u00b7 neighbours '+nb.toFixed(2)+' \u00b7 click an animal to read it':'');
-}
+// The status line under the strain buttons is gone. The one thing in it worth
+// keeping - whether the dish is really running at the speed you asked for -
+// now rides on the Time slider's own readout.
+var speedFmt=null;   // var: updateHud() runs from loadPreset() before this line
+function updateHud(n){ if (speedFmt) speedFmt(); }
 // ---- tools ----
 document.querySelectorAll('#tools .tool').forEach(b=>b.addEventListener('click',()=>{
   tool=b.dataset.tool;
@@ -364,11 +382,22 @@ window.addEventListener('pointerup',()=>{
 });
 
 // ---- sliders ----
+// the track's filled portion is painted from --p; without it Chrome drew a
+// bare grey rail with no setpoint bar (bug found 2026-09-19)
+function fillTrack(s){
+  const mn=parseFloat(s.min),mx=parseFloat(s.max),v=parseFloat(s.value);
+  s.style.setProperty('--p',(mx>mn?((v-mn)/(mx-mn))*100:0).toFixed(2)+'%');
+}
 function bind(id,vid,fmt,set){ const s=el(id),v=el(vid);
-  const f=()=>{v.textContent=fmt(parseFloat(s.value)); set(parseFloat(s.value));};
-  s.addEventListener('input',f); f(); }
+  const f=()=>{v.textContent=fmt(parseFloat(s.value)); set(parseFloat(s.value)); fillTrack(s);};
+  s.addEventListener('input',f); s.addEventListener('change',f); f(); }
 let simSpeed=1;
-bind('s-speed','v-speed',v=>(v<1?v.toFixed(2):v.toFixed(v%1?1:0))+'x',v=>simSpeed=v);
+bind('s-speed','v-speed',v=>(v<1?v.toFixed(2):v.toFixed(v%1?1:0))+'x'
+  +((typeof realSpeed==='number'&&realSpeed<v*0.9)?' \u00b7 '+realSpeed.toFixed(1)+'x actual':''),
+  v=>simSpeed=v);
+speedFmt=()=>{ const s=el('s-speed'),v=parseFloat(s.value);
+  el('v-speed').textContent=(v<1?v.toFixed(2):v.toFixed(v%1?1:0))+'x'
+    +(realSpeed<v*0.9?' \u00b7 '+realSpeed.toFixed(1)+'x actual':''); };
 bind('s-smell','v-smell',v=>v.toFixed(1),v=>TUNE.senseGain=6*v);
 bind('s-medium','v-medium',v=>v<0.25?'water':v<0.75?'thick gel':'agar surface',v=>{ BTUNE.load=v; TUNE.load=v; });
 
@@ -737,9 +766,39 @@ function glowSprite(c){
   g.fillStyle=rg; g.fillRect(0,0,48,48); return s;
 }
 const sprites={S:glowSprite(catColor.S),I:glowSprite(catColor.I),M:glowSprite(catColor.M)};
+// A bare percentage told you nothing, so the caption now says what the cell
+// is FOR. Roles are keyed by class (the name with its L/R/D/V/number suffix
+// stripped); anything not listed falls back to its anatomical category.
+const CELLROLE={
+  AVB:'forward command', AVA:'reverse command', AVD:'reverse command',
+  AVE:'reverse command (head)', PVC:'forward command', AVG:'navigation relay',
+  RIM:'turn and reversal', RIB:'forward state', RIA:'steering integrator',
+  RIV:'ventral turn', RIS:'sleep and quiescence', AIB:'turn promoting',
+  AIY:'run promoting', AIA:'odour learning', AIZ:'steering relay',
+  RMG:'social hub', RMD:'head bend', RME:'head bend (GABA)', SMD:'head steering',
+  SMB:'head posture', SAA:'head proprioception', OLQ:'nose touch',
+  IL1:'nose touch and bend', CEP:'food texture (dopamine)', ADE:'food texture (dopamine)',
+  PDE:'food texture (dopamine)', NSM:'feeding serotonin', HSN:'egg laying serotonin',
+  ASE:'salt and food taste', AWC:'attractive odour', AWA:'attractive odour',
+  AWB:'repellent odour', ASH:'nose pain and repellents', ASI:'food and pheromone',
+  ASK:'pheromone and starvation', ADL:'pheromone and repellents',
+  ASJ:'light and dauer', ASG:'food sensing', ADF:'food serotonin',
+  AFD:'temperature', AIN:'interneuron', ALM:'gentle touch (front)',
+  AVM:'gentle touch (front)', PLM:'gentle touch (back)', PVM:'touch',
+  FLP:'harsh touch (head)', PVD:'harsh touch (body)', URX:'oxygen sensing',
+  AQR:'oxygen sensing', PQR:'oxygen sensing', BAG:'carbon dioxide',
+  DA:'dorsal muscle (reverse)', DB:'dorsal muscle (forward)', DD:'dorsal inhibition',
+  VA:'ventral muscle (reverse)', VB:'ventral muscle (forward)', VD:'ventral inhibition',
+  AS:'dorsal muscle', VC:'egg laying motor', DVA:'stretch feedback',
+  PVP:'forward bias', PVN:'interneuron', LUA:'tail touch relay',
+  PHA:'tail chemosensor', PHB:'tail chemosensor', PVQ:'tail interneuron'
+};
+function cellClass(nm){ return nm.replace(/[0-9]+$/,'').replace(/[LRDV]+$/,'')||nm; }
 function nameCell(i,capEl){
+  const nm=brain.names[i];
   const cat={S:'sensory',I:'interneuron',M:'motor'}[brain.cat[i]];
-  el(capEl).textContent=brain.names[i]+' ('+cat+') '+(brain.activity[i]*100).toFixed(0)+'%';
+  const role=CELLROLE[cellClass(nm)]||CELLROLE[nm]||cat;
+  el(capEl).textContent=nm+' \u00b7 '+role+' \u00b7 '+(brain.activity[i]*100).toFixed(0)+'% active';
 }
 function nervesK(e){
   const r=VC.nerves.getBoundingClientRect(), G=nervesGrid;
@@ -889,7 +948,7 @@ function drawScent(){
     sMax=Math.max(mx,sMax*0.6+mx*0.4);
     const cn=env.concentrationAt(body.noseX,body.noseY);
     noseTrend=cn-lastNose; lastNose=cn;
-    el('scap').textContent='at the nose '+cn.toExponential(1)+(Math.abs(noseTrend)<1e-6?'  \u00b7  steady':noseTrend>0?'  \u00b7  rising':'  \u00b7  falling');
+    // (the numeric "at the nose" readout was removed - the map shows it)
   }
   const cw=c.width/SGX, ch=c.height/SGY;
   for (let j=0;j<SGY;j++) for (let i=0;i<SGX;i++){
@@ -918,11 +977,11 @@ function drawScent(){
 // EVERY animal keeps its own history, so selecting a different worm shows that
 // worm's last 25 seconds instead of scrolling the old one's away.
 const SIGS=[
-  {n:'AVB', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
-  {n:'AVA', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
-  {n:'ASE', c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
-  {n:'dopamine',c:'#b48cff', f:b=>b.dopa},
-  {n:'serotonin',c:'#ff8cc0', f:b=>b.serTone},
+  {n:'Forward command (AVB)', c:'#56e0c2', f:b=>(b.activity[b.idx.AVBL]+b.activity[b.idx.AVBR])/2},
+  {n:'Reverse command (AVA)', c:'#ff7d5c', f:b=>(b.activity[b.idx.AVAL]+b.activity[b.idx.AVAR])/2},
+  {n:'Taste of food (ASE)',   c:'#e6c34f', f:b=>Math.max(b.activity[b.idx.ASEL],b.activity[b.idx.ASER])},
+  {n:'Dopamine (food underfoot)', c:'#b48cff', f:b=>b.dopa},
+  {n:'Serotonin (recently fed)',  c:'#ff8cc0', f:b=>b.serTone},
 ];
 const SN=300;
 // The chart used to be sampled every 5th ANIMATION frame, so its time axis was
@@ -938,12 +997,14 @@ const SIG_DT=0.08; let sigAcc=0;           // 300 x 0.08 s = 24 s window
 const STILL_SPEED=0.06;
 // salience order for collapsing a sampling interval: omega > upsilon >
 // reverse > still > forward
-const ST_RANK=[0,2,3,4,1];
+// salience: omega > upsilon > reverse > feeding > still > forward
+const ST_RANK=[0,3,4,5,1,2];
 function wormState(w){
   const b=w.brain;
   if (b.omegaT>0) return 3;
   if (b.upsilonT>0) return 2;
   if (b.command<-0.08) return 1;
+  if ((w._feedT||0)>0) return 5;
   return w.body.speedFast<STILL_SPEED ? 4 : 0;
 }
 function newSig(){ return {b:SIGS.map(()=>new Float32Array(SN)), t:new Uint8Array(SN), h:0}; }
@@ -964,7 +1025,10 @@ function drawSignals(){
   const sbuf=S.b, stbuf=S.t, shead=S.h;
   g.fillStyle='#060f0c'; g.fillRect(0,0,c.width,c.height);
   const stripH=7*vdpr;
-  const stc=['rgba(86,224,194,.55)','rgba(255,125,92,.75)','rgba(255,180,84,.85)','rgba(230,195,79,.95)','rgba(143,163,154,.42)'];
+  // upsilon (amber) and omega (violet) used to be two shades of yellow and
+  // were impossible to tell apart on a 7px strip
+  const stc=['rgba(86,224,194,.55)','rgba(255,125,92,.78)','rgba(255,168,60,.90)',
+             'rgba(183,124,255,.95)','rgba(143,163,154,.42)','rgba(160,224,74,.80)'];
   const dx=c.width/SN;
   for (let s=0;s<SN;s++){ const v=stbuf[(shead+s)%SN];
     g.fillStyle=stc[v]; g.fillRect(s*dx,0,dx+1,stripH); }
@@ -979,9 +1043,11 @@ function drawSignals(){
       const x=s*dx, y=y0+rh-2*vdpr-v*(rh-8*vdpr);
       s?g.lineTo(x,y):g.moveTo(x,y); }
     g.stroke();
-    g.fillStyle='rgba(6,15,12,.68)'; g.fillRect(2*vdpr,y0,c.width*0.34,11*vdpr);
-    g.fillStyle=SIGS[i].c; g.font=(9*vdpr)+'px "Space Mono",monospace';
-    g.fillText(SIGS[i].n,4*vdpr,y0+9*vdpr);
+    g.font=(9*vdpr)+'px "Space Mono",monospace';
+    const lw=g.measureText(SIGS[i].n).width;
+    g.fillStyle='rgba(6,15,12,.72)'; g.fillRect(2*vdpr,y0,lw+7*vdpr,11.5*vdpr);
+    g.fillStyle=SIGS[i].c;
+    g.fillText(SIGS[i].n,4.5*vdpr,y0+9*vdpr);
   }
 }
 let vizFrame=0;
@@ -1000,16 +1066,17 @@ function applyLook(name,btn){
   LK=LOOKS[name]||LOOKS['Agar'];
   WCOL.length=0; for (const c of LK.worms) WCOL.push(c);
   for (const w of worms){ w.col=WCOL[w.ci%WCOL.length]; w.rgb=hex2rgb(w.col); }
-  const why=el('lookwhy'); if (why) why.textContent=LK.why;
   document.querySelectorAll('.look').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.look===name)));
   makeBg(); syncWormChips();
 }
 { const holder=el('looks');
-  if (holder) Object.entries(LOOKS).forEach(([name,L])=>{
+  if (holder) LOOKORDER.forEach(name=>{
+    const L=LOOKS[name];
     const b=document.createElement('button'); b.className='look'; b.type='button'; b.dataset.look=name;
     b.setAttribute('aria-pressed',String(name==='Agar'));
-    b.innerHTML='<span class="chips"><i style="background:'+L.worms[0]+'"></i><i style="background:'+
-      L.worms[1]+'"></i><i style="background:'+L.worms[3]+'"></i></span><span class="pn">'+name+'</span>';
+    const sw=lookSwatch(L);
+    b.innerHTML='<span class="chips">'+sw.map(c=>'<i style="background:'+c+'"></i>').join('')+
+      '</span><span class="pn">'+name+'</span>';
     b.addEventListener('click',()=>applyLook(name,b));
     holder.appendChild(b);
   });
@@ -1140,7 +1207,9 @@ function stepWorm(w){
   if (w.pokePulse){ brain.touch(w.pokePulse.region,1.1); w.pokePulse.t-=dt; if(w.pokePulse.t<=0) w.pokePulse=null; }
   brain.step(dt,body.curvature);
   body.step(dt,brain.muscleDorsal,brain.muscleVentral,env);
-  if (lf>0.5){ const e=env.consume(body.noseX,body.noseY,dt,0.06); w.eaten+=e; eaten+=e; }
+  w._feedT=Math.max(0,(w._feedT||0)-dt);
+  if (lf>0.5){ const e=env.consume(body.noseX,body.noseY,dt,0.06); w.eaten+=e; eaten+=e;
+    if (e>0) w._feedT=0.5; }
 }
 function stepOnce(){
   if (worms.length>1) socialStep(worms,dt);
